@@ -9,7 +9,7 @@ import { getSocket } from '../services/socket';
 export const CustomerOrderTrackingPage: React.FC = () => {
   const { orderId } = useParams<{ orderId: string }>();
   const [order, setOrder] = useState<any>(null);
-  const [restaurant, setRestaurant] = useState<any>(null);
+  const [business, setBusiness] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchOrderDetails = async () => {
@@ -17,7 +17,7 @@ export const CustomerOrderTrackingPage: React.FC = () => {
       if (!orderId) return;
       const res = await apiRequest(`/public/orders/${orderId}`);
       setOrder(res.data.order);
-      setRestaurant(res.data.restaurant);
+      setBusiness(res.data.business);
     } catch (err) {
       console.error('Error fetching order details:', err);
     } finally {
@@ -69,7 +69,7 @@ export const CustomerOrderTrackingPage: React.FC = () => {
       
       {/* ── Top Header ────────────────────────────────────────── */}
       <div className="flex items-center justify-between pb-4 border-b border-slate-200 mb-6 bg-white -mx-4 px-4 pt-2">
-        <Link to={`/c/${restaurant?.slug || 'artisan-cafe'}`} className="p-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors">
+        <Link to={`/c/${business?.slug || 'artisan-cafe'}`} className="p-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors">
           <ArrowLeft className="w-4 h-4" />
         </Link>
         <span className="text-xs font-black text-slate-900 flex items-center gap-1.5 uppercase tracking-wider">
@@ -90,7 +90,7 @@ export const CustomerOrderTrackingPage: React.FC = () => {
           <span className="text-xs font-extrabold text-orange-600 uppercase tracking-widest block mb-0.5">
             Order #{order?.orderNumber}
           </span>
-          <h2 className="text-xl font-black text-slate-900">{restaurant?.name || 'Artisan Café'}</h2>
+          <h2 className="text-xl font-black text-slate-900">{business?.name || 'Artisan Roastery'}</h2>
           <p className="text-xs text-slate-400 font-medium">{order?.tableName || 'Table 01'} • Guest: {order?.customerName}</p>
         </div>
 

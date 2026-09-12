@@ -5,6 +5,7 @@ import {
   User, Phone, Store, Globe, CheckCircle2, Sparkles, Zap, Layers, UserPlus, Eye, EyeOff
 } from 'lucide-react';
 import { apiRequest, setAuthToken } from '../services/api';
+import { APP_NAME, APP_SLUG } from '../constants/app';
 
 interface RegisterPageProps {
   onRegisterSuccess: (userData: any) => void;
@@ -41,7 +42,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
     email: '',
     password: '',
     phone: '',
-    restaurantName: '',
+    businessName: '',
     slug: ''
   });
   const [loading, setLoading] = useState(false);
@@ -58,7 +59,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
     const { name, value } = e.target;
     setFormData((prev) => {
       const updated = { ...prev, [name]: value };
-      if (name === 'restaurantName' && (!prev.slug || prev.slug === prev.restaurantName.toLowerCase().replace(/[^a-z0-9]/g, '-'))) {
+      if (name === 'businessName' && (!prev.slug || prev.slug === prev.businessName.toLowerCase().replace(/[^a-z0-9]/g, '-'))) {
         updated.slug = value.toLowerCase().replace(/[^a-z0-9]/g, '-');
       }
       return updated;
@@ -115,7 +116,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-2xl font-black tracking-tight text-white">CaféOS</span>
+                <span className="text-2xl font-black tracking-tight text-white">{APP_NAME}</span>
                 <span className="text-[10px] font-mono px-2 py-0.5 bg-red-600/30 text-red-300 rounded-full border border-red-500/30 font-bold">PROD</span>
               </div>
               <span className="text-xs text-slate-300 font-semibold block">Enterprise Multi-Tenant SaaS</span>
@@ -149,7 +150,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
               <div className="text-[10px] font-bold uppercase text-slate-400 tracking-wider flex items-center gap-1">
                 <Layers className="w-3 h-3 text-amber-400" /> Multi-Tenant
               </div>
-              <div className="text-base font-black text-white">500+ Cafés</div>
+              <div className="text-base font-black text-white">500+ Businesses</div>
             </div>
           </div>
 
@@ -196,7 +197,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
             <div className="w-10 h-10 rounded-xl bg-red-600 text-white flex items-center justify-center font-bold shadow-md shadow-red-600/30">
               <Coffee className="w-5 h-5" />
             </div>
-            <span className="text-xl font-black text-slate-900">CaféOS</span>
+            <span className="text-xl font-black text-slate-900">{APP_NAME}</span>
           </Link>
 
           <Link to="/login" className="text-xs font-bold text-red-600 hover:text-red-700">
@@ -213,9 +214,9 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
               <Sparkles className="w-3.5 h-3.5 text-red-600" />
               <span>14-Day Free Trial • Instant Setup</span>
             </div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Create Café Account</h1>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Create Business Account</h1>
             <p className="text-xs sm:text-sm text-slate-600 font-medium">
-              Launch your café digital menu, KDS kitchen display, and POS in under 2 minutes.
+              Launch your business's digital menu, KDS kitchen display, and POS in under 2 minutes.
             </p>
           </div>
 
@@ -245,7 +246,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
             <div className="w-12 h-0.5 bg-slate-200" />
             <div className={`flex items-center gap-2 ${step >= 2 ? 'text-red-600' : 'text-slate-400'}`}>
               <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-extrabold ${step >= 2 ? 'bg-red-600 text-white shadow-md shadow-red-600/30' : 'bg-slate-200 text-slate-500'}`}>2</span>
-              <span>Café Setup</span>
+              <span>Business Setup</span>
             </div>
           </div>
 
@@ -290,7 +291,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
                         name="email"
                         value={formData.email}
                         onChange={handleInputChange}
-                        placeholder="owner@yourcafe.com"
+                        placeholder="owner@yourbusiness.com"
                         className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 border border-slate-300 focus:border-red-600 focus:bg-white focus:ring-2 focus:ring-red-600/15 text-xs text-slate-900 placeholder-slate-400 font-semibold outline-none transition-all"
                       />
                     </div>
@@ -349,21 +350,21 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
                     }}
                     className="w-full py-3.5 rounded-xl bg-red-600 hover:bg-red-700 active:scale-[0.99] text-white font-extrabold text-xs shadow-lg shadow-red-600/30 flex items-center justify-center gap-2 transition-all mt-2"
                   >
-                    Continue to Café Details <ArrowRight className="w-4 h-4" />
+                    Continue to Business Details <ArrowRight className="w-4 h-4" />
                   </button>
                 </>
               ) : (
                 <>
-                  {/* Café / Restaurant Name */}
+                  {/* Business Name */}
                   <div>
-                    <label className="block text-xs font-extrabold text-slate-900 mb-1.5">Café / Restaurant Name</label>
+                    <label className="block text-xs font-extrabold text-slate-900 mb-1.5">Business Name</label>
                     <div className="relative">
                       <Store className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                       <input
                         type="text"
                         required
-                        name="restaurantName"
-                        value={formData.restaurantName}
+                        name="businessName"
+                        value={formData.businessName}
                         onChange={handleInputChange}
                         placeholder="The Artisan Roastery & Bakery"
                         className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 border border-slate-300 focus:border-red-600 focus:bg-white focus:ring-2 focus:ring-red-600/15 text-xs text-slate-900 placeholder-slate-400 font-semibold outline-none transition-all"
@@ -371,7 +372,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
                     </div>
                   </div>
 
-                  {/* Café Subdomain / URL Slug */}
+                  {/* Business Subdomain / URL Slug */}
                   <div>
                     <label className="block text-xs font-extrabold text-slate-900 mb-1.5">Unique Customer Menu URL Slug</label>
                     <div className="relative flex items-center">
@@ -387,7 +388,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
                       />
                     </div>
                     <p className="text-[10px] text-slate-500 mt-1 font-mono">
-                      Your QR menu link: <span className="text-red-600 font-bold">cafeos.app/c/{formData.slug || 'your-slug'}</span>
+                      Your QR menu link: <span className="text-red-600 font-bold">{APP_SLUG}.app/c/{formData.slug || 'your-slug'}</span>
                     </p>
                   </div>
 
@@ -408,11 +409,11 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
                       {loading ? (
                         <span className="flex items-center gap-2">
                           <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                          Creating Café...
+                          Creating Business...
                         </span>
                       ) : (
                         <>
-                          Complete & Launch Café <ArrowRight className="w-4 h-4" />
+                          Complete & Launch Business <ArrowRight className="w-4 h-4" />
                         </>
                       )}
                     </button>
@@ -429,7 +430,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
             </div>
 
             <p className="text-[10px] text-center text-slate-400">
-              By creating an account, you agree to CaféOS Service Terms and Privacy Policy.
+              By creating an account, you agree to {APP_NAME} Service Terms and Privacy Policy.
             </p>
           </div>
 
@@ -448,7 +449,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
 
         {/* Footer */}
         <div className="text-center text-[11px] text-slate-500 font-medium pt-6 border-t border-slate-200/80 mt-6">
-          © 2026 CaféOS SaaS Platform Inc. • Empowering 500+ Hospitality Businesses Globally
+          © 2026 {APP_NAME} SaaS Platform Inc. • Empowering 500+ Hospitality Businesses Globally
         </div>
       </div>
 

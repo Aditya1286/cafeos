@@ -5,6 +5,7 @@ import {
   Eye, EyeOff, CheckCircle2, Sparkles, Zap, Layers, UserCheck
 } from 'lucide-react';
 import { apiRequest, setAuthToken } from '../services/api';
+import { APP_NAME, APP_SLUG } from '../constants/app';
 
 interface LoginPageProps {
   onLoginSuccess: (userData: any) => void;
@@ -126,7 +127,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-2xl font-black tracking-tight text-white">CaféOS</span>
+                <span className="text-2xl font-black tracking-tight text-white">{APP_NAME}</span>
                 <span className="text-[10px] font-mono px-2 py-0.5 bg-red-600/30 text-red-300 rounded-full border border-red-500/30 font-bold">PROD</span>
               </div>
               <span className="text-xs text-slate-300 font-semibold block">Enterprise Multi-Tenant SaaS</span>
@@ -160,7 +161,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
               <div className="text-[10px] font-bold uppercase text-slate-400 tracking-wider flex items-center gap-1">
                 <Layers className="w-3 h-3 text-amber-400" /> Multi-Tenant
               </div>
-              <div className="text-base font-black text-white">500+ Cafés</div>
+              <div className="text-base font-black text-white">500+ Businesses</div>
             </div>
           </div>
 
@@ -207,7 +208,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
             <div className="w-10 h-10 rounded-xl bg-red-600 text-white flex items-center justify-center font-bold shadow-md shadow-red-600/30">
               <Coffee className="w-5 h-5" />
             </div>
-            <span className="text-xl font-black text-slate-900">CaféOS</span>
+            <span className="text-xl font-black text-slate-900">{APP_NAME}</span>
           </Link>
 
           <Link to="/register" className="text-xs font-bold text-red-600 hover:text-red-700">
@@ -222,9 +223,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
           <div className="text-left space-y-2">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-50 border border-red-200/80 text-red-700 text-[11px] font-bold">
               <Sparkles className="w-3.5 h-3.5 text-red-600" />
-              <span>Enterprise Cafe Management Portal</span>
+              <span>Enterprise Business Management Portal</span>
             </div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Sign In to CaféOS</h1>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Sign In to {APP_NAME}</h1>
             <p className="text-xs sm:text-sm text-slate-600 font-medium">
               Enter your registered credentials or select an instant demo profile below.
             </p>
@@ -267,7 +268,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                     <UtensilsCrossed className="w-3 h-3" />
                   </div>
                   <div className="text-left truncate">
-                    <div className="text-[10px] font-extrabold leading-tight text-slate-900 truncate">Café #1 (Artisan)</div>
+                    <div className="text-[10px] font-extrabold leading-tight text-slate-900 truncate">Business #1 (Artisan)</div>
                     <div className="text-[8px] text-slate-500 font-mono truncate">owner@artisan.com</div>
                   </div>
                 </div>
@@ -283,14 +284,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                     <Coffee className="w-3 h-3" />
                   </div>
                   <div className="text-left truncate">
-                    <div className="text-[10px] font-extrabold leading-tight text-slate-900 truncate">Café #2 (Bakery)</div>
+                    <div className="text-[10px] font-extrabold leading-tight text-slate-900 truncate">Business #2 (Bakery)</div>
                     <div className="text-[8px] text-slate-500 font-mono truncate">owner@beanandbutter.com</div>
                   </div>
                 </div>
               </button>
 
               <button
-                onClick={() => handleDemoLogin('admin@cafeos.com')}
+                onClick={() => handleDemoLogin(`admin@${APP_SLUG}.com`)}
                 type="button"
                 className="py-2.5 px-2.5 rounded-xl bg-slate-100 hover:bg-slate-200/80 border border-slate-200 text-slate-900 font-bold text-xs flex items-center justify-between group transition-all"
               >
@@ -300,7 +301,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                   </div>
                   <div className="text-left truncate">
                     <div className="text-[10px] font-extrabold leading-tight text-slate-900 truncate">Super Admin</div>
-                    <div className="text-[8px] text-slate-500 font-mono truncate">admin@cafeos.com</div>
+                    <div className="text-[8px] text-slate-500 font-mono truncate">admin@{APP_SLUG}.com</div>
                   </div>
                 </div>
               </button>
@@ -407,7 +408,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
             </form>
 
             <div className="text-center text-xs text-slate-600 font-medium pt-3 border-t border-slate-100">
-              Don't have a café account yet?{' '}
+              Don't have a business account yet?{' '}
               <Link to="/register" className="text-red-600 font-extrabold hover:underline">
                 Create Free Trial Account
               </Link>
@@ -429,7 +430,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
         {/* Footer */}
         <div className="text-center text-[11px] text-slate-500 font-medium pt-6 border-t border-slate-200/80 mt-6">
-          © 2026 CaféOS SaaS Platform Inc. • Empowering 500+ Hospitality Businesses Globally
+          © 2026 {APP_NAME} SaaS Platform Inc. • Empowering 500+ Hospitality Businesses Globally
         </div>
       </div>
 

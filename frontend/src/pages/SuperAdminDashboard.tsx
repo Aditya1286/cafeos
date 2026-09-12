@@ -22,7 +22,8 @@ import MovingBorderButton from '../components/ui/MovingBorderButton';
 import EmptyState from '../components/ui/EmptyState';
 import CommandPalette from '../components/ui/CommandPalette';
 import ProductDetailSheet from '../components/ui/ProductDetailSheet';
-import TenantManagementModal from '../components/ui/TenantManagementModal';
+import BusinessManagementModal from '../components/ui/BusinessManagementModal';
+import { APP_SLUG } from '../constants/app';
 
 export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -31,7 +32,7 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
   const [loading, setLoading] = useState(true);
   const [isCommandOpen, setIsCommandOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
-  const [selectedTenantForModal, setSelectedTenantForModal] = useState<any>(null);
+  const [selectedBusinessForModal, setSelectedBusinessForModal] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'SUSPENDED'>('ALL');
 
@@ -42,7 +43,7 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
 
   // Data state
   const [data, setData] = useState<any>(null);
-  const [restaurants, setRestaurants] = useState<any[]>([]);
+  const [businesses, setBusinesses] = useState<any[]>([]);
   const [liveOrders, setLiveOrders] = useState<any[]>([]);
   const [systemHealth, setSystemHealth] = useState<any>(null);
   const [plans, setPlans] = useState<any[]>([]);
@@ -137,9 +138,9 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
           setLiveOrders(overviewRes.data.recentOrders);
         }
       }
-      const restRes = await apiRequest('/admin/restaurants').catch(() => null);
+      const restRes = await apiRequest('/admin/businesses').catch(() => null);
       if (restRes && restRes.data) {
-        setRestaurants(restRes.data);
+        setBusinesses(restRes.data);
       }
       const healthRes = await apiRequest('/admin/system/health').catch(() => null);
       if (healthRes && healthRes.data) {
@@ -170,10 +171,10 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
 
     if (liveOrders.length === 0) {
       setLiveOrders([
-        { id: '1', orderNumber: '1094', cafeName: 'The Artisan Roastery', itemsCount: 3, total: 640, status: 'PREPARING', time: 'Just now' },
-        { id: '2', orderNumber: '1093', cafeName: 'Bean & Butter Bakery', itemsCount: 2, total: 420, status: 'READY', time: '2m ago' },
-        { id: '3', orderNumber: '3001', cafeName: 'Verde Organic Bistro', itemsCount: 4, total: 1150, status: 'DELIVERED', time: '5m ago' },
-        { id: '4', orderNumber: '1091', cafeName: 'Urban Espresso Bar', itemsCount: 1, total: 220, status: 'PENDING', time: '8m ago' },
+        { id: '1', orderNumber: '1094', businessName: 'The Artisan Roastery', itemsCount: 3, total: 640, status: 'PREPARING', time: 'Just now' },
+        { id: '2', orderNumber: '1093', businessName: 'Bean & Butter Bakery', itemsCount: 2, total: 420, status: 'READY', time: '2m ago' },
+        { id: '3', orderNumber: '3001', businessName: 'Verde Organic Bistro', itemsCount: 4, total: 1150, status: 'DELIVERED', time: '5m ago' },
+        { id: '4', orderNumber: '1091', businessName: 'Urban Espresso Bar', itemsCount: 1, total: 220, status: 'PENDING', time: '8m ago' },
       ]);
     }
 
@@ -183,28 +184,28 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
     };
   }, []);
 
-  const handleToggleStatus = async (restaurantId: string, targetStatus: string) => {
+  const handleToggleStatus = async (businessId: string, targetStatus: string) => {
     try {
-      await apiRequest(`/admin/restaurants/${restaurantId}/status`, 'PUT', { status: targetStatus });
-      setToastMessage(`Tenant status updated to ${targetStatus}`);
+      await apiRequest(`/admin/businesses/${businessId}/status`, 'PUT', { status: targetStatus });
+      setToastMessage(`Business status updated to ${targetStatus}`);
       fetchDashboardData();
       setTimeout(() => setToastMessage(null), 3000);
     } catch (err: any) {
-      alert(err.message || 'Failed to update tenant status');
+      alert(err.message || 'Failed to update business status');
     }
   };
 
   const handleExport = (format: 'csv' | 'pdf') => {
     if (format === 'csv') {
-      const csvHeader = 'Tenant Name,Slug,Email,Status,Per-Order Fee (₹)\n';
-      const csvRows = restaurants
+      const csvHeader = 'Business Name,Slug,Email,Status,Per-Order Fee (₹)\n';
+      const csvRows = businesses
         .map((r) => `"${r.name}","${r.slug}","${r.email}","${r.status}",${(r.perOrderFeePaise || 200) / 100}`)
         .join('\n');
       const blob = new Blob([csvHeader + csvRows], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.setAttribute('href', url);
-      link.setAttribute('download', `CafeFlow_Tenants_Export_${Date.now()}.csv`);
+      link.setAttribute('download', `${APP_SLUG}_businesses_export_${Date.now()}.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -220,16 +221,16 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
     { v: 30 }, { v: 45 }, { v: 38 }, { v: 52 }, { v: 48 }, { v: 65 }, { v: 72 }
   ];
 
-  const tenantHoverItems: HoverEffectItem[] = restaurants.map((r) => ({
+  const businessHoverItems: HoverEffectItem[] = businesses.map((r) => ({
     title: r.name,
     description: `Slug: /c/${r.slug} · Email: ${r.email}`,
     badge: r.status,
     metric: `₹${(r.perOrderFeePaise || 200) / 100} / order fee`,
     icon: <Store className="w-5 h-5 text-red-500" />,
-    onClick: () => setSelectedTenantForModal({ id: r._id, name: r.name, status: r.status })
+    onClick: () => setSelectedBusinessForModal({ id: r._id, name: r.name, status: r.status })
   }));
 
-  const filteredRestaurants = restaurants.filter((r) => {
+  const filteredBusinesses = businesses.filter((r) => {
     const matchesSearch =
       r.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       r.slug.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -266,10 +267,10 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
         onClose={() => setSelectedProduct(null)}
       />
 
-      {/* Tenant Status Confirmation Dialog */}
-      <TenantManagementModal
-        tenant={selectedTenantForModal}
-        onClose={() => setSelectedTenantForModal(null)}
+      {/* Business Status Confirmation Dialog */}
+      <BusinessManagementModal
+        business={selectedBusinessForModal}
+        onClose={() => setSelectedBusinessForModal(null)}
         onConfirm={handleToggleStatus}
       />
 
@@ -300,10 +301,10 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
         onExport={handleExport}
         user={user}
         onLogout={() => {
-          localStorage.removeItem('cafeos_token');
+          localStorage.removeItem(`${APP_SLUG}_token`);
           window.location.href = '/login';
         }}
-        restaurantsCount={restaurants.length || 3}
+        businessesCount={businesses.length || 3}
       />
 
       {/* Main Container */}
@@ -318,7 +319,7 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
               Good evening, {user?.name?.split(' ')[0] || 'Admin'} 👋
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 font-semibold mt-1">
-              Real-time multi-tenant café metrics, per-order fee settlements, & operations intelligence.
+              Real-time multi-tenant business metrics, per-order fee settlements, & operations intelligence.
             </p>
           </div>
 
@@ -342,7 +343,7 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
                     prefix="₹"
                   />
                 }
-                description="Total customer order volume processed across all active tenant cafés"
+                description="Total customer order volume processed across all active businesses"
                 badge={
                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-extrabold border border-emerald-200">
                     <ArrowUpRight className="w-3 h-3" /> +14.2%
@@ -445,7 +446,7 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
                       Revenue & Platform Settlement Overview
                     </h3>
                     <p className="text-xs text-slate-500 font-medium">
-                      Live comparison of gross café order GMV vs platform fee revenues
+                      Live comparison of gross business order GMV vs platform fee revenues
                     </p>
                   </div>
 
@@ -524,7 +525,7 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
                             <span className="text-[10px] text-slate-400 font-normal">· {order.time || 'Just now'}</span>
                           </div>
                           <div className="text-[11px] font-medium text-slate-500 mt-0.5">
-                            {order.cafeName || 'Artisan Roastery'} · {order.itemsCount || 3} items
+                            {order.businessName || 'Artisan Roastery'} · {order.itemsCount || 3} items
                           </div>
                         </div>
 
@@ -549,19 +550,19 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
               </div>
             </div>
 
-            {/* TENANT CAFÉS SHOWCASE */}
+            {/* BUSINESSES SHOWCASE */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-lg font-extrabold text-slate-900">
-                    Active Tenant Cafés Showcase
+                    Active Businesses Showcase
                   </h3>
                   <p className="text-xs text-slate-500 font-medium">
-                    Interactive hover grid for registered café operations
+                    Interactive hover grid for registered business operations
                   </p>
                 </div>
               </div>
-              <CardHoverEffect items={tenantHoverItems} />
+              <CardHoverEffect items={businessHoverItems} />
             </div>
 
             {/* MIDDLE SECTION: Peak Hours Heatmap & Best Sellers */}
@@ -668,7 +669,7 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
                         Smart Operational Insights
                       </h3>
                       <p className="text-xs text-slate-500 font-medium">
-                        Automated operational query intelligence across all active tenant cafés
+                        Automated operational query intelligence across all active businesses
                       </p>
                     </div>
                   </div>
@@ -697,15 +698,15 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
               </div>
             </CardSpotlight>
 
-            {/* TENANTS MANAGEMENT TABLE */}
+            {/* BUSINESSES MANAGEMENT TABLE */}
             <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <h3 className="text-lg font-extrabold text-slate-900">
-                    Registered Café Tenants Management
+                    Registered Businesses Management
                   </h3>
                   <p className="text-xs text-slate-500 font-medium">
-                    Detailed tenant status control, per-order fees, and accounts overview
+                    Detailed business status control, per-order fees, and accounts overview
                   </p>
                 </div>
 
@@ -714,7 +715,7 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
                     <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                     <input
                       type="text"
-                      placeholder="Search café by name or email..."
+                      placeholder="Search business by name or email..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="pl-9 pr-4 py-2 rounded-xl bg-slate-100 border border-slate-200 text-xs font-semibold outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100 transition-all"
@@ -727,7 +728,7 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
                 <table className="w-full text-left text-xs">
                   <thead className="text-slate-400 border-b border-slate-200 uppercase text-[10px] font-extrabold tracking-wider">
                     <tr>
-                      <th className="pb-3">Café Name</th>
+                      <th className="pb-3">Business Name</th>
                       <th className="pb-3">URL Slug</th>
                       <th className="pb-3">Contact Email</th>
                       <th className="pb-3">Per-Order Fee</th>
@@ -736,11 +737,11 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-slate-800">
-                    {filteredRestaurants.length === 0 ? (
+                    {filteredBusinesses.length === 0 ? (
                       <tr>
                         <td colSpan={6} className="py-8">
                           <EmptyState
-                            title="No registered cafés match your filter"
+                            title="No registered businesses match your filter"
                             description="Try clearing search keywords or resetting the status filter."
                             actionLabel="Reset Search Filter"
                             onAction={() => setSearchQuery('')}
@@ -748,7 +749,7 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
                         </td>
                       </tr>
                     ) : (
-                      filteredRestaurants.map((r) => (
+                      filteredBusinesses.map((r) => (
                         <tr key={r._id} className="hover:bg-slate-50 transition-colors">
                           <td className="py-4 font-bold text-slate-900 flex items-center gap-3">
                             <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-red-100 to-rose-100 text-red-600 flex items-center justify-center font-black text-xs border border-red-200">
@@ -779,7 +780,7 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
                           </td>
                           <td className="py-4 text-right">
                             <button
-                              onClick={() => setSelectedTenantForModal({ id: r._id, name: r.name, status: r.status })}
+                              onClick={() => setSelectedBusinessForModal({ id: r._id, name: r.name, status: r.status })}
                               className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-colors ${
                                 r.status === 'ACTIVE'
                                   ? 'bg-slate-100 text-slate-700 hover:bg-rose-100 hover:text-rose-700'
@@ -799,17 +800,17 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
           </>
         )}
 
-        {/* TAB 2: TENANTS & CAFES */}
-        {activeTab === 'restaurants' && (
+        {/* TAB 2: BUSINESSES */}
+        {activeTab === 'businesses' && (
           <div className="space-y-6">
             <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <h3 className="text-xl font-extrabold text-slate-900">
-                    Multi-Tenant Café Network ({restaurants.length})
+                    Multi-Tenant Business Network ({businesses.length})
                   </h3>
                   <p className="text-xs text-slate-500 font-medium">
-                    All registered outlet tenants, subscription statuses, and per-order fees
+                    All registered outlet businesses, subscription statuses, and per-order fees
                   </p>
                 </div>
 
@@ -834,7 +835,7 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
                     <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                     <input
                       type="text"
-                      placeholder="Search café..."
+                      placeholder="Search business..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="pl-9 pr-4 py-2 rounded-xl bg-slate-100 border border-slate-200 text-xs font-semibold outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100 transition-all"
@@ -844,7 +845,7 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                {filteredRestaurants.map((r) => (
+                {filteredBusinesses.map((r) => (
                   <div
                     key={r._id}
                     className="p-5 rounded-3xl bg-slate-50 border border-slate-200 space-y-4 hover:border-red-300 hover:shadow-md transition-all flex flex-col justify-between"
@@ -886,7 +887,7 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
                       </div>
 
                       <button
-                        onClick={() => setSelectedTenantForModal({ id: r._id, name: r.name, status: r.status })}
+                        onClick={() => setSelectedBusinessForModal({ id: r._id, name: r.name, status: r.status })}
                         className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-colors ${
                           r.status === 'ACTIVE'
                             ? 'bg-slate-200 text-slate-800 hover:bg-rose-100 hover:text-rose-700'
@@ -924,7 +925,7 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
                 },
                 {
                   label: 'Active Outlets',
-                  value: `${restaurants.length || 3} Outlets`,
+                  value: `${businesses.length || 3} Outlets`,
                   sub: '100% platform uptime',
                   subColor: 'text-slate-400',
                   valueColor: 'text-red-600',
@@ -1020,7 +1021,7 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
                   </div>
 
                   <div className="text-xs text-slate-500 font-medium">
-                    <div className="font-semibold text-slate-700">{ord.cafeName || 'The Artisan Roastery'}</div>
+                    <div className="font-semibold text-slate-700">{ord.businessName || 'The Artisan Roastery'}</div>
                     <div className="text-[11px] text-slate-400">Table: {ord.tableName || 'Table 01'}</div>
                   </div>
 
@@ -1058,7 +1059,7 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {(plans.length > 0 ? plans : [
-                { _id: '1', name: 'Free Starter', monthlyPricePaise: 0, perOrderFeePaise: 200, isPopular: false, description: 'For small kiosks & trial cafés' },
+                { _id: '1', name: 'Free Starter', monthlyPricePaise: 0, perOrderFeePaise: 200, isPopular: false, description: 'For small kiosks & trial businesses' },
                 { _id: '2', name: 'Basic Pro', monthlyPricePaise: 29900, perOrderFeePaise: 200, isPopular: true, description: 'Full digital menu, QR ordering & order management' },
                 { _id: '3', name: 'Premium Growth', monthlyPricePaise: 79900, perOrderFeePaise: 200, isPopular: false, description: 'Unlimited tables, advanced inventory & KDS' },
               ]).map((plan) => (

@@ -13,6 +13,7 @@ import {
 import { apiRequest } from '../services/api';
 import { getSocket } from '../services/socket';
 import { QRCodeSVG } from 'qrcode.react';
+import { APP_NAME, APP_SLUG } from '../constants/app';
 
 // ─── Status Config ──────────────────────────────────────────────────────────
 const STATUS_CONFIG: Record<string, { label: string; color: string; borderAccent: string; badgeBg: string; badgeText: string; dot: string }> = {
@@ -74,7 +75,7 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
   const [tables, setTables] = useState<any[]>([]);
   const [inventoryItems, setInventoryItems] = useState<any[]>([]);
   const [analytics, setAnalytics] = useState<any>(null);
-  const [restaurant, setRestaurant] = useState<any>(null);
+  const [business, setBusiness] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
   const [copiedUrl, setCopiedUrl] = useState(false);
@@ -147,7 +148,7 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
     try {
       setLoading(true);
       const profileRes = await apiRequest('/auth/me');
-      setRestaurant(profileRes.data.restaurant);
+      setBusiness(profileRes.data.business);
 
       const [ordersRes, catRes, prodRes, tblRes, invRes, analRes] = await Promise.all([
         apiRequest('/orders'),
@@ -165,9 +166,9 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
       setInventoryItems(invRes.data || []);
       setAnalytics(analRes.data || null);
 
-      if (profileRes.data.restaurant?._id) {
+      if (profileRes.data.business?._id) {
         const socket = getSocket();
-        socket.emit('join_tenant_room', profileRes.data.restaurant._id);
+        socket.emit('join_business_room', profileRes.data.business._id);
       }
     } catch (err) {
       console.error('Failed to load dashboard data:', err);
@@ -327,7 +328,7 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
   const lowStockCount = inventoryItems.filter(i => i.status !== 'IN_STOCK').length;
   const occupiedTables = tables.filter(t => t.status === 'OCCUPIED').length;
 
-  const publicMenuUrl = `${window.location.origin}/c/${restaurant?.slug || 'artisan-cafe'}`;
+  const publicMenuUrl = `${window.location.origin}/c/${business?.slug || 'artisan-cafe'}`;
 
   const copyMenuUrl = () => {
     navigator.clipboard.writeText(publicMenuUrl);
@@ -386,21 +387,21 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
           
           {/* Top Bar Row */}
           <div className="h-16 flex items-center justify-between gap-4 border-b border-slate-800/80">
-            {/* Café Brand Logo & Link */}
+            {/* Business Brand Logo & Link */}
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center shadow-lg shadow-orange-500/30 text-white font-black">
                 <Coffee className="w-5.5 h-5.5" />
               </div>
               <div>
                 <div className="text-base font-black text-white leading-tight flex items-center gap-2">
-                  <span>{restaurant?.name || 'The Artisan Roastery & Café'}</span>
+                  <span>{business?.name || 'The Artisan Roastery'}</span>
                   <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold">
-                    PRO CAFÉ
+                    PRO BUSINESS
                   </span>
                 </div>
                 <div className="text-[11px] font-medium text-slate-400 flex items-center gap-2 mt-0.5">
                   <span className="truncate max-w-[200px] sm:max-w-[300px]">
-                    /c/{restaurant?.slug || 'artisan-cafe'}
+                    /c/{business?.slug || 'artisan-cafe'}
                   </span>
                   <button
                     onClick={copyMenuUrl}
@@ -442,7 +443,7 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
               </button>
 
               <button
-                onClick={() => { localStorage.removeItem('cafeos_token'); window.location.href = '/login'; }}
+                onClick={() => { localStorage.removeItem(`${APP_SLUG}_token`); window.location.href = '/login'; }}
                 className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 transition-colors border border-slate-800 text-xs font-bold text-slate-300"
               >
                 <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-orange-500 to-amber-500 text-white font-black text-xs flex items-center justify-center shadow-xs">
@@ -785,7 +786,7 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
                   </span>
                 </div>
                 <p className="text-xs text-slate-500 font-medium mt-0.5">
-                  Search, review, inspect bills, and audit every café transaction by unique daily order sequence.
+                  Search, review, inspect bills, and audit every business transaction by unique daily order sequence.
                 </p>
               </div>
 
@@ -823,7 +824,7 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
               <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
                 <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Daily Sequence Prefix</span>
                 <div className="text-2xl font-black text-orange-600 font-mono">
-                  {restaurant?.shortCode || 'ART'}-DDMMYY
+                  {business?.shortCode || 'ART'}-DDMMYY
                 </div>
                 <span className="text-[10px] font-semibold text-slate-400">Auto-resets every midnight</span>
               </div>
@@ -831,7 +832,7 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
               <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
                 <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Timezone Scope</span>
                 <div className="text-2xl font-black text-indigo-600 truncate">
-                  {restaurant?.timezone || 'Asia/Kolkata'}
+                  {business?.timezone || 'Asia/Kolkata'}
                 </div>
                 <span className="text-[10px] font-semibold text-slate-400">Concurrency-safe MongoDB sequence</span>
               </div>
@@ -1151,7 +1152,7 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
               {tables.map(t => {
-                const qrUrl = `${window.location.origin}/c/${restaurant?.slug}/t/${t.qrToken}`;
+                const qrUrl = `${window.location.origin}/c/${business?.slug}/t/${t.qrToken}`;
                 const isOccupied = t.status === 'OCCUPIED';
 
                 return (
@@ -1269,23 +1270,23 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
         {activeTab === 'settings' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
-            {/* Left 2 Columns: Profile & Cafe Configuration */}
+            {/* Left 2 Columns: Profile & Business Configuration */}
             <div className="lg:col-span-2 space-y-6">
               
-              {/* Cafe Profile Card */}
+              {/* Business Profile Card */}
               <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 space-y-6">
                 <div className="flex items-center justify-between pb-4 border-b border-slate-100">
                   <div className="flex items-center gap-3">
                     <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-500 text-white font-black text-xl flex items-center justify-center shadow-md">
-                      {restaurant?.name?.charAt(0) || 'A'}
+                      {business?.name?.charAt(0) || 'A'}
                     </div>
                     <div>
-                      <h2 className="text-lg font-black text-slate-900">{restaurant?.name || 'The Artisan Roastery'}</h2>
+                      <h2 className="text-lg font-black text-slate-900">{business?.name || 'The Artisan Roastery'}</h2>
                       <div className="text-xs text-slate-400 font-semibold flex items-center gap-2 mt-0.5">
                         <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-black">
-                          ACTIVE CAFÉ
+                          ACTIVE BUSINESS
                         </span>
-                        <span>Slug: /c/{restaurant?.slug}</span>
+                        <span>Slug: /c/{business?.slug}</span>
                       </div>
                     </div>
                   </div>
@@ -1302,22 +1303,22 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
                     <span className="text-[10px] font-extrabold uppercase text-slate-400">Address Location</span>
-                    <div className="text-xs font-extrabold text-slate-800">{restaurant?.address || 'Bandra West, Mumbai'}</div>
+                    <div className="text-xs font-extrabold text-slate-800">{business?.address || 'Bandra West, Mumbai'}</div>
                   </div>
 
                   <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
                     <span className="text-[10px] font-extrabold uppercase text-slate-400">Contact Phone</span>
-                    <div className="text-xs font-extrabold text-slate-800">{restaurant?.phone || '+91 9876501234'}</div>
+                    <div className="text-xs font-extrabold text-slate-800">{business?.phone || '+91 9876501234'}</div>
                   </div>
 
                   <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
                     <span className="text-[10px] font-extrabold uppercase text-slate-400">Operating Hours</span>
-                    <div className="text-xs font-extrabold text-slate-800">{restaurant?.openingTime || '08:00'} – {restaurant?.closingTime || '23:00'}</div>
+                    <div className="text-xs font-extrabold text-slate-800">{business?.openingTime || '08:00'} – {business?.closingTime || '23:00'}</div>
                   </div>
 
                   <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
                     <span className="text-[10px] font-extrabold uppercase text-slate-400">GST Tax & Currency</span>
-                    <div className="text-xs font-extrabold text-slate-800">{restaurant?.taxRatePercentage || 5}% GST · {restaurant?.currency || 'INR'} (₹)</div>
+                    <div className="text-xs font-extrabold text-slate-800">{business?.taxRatePercentage || 5}% GST · {business?.currency || 'INR'} (₹)</div>
                   </div>
                 </div>
               </div>
@@ -1327,7 +1328,7 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                   <div className="flex items-center gap-2.5">
                     <ShieldCheck className="w-5 h-5 text-orange-500" />
-                    <h3 className="text-sm font-black text-slate-900">CaféOS Subscription Plan</h3>
+                    <h3 className="text-sm font-black text-slate-900">{APP_NAME} Subscription Plan</h3>
                   </div>
                   <span className="px-3 py-1 rounded-full bg-orange-500 text-white font-extrabold text-xs shadow-sm">
                     PREMIUM GROWTH PLAN
@@ -1578,10 +1579,10 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
                   <Coffee className="w-5 h-5" />
                 </div>
                 <h2 className="text-base font-black uppercase text-slate-900 tracking-wider">
-                  {selectedOrderForBill.restaurant?.name || 'THE ARTISAN ROASTERY & CAFÉ'}
+                  {selectedOrderForBill.business?.name || 'THE ARTISAN ROASTERY'}
                 </h2>
-                <p className="text-[10px] text-slate-500 font-sans">{selectedOrderForBill.restaurant?.address || 'Bandra West, Mumbai'}</p>
-                <p className="text-[10px] text-slate-500 font-sans">Phone: {selectedOrderForBill.restaurant?.phone || '+91 9876543210'}</p>
+                <p className="text-[10px] text-slate-500 font-sans">{selectedOrderForBill.business?.address || 'Bandra West, Mumbai'}</p>
+                <p className="text-[10px] text-slate-500 font-sans">Phone: {selectedOrderForBill.business?.phone || '+91 9876543210'}</p>
                 <div className="pt-2">
                   <span className="px-2.5 py-0.5 rounded-full bg-slate-100 border border-slate-300 text-[10px] font-bold text-slate-700 uppercase">
                     TAX INVOICE / E-BILL
@@ -1641,7 +1642,7 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
                   <span>₹{Math.round((selectedOrderForBill.subtotalPaise || 0) / 100)}</span>
                 </div>
                 <div className="flex justify-between text-slate-500">
-                  <span>GST ({selectedOrderForBill.restaurant?.taxRatePercentage || 5}%)</span>
+                  <span>GST ({selectedOrderForBill.business?.taxRatePercentage || 5}%)</span>
                   <span>₹{Math.round((selectedOrderForBill.taxPaise || 0) / 100)}</span>
                 </div>
                 <div className="flex justify-between text-sm font-black text-slate-900 pt-2 border-t border-slate-200">
@@ -1663,7 +1664,7 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
               {/* Receipt Footer */}
               <div className="text-center pt-2 text-[10px] font-sans text-slate-400 space-y-1">
                 <p>Thank you for visiting! ❤️</p>
-                <p className="font-mono text-[9px]">Powered by Café Flow POS System</p>
+                <p className="font-mono text-[9px]">Powered by {APP_NAME} POS System</p>
               </div>
 
             </div>

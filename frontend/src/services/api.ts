@@ -1,15 +1,18 @@
+import { APP_SLUG } from '../constants/app';
+
 const API_BASE_URL = '/api/v1';
+const AUTH_TOKEN_KEY = `${APP_SLUG}_token`;
 
 export const getAuthToken = (): string | null => {
-  return localStorage.getItem('cafeos_token');
+  return localStorage.getItem(AUTH_TOKEN_KEY);
 };
 
 export const setAuthToken = (token: string) => {
-  localStorage.setItem('cafeos_token', token);
+  localStorage.setItem(AUTH_TOKEN_KEY, token);
 };
 
 export const removeAuthToken = () => {
-  localStorage.removeItem('cafeos_token');
+  localStorage.removeItem(AUTH_TOKEN_KEY);
 };
 
 export const apiRequest = async (
@@ -35,6 +38,7 @@ export const apiRequest = async (
   });
 
   const data = await response.json();
+  console.log("data",data)
 
   if (!response.ok) {
     throw new Error(data.error?.message || 'An error occurred during request execution.');

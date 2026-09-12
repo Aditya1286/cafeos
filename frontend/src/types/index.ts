@@ -11,11 +11,11 @@ export interface User {
   name: string;
   email: string;
   role: UserRole;
-  tenantId?: string;
+  businessId?: string;
   status: 'ACTIVE' | 'INACTIVE';
 }
 
-export interface Restaurant {
+export interface Business {
   id: string;
   name: string;
   slug: string;
@@ -54,7 +54,7 @@ export interface SubscriptionPlan {
 
 export interface Category {
   _id: string;
-  tenantId: string;
+  businessId: string;
   name: string;
   description?: string;
   displayOrder: number;
@@ -73,7 +73,7 @@ export interface ProductAddon {
 
 export interface Product {
   _id: string;
-  tenantId: string;
+  businessId: string;
   categoryId: string | Category;
   name: string;
   description: string;
@@ -88,7 +88,7 @@ export interface Product {
 
 export interface TableItem {
   _id: string;
-  tenantId: string;
+  businessId: string;
   tableNumber: string;
   capacity: number;
   qrToken: string;
@@ -118,7 +118,7 @@ export interface OrderItemSnapshot {
 export interface Order {
   _id: string;
   orderNumber: string;
-  tenantId: string;
+  businessId: string;
   tableId: string;
   tableName: string;
   customerName: string;
@@ -128,7 +128,7 @@ export interface Order {
   taxPaise: number;
   platformFeePaise: number;
   totalAmountPaise: number;
-  restaurantEarningsPaise: number;
+  businessEarningsPaise: number;
   orderStatus: OrderStatus;
   paymentStatus: 'UNPAID' | 'PAID' | 'REFUNDED';
   paymentMethod: 'ONLINE' | 'CASH' | 'UPI';
@@ -138,8 +138,8 @@ export interface Order {
 export interface FinancialLedger {
   _id: string;
   transactionId: string;
-  tenantId: string;
-  type: 'ORDER_PAYMENT' | 'PLATFORM_FEE' | 'RESTAURANT_SETTLEMENT' | 'SUBSCRIPTION_FEE' | 'REFUND';
+  businessId: string;
+  type: 'ORDER_PAYMENT' | 'PLATFORM_FEE' | 'BUSINESS_SETTLEMENT' | 'SUBSCRIPTION_FEE' | 'REFUND';
   amountPaise: number;
   status: 'SUCCESS' | 'PENDING' | 'FAILED';
   paymentGatewayRef?: string;
@@ -149,7 +149,7 @@ export interface FinancialLedger {
 
 export interface InventoryItem {
   _id: string;
-  tenantId: string;
+  businessId: string;
   name: string;
   unit: 'KG' | 'GRAM' | 'LITER' | 'ML' | 'PIECE' | 'PACKET';
   currentStock: number;

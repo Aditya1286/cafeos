@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Coffee, Shield, LayoutDashboard, QrCode, LogOut } from 'lucide-react';
 import { getAuthToken, removeAuthToken } from '../services/api';
+import { APP_NAME } from '../constants/app';
 
 interface NavbarProps {
   user?: any;
@@ -28,7 +29,7 @@ export const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
           </div>
           <div>
             <span className="text-xl font-black tracking-tight text-slate-900 flex items-center gap-1.5">
-              CaféOS <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-50 text-red-600 font-bold border border-red-200">SaaS</span>
+              {APP_NAME} <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-50 text-red-600 font-bold border border-red-200">SaaS</span>
             </span>
             <p className="text-[10px] text-slate-500 font-semibold">Multi-Tenant Dining System</p>
           </div>
@@ -53,7 +54,7 @@ export const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
                 </Link>
               ) : (
                 <Link to="/dashboard" className="flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-xl bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition-all">
-                  <LayoutDashboard className="w-4 h-4 text-red-600" /> Café Dashboard
+                  <LayoutDashboard className="w-4 h-4 text-red-600" /> Business Dashboard
                 </Link>
               )}
 

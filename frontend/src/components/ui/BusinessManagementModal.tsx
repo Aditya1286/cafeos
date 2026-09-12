@@ -2,20 +2,20 @@ import React from 'react';
 import { AlertTriangle, ShieldCheck, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-interface TenantManagementModalProps {
-  tenant: { id: string; name: string; status: string } | null;
+interface BusinessManagementModalProps {
+  business: { id: string; name: string; status: string } | null;
   onClose: () => void;
   onConfirm: (id: string, newStatus: string) => void;
 }
 
-export const TenantManagementModal: React.FC<TenantManagementModalProps> = ({
-  tenant,
+export const BusinessManagementModal: React.FC<BusinessManagementModalProps> = ({
+  business,
   onClose,
   onConfirm,
 }) => {
-  if (!tenant) return null;
+  if (!business) return null;
 
-  const isSuspending = tenant.status === 'ACTIVE';
+  const isSuspending = business.status === 'ACTIVE';
   const targetStatus = isSuspending ? 'SUSPENDED' : 'ACTIVE';
 
   return (
@@ -48,11 +48,11 @@ export const TenantManagementModal: React.FC<TenantManagementModalProps> = ({
 
           <div>
             <h3 className="text-lg font-extrabold text-slate-900 mb-1">
-              {isSuspending ? 'Suspend Café Tenant Access?' : 'Reactivate Café Tenant Access?'}
+              {isSuspending ? 'Suspend Business Access?' : 'Reactivate Business Access?'}
             </h3>
             <p className="text-xs text-slate-500 leading-relaxed">
               Are you sure you want to change the status of{' '}
-              <span className="font-bold text-slate-900">{tenant.name}</span> to{' '}
+              <span className="font-bold text-slate-900">{business.name}</span> to{' '}
               <span className="font-bold">{targetStatus}</span>? This will take effect immediately across all QR orders and KDS terminals.
             </p>
           </div>
@@ -66,7 +66,7 @@ export const TenantManagementModal: React.FC<TenantManagementModalProps> = ({
             </button>
             <button
               onClick={() => {
-                onConfirm(tenant.id, targetStatus);
+                onConfirm(business.id, targetStatus);
                 onClose();
               }}
               className={`flex-1 py-2.5 rounded-xl text-white text-xs font-bold shadow transition-all ${
@@ -82,4 +82,4 @@ export const TenantManagementModal: React.FC<TenantManagementModalProps> = ({
   );
 };
 
-export default TenantManagementModal;
+export default BusinessManagementModal;

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Coffee, Heart } from 'lucide-react';
+import { APP_NAME } from '../constants/app';
 
 export const Footer: React.FC = () => {
   return (
@@ -10,10 +11,10 @@ export const Footer: React.FC = () => {
             <div className="w-8 h-8 rounded-lg bg-red-600 text-white flex items-center justify-center font-bold shadow-md shadow-red-600/20">
               <Coffee className="w-4 h-4" />
             </div>
-            <span className="text-lg font-black text-slate-900">CaféOS</span>
+            <span className="text-lg font-black text-slate-900">{APP_NAME}</span>
           </div>
           <p className="text-xs text-slate-500 leading-relaxed mb-4">
-            Next-generation multi-tenant SaaS platform empowering 10,000+ cafés & restaurants with contactless QR ordering, live KDS, inventory recipe BOM, and financial ledger settlements.
+            Next-generation multi-tenant SaaS platform empowering 10,000+ businesses with contactless QR ordering, live KDS, inventory recipe BOM, and financial ledger settlements.
           </p>
         </div>
 
@@ -31,7 +32,7 @@ export const Footer: React.FC = () => {
           <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900 mb-3">Interfaces</h4>
           <ul className="space-y-2 text-xs">
             <li><a href="/admin" className="hover:text-red-600 transition-colors">Super Admin Dashboard</a></li>
-            <li><a href="/dashboard" className="hover:text-red-600 transition-colors">Café Owner Dashboard</a></li>
+            <li><a href="/dashboard" className="hover:text-red-600 transition-colors">Business Owner Dashboard</a></li>
             <li><a href="/c/artisan-cafe/t/tok_artisan_tbl_01" className="hover:text-red-600 transition-colors">Customer Mobile Ordering</a></li>
           </ul>
         </div>
@@ -45,7 +46,7 @@ export const Footer: React.FC = () => {
       </div>
 
       <div className="max-w-7xl mx-auto pt-6 border-t border-slate-100 flex flex-col md:flex-row items-center justify-between text-xs text-slate-500">
-        <p>© 2026 CaféOS SaaS Platform. Built for Production & High Concurrency.</p>
+        <p>© 2026 {APP_NAME} SaaS Platform. Built for Production & High Concurrency.</p>
         <p className="flex items-center gap-1 mt-2 md:mt-0">
           Crafted with <Heart className="w-3.5 h-3.5 text-red-600 fill-red-600" /> using pure MERN Stack
         </p>
