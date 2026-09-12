@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { User, IUser } from '../models/User';
-import { Restaurant } from '../models/Restaurant';
+import { Business } from '../models/Business';
 import { SubscriptionPlan } from '../models/SubscriptionPlan';
 import { Subscription } from '../models/Subscription';
 import { config } from '../config';
@@ -9,7 +9,7 @@ import { AuthRequest } from '../middleware/auth';
 
 const generateToken = (user: IUser): string => {
   return jwt.sign(
-    { id: user._id, role: user.role, tenantId: user.tenantId },
+    { id: user._id, role: user.role, businessId: user.businessId },
     config.jwtSecret,
     { expiresIn: '7d' }
   );
@@ -17,12 +17,12 @@ const generateToken = (user: IUser): string => {
 
 export const register = async (req: Request, res: Response) => {
   try {
-    const { name, email, password, phone, restaurantName, slug } = req.body;
+    const { name, email, password, phone, businessName, slug } = req.body;
 
-    if (!name || !email || !password || !restaurantName || !slug) {
+    if (!name || !email || !password || !businessName || !slug) {
       return res.status(400).json({
         success: false,
-        error: { code: 'VALIDATION_ERROR', message: 'Name, email, password, restaurant name, and slug are required.' }
+        error: { code: 'VALIDATION_ERROR', message: 'Name, email, password, business name, and slug are required.' }
       });
     }
 
@@ -35,21 +35,21 @@ export const register = async (req: Request, res: Response) => {
     }
 
     const cleanSlug = slug.toLowerCase().trim().replace(/[^a-z0-9-]/g, '-');
-    const existingRestaurant = await Restaurant.findOne({ slug: cleanSlug });
-    if (existingRestaurant) {
+    const existingBusiness = await Business.findOne({ slug: cleanSlug });
+    if (existingBusiness) {
       return res.status(400).json({
         success: false,
-        error: { code: 'SLUG_EXISTS', message: 'Restaurant URL slug is already taken. Please choose another.' }
+        error: { code: 'SLUG_EXISTS', message: 'Business URL slug is already taken. Please choose another.' }
       });
     }
 
-    // 1. Create Restaurant Tenant
-    const restaurant = await Restaurant.create({
-      name: restaurantName,
+    // 1. Create Business Business
+    const business = await Business.create({
+      name: businessName,
       slug: cleanSlug,
       email: email.toLowerCase(),
       phone: phone || '',
-      address: 'Default Café Address, City',
+      address: 'Default Business Address, City',
       currency: 'INR',
       currencySymbol: '₹',
       taxRatePercentage: 5,
@@ -63,7 +63,7 @@ export const register = async (req: Request, res: Response) => {
       freePlan = await SubscriptionPlan.create({
         name: 'Basic Free',
         code: 'FREE',
-        description: 'Starter plan for new cafés',
+        description: 'Starter plan for new businesses',
         monthlyPricePaise: 0,
         annualPricePaise: 0,
         perOrderFeePaise: 200,
@@ -72,15 +72,15 @@ export const register = async (req: Request, res: Response) => {
     }
 
     const subscription = await Subscription.create({
-      tenantId: restaurant._id,
+      businessId: business._id,
       planId: freePlan._id,
       status: 'ACTIVE',
       currentPeriodStart: new Date(),
       currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
     });
 
-    restaurant.subscriptionId = subscription._id;
-    await restaurant.save();
+    business.subscriptionId = subscription._id;
+    await business.save();
 
     // 3. Create Owner User
     const passwordHash = await require('bcryptjs').hash(password, 10);
@@ -90,7 +90,7 @@ export const register = async (req: Request, res: Response) => {
       passwordHash,
       phone,
       role: 'OWNER',
-      tenantId: restaurant._id,
+      businessId: business._id,
       status: 'ACTIVE'
     });
 
@@ -104,7 +104,7 @@ export const register = async (req: Request, res: Response) => {
 
     return res.status(201).json({
       success: true,
-      message: 'Restaurant registered successfully',
+      message: 'Business registered successfully',
       data: {
         token,
         user: {
@@ -112,12 +112,12 @@ export const register = async (req: Request, res: Response) => {
           name: user.name,
           email: user.email,
           role: user.role,
-          tenantId: user.tenantId
+          businessId: user.businessId
         },
-        restaurant: {
-          id: restaurant._id,
-          name: restaurant.name,
-          slug: restaurant.slug
+        business: {
+          id: business._id,
+          name: business.name,
+          slug: business.slug
         }
       }
     });
@@ -168,13 +168,13 @@ export const login = async (req: Request, res: Response) => {
       });
     }
 
-    let restaurant = null;
-    if (user.tenantId) {
-      restaurant = await Restaurant.findById(user.tenantId);
-      if (restaurant && restaurant.status === 'SUSPENDED' && user.role !== 'SUPER_ADMIN') {
+    let business = null;
+    if (user.businessId) {
+      business = await Business.findById(user.businessId);
+      if (business && business.status === 'SUSPENDED' && user.role !== 'SUPER_ADMIN') {
         return res.status(403).json({
           success: false,
-          error: { code: 'RESTAURANT_SUSPENDED', message: 'Your café account is suspended. Please contact platform support.' }
+          error: { code: 'BUSINESS_SUSPENDED', message: 'Your business account is suspended. Please contact platform support.' }
         });
       }
     }
@@ -197,14 +197,14 @@ export const login = async (req: Request, res: Response) => {
           name: user.name,
           email: user.email,
           role: user.role,
-          tenantId: user.tenantId
+          businessId: user.businessId
         },
-        restaurant: restaurant ? {
-          id: restaurant._id,
-          name: restaurant.name,
-          slug: restaurant.slug,
-          logoUrl: restaurant.logoUrl,
-          currencySymbol: restaurant.currencySymbol
+        business: business ? {
+          id: business._id,
+          name: business.name,
+          slug: business.slug,
+          logoUrl: business.logoUrl,
+          currencySymbol: business.currencySymbol
         } : null
       }
     });
@@ -219,9 +219,9 @@ export const login = async (req: Request, res: Response) => {
 export const getMe = async (req: AuthRequest, res: Response) => {
   try {
     const user = req.user;
-    let restaurant = null;
-    if (user?.tenantId) {
-      restaurant = await Restaurant.findById(user.tenantId);
+    let business = null;
+    if (user?.businessId) {
+      business = await Business.findById(user.businessId);
     }
 
     return res.json({
@@ -232,9 +232,9 @@ export const getMe = async (req: AuthRequest, res: Response) => {
           name: user?.name,
           email: user?.email,
           role: user?.role,
-          tenantId: user?.tenantId
+          businessId: user?.businessId
         },
-        restaurant
+        business
       }
     });
   } catch (error: any) {
