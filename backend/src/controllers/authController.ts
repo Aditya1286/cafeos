@@ -142,6 +142,7 @@ export const login = async (req: Request, res: Response) => {
 
     const cleanEmail = email.toLowerCase().trim();
     const user = await User.findOne({ email: cleanEmail }).select('+passwordHash');
+
     if (!user) {
       console.warn(`[Auth] Login failed: User not found for email '${cleanEmail}'`);
       return res.status(401).json({
@@ -151,6 +152,7 @@ export const login = async (req: Request, res: Response) => {
     }
 
     const isMatch = await user.comparePassword(password);
+    console.log("MATCH>>>")
     if (!isMatch) {
       console.warn(`[Auth] Login failed: Password mismatch for email '${cleanEmail}'`);
       return res.status(401).json({
