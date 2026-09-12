@@ -1,17 +1,33 @@
 import React, { useState, useEffect } from 'react';
+import { openUpiApp } from '@/utils/upiIntent';
 import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  Coffee, ShoppingBag, Search, Plus, Minus, CheckCircle2, 
-  ArrowRight, CreditCard, ChevronRight, X, Sparkles, Clock, Star, MapPin, ShieldCheck
+import {
+  Coffee,
+  ShoppingBag,
+  Search,
+  Plus,
+  Minus,
+  CheckCircle2,
+  ArrowRight,
+  CreditCard,
+  ChevronRight,
+  X,
+  Sparkles,
+  Clock,
+  Star,
+  MapPin,
+  ShieldCheck,
 } from 'lucide-react';
 import { apiRequest } from '../services/api';
 import confetti from 'canvas-confetti';
+import { useOtpVerification } from '@/hooks/useOtpVerification';
+import { formatTime } from '@/utils/DateUtils';
 
 export const CustomerMenuPage: React.FC = () => {
   const { slug, qrToken } = useParams<{ slug: string; qrToken?: string }>();
   const navigate = useNavigate();
 
-  const [restaurant, setRestaurant] = useState<any>(null);
+  const [business, setBusiness] = useState<any>(null);
   const [table, setTable] = useState<any>(null);
   const [categories, setCategories] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
@@ -30,22 +46,27 @@ export const CustomerMenuPage: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  //Adding custom otp handler
+  const otp = useOtpVerification(customerPhone);
+
   useEffect(() => {
-    const fetchCafeAndMenu = async () => {
+    const fetchBusinessAndMenu = async () => {
       try {
         if (qrToken) {
           const tblRes = await apiRequest(`/public/t/${qrToken}`);
           setTable(tblRes.data.table);
-          setRestaurant(tblRes.data.restaurant);
+          setBusiness(tblRes.data.business);
 
-          const menuRes = await apiRequest(`/public/c/${tblRes.data.restaurant.id || tblRes.data.restaurant._id}/menu`);
+          const menuRes = await apiRequest(
+            `/public/c/${tblRes.data.business.id || tblRes.data.business._id}/menu`,
+          );
           setCategories(menuRes.data.categories || []);
           setProducts(menuRes.data.products || []);
         } else if (slug) {
-          const cafeRes = await apiRequest(`/public/c/${slug}`);
-          setRestaurant(cafeRes.data);
+          const businessRes = await apiRequest(`/public/c/${slug}`);
+          setBusiness(businessRes.data);
 
-          const menuRes = await apiRequest(`/public/c/${cafeRes.data._id}/menu`);
+          const menuRes = await apiRequest(`/public/c/${businessRes.data._id}/menu`);
           setCategories(menuRes.data.categories || []);
           setProducts(menuRes.data.products || []);
         }
@@ -54,7 +75,7 @@ export const CustomerMenuPage: React.FC = () => {
       }
     };
 
-    fetchCafeAndMenu();
+    fetchBusinessAndMenu();
   }, [slug, qrToken]);
 
   const handleAddToCart = (product: any) => {
@@ -81,8 +102,11 @@ export const CustomerMenuPage: React.FC = () => {
   };
 
   const cartItemsList = Object.values(cart);
-  const cartSubtotalPaise = cartItemsList.reduce((acc, item) => acc + item.product.pricePaise * item.quantity, 0);
-  const taxRate = restaurant?.taxRatePercentage || 5;
+  const cartSubtotalPaise = cartItemsList.reduce(
+    (acc, item) => acc + item.product.pricePaise * item.quantity,
+    0,
+  );
+  const taxRate = business?.taxRatePercentage || 5;
   const taxPaise = Math.round((cartSubtotalPaise * taxRate) / 100);
   const totalAmountPaise = cartSubtotalPaise + taxPaise;
 
@@ -92,7 +116,10 @@ export const CustomerMenuPage: React.FC = () => {
       alert('Please enter your name and phone number');
       return;
     }
-
+    if (!otp.otpVerified) {
+      alert('Please verify your phone number first.');
+      return;
+    }
     setSubmitting(true);
     try {
       const payload = {
@@ -103,18 +130,30 @@ export const CustomerMenuPage: React.FC = () => {
         items: cartItemsList.map((item) => ({
           productId: item.product._id,
           quantity: item.quantity,
-          name: item.product.name
-        }))
+          name: item.product.name,
+        })),
       };
 
       const res = await apiRequest('/public/orders', 'POST', payload);
 
-      // Launch Confetti!
+      if (paymentMethod !== 'CASH') {
+        if (!business?.upiVpa) {
+          console.error('Business has no UPI VPA configured — skipping intent.');
+        } else {
+          openUpiApp({
+            payeeVpa: business.upiVpa,
+            payeeName: business.name,
+            amount: totalAmountPaise / 100,
+            transactionRef: res.data._id,
+          });
+        }
+      }
+
       try {
         confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
       } catch (e) {}
 
-      navigate(`/c/${restaurant?.slug}/order/${res.data._id}`);
+      navigate(`/c/${business?.slug}/order/${res.data._id}`);
     } catch (err: any) {
       alert(err.message || 'Failed to place order.');
     } finally {
@@ -131,17 +170,19 @@ export const CustomerMenuPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 pb-28 selection:bg-orange-500 selection:text-white max-w-md mx-auto relative shadow-xl border-x border-slate-200 font-sans">
-      
       {/* ── Top Hero Header (Swiggy / Zomato Aesthetic) ────────────────── */}
       <div className="relative bg-white border-b border-slate-200">
         <div className="h-44 relative overflow-hidden bg-slate-100">
           <img
-            src={restaurant?.coverImageUrl || 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=800&q=80'}
-            alt="Café Cover"
+            src={
+              business?.coverImageUrl ||
+              'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=800&q=80'
+            }
+            alt="Business Cover"
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-          
+
           {/* Table Badge */}
           <div className="absolute top-4 right-4 z-10 px-3.5 py-1.5 rounded-full bg-white/95 backdrop-blur-md shadow-md text-xs font-black text-orange-600 border border-orange-200 flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
@@ -149,17 +190,17 @@ export const CustomerMenuPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Restaurant Card Overlay */}
+        {/* Business Card Overlay */}
         <div className="px-4 pb-4 -mt-10 relative z-10">
           <div className="bg-white rounded-3xl p-4 shadow-lg border border-slate-100 space-y-2">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h1 className="text-xl font-black text-slate-900 leading-tight">
-                  {restaurant?.name || 'The Artisan Roastery'}
+                  {business?.name || 'The Artisan Roastery'}
                 </h1>
                 <p className="text-xs text-slate-500 font-medium mt-0.5 flex items-center gap-1">
                   <MapPin className="w-3 h-3 text-orange-500 shrink-0" />
-                  <span className="truncate">{restaurant?.address || 'Bandra West, Mumbai'}</span>
+                  <span className="truncate">{business?.address || 'Bandra West, Mumbai'}</span>
                 </p>
               </div>
 
@@ -205,8 +246,12 @@ export const CustomerMenuPage: React.FC = () => {
                 : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
             }`}
           >
-            <span className={`w-3 h-3 rounded-sm border flex items-center justify-center ${isVegOnly ? 'border-emerald-600 bg-white' : 'border-slate-400'}`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${isVegOnly ? 'bg-emerald-600' : 'bg-slate-400'}`} />
+            <span
+              className={`w-3 h-3 rounded-sm border flex items-center justify-center ${isVegOnly ? 'border-emerald-600 bg-white' : 'border-slate-400'}`}
+            >
+              <span
+                className={`w-1.5 h-1.5 rounded-full ${isVegOnly ? 'bg-emerald-600' : 'bg-slate-400'}`}
+              />
             </span>
             Veg Only
           </button>
@@ -260,10 +305,14 @@ export const CustomerMenuPage: React.FC = () => {
                 <div className="flex-1 min-w-0 pr-2">
                   <div className="flex items-center gap-2 mb-1">
                     {/* Veg/Non-Veg icon badge */}
-                    <span className={`w-4 h-4 rounded-sm border-2 flex items-center justify-center shrink-0 ${
-                      product.isVeg ? 'border-emerald-600' : 'border-rose-600'
-                    }`}>
-                      <span className={`w-2 h-2 rounded-full ${product.isVeg ? 'bg-emerald-600' : 'bg-rose-600'}`} />
+                    <span
+                      className={`w-4 h-4 rounded-sm border-2 flex items-center justify-center shrink-0 ${
+                        product.isVeg ? 'border-emerald-600' : 'border-rose-600'
+                      }`}
+                    >
+                      <span
+                        className={`w-2 h-2 rounded-full ${product.isVeg ? 'bg-emerald-600' : 'bg-rose-600'}`}
+                      />
                     </span>
                     {product.preparationTimeMinutes && (
                       <span className="text-[10px] font-bold text-slate-400">
@@ -290,7 +339,10 @@ export const CustomerMenuPage: React.FC = () => {
                 {/* Right side image & ADD button */}
                 <div className="relative shrink-0 flex flex-col items-center">
                   <img
-                    src={product.imageUrl || 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=500&q=80'}
+                    src={
+                      product.imageUrl ||
+                      'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=500&q=80'
+                    }
                     alt={product.name}
                     className="w-28 h-28 rounded-2xl object-cover shadow-sm bg-slate-100"
                   />
@@ -358,7 +410,6 @@ export const CustomerMenuPage: React.FC = () => {
       {showCheckoutDrawer && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-end justify-center">
           <div className="w-full max-w-md bg-white rounded-t-3xl shadow-2xl border-t border-slate-200 p-6 space-y-5 max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom duration-300">
-            
             {/* Sheet Header */}
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div>
@@ -366,7 +417,7 @@ export const CustomerMenuPage: React.FC = () => {
                   <ShoppingBag className="w-4 h-4 text-orange-500" /> Confirm Your Order
                 </h3>
                 <p className="text-xs text-slate-400 font-medium">
-                  {table ? table.tableNumber : 'Table 01'} • {restaurant?.name || 'Artisan Café'}
+                  {table ? table.tableNumber : 'Table 01'} • {business?.name || 'Artisan Roastery'}
                 </p>
               </div>
               <button
@@ -382,8 +433,12 @@ export const CustomerMenuPage: React.FC = () => {
               {cartItemsList.map((item) => (
                 <div key={item.product._id} className="flex justify-between items-center text-xs">
                   <div className="flex items-center gap-2">
-                    <span className={`w-2.5 h-2.5 rounded-sm border flex items-center justify-center ${item.product.isVeg ? 'border-emerald-600' : 'border-rose-600'}`}>
-                      <span className={`w-1 h-1 rounded-full ${item.product.isVeg ? 'bg-emerald-600' : 'bg-rose-600'}`} />
+                    <span
+                      className={`w-2.5 h-2.5 rounded-sm border flex items-center justify-center ${item.product.isVeg ? 'border-emerald-600' : 'border-rose-600'}`}
+                    >
+                      <span
+                        className={`w-1 h-1 rounded-full ${item.product.isVeg ? 'bg-emerald-600' : 'bg-rose-600'}`}
+                      />
                     </span>
                     <span className="font-bold text-slate-800">{item.product.name}</span>
                     <span className="text-slate-400 font-medium">× {item.quantity}</span>
@@ -414,7 +469,9 @@ export const CustomerMenuPage: React.FC = () => {
             {/* Guest Details Form */}
             <form onSubmit={handlePlaceOrder} className="space-y-3.5 pt-1">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Customer Name *</label>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Customer Name *
+                </label>
                 <input
                   type="text"
                   required
@@ -426,24 +483,102 @@ export const CustomerMenuPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Phone Number *</label>
-                <input
-                  type="tel"
-                  required
-                  placeholder="e.g. 9876543210"
-                  value={customerPhone}
-                  onChange={(e) => setCustomerPhone(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 font-medium outline-none focus:border-orange-500 focus:bg-white focus:ring-2 focus:ring-orange-100 transition-all"
-                />
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Phone Number *
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="tel"
+                    required
+                    disabled={otp.otpVerified}
+                    placeholder="e.g. 9876543210"
+                    value={customerPhone}
+                    onChange={(e) =>
+                      setCustomerPhone(e.target.value.replace(/\D/g, '').slice(0, 10))
+                    }
+                    className="flex-1 px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 font-medium outline-none focus:border-orange-500 focus:bg-white focus:ring-2 focus:ring-orange-100 transition-all disabled:opacity-60"
+                  />
+                  {!otp.otpVerified && (
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={otp.sendOtp}
+                        disabled={otp.sending || !otp.canResend}
+                        className="px-3.5 py-2.5 rounded-xl bg-slate-900 text-white text-[11px] font-extrabold whitespace-nowrap disabled:opacity-40 transition-all"
+                      >
+                        {otp.sending ? 'Sending...' : otp.otpSent ? 'Resend OTP' : 'Send OTP'}
+                      </button>
+
+                      {otp.otpSent && !otp.canResend && (
+                        <span className="flex items-center gap-1 text-[11px] font-bold text-slate-400 tabular-nums">
+                          <Clock className="w-3.5 h-3.5" />
+                          {formatTime(otp.resendSecondsLeft)}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Staging-only: backend echoes the OTP back instead of sending a
+                    real SMS, so testers don't need a phone to complete the flow.
+                    This never appears against the production OTP provider. */}
+                {otp.devOtp && (
+                  <div className="mt-2 flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-amber-50 border border-dashed border-amber-300 animate-in fade-in slide-in-from-top-1 duration-200">
+                    <span className="flex items-center gap-1.5 text-[10px] font-extrabold text-amber-700">
+                      <span className="px-1.5 py-0.5 rounded-md bg-amber-400/30 uppercase tracking-wider">
+                        Staging
+                      </span>
+                      Test OTP
+                    </span>
+                    <span className="text-sm font-black text-amber-800 tracking-[0.2em]">
+                      {otp.devOtp}
+                    </span>
+                  </div>
+                )}
+
+                {otp.otpVerified && (
+                  <p className="mt-1.5 text-[11px] font-bold text-emerald-600 flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Phone verified
+                  </p>
+                )}
+
+                {otp.otpSent && !otp.otpVerified && (
+                  <div className="mt-2 flex gap-2">
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="Enter OTP"
+                      value={otp.otpCode}
+                      onChange={(e) =>
+                        otp.setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))
+                      }
+                      className="flex-1 px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 font-medium outline-none focus:border-orange-500 focus:bg-white focus:ring-2 focus:ring-orange-100 transition-all"
+                    />
+                    <button
+                      type="button"
+                      onClick={otp.verifyOtp}
+                      disabled={otp.verifying}
+                      className="px-3.5 py-2.5 rounded-xl bg-emerald-600 text-white text-[11px] font-extrabold whitespace-nowrap disabled:opacity-40"
+                    >
+                      {otp.verifying ? 'Verifying...' : 'Verify'}
+                    </button>
+                  </div>
+                )}
+
+                {otp.error && (
+                  <p className="mt-1.5 text-[11px] font-bold text-rose-600">{otp.error}</p>
+                )}
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">Payment Method</label>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  Payment Method
+                </label>
                 <div className="grid grid-cols-3 gap-2">
                   {[
                     { id: 'ONLINE', label: 'Online' },
                     { id: 'UPI', label: 'UPI' },
-                    { id: 'CASH', label: 'Pay at Counter' }
+                    { id: 'CASH', label: 'Pay at Counter' },
                   ].map((pm) => (
                     <button
                       key={pm.id}
@@ -463,11 +598,13 @@ export const CustomerMenuPage: React.FC = () => {
 
               <button
                 type="submit"
-                disabled={submitting}
+                disabled={submitting || !otp.otpVerified}
                 className="w-full py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-xl shadow-emerald-600/30 transition-all disabled:opacity-50 uppercase tracking-wider flex items-center justify-center gap-2 mt-3"
               >
                 {submitting ? (
                   <span>Placing Order...</span>
+                ) : !otp.otpVerified ? (
+                  <span>Verify phone to continue</span>
                 ) : (
                   <>
                     <span>Pay & Place Order • ₹{(totalAmountPaise / 100).toFixed(0)}</span>

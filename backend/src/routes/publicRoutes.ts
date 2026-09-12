@@ -3,28 +3,37 @@ import { getTableByToken } from '../controllers/tableController';
 import { getPublicMenu } from '../controllers/menuController';
 import { createOrder, getOrderById } from '../controllers/orderController';
 import { SubscriptionPlan } from '../models/SubscriptionPlan';
-import { Restaurant } from '../models/Restaurant';
+import { Business } from '../models/Business';
+import { confirmOtp, requestOtp } from '../controllers/otp.controller';
+import { verifyOtp } from '../services/otp.service';
 
 const router = Router();
 
-// Public: Resolve QR code token to Cafe & Table info
+// Public: Resolve QR code token to Business & Table info
 router.get('/t/:token', getTableByToken);
 
-// Public: Fetch Cafe info and menu by slug
+// Public: Fetch Business info and menu by slug
 router.get('/c/:slug', async (req, res) => {
   try {
     const { slug } = req.params;
-    const restaurant = await Restaurant.findOne({ slug: slug.toLowerCase(), status: 'ACTIVE' });
-    if (!restaurant) {
-      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Café not found or inactive.' } });
+    const business = await Business.findOne({ slug: slug.toLowerCase(), status: 'ACTIVE' });
+    if (!business) {
+      return res
+        .status(404)
+        .json({
+          success: false,
+          error: { code: 'NOT_FOUND', message: 'Business not found or inactive.' },
+        });
     }
-    return res.json({ success: true, data: restaurant });
+    return res.json({ success: true, data: business });
   } catch (error: any) {
-    return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
+    return res
+      .status(500)
+      .json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
   }
 });
 
-router.get('/c/:tenantId/menu', getPublicMenu);
+router.get('/c/:businessId/menu', getPublicMenu);
 
 // Public: Order endpoints
 router.post('/orders', createOrder);
@@ -36,8 +45,13 @@ router.get('/plans', async (req, res) => {
     const plans = await SubscriptionPlan.find({ status: 'ACTIVE' });
     return res.json({ success: true, data: plans });
   } catch (error: any) {
-    return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
+    return res
+      .status(500)
+      .json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
   }
 });
+
+router.post('/otp/request', requestOtp);
+router.post('/otp/verify', confirmOtp);
 
 export default router;
