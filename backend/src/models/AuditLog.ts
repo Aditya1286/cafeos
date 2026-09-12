@@ -2,10 +2,10 @@ import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IAuditLog extends Document {
   _id: mongoose.Types.ObjectId;
-  tenantId?: mongoose.Types.ObjectId;
+  businessId?: mongoose.Types.ObjectId;
   userId?: mongoose.Types.ObjectId;
   userEmail: string;
-  action: string; // e.g. "PRODUCT_PRICE_UPDATED", "RESTAURANT_SUSPENDED", "ORDER_REFUNDED"
+  action: string; // e.g. "PRODUCT_PRICE_UPDATED", "BUSINESS_SUSPENDED", "ORDER_REFUNDED"
   details: Record<string, any>;
   ipAddress?: string;
   createdAt: Date;
@@ -13,7 +13,7 @@ export interface IAuditLog extends Document {
 
 const AuditLogSchema = new Schema<IAuditLog>(
   {
-    tenantId: { type: Schema.Types.ObjectId, ref: 'Restaurant', index: true },
+    businessId: { type: Schema.Types.ObjectId, ref: 'Business', index: true },
     userId: { type: Schema.Types.ObjectId, ref: 'User' },
     userEmail: { type: String, required: true },
     action: { type: String, required: true, index: true },
@@ -23,6 +23,6 @@ const AuditLogSchema = new Schema<IAuditLog>(
   { timestamps: { createdAt: true, updatedAt: false } }
 );
 
-AuditLogSchema.index({ tenantId: 1, createdAt: -1 });
+AuditLogSchema.index({ businessId: 1, createdAt: -1 });
 
 export const AuditLog = mongoose.model<IAuditLog>('AuditLog', AuditLogSchema);

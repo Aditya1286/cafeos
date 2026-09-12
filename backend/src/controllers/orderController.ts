@@ -1,13 +1,13 @@
 import { Request, Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { Order, OrderStatus } from '../models/Order';
-import { Restaurant } from '../models/Restaurant';
+import { Business } from '../models/Business';
 import { Table } from '../models/Table';
 import { Product } from '../models/Product';
 import { Recipe } from '../models/Recipe';
 import { InventoryItem } from '../models/InventoryItem';
 import { InventoryTransaction } from '../models/InventoryTransaction';
-import { emitToTenant, emitToOrder } from '../websocket/socketManager';
+import { emitToBusiness, emitToOrder } from '../websocket/socketManager';
 import { generateDailyOrderId } from '../utils/orderSequence';
 import mongoose from 'mongoose';
 
@@ -35,7 +35,7 @@ export const createOrder = async (req: Request, res: Response) => {
       }
     }
 
-    // 2. Validate Table & Restaurant Tenant
+    // 2. Validate Table & Business Business
     const table = await Table.findOne({ qrToken });
     if (!table) {
       return res.status(404).json({
@@ -44,11 +44,11 @@ export const createOrder = async (req: Request, res: Response) => {
       });
     }
 
-    const restaurant = await Restaurant.findById(table.tenantId);
-    if (!restaurant || restaurant.status === 'SUSPENDED') {
+    const business = await Business.findById(table.businessId);
+    if (!business || business.status === 'SUSPENDED') {
       return res.status(403).json({
         success: false,
-        error: { code: 'RESTAURANT_INACTIVE', message: 'This café is currently inactive.' }
+        error: { code: 'BUSINESS_INACTIVE', message: 'This business is currently inactive.' }
       });
     }
 
@@ -57,7 +57,7 @@ export const createOrder = async (req: Request, res: Response) => {
     const itemSnapshots = [];
 
     for (const item of items) {
-      const product = await Product.findOne({ _id: item.productId, tenantId: restaurant._id });
+      const product = await Product.findOne({ _id: item.productId, businessId: business._id });
       if (!product || !product.isAvailable) {
         return res.status(400).json({
           success: false,
@@ -104,18 +104,18 @@ export const createOrder = async (req: Request, res: Response) => {
     }
 
     // Calculate Tax & Platform Fee
-    const taxPaise = Math.round((subtotalPaise * (restaurant.taxRatePercentage || 5)) / 100);
-    const platformFeePaise = restaurant.perOrderFeePaise || 200; // ₹2
+    const taxPaise = Math.round((subtotalPaise * (business.taxRatePercentage || 5)) / 100);
+    const platformFeePaise = business.perOrderFeePaise || 200; // ₹2
     const totalAmountPaise = subtotalPaise + taxPaise;
-    const restaurantEarningsPaise = totalAmountPaise - platformFeePaise;
+    const businessEarningsPaise = totalAmountPaise - platformFeePaise;
 
     // 4. Generate Atomic Daily Order ID (e.g. ART-120926-0001)
-    const { orderId, dateKey, sequenceNumber } = await generateDailyOrderId(restaurant._id);
+    const { orderId, dateKey, sequenceNumber } = await generateDailyOrderId(business._id);
 
     const order = await Order.create({
       orderId,
       orderNumber: orderId,
-      tenantId: restaurant._id,
+      businessId: business._id,
       dateKey,
       sequenceNumber,
       tableId: table._id,
@@ -128,7 +128,7 @@ export const createOrder = async (req: Request, res: Response) => {
       taxPaise,
       platformFeePaise,
       totalAmountPaise,
-      restaurantEarningsPaise,
+      businessEarningsPaise,
       orderStatus: 'PLACED',
       paymentStatus: paymentMethod === 'ONLINE' ? 'PAID' : 'UNPAID',
       paymentMethod: paymentMethod || 'ONLINE',
@@ -143,7 +143,7 @@ export const createOrder = async (req: Request, res: Response) => {
     await table.save();
 
     // 5. Trigger Realtime WebSocket Notification
-    emitToTenant(restaurant._id.toString(), 'order:new', {
+    emitToBusiness(business._id.toString(), 'order:new', {
       _id: order._id,
       orderId: order.orderId,
       orderNumber: order.orderNumber,
@@ -187,16 +187,16 @@ export const getOrderById = async (req: Request, res: Response) => {
       return res.status(404).json({ success: false, error: { code: 'ORDER_NOT_FOUND', message: 'Order not found' } });
     }
 
-    const restaurant = await Restaurant.findById(order.tenantId);
+    const business = await Business.findById(order.businessId);
 
     // Calculate customer statistics
     const customerOrderCount = await Order.countDocuments({
-      tenantId: order.tenantId,
+      businessId: order.businessId,
       customerPhone: order.customerPhone
     });
     
     const customerTotalSpendRes = await Order.aggregate([
-      { $match: { tenantId: order.tenantId, customerPhone: order.customerPhone, paymentStatus: 'PAID' } },
+      { $match: { businessId: order.businessId, customerPhone: order.customerPhone, paymentStatus: 'PAID' } },
       { $group: { _id: null, totalSpendPaise: { $sum: '$totalAmountPaise' } } }
     ]);
     
@@ -210,14 +210,14 @@ export const getOrderById = async (req: Request, res: Response) => {
           previousOrdersCount: customerOrderCount,
           lifetimeSpendPaise: customerTotalSpendPaise
         },
-        restaurant: restaurant ? {
-          name: restaurant.name,
-          slug: restaurant.slug,
-          logoUrl: restaurant.logoUrl,
-          currencySymbol: restaurant.currencySymbol,
-          address: restaurant.address,
-          phone: restaurant.phone,
-          taxRatePercentage: restaurant.taxRatePercentage
+        business: business ? {
+          name: business.name,
+          slug: business.slug,
+          logoUrl: business.logoUrl,
+          currencySymbol: business.currencySymbol,
+          address: business.address,
+          phone: business.phone,
+          taxRatePercentage: business.taxRatePercentage
         } : null
       }
     });
@@ -230,7 +230,7 @@ export const getOrderById = async (req: Request, res: Response) => {
 export const getOrders = async (req: AuthRequest, res: Response) => {
   try {
     const { status, paymentStatus, paymentMethod, q, page, limit, startDate, endDate } = req.query;
-    const query: any = { tenantId: req.tenantId };
+    const query: any = { businessId: req.businessId };
 
     if (status && status !== 'ALL') {
       query.orderStatus = status;
@@ -300,7 +300,7 @@ export const searchOrders = async (req: AuthRequest, res: Response) => {
 
     const searchRegex = new RegExp((q as string).trim(), 'i');
     const orders = await Order.find({
-      tenantId: req.tenantId,
+      businessId: req.businessId,
       $or: [
         { orderId: searchRegex },
         { orderNumber: searchRegex },
@@ -333,9 +333,9 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    let order = await Order.findOne({ _id: id, tenantId: req.tenantId });
+    let order = await Order.findOne({ _id: id, businessId: req.businessId });
     if (!order) {
-      order = await Order.findOne({ orderId: id, tenantId: req.tenantId });
+      order = await Order.findOne({ orderId: id, businessId: req.businessId });
     }
 
     if (!order) {
@@ -360,7 +360,7 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
     // Deduct stock if order is COMPLETED or CONFIRMED (Automatic BOM Deduction)
     if (status === 'COMPLETED' || status === 'CONFIRMED') {
       for (const item of order.items) {
-        const recipe = await Recipe.findOne({ productId: item.productId, tenantId: req.tenantId });
+        const recipe = await Recipe.findOne({ productId: item.productId, businessId: req.businessId });
         if (recipe && recipe.ingredients && recipe.ingredients.length > 0) {
           for (const ing of recipe.ingredients) {
             const totalQuantityNeeded = ing.quantityRequired * item.quantity;
@@ -376,7 +376,7 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
               await invItem.save();
 
               await InventoryTransaction.create({
-                tenantId: req.tenantId,
+                businessId: req.businessId,
                 inventoryItemId: invItem._id,
                 type: 'USAGE_AUTO',
                 quantityChanged: -totalQuantityNeeded,
@@ -397,7 +397,7 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
       paymentStatus: order.paymentStatus
     });
 
-    emitToTenant(req.tenantId!.toString(), 'order:updated', {
+    emitToBusiness(req.businessId!.toString(), 'order:updated', {
       orderId: order.orderId,
       orderStatus: order.orderStatus
     });
@@ -425,7 +425,7 @@ export const getOrderBill = async (req: Request, res: Response) => {
       return res.status(404).json({ success: false, error: { code: 'ORDER_NOT_FOUND', message: 'Order not found' } });
     }
 
-    const restaurant = await Restaurant.findById(order.tenantId);
+    const business = await Business.findById(order.businessId);
 
     return res.json({
       success: true,
@@ -433,12 +433,12 @@ export const getOrderBill = async (req: Request, res: Response) => {
         billNumber: order.orderId,
         orderId: order.orderId,
         date: order.createdAt,
-        restaurant: {
-          name: restaurant?.name || 'Café Flow',
-          address: restaurant?.address || 'Mumbai, India',
-          phone: restaurant?.phone || '+91 9876543210',
-          currencySymbol: restaurant?.currencySymbol || '₹',
-          taxRatePercentage: restaurant?.taxRatePercentage || 5
+        business: {
+          name: business?.name || 'Business',
+          address: business?.address || 'Mumbai, India',
+          phone: business?.phone || '+91 9876543210',
+          currencySymbol: business?.currencySymbol || '₹',
+          taxRatePercentage: business?.taxRatePercentage || 5
         },
         customer: {
           name: order.customerName,

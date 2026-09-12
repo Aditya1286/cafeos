@@ -6,7 +6,7 @@ import mongoose from 'mongoose';
 
 export interface AuthRequest extends Request {
   user?: IUser;
-  tenantId?: mongoose.Types.ObjectId;
+  businessId?: mongoose.Types.ObjectId;
 }
 
 export const protect = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -26,9 +26,10 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
       });
     }
 
-    const decoded = jwt.verify(token, config.jwtSecret) as { id: string; role: UserRole; tenantId?: string };
+    const decoded = jwt.verify(token, config.jwtSecret) as { id: string; role: UserRole; businessId?: string };
 
     const currentUser = await User.findById(decoded.id);
+    console.log("CURRENT USER >>>>>>>>>> ", currentUser)
 
     if (!currentUser || currentUser.status !== 'ACTIVE') {
       return res.status(401).json({
@@ -38,8 +39,10 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
     }
 
     req.user = currentUser;
-    if (currentUser.tenantId) {
-      req.tenantId = currentUser.tenantId;
+    console.log("CURRENT USER >>>>>>>>>> ", currentUser)
+    if (currentUser.businessId) {
+      console.log("TYPE>>>>>>",typeof currentUser.businessId , currentUser.businessId)
+      req.businessId = currentUser.businessId;
     }
 
     next();

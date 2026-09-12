@@ -1,22 +1,22 @@
 import mongoose from 'mongoose';
 import { DailyOrderCounter } from '../models/DailyOrderCounter';
-import { Restaurant } from '../models/Restaurant';
+import { Business } from '../models/Business';
 
 /**
- * Generates an atomic, concurrency-safe daily order ID per café + date in local timezone.
- * Format: {CAFE_CODE}-{DDMMYY}-{SEQUENCE_PADDED}
+ * Generates an atomic, concurrency-safe daily order ID per business + date in local timezone.
+ * Format: {BIZ_CODE}-{DDMMYY}-{SEQUENCE_PADDED}
  * Example: ART-120926-0001
  */
-export const generateDailyOrderId = async (tenantId: mongoose.Types.ObjectId | string) => {
-  // 1. Fetch restaurant for shortCode and timezone
-  const restaurant = await Restaurant.findById(tenantId);
-  const timezone = restaurant?.timezone || 'Asia/Kolkata';
+export const generateDailyOrderId = async (businessId: mongoose.Types.ObjectId | string) => {
+  // 1. Fetch business for shortCode and timezone
+  const business = await Business.findById(businessId);
+  const timezone = business?.timezone || 'Asia/Kolkata';
   
   // Generate short code (e.g., "The Artisan Roastery" -> "ART" or slug "artisan-cafe" -> "ART")
-  let shortCode = restaurant?.shortCode;
+  let shortCode = business?.shortCode;
   if (!shortCode) {
-    if (restaurant?.name) {
-      const parts = restaurant.name.replace(/[^a-zA-Z\s]/g, '').trim().split(/\s+/);
+    if (business?.name) {
+      const parts = business.name.replace(/[^a-zA-Z\s]/g, '').trim().split(/\s+/);
       if (parts.length >= 3) {
         shortCode = (parts[0][0] + parts[1][0] + parts[2][0]).toUpperCase();
       } else if (parts.length === 2) {
@@ -25,7 +25,7 @@ export const generateDailyOrderId = async (tenantId: mongoose.Types.ObjectId | s
         shortCode = parts[0].substring(0, 3).toUpperCase();
       }
     } else {
-      shortCode = 'CAF';
+      shortCode = 'BIZ';
     }
   }
 
@@ -51,7 +51,7 @@ export const generateDailyOrderId = async (tenantId: mongoose.Types.ObjectId | s
   let counter;
   try {
     counter = await DailyOrderCounter.findOneAndUpdate(
-      { tenantId: new mongoose.Types.ObjectId(tenantId.toString()), dateKey },
+      { businessId: new mongoose.Types.ObjectId(businessId.toString()), dateKey },
       { $inc: { sequence: 1 } },
       { new: true, upsert: true }
     );
@@ -59,7 +59,7 @@ export const generateDailyOrderId = async (tenantId: mongoose.Types.ObjectId | s
     // Retry once if duplicate key race condition occurs during simultaneous upsert
     if (err.code === 11000) {
       counter = await DailyOrderCounter.findOneAndUpdate(
-        { tenantId: new mongoose.Types.ObjectId(tenantId.toString()), dateKey },
+        { businessId: new mongoose.Types.ObjectId(businessId.toString()), dateKey },
         { $inc: { sequence: 1 } },
         { new: true, upsert: true }
       );

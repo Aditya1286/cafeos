@@ -43,7 +43,7 @@ export interface IOrder extends Document {
   _id: mongoose.Types.ObjectId;
   orderId: string; // Unique human-readable daily ID e.g., "ART-120926-0001"
   orderNumber: string; // Display number string e.g. "ART-120926-0001" or "#1042"
-  tenantId: mongoose.Types.ObjectId;
+  businessId: mongoose.Types.ObjectId;
   dateKey?: string; // Format: "YYYY-MM-DD"
   sequenceNumber?: number; // Daily sequence number
   tableId: mongoose.Types.ObjectId;
@@ -59,7 +59,7 @@ export interface IOrder extends Document {
   platformFeePaise: number; // Fixed platform fee e.g. ₹2 = 200 paise
   serviceChargePaise: number;
   totalAmountPaise: number;
-  restaurantEarningsPaise: number; // totalAmountPaise - platformFeePaise
+  businessEarningsPaise: number; // totalAmountPaise - platformFeePaise
   orderStatus: OrderStatus;
   paymentStatus: PaymentStatus;
   paymentMethod: PaymentMethod;
@@ -101,7 +101,7 @@ const OrderSchema = new Schema<IOrder>(
   {
     orderId: { type: String, required: true, index: true },
     orderNumber: { type: String, required: true, index: true },
-    tenantId: { type: Schema.Types.ObjectId, ref: 'Restaurant', required: true, index: true },
+    businessId: { type: Schema.Types.ObjectId, ref: 'Business', required: true, index: true },
     dateKey: { type: String, index: true },
     sequenceNumber: { type: Number },
     tableId: { type: Schema.Types.ObjectId, ref: 'Table', required: true },
@@ -121,7 +121,7 @@ const OrderSchema = new Schema<IOrder>(
     platformFeePaise: { type: Number, required: true, default: 200 },
     serviceChargePaise: { type: Number, default: 0 },
     totalAmountPaise: { type: Number, required: true },
-    restaurantEarningsPaise: { type: Number, required: true },
+    businessEarningsPaise: { type: Number, required: true },
     orderStatus: {
       type: String,
       enum: ['PLACED', 'CONFIRMED', 'PREPARING', 'READY', 'SERVED', 'COMPLETED', 'CANCELLED', 'REFUNDED'],
@@ -149,10 +149,10 @@ const OrderSchema = new Schema<IOrder>(
 );
 
 // Indexes for fast multi-tenant order searching and filtering
-OrderSchema.index({ tenantId: 1, orderId: 1 });
-OrderSchema.index({ tenantId: 1, createdAt: -1 });
-OrderSchema.index({ tenantId: 1, orderStatus: 1 });
-OrderSchema.index({ tenantId: 1, paymentStatus: 1 });
-OrderSchema.index({ tenantId: 1, customerPhone: 1, createdAt: -1 });
+OrderSchema.index({ businessId: 1, orderId: 1 });
+OrderSchema.index({ businessId: 1, createdAt: -1 });
+OrderSchema.index({ businessId: 1, orderStatus: 1 });
+OrderSchema.index({ businessId: 1, paymentStatus: 1 });
+OrderSchema.index({ businessId: 1, customerPhone: 1, createdAt: -1 });
 
 export const Order = mongoose.model<IOrder>('Order', OrderSchema);

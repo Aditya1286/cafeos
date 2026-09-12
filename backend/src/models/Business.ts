@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
-export interface IRestaurant extends Document {
+export interface IBusiness extends Document {
   _id: mongoose.Types.ObjectId;
   name: string;
   slug: string;
@@ -23,7 +23,7 @@ export interface IRestaurant extends Document {
   updatedAt: Date;
 }
 
-const RestaurantSchema = new Schema<IRestaurant>(
+const BusinessSchema = new Schema<IBusiness>(
   {
     name: { type: String, required: true, trim: true },
     slug: { type: String, required: true, unique: true, lowercase: true, trim: true },
@@ -38,7 +38,7 @@ const RestaurantSchema = new Schema<IRestaurant>(
     perOrderFeePaise: { type: Number, default: 200 }, // ₹2
     openingTime: { type: String, default: '08:00' },
     closingTime: { type: String, default: '22:00' },
-    shortCode: { type: String, default: 'ART' },
+    shortCode: { type: String, default: 'BIZ' },
     timezone: { type: String, default: 'Asia/Kolkata' },
     status: { type: String, enum: ['ACTIVE', 'SUSPENDED'], default: 'ACTIVE' },
     subscriptionId: { type: Schema.Types.ObjectId, ref: 'Subscription' }
@@ -46,6 +46,6 @@ const RestaurantSchema = new Schema<IRestaurant>(
   { timestamps: true }
 );
 
-RestaurantSchema.index({ status: 1 });
+BusinessSchema.index({ status: 1 });
 
-export const Restaurant = mongoose.model<IRestaurant>('Restaurant', RestaurantSchema);
+export const Business = mongoose.model<IBusiness>('Business', BusinessSchema);

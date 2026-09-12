@@ -5,6 +5,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import { config } from './config';
+import { APP_NAME } from './config/constants';
 import { connectDB } from './database';
 import { seedDatabase } from './database/seed';
 import { initSocketServer } from './websocket/socketManager';
@@ -51,7 +52,7 @@ app.use('/api/v1/public', publicRoutes);
 
 // Health Check
 app.get('/health', (req, res) => {
-  res.json({ status: 'UP', service: 'CaféOS SaaS Backend API', timestamp: new Date() });
+  res.json({ status: 'UP', service: `${APP_NAME} SaaS Backend API`, timestamp: new Date() });
 });
 
 // Centralized Error Handler
@@ -67,7 +68,7 @@ process.on('unhandledRejection', (reason, promise) => {
 // Connect DB & Start Server
 const startServer = async () => {
   await connectDB();
-  await seedDatabase(true);
+  await seedDatabase(false);
 
   const port = Number(config.port) || 5000;
   
@@ -77,7 +78,7 @@ const startServer = async () => {
 
   httpServer.listen(port, '0.0.0.0', () => {
     console.log(`===================================================`);
-    console.log(`🚀 CaféOS Multi-Tenant Backend running on port ${port}`);
+    console.log(`🚀 ${APP_NAME} Multi-Tenant Backend running on port ${port}`);
     console.log(`📡 WebSocket Engine ready`);
     console.log(`🌐 Health Check: http://0.0.0.0:${port}/health`);
     console.log(`===================================================`);

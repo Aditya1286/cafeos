@@ -7,7 +7,7 @@ export interface IRecipeIngredient {
 
 export interface IRecipe extends Document {
   _id: mongoose.Types.ObjectId;
-  tenantId: mongoose.Types.ObjectId;
+  businessId: mongoose.Types.ObjectId;
   productId: mongoose.Types.ObjectId;
   ingredients: IRecipeIngredient[];
   createdAt: Date;
@@ -16,7 +16,7 @@ export interface IRecipe extends Document {
 
 const RecipeSchema = new Schema<IRecipe>(
   {
-    tenantId: { type: Schema.Types.ObjectId, ref: 'Restaurant', required: true, index: true },
+    businessId: { type: Schema.Types.ObjectId, ref: 'Business', required: true, index: true },
     productId: { type: Schema.Types.ObjectId, ref: 'Product', required: true, unique: true, index: true },
     ingredients: [
       {
@@ -28,6 +28,6 @@ const RecipeSchema = new Schema<IRecipe>(
   { timestamps: true }
 );
 
-RecipeSchema.index({ tenantId: 1, productId: 1 });
+RecipeSchema.index({ businessId: 1, productId: 1 });
 
 export const Recipe = mongoose.model<IRecipe>('Recipe', RecipeSchema);

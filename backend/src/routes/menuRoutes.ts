@@ -4,12 +4,12 @@ import {
   getProducts, createProduct, updateProduct, deleteProduct
 } from '../controllers/menuController';
 import { protect } from '../middleware/auth';
-import { enforceTenant } from '../middleware/tenant';
+import { enforceBusiness } from '../middleware/business';
 import { restrictTo } from '../middleware/rbac';
 
 const router = Router();
 
-router.use(protect, enforceTenant);
+router.use(protect, enforceBusiness);
 
 // Category Routes
 router.get('/categories', getCategories);

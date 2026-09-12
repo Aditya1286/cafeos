@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import {
-  getSuperAdminOverview, getAllRestaurants, toggleRestaurantStatus,
+  getSuperAdminOverview, getAllBusinesses, toggleBusinessStatus,
   createSubscriptionPlan, updateSubscriptionPlan, getSystemHealth
 } from '../controllers/superAdminController';
 import { protect } from '../middleware/auth';
@@ -11,8 +11,8 @@ const router = Router();
 router.use(protect, restrictTo('SUPER_ADMIN'));
 
 router.get('/overview', getSuperAdminOverview);
-router.get('/restaurants', getAllRestaurants);
-router.put('/restaurants/:id/status', toggleRestaurantStatus);
+router.get('/businesses', getAllBusinesses);
+router.put('/businesses/:id/status', toggleBusinessStatus);
 
 router.post('/plans', createSubscriptionPlan);
 router.put('/plans/:id', updateSubscriptionPlan);

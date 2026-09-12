@@ -2,7 +2,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 
 export interface ISubscription extends Document {
   _id: mongoose.Types.ObjectId;
-  tenantId: mongoose.Types.ObjectId;
+  businessId: mongoose.Types.ObjectId;
   planId: mongoose.Types.ObjectId;
   status: 'ACTIVE' | 'CANCELLED' | 'PAST_DUE';
   billingCycle: 'MONTHLY' | 'ANNUAL';
@@ -15,7 +15,7 @@ export interface ISubscription extends Document {
 
 const SubscriptionSchema = new Schema<ISubscription>(
   {
-    tenantId: { type: Schema.Types.ObjectId, ref: 'Restaurant', required: true, index: true },
+    businessId: { type: Schema.Types.ObjectId, ref: 'Business', required: true, index: true },
     planId: { type: Schema.Types.ObjectId, ref: 'SubscriptionPlan', required: true },
     status: { type: String, enum: ['ACTIVE', 'CANCELLED', 'PAST_DUE'], default: 'ACTIVE' },
     billingCycle: { type: String, enum: ['MONTHLY', 'ANNUAL'], default: 'MONTHLY' },
@@ -26,6 +26,6 @@ const SubscriptionSchema = new Schema<ISubscription>(
   { timestamps: true }
 );
 
-SubscriptionSchema.index({ tenantId: 1, status: 1 });
+SubscriptionSchema.index({ businessId: 1, status: 1 });
 
 export const Subscription = mongoose.model<ISubscription>('Subscription', SubscriptionSchema);

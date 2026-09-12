@@ -1,11 +1,11 @@
 import { Request, Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { Table } from '../models/Table';
-import { Restaurant } from '../models/Restaurant';
+import { Business } from '../models/Business';
 import qrcode from 'qrcode';
 import { v4 as uuidv4 } from 'uuid';
 
-// Public: Resolve QR code token to Cafe & Table info
+// Public: Resolve QR code token to Business & Table info
 export const getTableByToken = async (req: Request, res: Response) => {
   try {
     const { token } = req.params;
@@ -18,11 +18,11 @@ export const getTableByToken = async (req: Request, res: Response) => {
       });
     }
 
-    const restaurant = await Restaurant.findById(table.tenantId);
-    if (!restaurant || restaurant.status === 'SUSPENDED') {
+    const business = await Business.findById(table.businessId);
+    if (!business || business.status === 'SUSPENDED') {
       return res.status(403).json({
         success: false,
-        error: { code: 'RESTAURANT_INACTIVE', message: 'This restaurant is currently inactive.' }
+        error: { code: 'BUSINESS_INACTIVE', message: 'This business is currently inactive.' }
       });
     }
 
@@ -35,14 +35,14 @@ export const getTableByToken = async (req: Request, res: Response) => {
           capacity: table.capacity,
           qrToken: table.qrToken
         },
-        restaurant: {
-          id: restaurant._id,
-          name: restaurant.name,
-          slug: restaurant.slug,
-          logoUrl: restaurant.logoUrl,
-          coverImageUrl: restaurant.coverImageUrl,
-          currencySymbol: restaurant.currencySymbol,
-          taxRatePercentage: restaurant.taxRatePercentage
+        business: {
+          id: business._id,
+          name: business.name,
+          slug: business.slug,
+          logoUrl: business.logoUrl,
+          coverImageUrl: business.coverImageUrl,
+          currencySymbol: business.currencySymbol,
+          taxRatePercentage: business.taxRatePercentage
         }
       }
     });
@@ -54,7 +54,7 @@ export const getTableByToken = async (req: Request, res: Response) => {
 // Owner/Staff: List tables
 export const getTables = async (req: AuthRequest, res: Response) => {
   try {
-    const tables = await Table.find({ tenantId: req.tenantId }).sort({ tableNumber: 1 });
+    const tables = await Table.find({ businessId: req.businessId }).sort({ tableNumber: 1 });
     return res.json({ success: true, data: tables });
   } catch (error: any) {
     return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
@@ -65,10 +65,10 @@ export const getTables = async (req: AuthRequest, res: Response) => {
 export const createTable = async (req: AuthRequest, res: Response) => {
   try {
     const { tableNumber, capacity } = req.body;
-    const qrToken = `qr_${req.tenantId?.toString().slice(-6)}_${uuidv4().substring(0, 8)}`;
+    const qrToken = `qr_${req.businessId?.toString().slice(-6)}_${uuidv4().substring(0, 8)}`;
 
     const table = await Table.create({
-      tenantId: req.tenantId,
+      businessId: req.businessId,
       tableNumber,
       capacity: capacity || 4,
       qrToken,
@@ -85,11 +85,11 @@ export const createTable = async (req: AuthRequest, res: Response) => {
 export const getTableQRCode = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const table = await Table.findOne({ _id: id, tenantId: req.tenantId });
+    const table = await Table.findOne({ _id: id, businessId: req.businessId });
     if (!table) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Table not found' } });
 
-    const restaurant = await Restaurant.findById(req.tenantId);
-    const targetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/c/${restaurant?.slug}/t/${table.qrToken}`;
+    const business = await Business.findById(req.businessId);
+    const targetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/c/${business?.slug}/t/${table.qrToken}`;
 
     const qrDataUrl = await qrcode.toDataURL(targetUrl, {
       margin: 2,
@@ -117,7 +117,7 @@ export const getTableQRCode = async (req: AuthRequest, res: Response) => {
 export const deleteTable = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    await Table.findOneAndDelete({ _id: id, tenantId: req.tenantId });
+    await Table.findOneAndDelete({ _id: id, businessId: req.businessId });
     return res.json({ success: true, message: 'Table deleted' });
   } catch (error: any) {
     return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });

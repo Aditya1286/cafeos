@@ -4,7 +4,7 @@ export type InventoryTransactionType = 'USAGE_AUTO' | 'PURCHASE' | 'WASTAGE' | '
 
 export interface IInventoryTransaction extends Document {
   _id: mongoose.Types.ObjectId;
-  tenantId: mongoose.Types.ObjectId;
+  businessId: mongoose.Types.ObjectId;
   inventoryItemId: mongoose.Types.ObjectId;
   type: InventoryTransactionType;
   quantityChanged: number; // positive for addition, negative for deduction
@@ -17,7 +17,7 @@ export interface IInventoryTransaction extends Document {
 
 const InventoryTransactionSchema = new Schema<IInventoryTransaction>(
   {
-    tenantId: { type: Schema.Types.ObjectId, ref: 'Restaurant', required: true, index: true },
+    businessId: { type: Schema.Types.ObjectId, ref: 'Business', required: true, index: true },
     inventoryItemId: { type: Schema.Types.ObjectId, ref: 'InventoryItem', required: true, index: true },
     type: {
       type: String,
@@ -32,7 +32,7 @@ const InventoryTransactionSchema = new Schema<IInventoryTransaction>(
   { timestamps: true }
 );
 
-InventoryTransactionSchema.index({ tenantId: 1, createdAt: -1 });
+InventoryTransactionSchema.index({ businessId: 1, createdAt: -1 });
 
 export const InventoryTransaction = mongoose.model<IInventoryTransaction>(
   'InventoryTransaction',

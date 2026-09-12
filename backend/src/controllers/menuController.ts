@@ -4,13 +4,13 @@ import { Category } from '../models/Category';
 import { Product } from '../models/Product';
 import { Request } from 'express';
 
-// Public: Get menu by restaurant slug
+// Public: Get menu by business slug
 export const getPublicMenu = async (req: Request, res: Response) => {
   try {
-    const { tenantId } = req.params;
+    const { businessId } = req.params;
     
-    const categories = await Category.find({ tenantId, isAvailable: true }).sort({ displayOrder: 1 });
-    const products = await Product.find({ tenantId, isAvailable: true }).sort({ displayOrder: 1 });
+    const categories = await Category.find({ businessId, isAvailable: true }).sort({ displayOrder: 1 });
+    const products = await Product.find({ businessId, isAvailable: true }).sort({ displayOrder: 1 });
 
     return res.json({
       success: true,
@@ -30,7 +30,7 @@ export const getPublicMenu = async (req: Request, res: Response) => {
 // Owner/Staff: Categories
 export const getCategories = async (req: AuthRequest, res: Response) => {
   try {
-    const categories = await Category.find({ tenantId: req.tenantId }).sort({ displayOrder: 1 });
+    const categories = await Category.find({ businessId: req.businessId }).sort({ displayOrder: 1 });
     return res.json({ success: true, data: categories });
   } catch (error: any) {
     return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
@@ -41,7 +41,7 @@ export const createCategory = async (req: AuthRequest, res: Response) => {
   try {
     const { name, description, displayOrder } = req.body;
     const category = await Category.create({
-      tenantId: req.tenantId,
+      businessId: req.businessId,
       name,
       description: description || '',
       displayOrder: displayOrder || 0
@@ -56,7 +56,7 @@ export const updateCategory = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const category = await Category.findOneAndUpdate(
-      { _id: id, tenantId: req.tenantId },
+      { _id: id, businessId: req.businessId },
       req.body,
       { new: true }
     );
@@ -70,8 +70,8 @@ export const updateCategory = async (req: AuthRequest, res: Response) => {
 export const deleteCategory = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    await Category.findOneAndDelete({ _id: id, tenantId: req.tenantId });
-    await Product.deleteMany({ categoryId: id, tenantId: req.tenantId });
+    await Category.findOneAndDelete({ _id: id, businessId: req.businessId });
+    await Product.deleteMany({ categoryId: id, businessId: req.businessId });
     return res.json({ success: true, message: 'Category and associated products deleted' });
   } catch (error: any) {
     return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
@@ -81,7 +81,7 @@ export const deleteCategory = async (req: AuthRequest, res: Response) => {
 // Owner/Staff: Products
 export const getProducts = async (req: AuthRequest, res: Response) => {
   try {
-    const products = await Product.find({ tenantId: req.tenantId }).populate('categoryId').sort({ displayOrder: 1 });
+    const products = await Product.find({ businessId: req.businessId }).populate('categoryId').sort({ displayOrder: 1 });
     return res.json({ success: true, data: products });
   } catch (error: any) {
     return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
@@ -92,7 +92,7 @@ export const createProduct = async (req: AuthRequest, res: Response) => {
   try {
     const { name, categoryId, description, pricePaise, imageUrl, isVeg, preparationTimeMinutes, variants, addons } = req.body;
     const product = await Product.create({
-      tenantId: req.tenantId,
+      businessId: req.businessId,
       categoryId,
       name,
       description: description || '',
@@ -113,7 +113,7 @@ export const updateProduct = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const product = await Product.findOneAndUpdate(
-      { _id: id, tenantId: req.tenantId },
+      { _id: id, businessId: req.businessId },
       req.body,
       { new: true }
     );
@@ -127,7 +127,7 @@ export const updateProduct = async (req: AuthRequest, res: Response) => {
 export const deleteProduct = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    await Product.findOneAndDelete({ _id: id, tenantId: req.tenantId });
+    await Product.findOneAndDelete({ _id: id, businessId: req.businessId });
     return res.json({ success: true, message: 'Product deleted' });
   } catch (error: any) {
     return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });

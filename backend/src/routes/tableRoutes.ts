@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import { getTables, createTable, getTableQRCode, deleteTable } from '../controllers/tableController';
 import { protect } from '../middleware/auth';
-import { enforceTenant } from '../middleware/tenant';
+import { enforceBusiness } from '../middleware/business';
 import { restrictTo } from '../middleware/rbac';
 
 const router = Router();
 
-router.use(protect, enforceTenant);
+router.use(protect, enforceBusiness);
 
 router.get('/', getTables);
 router.post('/', restrictTo('SUPER_ADMIN', 'OWNER', 'MANAGER'), createTable);

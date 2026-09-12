@@ -2,7 +2,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 
 export interface INotification extends Document {
   _id: mongoose.Types.ObjectId;
-  tenantId: mongoose.Types.ObjectId;
+  businessId: mongoose.Types.ObjectId;
   recipientRole?: string; // 'OWNER' | 'RECEPTIONIST' | 'ALL'
   title: string;
   message: string;
@@ -15,7 +15,7 @@ export interface INotification extends Document {
 
 const NotificationSchema = new Schema<INotification>(
   {
-    tenantId: { type: Schema.Types.ObjectId, ref: 'Restaurant', required: true, index: true },
+    businessId: { type: Schema.Types.ObjectId, ref: 'Business', required: true, index: true },
     recipientRole: { type: String, default: 'ALL' },
     title: { type: String, required: true },
     message: { type: String, required: true },
@@ -26,6 +26,6 @@ const NotificationSchema = new Schema<INotification>(
   { timestamps: true }
 );
 
-NotificationSchema.index({ tenantId: 1, isRead: 1, createdAt: -1 });
+NotificationSchema.index({ businessId: 1, isRead: 1, createdAt: -1 });
 
 export const Notification = mongoose.model<INotification>('Notification', NotificationSchema);

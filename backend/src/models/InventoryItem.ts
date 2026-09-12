@@ -4,7 +4,7 @@ export type InventoryUnit = 'KG' | 'GRAM' | 'LITER' | 'ML' | 'PIECE' | 'PACKET';
 
 export interface IInventoryItem extends Document {
   _id: mongoose.Types.ObjectId;
-  tenantId: mongoose.Types.ObjectId;
+  businessId: mongoose.Types.ObjectId;
   name: string;
   unit: InventoryUnit;
   currentStock: number;
@@ -19,7 +19,7 @@ export interface IInventoryItem extends Document {
 
 const InventoryItemSchema = new Schema<IInventoryItem>(
   {
-    tenantId: { type: Schema.Types.ObjectId, ref: 'Restaurant', required: true, index: true },
+    businessId: { type: Schema.Types.ObjectId, ref: 'Business', required: true, index: true },
     name: { type: String, required: true, trim: true },
     unit: { 
       type: String, 
@@ -40,7 +40,7 @@ const InventoryItemSchema = new Schema<IInventoryItem>(
   { timestamps: true }
 );
 
-InventoryItemSchema.index({ tenantId: 1, name: 1 });
-InventoryItemSchema.index({ tenantId: 1, status: 1 });
+InventoryItemSchema.index({ businessId: 1, name: 1 });
+InventoryItemSchema.index({ businessId: 1, status: 1 });
 
 export const InventoryItem = mongoose.model<IInventoryItem>('InventoryItem', InventoryItemSchema);

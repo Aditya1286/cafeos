@@ -1,7 +1,8 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
+import { APP_NAME, APP_SLUG } from '../config/constants';
 import { User } from '../models/User';
-import { Restaurant } from '../models/Restaurant';
+import { Business } from '../models/Business';
 import { SubscriptionPlan } from '../models/SubscriptionPlan';
 import { Subscription } from '../models/Subscription';
 import { Category } from '../models/Category';
@@ -21,12 +22,12 @@ export const seedDatabase = async (forceClean: boolean = false) => {
       return;
     }
 
-    console.log('[Seed] Initializing database seed with 2 Dummy Cafés & Financial Ledgers...');
+    console.log('[Seed] Initializing database seed with 2 Dummy Businesses & Financial Ledgers...');
 
     if (forceClean || existingUsers === 0) {
       await Promise.all([
         User.deleteMany({}),
-        Restaurant.deleteMany({}),
+        Business.deleteMany({}),
         SubscriptionPlan.deleteMany({}),
         Subscription.deleteMany({}),
         Category.deleteMany({}),
@@ -46,7 +47,7 @@ export const seedDatabase = async (forceClean: boolean = false) => {
       {
         name: 'Free Starter',
         code: 'FREE',
-        description: 'For small kiosks & trial cafés',
+        description: 'For small kiosks & trial businesses',
         monthlyPricePaise: 0,
         annualPricePaise: 0,
         perOrderFeePaise: 200,
@@ -86,8 +87,8 @@ export const seedDatabase = async (forceClean: boolean = false) => {
     const commonPasswordHash = await bcrypt.hash('password123', 10);
 
     await User.create({
-      name: 'CaféOS Global Admin',
-      email: 'admin@cafeos.com',
+      name: `${APP_NAME} Global Admin`,
+      email: `admin@${APP_SLUG}.com`,
       passwordHash: commonPasswordHash,
       phone: '+919876543210',
       role: 'SUPER_ADMIN',
@@ -95,10 +96,10 @@ export const seedDatabase = async (forceClean: boolean = false) => {
     });
 
     // -------------------------------------------------------------------------
-    // 3. DUMMY CAFÉ #1: The Artisan Roastery & Café (slug: artisan-cafe)
+    // 3. DUMMY BUSINESS #1: The Artisan Roastery & Café (slug: artisan-cafe)
     // -------------------------------------------------------------------------
-    console.log('[Seed] Seeding Dummy Café #1: The Artisan Roastery...');
-    const cafe1 = await Restaurant.create({
+    console.log('[Seed] Seeding Dummy Business #1: The Artisan Roastery...');
+    const business1 = await Business.create({
       name: 'The Artisan Roastery & Café',
       slug: 'artisan-cafe',
       logoUrl: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=400&q=80',
@@ -116,16 +117,16 @@ export const seedDatabase = async (forceClean: boolean = false) => {
     });
 
     const sub1 = await Subscription.create({
-      tenantId: cafe1._id,
+      businessId: business1._id,
       planId: premiumPlan._id,
       status: 'ACTIVE',
       currentPeriodStart: new Date(),
       currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
     });
-    cafe1.subscriptionId = sub1._id;
-    await cafe1.save();
+    business1.subscriptionId = sub1._id;
+    await business1.save();
 
-    // Cafe 1 Owner & Staff
+    // Business 1 Owner & Staff
     const hash1 = await bcrypt.hash('password123', 10);
     const u1 = await User.create({
       name: 'Aditya Sharma (Owner)',
@@ -133,7 +134,7 @@ export const seedDatabase = async (forceClean: boolean = false) => {
       passwordHash: hash1,
       phone: '+919876501234',
       role: 'OWNER',
-      tenantId: cafe1._id,
+      businessId: business1._id,
       status: 'ACTIVE'
     });
     console.log(`[Seed] Created User: ${u1.email} (ID: ${u1._id})`);
@@ -144,21 +145,21 @@ export const seedDatabase = async (forceClean: boolean = false) => {
       passwordHash: hash1,
       phone: '+919876505678',
       role: 'RECEPTIONIST',
-      tenantId: cafe1._id,
+      businessId: business1._id,
       status: 'ACTIVE'
     });
     console.log(`[Seed] Created User: ${u2.email} (ID: ${u2._id})`);
 
-    // Cafe 1 Menu Categories & Products
+    // Business 1 Menu Categories & Products
     const cat1 = await Category.create([
-      { tenantId: cafe1._id, name: 'Gourmet Pizza', description: 'Handcrafted sourdough artisan pizzas', displayOrder: 1 },
-      { tenantId: cafe1._id, name: 'Specialty Coffee', description: 'Freshly roasted arabica coffee', displayOrder: 2 },
-      { tenantId: cafe1._id, name: 'Sides & Snacks', description: 'Crispy sides and fries', displayOrder: 3 }
+      { businessId: business1._id, name: 'Gourmet Pizza', description: 'Handcrafted sourdough artisan pizzas', displayOrder: 1 },
+      { businessId: business1._id, name: 'Specialty Coffee', description: 'Freshly roasted arabica coffee', displayOrder: 2 },
+      { businessId: business1._id, name: 'Sides & Snacks', description: 'Crispy sides and fries', displayOrder: 3 }
     ]);
 
     const prod1 = await Product.create([
       {
-        tenantId: cafe1._id,
+        businessId: business1._id,
         categoryId: cat1[0]._id,
         name: 'Paneer Tikka Passion Pizza',
         description: 'Tandoori marinated cottage cheese, bell peppers & mozzarella',
@@ -170,7 +171,7 @@ export const seedDatabase = async (forceClean: boolean = false) => {
         variants: [{ name: 'Regular 8"', pricePaise: 24900 }, { name: 'Large 12"', pricePaise: 39900 }]
       },
       {
-        tenantId: cafe1._id,
+        businessId: business1._id,
         categoryId: cat1[1]._id,
         name: 'Signature Cold Coffee',
         description: 'Double espresso blended with vanilla ice cream and cream milk',
@@ -181,7 +182,7 @@ export const seedDatabase = async (forceClean: boolean = false) => {
         displayOrder: 1
       },
       {
-        tenantId: cafe1._id,
+        businessId: business1._id,
         categoryId: cat1[2]._id,
         name: 'Crispy Peri Peri Fries',
         description: 'Golden fries tossed in spicy african peri peri seasoning',
@@ -193,18 +194,18 @@ export const seedDatabase = async (forceClean: boolean = false) => {
       }
     ]);
 
-    // Cafe 1 Tables
+    // Business 1 Tables
     const tbls1 = await Table.create([
-      { tenantId: cafe1._id, tableNumber: 'Table 01', capacity: 2, qrToken: 'tok_artisan_tbl_01', status: 'OCCUPIED' },
-      { tenantId: cafe1._id, tableNumber: 'Table 02', capacity: 4, qrToken: 'tok_artisan_tbl_02', status: 'AVAILABLE' },
-      { tenantId: cafe1._id, tableNumber: 'Table 03', capacity: 4, qrToken: 'tok_artisan_tbl_03', status: 'AVAILABLE' }
+      { businessId: business1._id, tableNumber: 'Table 01', capacity: 2, qrToken: 'tok_artisan_tbl_01', status: 'OCCUPIED' },
+      { businessId: business1._id, tableNumber: 'Table 02', capacity: 4, qrToken: 'tok_artisan_tbl_02', status: 'AVAILABLE' },
+      { businessId: business1._id, tableNumber: 'Table 03', capacity: 4, qrToken: 'tok_artisan_tbl_03', status: 'AVAILABLE' }
     ]);
 
-    // Cafe 1 Orders
+    // Business 1 Orders
     const order1_1 = await Order.create({
       orderId: 'ART-120926-0001',
       orderNumber: 'ART-120926-0001',
-      tenantId: cafe1._id,
+      businessId: business1._id,
       dateKey: '2026-09-12',
       sequenceNumber: 1,
       tableId: tbls1[0]._id,
@@ -219,7 +220,7 @@ export const seedDatabase = async (forceClean: boolean = false) => {
       taxPaise: 3135,
       platformFeePaise: 200,
       totalAmountPaise: 65835,
-      restaurantEarningsPaise: 65635,
+      businessEarningsPaise: 65635,
       orderStatus: 'COMPLETED',
       paymentStatus: 'PAID',
       paymentMethod: 'ONLINE'
@@ -228,7 +229,7 @@ export const seedDatabase = async (forceClean: boolean = false) => {
     const order1_2 = await Order.create({
       orderId: 'ART-120926-0002',
       orderNumber: 'ART-120926-0002',
-      tenantId: cafe1._id,
+      businessId: business1._id,
       dateKey: '2026-09-12',
       sequenceNumber: 2,
       tableId: tbls1[0]._id,
@@ -243,17 +244,17 @@ export const seedDatabase = async (forceClean: boolean = false) => {
       taxPaise: 1785,
       platformFeePaise: 200,
       totalAmountPaise: 37485,
-      restaurantEarningsPaise: 37285,
+      businessEarningsPaise: 37285,
       orderStatus: 'PREPARING',
       paymentStatus: 'UNPAID',
       paymentMethod: 'CASH'
     });
 
-    // Financial Ledgers for Cafe 1
+    // Financial Ledgers for Business 1
     await FinancialLedger.create([
       {
         transactionId: 'TXN_PAY_1042',
-        tenantId: cafe1._id,
+        businessId: business1._id,
         orderId: order1_1._id,
         type: 'ORDER_PAYMENT',
         amountPaise: 65835,
@@ -262,7 +263,7 @@ export const seedDatabase = async (forceClean: boolean = false) => {
       },
       {
         transactionId: 'TXN_FEE_1042',
-        tenantId: cafe1._id,
+        businessId: business1._id,
         orderId: order1_1._id,
         type: 'PLATFORM_FEE',
         amountPaise: 200,
@@ -272,10 +273,10 @@ export const seedDatabase = async (forceClean: boolean = false) => {
     ]);
 
     // -------------------------------------------------------------------------
-    // 4. DUMMY CAFÉ #2: Bean & Butter Bakery (slug: bean-and-butter)
+    // 4. DUMMY BUSINESS #2: Bean & Butter Bakery (slug: bean-and-butter)
     // -------------------------------------------------------------------------
-    console.log('[Seed] Seeding Dummy Café #2: Bean & Butter Bakery...');
-    const cafe2 = await Restaurant.create({
+    console.log('[Seed] Seeding Dummy Business #2: Bean & Butter Bakery...');
+    const business2 = await Business.create({
       name: 'Bean & Butter Artisan Bakery',
       slug: 'bean-and-butter',
       logoUrl: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&q=80',
@@ -293,16 +294,16 @@ export const seedDatabase = async (forceClean: boolean = false) => {
     });
 
     const sub2 = await Subscription.create({
-      tenantId: cafe2._id,
+      businessId: business2._id,
       planId: basicPlan._id,
       status: 'ACTIVE',
       currentPeriodStart: new Date(),
       currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
     });
-    cafe2.subscriptionId = sub2._id;
-    await cafe2.save();
+    business2.subscriptionId = sub2._id;
+    await business2.save();
 
-    // Cafe 2 Owner & Staff
+    // Business 2 Owner & Staff
     const hash2 = await bcrypt.hash('password123', 10);
     const u3 = await User.create({
       name: 'Vikram Sengupta (Owner)',
@@ -310,7 +311,7 @@ export const seedDatabase = async (forceClean: boolean = false) => {
       passwordHash: hash2,
       phone: '+919822099887',
       role: 'OWNER',
-      tenantId: cafe2._id,
+      businessId: business2._id,
       status: 'ACTIVE'
     });
     console.log(`[Seed] Created User: ${u3.email} (ID: ${u3._id})`);
@@ -321,20 +322,20 @@ export const seedDatabase = async (forceClean: boolean = false) => {
       passwordHash: hash2,
       phone: '+919822011223',
       role: 'STAFF',
-      tenantId: cafe2._id,
+      businessId: business2._id,
       status: 'ACTIVE'
     });
     console.log(`[Seed] Created User: ${u4.email} (ID: ${u4._id})`);
 
-    // Cafe 2 Categories & Products
+    // Business 2 Categories & Products
     const cat2 = await Category.create([
-      { tenantId: cafe2._id, name: 'French Croissants & Pastries', description: 'Freshly baked butter croissants & pain au chocolat', displayOrder: 1 },
-      { tenantId: cafe2._id, name: 'Matcha & Organic Teas', description: 'Ceremonial grade Japanese matcha & herbal infusions', displayOrder: 2 }
+      { businessId: business2._id, name: 'French Croissants & Pastries', description: 'Freshly baked butter croissants & pain au chocolat', displayOrder: 1 },
+      { businessId: business2._id, name: 'Matcha & Organic Teas', description: 'Ceremonial grade Japanese matcha & herbal infusions', displayOrder: 2 }
     ]);
 
     const prod2 = await Product.create([
       {
-        tenantId: cafe2._id,
+        businessId: business2._id,
         categoryId: cat2[0]._id,
         name: 'Classic Almond Butter Croissant',
         description: 'Flaky double-baked croissant filled with almond frangipane',
@@ -345,7 +346,7 @@ export const seedDatabase = async (forceClean: boolean = false) => {
         displayOrder: 1
       },
       {
-        tenantId: cafe2._id,
+        businessId: business2._id,
         categoryId: cat2[1]._id,
         name: 'Iced Uji Matcha Latte',
         description: 'Ceremonial Japanese matcha whisked with oat milk and agave nectar',
@@ -357,17 +358,17 @@ export const seedDatabase = async (forceClean: boolean = false) => {
       }
     ]);
 
-    // Cafe 2 Tables
+    // Business 2 Tables
     const tbls2 = await Table.create([
-      { tenantId: cafe2._id, tableNumber: 'Table 01', capacity: 2, qrToken: 'tok_bean_tbl_01', status: 'AVAILABLE' },
-      { tenantId: cafe2._id, tableNumber: 'Table 02', capacity: 4, qrToken: 'tok_bean_tbl_02', status: 'OCCUPIED' }
+      { businessId: business2._id, tableNumber: 'Table 01', capacity: 2, qrToken: 'tok_bean_tbl_01', status: 'AVAILABLE' },
+      { businessId: business2._id, tableNumber: 'Table 02', capacity: 4, qrToken: 'tok_bean_tbl_02', status: 'OCCUPIED' }
     ]);
 
-    // Cafe 2 Orders
+    // Business 2 Orders
     const order2_1 = await Order.create({
       orderId: 'BBB-120926-0001',
       orderNumber: 'BBB-120926-0001',
-      tenantId: cafe2._id,
+      businessId: business2._id,
       dateKey: '2026-09-12',
       sequenceNumber: 1,
       tableId: tbls2[1]._id,
@@ -382,17 +383,17 @@ export const seedDatabase = async (forceClean: boolean = false) => {
       taxPaise: 2940,
       platformFeePaise: 200,
       totalAmountPaise: 61940,
-      restaurantEarningsPaise: 61740,
+      businessEarningsPaise: 61740,
       orderStatus: 'COMPLETED',
       paymentStatus: 'PAID',
       paymentMethod: 'ONLINE'
     });
 
-    // Financial Ledgers for Cafe 2
+    // Financial Ledgers for Business 2
     await FinancialLedger.create([
       {
         transactionId: 'TXN_PAY_2001',
-        tenantId: cafe2._id,
+        businessId: business2._id,
         orderId: order2_1._id,
         type: 'ORDER_PAYMENT',
         amountPaise: 61940,
@@ -401,7 +402,7 @@ export const seedDatabase = async (forceClean: boolean = false) => {
       },
       {
         transactionId: 'TXN_FEE_2001',
-        tenantId: cafe2._id,
+        businessId: business2._id,
         orderId: order2_1._id,
         type: 'PLATFORM_FEE',
         amountPaise: 200,
@@ -411,10 +412,10 @@ export const seedDatabase = async (forceClean: boolean = false) => {
     ]);
 
     // -------------------------------------------------------------------------
-    // 5. DUMMY CAFÉ #3: Verde Organic Bistro & Brew Bar (slug: verde-bistro)
+    // 5. DUMMY BUSINESS #3: Verde Organic Bistro & Brew Bar (slug: verde-bistro)
     // -------------------------------------------------------------------------
-    console.log('[Seed] Seeding Dummy Café #3: Verde Organic Bistro...');
-    const cafe3 = await Restaurant.create({
+    console.log('[Seed] Seeding Dummy Business #3: Verde Organic Bistro...');
+    const business3 = await Business.create({
       name: 'Verde Organic Bistro & Brew Bar',
       slug: 'verde-bistro',
       logoUrl: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=400&q=80',
@@ -432,16 +433,16 @@ export const seedDatabase = async (forceClean: boolean = false) => {
     });
 
     const sub3 = await Subscription.create({
-      tenantId: cafe3._id,
+      businessId: business3._id,
       planId: premiumPlan._id,
       status: 'ACTIVE',
       currentPeriodStart: new Date(),
       currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
     });
-    cafe3.subscriptionId = sub3._id;
-    await cafe3.save();
+    business3.subscriptionId = sub3._id;
+    await business3.save();
 
-    // Cafe 3 Owner & Staff
+    // Business 3 Owner & Staff
     const hash3 = await bcrypt.hash('password123', 10);
     const u5 = await User.create({
       name: 'Ananya Roy (Owner)',
@@ -449,20 +450,20 @@ export const seedDatabase = async (forceClean: boolean = false) => {
       passwordHash: hash3,
       phone: '+919910011223',
       role: 'OWNER',
-      tenantId: cafe3._id,
+      businessId: business3._id,
       status: 'ACTIVE'
     });
     console.log(`[Seed] Created User: ${u5.email} (ID: ${u5._id})`);
 
-    // Cafe 3 Categories & Products
+    // Business 3 Categories & Products
     const cat3 = await Category.create([
-      { tenantId: cafe3._id, name: 'Organic Bowls & Salads', description: 'Fresh farm-to-table organic bowls', displayOrder: 1 },
-      { tenantId: cafe3._id, name: 'Cold Pressed Juices & Brews', description: 'Raw cold pressed juices & nitrogen cold brews', displayOrder: 2 }
+      { businessId: business3._id, name: 'Organic Bowls & Salads', description: 'Fresh farm-to-table organic bowls', displayOrder: 1 },
+      { businessId: business3._id, name: 'Cold Pressed Juices & Brews', description: 'Raw cold pressed juices & nitrogen cold brews', displayOrder: 2 }
     ]);
 
     const prod3 = await Product.create([
       {
-        tenantId: cafe3._id,
+        businessId: business3._id,
         categoryId: cat3[0]._id,
         name: 'Avocado Quinoa Harvest Bowl',
         description: ' Hass avocado, organic quinoa, roasted chickpeas, kale & tahini lemon dressing',
@@ -473,7 +474,7 @@ export const seedDatabase = async (forceClean: boolean = false) => {
         displayOrder: 1
       },
       {
-        tenantId: cafe3._id,
+        businessId: business3._id,
         categoryId: cat3[1]._id,
         name: 'Nitro Cold Brew Coffee',
         description: 'Steeped 24 hours infused with nitrogen for a velvety smooth cascade',
@@ -485,16 +486,16 @@ export const seedDatabase = async (forceClean: boolean = false) => {
       }
     ]);
 
-    // Cafe 3 Tables & Orders
+    // Business 3 Tables & Orders
     const tbls3 = await Table.create([
-      { tenantId: cafe3._id, tableNumber: 'Table 01', capacity: 4, qrToken: 'tok_verde_tbl_01', status: 'AVAILABLE' },
-      { tenantId: cafe3._id, tableNumber: 'Table 02', capacity: 6, qrToken: 'tok_verde_tbl_02', status: 'OCCUPIED' }
+      { businessId: business3._id, tableNumber: 'Table 01', capacity: 4, qrToken: 'tok_verde_tbl_01', status: 'AVAILABLE' },
+      { businessId: business3._id, tableNumber: 'Table 02', capacity: 6, qrToken: 'tok_verde_tbl_02', status: 'OCCUPIED' }
     ]);
 
     const order3_1 = await Order.create({
       orderId: 'VER-120926-0001',
       orderNumber: 'VER-120926-0001',
-      tenantId: cafe3._id,
+      businessId: business3._id,
       dateKey: '2026-09-12',
       sequenceNumber: 1,
       tableId: tbls3[1]._id,
@@ -509,7 +510,7 @@ export const seedDatabase = async (forceClean: boolean = false) => {
       taxPaise: 5480,
       platformFeePaise: 200,
       totalAmountPaise: 115280,
-      restaurantEarningsPaise: 115080,
+      businessEarningsPaise: 115080,
       orderStatus: 'COMPLETED',
       paymentStatus: 'PAID',
       paymentMethod: 'ONLINE'
@@ -518,7 +519,7 @@ export const seedDatabase = async (forceClean: boolean = false) => {
     await FinancialLedger.create([
       {
         transactionId: 'TXN_PAY_3001',
-        tenantId: cafe3._id,
+        businessId: business3._id,
         orderId: order3_1._id,
         type: 'ORDER_PAYMENT',
         amountPaise: 115280,
@@ -527,7 +528,7 @@ export const seedDatabase = async (forceClean: boolean = false) => {
       },
       {
         transactionId: 'TXN_FEE_3001',
-        tenantId: cafe3._id,
+        businessId: business3._id,
         orderId: order3_1._id,
         type: 'PLATFORM_FEE',
         amountPaise: 200,
@@ -539,10 +540,10 @@ export const seedDatabase = async (forceClean: boolean = false) => {
     console.log('===================================================');
     console.log('✅ Database Auto-Seed Complete!');
     console.log('🔑 Instant Login Accounts Ready:');
-    console.log('  • Super Admin : admin@cafeos.com / password123');
-    console.log('  • Café 1 Owner: owner@artisan.com / password123');
-    console.log('  • Café 2 Owner: owner@beanandbutter.com / password123');
-    console.log('  • Café 3 Owner: owner@verdebistro.com / password123');
+    console.log(`  • Super Admin : admin@${APP_SLUG}.com / password123`);
+    console.log('  • Business 1 Owner: owner@artisan.com / password123');
+    console.log('  • Business 2 Owner: owner@beanandbutter.com / password123');
+    console.log('  • Business 3 Owner: owner@verdebistro.com / password123');
     console.log('===================================================');
   } catch (error) {
     console.error('[Seed Error]:', error);

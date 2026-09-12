@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import { getOrders, getOrderById, searchOrders, updateOrderStatus, getOrderBill } from '../controllers/orderController';
 import { protect } from '../middleware/auth';
-import { enforceTenant } from '../middleware/tenant';
+import { enforceBusiness } from '../middleware/business';
 import { restrictTo } from '../middleware/rbac';
 
 const router = Router();
 
-router.use(protect, enforceTenant);
+router.use(protect, enforceBusiness);
 
 router.get('/', getOrders);
 router.get('/search', searchOrders);

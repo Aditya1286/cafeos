@@ -12,7 +12,7 @@ export interface IProductAddon {
 
 export interface IProduct extends Document {
   _id: mongoose.Types.ObjectId;
-  tenantId: mongoose.Types.ObjectId;
+  businessId: mongoose.Types.ObjectId;
   categoryId: mongoose.Types.ObjectId;
   name: string;
   description: string;
@@ -31,7 +31,7 @@ export interface IProduct extends Document {
 
 const ProductSchema = new Schema<IProduct>(
   {
-    tenantId: { type: Schema.Types.ObjectId, ref: 'Restaurant', required: true, index: true },
+    businessId: { type: Schema.Types.ObjectId, ref: 'Business', required: true, index: true },
     categoryId: { type: Schema.Types.ObjectId, ref: 'Category', required: true, index: true },
     name: { type: String, required: true, trim: true },
     description: { type: String, default: '' },
@@ -58,7 +58,7 @@ const ProductSchema = new Schema<IProduct>(
   { timestamps: true }
 );
 
-ProductSchema.index({ tenantId: 1, categoryId: 1 });
-ProductSchema.index({ tenantId: 1, isAvailable: 1 });
+ProductSchema.index({ businessId: 1, categoryId: 1 });
+ProductSchema.index({ businessId: 1, isAvailable: 1 });
 
 export const Product = mongoose.model<IProduct>('Product', ProductSchema);

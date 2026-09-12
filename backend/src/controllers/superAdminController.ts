@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
-import { Restaurant } from '../models/Restaurant';
+import { Business } from '../models/Business';
 import { User } from '../models/User';
 import { Order } from '../models/Order';
 import { FinancialLedger } from '../models/FinancialLedger';
@@ -9,9 +9,9 @@ import { Subscription } from '../models/Subscription';
 
 export const getSuperAdminOverview = async (req: AuthRequest, res: Response) => {
   try {
-    const totalRestaurants = await Restaurant.countDocuments();
-    const activeRestaurants = await Restaurant.countDocuments({ status: 'ACTIVE' });
-    const suspendedRestaurants = await Restaurant.countDocuments({ status: 'SUSPENDED' });
+    const totalBusinesses = await Business.countDocuments();
+    const activeBusinesses = await Business.countDocuments({ status: 'ACTIVE' });
+    const suspendedBusinesses = await Business.countDocuments({ status: 'SUSPENDED' });
 
     const totalUsers = await User.countDocuments();
     const totalOrders = await Order.countDocuments();
@@ -40,17 +40,17 @@ export const getSuperAdminOverview = async (req: AuthRequest, res: Response) => 
     // Average Order Value (AOV)
     const avgOrderValuePaise = totalOrders > 0 ? Math.round(totalGMVPaise / totalOrders) : 0;
 
-    // Fetch recent 10 orders with restaurant info
+    // Fetch recent 10 orders with business info
     const recentOrdersRaw = await Order.find()
       .sort({ createdAt: -1 })
       .limit(10)
-      .populate('tenantId', 'name slug')
+      .populate('businessId', 'name slug')
       .lean();
 
     const recentOrders = recentOrdersRaw.map((o: any) => ({
       _id: o._id.toString(),
       orderNumber: o.orderNumber,
-      cafeName: o.tenantId?.name || 'Artisan Roastery',
+      businessName: o.businessId?.name || 'Artisan Roastery',
       tableName: o.tableName,
       customerName: o.customerName,
       itemsCount: o.items?.reduce((acc: number, item: any) => acc + (item.quantity || 1), 0) || 1,
@@ -67,9 +67,9 @@ export const getSuperAdminOverview = async (req: AuthRequest, res: Response) => 
       success: true,
       data: {
         metrics: {
-          totalRestaurants,
-          activeRestaurants,
-          suspendedRestaurants,
+          totalBusinesses,
+          activeBusinesses,
+          suspendedBusinesses,
           totalUsers,
           totalOrders,
           totalGMVPaise,
@@ -87,30 +87,30 @@ export const getSuperAdminOverview = async (req: AuthRequest, res: Response) => 
   }
 };
 
-export const getAllRestaurants = async (req: AuthRequest, res: Response) => {
+export const getAllBusinesses = async (req: AuthRequest, res: Response) => {
   try {
-    const restaurants = await Restaurant.find().sort({ createdAt: -1 });
-    return res.json({ success: true, data: restaurants });
+    const businesses = await Business.find().sort({ createdAt: -1 });
+    return res.json({ success: true, data: businesses });
   } catch (error: any) {
     return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
   }
 };
 
-export const toggleRestaurantStatus = async (req: AuthRequest, res: Response) => {
+export const toggleBusinessStatus = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const { status } = req.body; // 'ACTIVE' | 'SUSPENDED'
 
-    const restaurant = await Restaurant.findById(id);
-    if (!restaurant) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Restaurant not found' } });
+    const business = await Business.findById(id);
+    if (!business) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Business not found' } });
 
-    restaurant.status = status;
-    await restaurant.save();
+    business.status = status;
+    await business.save();
 
     return res.json({
       success: true,
-      message: `Restaurant status updated to ${status}`,
-      data: restaurant
+      message: `Business status updated to ${status}`,
+      data: business
     });
   } catch (error: any) {
     return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });

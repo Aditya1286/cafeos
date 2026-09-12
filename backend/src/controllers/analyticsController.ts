@@ -7,32 +7,32 @@ import { Table } from '../models/Table';
 
 export const getOwnerAnalytics = async (req: AuthRequest, res: Response) => {
   try {
-    const tenantId = req.tenantId;
+    const businessId = req.businessId;
 
-    const totalOrders = await Order.countDocuments({ tenantId });
-    const completedOrders = await Order.countDocuments({ tenantId, orderStatus: 'COMPLETED' });
-    const pendingOrders = await Order.countDocuments({ tenantId, orderStatus: { $in: ['PLACED', 'CONFIRMED', 'PREPARING', 'READY'] } });
+    const totalOrders = await Order.countDocuments({ businessId });
+    const completedOrders = await Order.countDocuments({ businessId, orderStatus: 'COMPLETED' });
+    const pendingOrders = await Order.countDocuments({ businessId, orderStatus: { $in: ['PLACED', 'CONFIRMED', 'PREPARING', 'READY'] } });
 
     // Sales metrics
     const salesAggregation = await Order.aggregate([
-      { $match: { tenantId, paymentStatus: 'PAID' } },
-      { $group: { _id: null, totalSalesPaise: { $sum: '$totalAmountPaise' }, totalEarningsPaise: { $sum: '$restaurantEarningsPaise' } } }
+      { $match: { businessId, paymentStatus: 'PAID' } },
+      { $group: { _id: null, totalSalesPaise: { $sum: '$totalAmountPaise' }, totalEarningsPaise: { $sum: '$businessEarningsPaise' } } }
     ]);
 
     const totalSalesPaise = salesAggregation[0]?.totalSalesPaise || 0;
     const totalEarningsPaise = salesAggregation[0]?.totalEarningsPaise || 0;
 
     // Active tables & low stock alerts
-    const totalTables = await Table.countDocuments({ tenantId });
-    const occupiedTables = await Table.countDocuments({ tenantId, status: 'OCCUPIED' });
-    const lowStockItems = await InventoryItem.countDocuments({ tenantId, status: { $in: ['LOW_STOCK', 'OUT_OF_STOCK'] } });
+    const totalTables = await Table.countDocuments({ businessId });
+    const occupiedTables = await Table.countDocuments({ businessId, status: 'OCCUPIED' });
+    const lowStockItems = await InventoryItem.countDocuments({ businessId, status: { $in: ['LOW_STOCK', 'OUT_OF_STOCK'] } });
 
     // Daily Sales chart data (last 7 days)
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
     const dailySales = await Order.aggregate([
-      { $match: { tenantId, createdAt: { $gte: sevenDaysAgo } } },
+      { $match: { businessId, createdAt: { $gte: sevenDaysAgo } } },
       {
         $group: {
           _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
@@ -45,7 +45,7 @@ export const getOwnerAnalytics = async (req: AuthRequest, res: Response) => {
 
     // Top selling items
     const topProducts = await Order.aggregate([
-      { $match: { tenantId } },
+      { $match: { businessId } },
       { $unwind: '$items' },
       {
         $group: {

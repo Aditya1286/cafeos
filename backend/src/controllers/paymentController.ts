@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { Order } from '../models/Order';
 import { FinancialLedger } from '../models/FinancialLedger';
-import { Restaurant } from '../models/Restaurant';
+import { Business } from '../models/Business';
 import { v4 as uuidv4 } from 'uuid';
 
 export const processPayment = async (req: Request, res: Response) => {
@@ -43,10 +43,10 @@ export const processPayment = async (req: Request, res: Response) => {
       });
     }
 
-    const restaurant = await Restaurant.findById(order.tenantId);
+    const business = await Business.findById(order.businessId);
     const platformFeePaise = order.platformFeePaise || 200; // ₹2
     const totalAmountPaise = order.totalAmountPaise;
-    const restaurantEarningsPaise = totalAmountPaise - platformFeePaise;
+    const businessEarningsPaise = totalAmountPaise - platformFeePaise;
 
     // 2. Double-Entry Immutable Ledger Creation
     const gatewayRef = paymentGatewayRef || `pay_mock_${uuidv4().substring(0, 10)}`;
@@ -54,7 +54,7 @@ export const processPayment = async (req: Request, res: Response) => {
     // Ledger 1: ORDER_PAYMENT (Gross Payment)
     const ledgerOrderPayment = await FinancialLedger.create({
       transactionId: `TXN_PAY_${uuidv4().substring(0, 10).toUpperCase()}`,
-      tenantId: order.tenantId,
+      businessId: order.businessId,
       orderId: order._id,
       type: 'ORDER_PAYMENT',
       amountPaise: totalAmountPaise,
@@ -68,7 +68,7 @@ export const processPayment = async (req: Request, res: Response) => {
     // Ledger 2: PLATFORM_FEE (SaaS Platform Commission Fee)
     await FinancialLedger.create({
       transactionId: `TXN_FEE_${uuidv4().substring(0, 10).toUpperCase()}`,
-      tenantId: order.tenantId,
+      businessId: order.businessId,
       orderId: order._id,
       type: 'PLATFORM_FEE',
       amountPaise: platformFeePaise,
@@ -78,17 +78,17 @@ export const processPayment = async (req: Request, res: Response) => {
       metadata: { orderNumber: order.orderNumber, feeRate: '₹2 per order' }
     });
 
-    // Ledger 3: RESTAURANT_SETTLEMENT (Net Payout to Café)
+    // Ledger 3: BUSINESS_SETTLEMENT (Net Payout to Business)
     await FinancialLedger.create({
       transactionId: `TXN_SETTLE_${uuidv4().substring(0, 10).toUpperCase()}`,
-      tenantId: order.tenantId,
+      businessId: order.businessId,
       orderId: order._id,
-      type: 'RESTAURANT_SETTLEMENT',
-      amountPaise: restaurantEarningsPaise,
+      type: 'BUSINESS_SETTLEMENT',
+      amountPaise: businessEarningsPaise,
       currency: 'INR',
       status: 'SUCCESS',
       paymentGatewayRef: gatewayRef,
-      metadata: { orderNumber: order.orderNumber, restaurantName: restaurant?.name }
+      metadata: { orderNumber: order.orderNumber, businessName: business?.name }
     });
 
     // Update order status
@@ -106,7 +106,7 @@ export const processPayment = async (req: Request, res: Response) => {
         orderNumber: order.orderNumber,
         totalAmountPaise,
         platformFeePaise,
-        restaurantEarningsPaise,
+        businessEarningsPaise,
         transactionId: ledgerOrderPayment.transactionId
       }
     });
@@ -117,7 +117,7 @@ export const processPayment = async (req: Request, res: Response) => {
 
 export const getLedgerTransactions = async (req: AuthRequest, res: Response) => {
   try {
-    const transactions = await FinancialLedger.find({ tenantId: req.tenantId })
+    const transactions = await FinancialLedger.find({ businessId: req.businessId })
       .populate('orderId')
       .sort({ createdAt: -1 });
 
