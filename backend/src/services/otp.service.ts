@@ -19,6 +19,33 @@ interface OtpResult {
 const MOCK_OTP_TTL_MS = 5 * 60 * 1000;
 const mockOtpStore = new Map<string, { code: string; expiresAt: number }>();
 
+// Lets a later, separate request (e.g. account registration) confirm server-side that
+// this phone actually completed OTP verification, instead of trusting the frontend to
+// have gated the button. Short TTL so it only covers "finish the form you're on," and
+// single-use (see consumeVerifiedPhone) so the same verification can't be replayed
+// across multiple registrations.
+const VERIFIED_PHONE_TTL_MS = 15 * 60 * 1000;
+const verifiedPhoneStore = new Map<string, number>(); // normalized mobile -> expiresAt
+
+function markPhoneVerified(mobile: string) {
+  verifiedPhoneStore.set(mobile, Date.now() + VERIFIED_PHONE_TTL_MS);
+}
+
+/** Read-only check — use to validate before doing other work (e.g. before hitting the DB). */
+export function isPhoneVerified(phone: string): boolean {
+  const mobile = toMsg91Format(phone);
+  if (!mobile) return false;
+  const expiresAt = verifiedPhoneStore.get(mobile);
+  return !!expiresAt && Date.now() <= expiresAt;
+}
+
+/** Consumes the verification so it can't be reused. Call only once the action it was
+ *  gating (e.g. registration) has actually succeeded. */
+export function clearVerifiedPhone(phone: string): void {
+  const mobile = toMsg91Format(phone);
+  if (mobile) verifiedPhoneStore.delete(mobile);
+}
+
 function generateMockOtp(): string {
   return Math.floor(1000 + Math.random() * 9000).toString();
 }
@@ -91,6 +118,7 @@ export async function verifyOtp(phone: string, otpCode: string): Promise<OtpResu
       return { success: false, code: 'OTP_MISMATCH', message: 'Incorrect OTP. Please try again.' };
     }
     mockOtpStore.delete(mobile);
+    markPhoneVerified(mobile);
     return { success: true, code: 'OTP_VERIFIED', message: 'OTP verified successfully.' };
   }
 
@@ -100,6 +128,7 @@ export async function verifyOtp(phone: string, otpCode: string): Promise<OtpResu
     const data = await response.json();
 
     if (data.type === 'success') {
+      markPhoneVerified(mobile);
       return { success: true, code: 'OTP_VERIFIED', message: 'OTP verified successfully.' };
     }
 

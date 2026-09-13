@@ -47,5 +47,10 @@ const RemittanceSchema = new Schema<IRemittance>(
 
 RemittanceSchema.index({ businessId: 1, periodStart: 1 }, { unique: true });
 RemittanceSchema.index({ businessId: 1, status: 1, dueDate: 1 });
+// Super admin's cross-business remittance queue has no businessId filter at all — it's
+// { status } sorted by dueDate (pending queue) or paidAt (settled log) — so the
+// businessId-prefixed index above can't help it.
+RemittanceSchema.index({ status: 1, dueDate: 1 });
+RemittanceSchema.index({ status: 1, paidAt: -1 });
 
 export const Remittance = mongoose.model<IRemittance>('Remittance', RemittanceSchema);

@@ -8,7 +8,7 @@ export const HEATMAP_HOURS = Array.from({ length: 24 }, (_, h) => h);
 export const formatHeatmapHour = (h: number) =>
   h === 0 ? '12 AM' : h === 12 ? '12 PM' : h > 12 ? `${h - 12} PM` : `${h} AM`;
 
-/** Shared with `PeakHoursHeatmap` so the "busiest hour" fact quoted in insights always matches the chart. */
+/** Used by `PlatformInsightsPanel` so the "busiest hour" fact it quotes matches the underlying data. */
 export const computeBusiestHour = (peakHeatmap: { _id: number; orders: number }[] | undefined): { hour: string; orders: number } | null => {
   const byHour = new Map((peakHeatmap || []).map((h) => [h._id, h.orders]));
   const withOrders = HEATMAP_HOURS.map((h) => ({ hour: formatHeatmapHour(h), orders: byHour.get(h) || 0 }));

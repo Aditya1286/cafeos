@@ -18,6 +18,7 @@ import { FinancialLedgerPanel } from '../components/organisms/dashboard/Financia
 import { SettingsPanel } from '../components/organisms/dashboard/SettingsPanel';
 import { OrderDetailsDrawer } from '../components/organisms/dashboard/OrderDetailsDrawer';
 import { CancelOrderModal } from '../components/organisms/dashboard/CancelOrderModal';
+import { DeleteProductModal } from '../components/organisms/dashboard/DeleteProductModal';
 import { EBillModal } from '../components/organisms/dashboard/EBillModal';
 import { AddProductModal } from '../components/organisms/dashboard/AddProductModal';
 import { AddTableModal } from '../components/organisms/dashboard/AddTableModal';
@@ -33,11 +34,15 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
     onOrderNew: (newOrder) => orderHistoryState.prependOrder(newOrder),
     onOrderUpdated: (updated) => orderHistoryState.patchOrder(updated.orderId, { orderStatus: updated.orderStatus }),
     onCustomerMarkedPaid: (updated) => orderHistoryState.patchOrder(updated.orderId, { customerMarkedPaidAt: updated.customerMarkedPaidAt }),
+    onRefundRequested: (updated) => orderHistoryState.patchOrder(updated.orderId, { refundRequestedAt: updated.refundRequestedAt }),
   });
   const {
     orders, categories, products, tables, inventoryItems, analytics, business, loading,
-    newlyArrivedOrderId, fetchDashboardData, handleUpdateOrderStatus,
-    savingUpiVpa, handleSaveUpiVpa, savingTablesEnabled, handleToggleTablesEnabled,
+    newlyArrivedOrderId, fetchDashboardData,
+    handleUpdateOrderStatus, handleBulkUpdateOrderStatus, handleConfirmPayment,
+    savingUpiVpa, handleSaveUpiVpa,
+    savingTablesEnabled, handleToggleTablesEnabled, handleToggleTableActive, handleDeleteTable,
+    handleRemoveProduct, handleRestoreProduct, handleDeleteProduct,
   } = dashboard;
   const { remittanceSummary, loadingRemittance, markingPaid, handleMarkRemittancePaid } = useRemittance(activeTab);
 
@@ -47,13 +52,17 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
   const [selectedOrderForBill, setSelectedOrderForBill] = useState<any | null>(null);
   const [cancelTarget, setCancelTarget] = useState<any | null>(null);
   const [cancelling, setCancelling] = useState(false);
+  const [deleteProductTarget, setDeleteProductTarget] = useState<any | null>(null);
+  const [deletingProduct, setDeletingProduct] = useState(false);
 
   // Add-entity modal open flags
   const [showAddProductModal, setShowAddProductModal] = useState(false);
   const [showAddTableModal, setShowAddTableModal] = useState(false);
   const [showAddInventoryModal, setShowAddInventoryModal] = useState(false);
 
-  // Add Product form
+  // Add/Edit Product form — the same fields and modal serve both; `editingProductId`
+  // set means "Save Changes" (PUT) instead of "Add to Menu" (POST).
+  const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [newProductName, setNewProductName] = useState('');
   const [newProductCategoryId, setNewProductCategoryId] = useState('');
   const [newProductPricePaise, setNewProductPricePaise] = useState(24900);
@@ -128,10 +137,28 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
   const updateOrderStatus = async (orderId: string, status: string) => {
     try {
       await handleUpdateOrderStatus(orderId, status);
-      patchOrderEverywhere(orderId, { orderStatus: status });
+      patchOrderEverywhere(orderId, { orderStatus: status, ...(status === 'REFUNDED' ? { paymentStatus: 'REFUNDED' } : {}) });
     } catch {
       // handleUpdateOrderStatus already surfaced a toast
     }
+  };
+
+  const handleMarkRefunded = (order: any) => updateOrderStatus(order._id || order.orderId, 'REFUNDED');
+
+  const confirmPayment = async (order: any) => {
+    const orderId = order._id || order.orderId;
+    try {
+      await handleConfirmPayment(orderId);
+      patchOrderEverywhere(orderId, { paymentStatus: 'PAID' });
+    } catch {
+      // handleConfirmPayment already surfaced a toast
+    }
+  };
+
+  const bulkAcceptOrders = async (orderIds: string[]) => {
+    const { updatedIds } = await handleBulkUpdateOrderStatus(orderIds, 'CONFIRMED');
+    updatedIds.forEach((id) => patchOrderEverywhere(id, { orderStatus: 'CONFIRMED' }));
+    return updatedIds;
   };
 
   const confirmCancelOrder = async () => {
@@ -140,6 +167,14 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
     await updateOrderStatus(cancelTarget._id || cancelTarget.orderId, 'CANCELLED');
     setCancelling(false);
     setCancelTarget(null);
+  };
+
+  const confirmDeleteProduct = async () => {
+    if (!deleteProductTarget) return;
+    setDeletingProduct(true);
+    await handleDeleteProduct(deleteProductTarget._id);
+    setDeletingProduct(false);
+    setDeleteProductTarget(null);
   };
 
   const handleSelectProductImage = async (file: File) => {
@@ -180,22 +215,55 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
     }
   };
 
-  const handleCreateProduct = async (e: React.FormEvent) => {
+  const resetProductForm = () => {
+    setEditingProductId(null);
+    setNewProductName('');
+    setNewProductCategoryId('');
+    setNewProductPricePaise(24900);
+    setNewProductDescription('');
+    setNewProductIsVeg(true);
+    setNewProductImageUrl('');
+    setNewProductImagePreview('');
+  };
+
+  const handleOpenAddProduct = () => {
+    resetProductForm();
+    setShowAddProductModal(true);
+  };
+
+  const handleOpenEditProduct = (product: any) => {
+    setEditingProductId(product._id);
+    setNewProductName(product.name || '');
+    setNewProductCategoryId(typeof product.categoryId === 'string' ? product.categoryId : product.categoryId?._id || '');
+    setNewProductPricePaise(product.pricePaise || 0);
+    setNewProductDescription(product.description || '');
+    setNewProductIsVeg(product.isVeg !== false);
+    setNewProductImageUrl(product.imageUrl || '');
+    setNewProductImagePreview(product.imageUrl || '');
+    setShowAddProductModal(true);
+  };
+
+  const handleSubmitProduct = async (e: React.FormEvent) => {
     e.preventDefault();
+    const payload = {
+      name: newProductName,
+      categoryId: newProductCategoryId || categories[0]?._id,
+      pricePaise: Number(newProductPricePaise),
+      description: newProductDescription,
+      isVeg: newProductIsVeg,
+      imageUrl: newProductImageUrl || 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=500&q=80'
+    };
     try {
-      await apiRequest('/menu/products', 'POST', {
-        name: newProductName,
-        categoryId: newProductCategoryId || categories[0]?._id,
-        pricePaise: Number(newProductPricePaise),
-        description: newProductDescription,
-        isVeg: newProductIsVeg,
-        imageUrl: newProductImageUrl || 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=500&q=80'
-      });
+      if (editingProductId) {
+        await apiRequest(`/menu/products/${editingProductId}`, 'PUT', payload);
+        toast.success('Item updated!');
+      } else {
+        await apiRequest('/menu/products', 'POST', payload);
+        toast.success('Product added to menu!');
+      }
       setShowAddProductModal(false);
-      setNewProductName(''); setNewProductDescription('');
-      setNewProductImageUrl(''); setNewProductImagePreview('');
+      resetProductForm();
       fetchDashboardData();
-      toast.success('Product added to menu!');
     } catch (err: any) { toast.error(err.message); }
   };
 
@@ -226,7 +294,7 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
     } catch (err: any) { toast.error(err.message); }
   };
 
-  const activeOrders = orders.filter(o => !['COMPLETED', 'CANCELLED'].includes(o.orderStatus));
+  const activeOrders = orders.filter(o => !['COMPLETED', 'CANCELLED', 'REFUNDED'].includes(o.orderStatus));
   const lowStockCount = inventoryItems.filter(i => i.status !== 'IN_STOCK').length;
   const occupiedTables = tables.filter(t => t.status === 'OCCUPIED').length;
 
@@ -251,7 +319,7 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
         onCopyMenuUrl={copyMenuUrl}
         loading={loading}
         onRefresh={fetchDashboardData}
-        onAddItem={() => setShowAddProductModal(true)}
+        onAddItem={handleOpenAddProduct}
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-7 space-y-7">
@@ -271,6 +339,8 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
             onUpdateStatus={updateOrderStatus}
             onCancel={setCancelTarget}
             onViewBill={handleOpenEBillModal}
+            onConfirmPayment={confirmPayment}
+            onBulkAccept={bulkAcceptOrders}
           />
         )}
 
@@ -282,16 +352,26 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
             loadingHistory={orderHistoryState.loadingHistory}
             pagination={orderHistoryState.pagination}
             onPageChange={(page) => orderHistoryState.setPagination(prev => ({ ...prev, page }))}
+            onPageSizeChange={(limit) => orderHistoryState.setPagination(prev => ({ ...prev, limit, page: 1 }))}
             filters={orderHistoryState}
             onRefresh={orderHistoryState.fetchOrderHistory}
             onOpenDrawer={handleOpenOrderDrawer}
             onOpenBill={handleOpenEBillModal}
             onCancel={setCancelTarget}
+            onMarkRefunded={handleMarkRefunded}
+            onConfirmPayment={confirmPayment}
           />
         )}
 
         {activeTab === 'menu' && (
-          <DigitalMenuPanel products={products} onAddItem={() => setShowAddProductModal(true)} />
+          <DigitalMenuPanel
+            products={products}
+            onAddItem={handleOpenAddProduct}
+            onEditItem={handleOpenEditProduct}
+            onRemoveItem={handleRemoveProduct}
+            onRestoreItem={handleRestoreProduct}
+            onDeleteItem={setDeleteProductTarget}
+          />
         )}
 
         {activeTab === 'tables' && (
@@ -302,6 +382,8 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
             savingTablesEnabled={savingTablesEnabled}
             onToggleTablesEnabled={handleToggleTablesEnabled}
             onAddTable={() => setShowAddTableModal(true)}
+            onToggleTableActive={handleToggleTableActive}
+            onDeleteTable={handleDeleteTable}
           />
         )}
 
@@ -310,7 +392,7 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
         )}
 
         {activeTab === 'analytics' && (
-          <AnalyticsPanel dailySales={analytics?.dailySales ?? []} />
+          <AnalyticsPanel analytics={analytics} />
         )}
 
         {activeTab === 'ledger' && (
@@ -344,6 +426,8 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
         onClose={() => setSelectedOrderForDrawer(null)}
         onViewBill={handleOpenEBillModal}
         onCancel={setCancelTarget}
+        onMarkRefunded={handleMarkRefunded}
+        onConfirmPayment={confirmPayment}
       />
 
       <CancelOrderModal
@@ -353,10 +437,18 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
         onConfirm={confirmCancelOrder}
       />
 
+      <DeleteProductModal
+        product={deleteProductTarget}
+        deleting={deletingProduct}
+        onClose={() => setDeleteProductTarget(null)}
+        onConfirm={confirmDeleteProduct}
+      />
+
       <EBillModal bill={selectedOrderForBill} onClose={() => setSelectedOrderForBill(null)} />
 
       <AddProductModal
         open={showAddProductModal}
+        isEditing={!!editingProductId}
         onClose={() => setShowAddProductModal(false)}
         categories={categories}
         name={newProductName} setName={setNewProductName}
@@ -364,7 +456,7 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
         pricePaise={newProductPricePaise} setPricePaise={setNewProductPricePaise}
         description={newProductDescription} setDescription={setNewProductDescription}
         isVeg={newProductIsVeg} setIsVeg={setNewProductIsVeg}
-        onSubmit={handleCreateProduct}
+        onSubmit={handleSubmitProduct}
         showAddCategory={showAddCategory} setShowAddCategory={setShowAddCategory}
         newCategoryName={newCategoryName} setNewCategoryName={setNewCategoryName}
         creatingCategory={creatingCategory}

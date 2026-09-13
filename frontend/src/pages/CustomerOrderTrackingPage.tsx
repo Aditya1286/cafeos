@@ -34,7 +34,9 @@ export const CustomerOrderTrackingPage: React.FC = () => {
       socket.emit('join_order_room', orderId);
 
       socket.on('order:status_updated', (updated: any) => {
-        setOrder((prev: any) => (prev ? { ...prev, orderStatus: updated.orderStatus, paymentStatus: updated.paymentStatus } : prev));
+        setOrder((prev: any) => (prev
+          ? { ...prev, orderStatus: updated.orderStatus, paymentStatus: updated.paymentStatus, refundedAt: updated.refundedAt ?? prev.refundedAt }
+          : prev));
       });
 
       return () => {
@@ -64,6 +66,8 @@ export const CustomerOrderTrackingPage: React.FC = () => {
 
   const currentStepIndex = steps.findIndex(s => s.key === (order?.orderStatus || 'PLACED'));
   const isPaid = order?.paymentStatus === 'PAID';
+  const isRefunded = order?.paymentStatus === 'REFUNDED';
+  const isCancelled = order?.orderStatus === 'CANCELLED' || order?.orderStatus === 'REFUNDED';
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 p-4 max-w-md mx-auto relative border-x border-slate-200 font-sans pb-12">
@@ -96,47 +100,66 @@ export const CustomerOrderTrackingPage: React.FC = () => {
         </div>
 
         <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black border ${
-          isPaid
+          isRefunded
+            ? 'bg-violet-50 text-violet-700 border-violet-200'
+            : isPaid
             ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
             : 'bg-amber-50 text-amber-700 border-amber-200'
         }`}>
           <ShieldCheck className="w-3.5 h-3.5" />
-          {isPaid ? `E-Bill Paid (${order?.paymentMethod})` : `Payment Pending (${order?.paymentMethod})`}
+          {isRefunded
+            ? `Refunded (${order?.paymentMethod})`
+            : isPaid
+            ? `E-Bill Paid (${order?.paymentMethod})`
+            : `Payment Pending (${order?.paymentMethod})`}
         </div>
 
         {/* ── Realtime Status Stepper ──────────────────────────── */}
-        <div className="mt-6 pt-6 border-t border-slate-100 space-y-4 text-left">
-          <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block mb-3">
-            Real-Time Kitchen Progress
-          </span>
-
-          <div className="space-y-4 relative pl-1">
-            {steps.map((st, idx) => {
-              const isPassed = idx <= (currentStepIndex === -1 ? 0 : currentStepIndex);
-              const isCurrent = idx === (currentStepIndex === -1 ? 0 : currentStepIndex);
-              return (
-                <div key={st.key} className="flex items-center gap-3.5">
-                  <div
-                    className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-black transition-all ${
-                      isCurrent
-                        ? 'bg-orange-500 text-white ring-4 ring-orange-100 shadow-md shadow-orange-500/20'
-                        : isPassed
-                        ? 'bg-emerald-500 text-white'
-                        : 'bg-slate-100 text-slate-400 border border-slate-200'
-                    }`}
-                  >
-                    {isPassed ? <Check className="w-4 h-4 stroke-[3]" /> : idx + 1}
-                  </div>
-                  <span className={`text-xs font-extrabold ${
-                    isCurrent ? 'text-orange-600 font-black' : isPassed ? 'text-slate-900' : 'text-slate-400'
-                  }`}>
-                    {st.label}
-                  </span>
-                </div>
-              );
-            })}
+        {isCancelled ? (
+          <div className={`mt-6 pt-6 border-t border-slate-100 text-center space-y-1 ${isRefunded ? 'text-violet-700' : 'text-rose-700'}`}>
+            <span className="text-xs font-black uppercase tracking-wider block">
+              {isRefunded ? 'Order Cancelled & Refunded' : 'Order Cancelled'}
+            </span>
+            <p className="text-[11px] font-medium text-slate-400">
+              {isRefunded
+                ? 'This order was cancelled and your payment has been refunded.'
+                : 'This order will not be prepared.'}
+            </p>
           </div>
-        </div>
+        ) : (
+          <div className="mt-6 pt-6 border-t border-slate-100 space-y-4 text-left">
+            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block mb-3">
+              Real-Time Kitchen Progress
+            </span>
+
+            <div className="space-y-4 relative pl-1">
+              {steps.map((st, idx) => {
+                const isPassed = idx <= (currentStepIndex === -1 ? 0 : currentStepIndex);
+                const isCurrent = idx === (currentStepIndex === -1 ? 0 : currentStepIndex);
+                return (
+                  <div key={st.key} className="flex items-center gap-3.5">
+                    <div
+                      className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-black transition-all ${
+                        isCurrent
+                          ? 'bg-orange-500 text-white ring-4 ring-orange-100 shadow-md shadow-orange-500/20'
+                          : isPassed
+                          ? 'bg-emerald-500 text-white'
+                          : 'bg-slate-100 text-slate-400 border border-slate-200'
+                      }`}
+                    >
+                      {isPassed ? <Check className="w-4 h-4 stroke-[3]" /> : idx + 1}
+                    </div>
+                    <span className={`text-xs font-extrabold ${
+                      isCurrent ? 'text-orange-600 font-black' : isPassed ? 'text-slate-900' : 'text-slate-400'
+                    }`}>
+                      {st.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── Payment (Online orders only — cash orders just show the pill above) ── */}
@@ -149,6 +172,8 @@ export const CustomerOrderTrackingPage: React.FC = () => {
             paymentStatus={order.paymentStatus}
             orderStatus={order.orderStatus}
             customerMarkedPaidAt={order.customerMarkedPaidAt}
+            refundRequestedAt={order.refundRequestedAt}
+            refundedAt={order.refundedAt}
             payeeVpa={business?.upiVpa}
             payeeName={business?.name}
             amount={(order.totalAmountPaise || 0) / 100}

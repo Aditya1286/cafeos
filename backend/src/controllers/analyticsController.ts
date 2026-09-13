@@ -7,6 +7,7 @@ import { Table } from '../models/Table';
 import { Business } from '../models/Business';
 import { Subscription } from '../models/Subscription';
 import { getBusinessDayRange, getTrailingDayRange } from '../utils/timezone';
+import { computeRepeatCustomerStats, computeItemMargins, computeKitchenSpeed } from '../services/businessInsights.service';
 
 const sumSalesInRange = async (businessId: any, start: Date, end: Date) => {
   const result = await Order.aggregate([
@@ -97,6 +98,12 @@ export const getOwnerAnalytics = async (req: AuthRequest, res: Response) => {
       : null;
     const plan: any = subscription?.planId;
 
+    const [repeatCustomers, itemMargins, kitchenSpeed] = await Promise.all([
+      computeRepeatCustomerStats(businessId!),
+      computeItemMargins(businessId!),
+      computeKitchenSpeed(businessId!)
+    ]);
+
     return res.json({
       success: true,
       data: {
@@ -118,6 +125,9 @@ export const getOwnerAnalytics = async (req: AuthRequest, res: Response) => {
         },
         dailySales,
         topProducts,
+        repeatCustomers,
+        itemMargins,
+        kitchenSpeed,
         subscription: plan
           ? {
               planName: plan.name,

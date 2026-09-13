@@ -6,6 +6,7 @@ import { SubscriptionPlan } from '../models/SubscriptionPlan';
 import { Subscription } from '../models/Subscription';
 import { config } from '../config';
 import { AuthRequest } from '../middleware/auth';
+import { isPhoneVerified, clearVerifiedPhone } from '../services/otp.service';
 
 const generateToken = (user: IUser): string => {
   return jwt.sign(
@@ -19,10 +20,22 @@ export const register = async (req: Request, res: Response) => {
   try {
     const { name, email, password, phone, businessName, slug } = req.body;
 
-    if (!name || !email || !password || !businessName || !slug) {
+    if (!name || !email || !password || !phone || !businessName || !slug) {
       return res.status(400).json({
         success: false,
-        error: { code: 'VALIDATION_ERROR', message: 'Name, email, password, business name, and slug are required.' }
+        error: { code: 'VALIDATION_ERROR', message: 'Name, email, password, phone, business name, and slug are required.' }
+      });
+    }
+
+    // The frontend gates registration on completing phone OTP verification, but that's
+    // only a UI convenience — without this, anyone could call this endpoint directly and
+    // skip verification entirely. isPhoneVerified checks the short-lived record otp.service
+    // sets on a successful /otp/verify call for this exact phone; clearVerifiedPhone below
+    // consumes it once registration actually succeeds, so it can't be replayed.
+    if (!isPhoneVerified(phone)) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'PHONE_NOT_VERIFIED', message: 'Please verify your phone number with the OTP sent to it before registering.' }
       });
     }
 
@@ -93,6 +106,11 @@ export const register = async (req: Request, res: Response) => {
       businessId: business._id,
       status: 'ACTIVE'
     });
+
+    // Consume the verification only now that registration has actually succeeded —
+    // checking it earlier without clearing means a later failure (duplicate email, etc.)
+    // wouldn't force the user to redo OTP verification just to retry.
+    clearVerifiedPhone(phone);
 
     const token = generateToken(user);
 

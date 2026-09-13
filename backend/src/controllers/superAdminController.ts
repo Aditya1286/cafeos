@@ -9,6 +9,7 @@ import { Subscription } from '../models/Subscription';
 import { Remittance } from '../models/Remittance';
 import { InventoryItem } from '../models/InventoryItem';
 import { ensureClosedRemittancePeriods, getRemittanceSummary } from '../services/remittance.service';
+import { computeRepeatCustomerStats, computeItemMargins, computeKitchenSpeed } from '../services/businessInsights.service';
 import mongoose from 'mongoose';
 
 export const getSuperAdminOverview = async (req: AuthRequest, res: Response) => {
@@ -89,8 +90,16 @@ export const getSuperAdminOverview = async (req: AuthRequest, res: Response) => 
       createdAt: o.createdAt
     }));
 
-    // Plans list
-    const plans = await SubscriptionPlan.find();
+    // Plans list, with how many active subscriptions are actually on each one —
+    // the admin plans view is otherwise just a static pricing sheet with no signal
+    // on whether anyone is actually subscribed to what's being edited.
+    const plans = await SubscriptionPlan.find().lean();
+    const subscriberCounts = await Subscription.aggregate([
+      { $match: { status: 'ACTIVE' } },
+      { $group: { _id: '$planId', count: { $sum: 1 } } }
+    ]);
+    const countsByPlan = new Map(subscriberCounts.map((c: any) => [c._id.toString(), c.count]));
+    const plansWithCounts = plans.map((p: any) => ({ ...p, subscriberCount: countsByPlan.get(p._id.toString()) || 0 }));
 
     return res.json({
       success: true,
@@ -113,7 +122,7 @@ export const getSuperAdminOverview = async (req: AuthRequest, res: Response) => 
           repeatCustomerPercentage
         },
         recentOrders,
-        plans
+        plans: plansWithCounts
       }
     });
   } catch (error: any) {
@@ -156,14 +165,25 @@ export const getAllBusinesses = async (req: AuthRequest, res: Response) => {
 
     const financialsByBusiness = new Map(financials.map((f: any) => [f._id.toString(), f]));
 
+    // Which plan each business is actually on — the businesses table otherwise has no
+    // way to show or change this, even though `/admin/plans` lets you edit the plans
+    // themselves.
+    const subscriptions = await Subscription.find({ businessId: { $in: businesses.map((b: any) => b._id) } })
+      .populate('planId', 'name code')
+      .lean();
+    const subscriptionByBusiness = new Map(subscriptions.map((s: any) => [s.businessId.toString(), s]));
+
     const businessesWithFinancials = businesses.map((b: any) => {
       const f = financialsByBusiness.get(b._id.toString());
+      const sub = subscriptionByBusiness.get(b._id.toString());
       return {
         ...b,
         lifetimeGMVPaise: f?.lifetimeGMVPaise || 0,
         totalCommissionOwedPaise: f?.totalCommissionOwedPaise || 0,
         overdueAmountPaise: f?.overdueAmountPaise || 0,
-        nextDueDate: f?.nextDueDate || null
+        nextDueDate: f?.nextDueDate || null,
+        currentPlan: sub?.planId ? { _id: sub.planId._id, name: sub.planId.name, code: sub.planId.code } : null,
+        subscriptionStatus: sub?.status || null
       };
     });
 
@@ -328,6 +348,53 @@ export const updateBusinessFinanceSettings = async (req: AuthRequest, res: Respo
   }
 };
 
+// Moves a business onto a different subscription plan. Every business gets one
+// Subscription row at registration and previously had no way to ever change it —
+// this is the only place that plan assignment can happen post-signup.
+export const changeBusinessPlan = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { planId } = req.body;
+
+    if (!planId || !mongoose.Types.ObjectId.isValid(planId)) {
+      return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'A valid planId is required.' } });
+    }
+
+    const business = await Business.findById(id);
+    if (!business) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Business not found' } });
+    }
+
+    const plan = await SubscriptionPlan.findById(planId);
+    if (!plan || plan.status !== 'ACTIVE') {
+      return res.status(400).json({ success: false, error: { code: 'INVALID_PLAN', message: 'Selected plan does not exist or is disabled.' } });
+    }
+
+    let subscription = await Subscription.findOne({ businessId: business._id });
+    if (subscription) {
+      subscription.planId = plan._id;
+      subscription.status = 'ACTIVE';
+      await subscription.save();
+    } else {
+      subscription = await Subscription.create({
+        businessId: business._id,
+        planId: plan._id,
+        status: 'ACTIVE',
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: `${business.name} moved to the ${plan.name} plan`,
+      data: { subscription, plan: { _id: plan._id, name: plan.name, code: plan.code } }
+    });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
+  }
+};
+
 export const toggleBusinessStatus = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
@@ -353,10 +420,22 @@ export const createSubscriptionPlan = async (req: AuthRequest, res: Response) =>
   try {
     const { name, code, description, monthlyPricePaise, annualPricePaise, perOrderFeePaise, limits, isPopular } = req.body;
 
+    if (!name || !String(name).trim()) {
+      return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Plan name is required.' } });
+    }
+    if (!code || !String(code).trim()) {
+      return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Plan code is required.' } });
+    }
+
+    const existing = await SubscriptionPlan.findOne({ code: String(code).trim().toUpperCase() });
+    if (existing) {
+      return res.status(409).json({ success: false, error: { code: 'DUPLICATE_CODE', message: `A plan with code "${code}" already exists.` } });
+    }
+
     const plan = await SubscriptionPlan.create({
       name,
       code,
-      description,
+      description: description || '',
       monthlyPricePaise: monthlyPricePaise || 0,
       annualPricePaise: annualPricePaise || 0,
       perOrderFeePaise: perOrderFeePaise || 200,
@@ -461,9 +540,237 @@ export const getSuperAdminAnalytics = async (req: AuthRequest, res: Response) =>
       { $sort: { _id: 1 } }
     ]);
 
+    // Cancellation & refund rate — the negative-signal counterpart to bestSellers/revenue above:
+    // how much of the platform's order volume is failing, not just how much it's making.
+    // "Terminal" orders are ones that reached a final state (COMPLETED, CANCELLED, or REFUNDED);
+    // still-in-progress orders (PLACED/CONFIRMED/PREPARING/READY/SERVED) aren't a rate yet.
+    const TERMINAL_STATUSES = ['COMPLETED', 'CANCELLED', 'REFUNDED'];
+    const MIN_ORDERS_FOR_LEADERBOARD = 3;
+
+    const cancellationTimeseriesRaw = await Order.aggregate([
+      { $match: { createdAt: { $gte: startDate, $lt: endDate }, orderStatus: { $in: TERMINAL_STATUSES } } },
+      {
+        $group: {
+          _id: { $dateToString: { format: dateFormat, date: '$createdAt' } },
+          total: { $sum: 1 },
+          cancelled: { $sum: { $cond: [{ $eq: ['$orderStatus', 'CANCELLED'] }, 1, 0] } },
+          refunded: { $sum: { $cond: [{ $eq: ['$orderStatus', 'REFUNDED'] }, 1, 0] } }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]);
+
+    const cancellationTimeseries = cancellationTimeseriesRaw.map((row: any) => ({
+      time: row._id,
+      cancelled: row.cancelled,
+      refunded: row.refunded,
+      total: row.total,
+      rate: row.total > 0 ? Math.round(((row.cancelled + row.refunded) / row.total) * 1000) / 10 : null
+    }));
+
+    const platformTotals = cancellationTimeseriesRaw.reduce(
+      (acc: any, row: any) => ({
+        total: acc.total + row.total,
+        cancelled: acc.cancelled + row.cancelled,
+        refunded: acc.refunded + row.refunded
+      }),
+      { total: 0, cancelled: 0, refunded: 0 }
+    );
+    const cancellationStats = {
+      totalTerminalCount: platformTotals.total,
+      cancelledCount: platformTotals.cancelled,
+      refundedCount: platformTotals.refunded,
+      rate: platformTotals.total > 0
+        ? Math.round(((platformTotals.cancelled + platformTotals.refunded) / platformTotals.total) * 1000) / 10
+        : null
+    };
+
+    // Highest cancellation/refund rate businesses — a minimum sample size keeps a business
+    // with e.g. 1 cancelled order out of 1 total from showing a meaningless "100%".
+    const worstBusinessesByCancellation = await Order.aggregate([
+      { $match: { createdAt: { $gte: startDate, $lt: endDate }, orderStatus: { $in: TERMINAL_STATUSES } } },
+      {
+        $group: {
+          _id: '$businessId',
+          total: { $sum: 1 },
+          cancelled: { $sum: { $cond: [{ $eq: ['$orderStatus', 'CANCELLED'] }, 1, 0] } },
+          refunded: { $sum: { $cond: [{ $eq: ['$orderStatus', 'REFUNDED'] }, 1, 0] } }
+        }
+      },
+      { $match: { total: { $gte: MIN_ORDERS_FOR_LEADERBOARD } } },
+      { $addFields: { rate: { $multiply: [{ $divide: [{ $add: ['$cancelled', '$refunded'] }, '$total'] }, 100] } } },
+      { $sort: { rate: -1 } },
+      { $limit: 5 },
+      { $lookup: { from: 'businesses', localField: '_id', foreignField: '_id', as: 'business' } },
+      { $unwind: '$business' },
+      {
+        $project: {
+          _id: 0,
+          businessId: '$_id',
+          name: '$business.name',
+          slug: '$business.slug',
+          total: 1,
+          cancelled: 1,
+          refunded: 1,
+          rate: { $round: ['$rate', 1] }
+        }
+      }
+    ]);
+
     return res.json({
       success: true,
-      data: { revenueTimeseries, paymentMethodBreakdown, bestSellers, peakHeatmap }
+      data: {
+        revenueTimeseries,
+        paymentMethodBreakdown,
+        bestSellers,
+        peakHeatmap,
+        cancellationStats,
+        cancellationTimeseries,
+        worstBusinessesByCancellation
+      }
+    });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
+  }
+};
+
+// Day-of-week x hour-of-day revenue heatmap for a single business — a platform-wide
+// hour-only heatmap smears every business's rhythm into noise (a breakfast café's 8 AM
+// rush and a bar's 11 PM rush cancel out), and order-count alone hides the fact that a
+// handful of big dinner orders can matter more than a lot of small ones. This scopes to
+// one business at a time and weights by revenue so the actual pattern is visible. Fixed
+// 90-day window: bounded (avoids an unbounded scan as history grows) and long enough
+// to give every weekday several samples, which a day-of-week breakdown needs to mean
+// anything at all.
+const BUSINESS_HEATMAP_WINDOW_DAYS = 90;
+
+// Ranks businesses by actual order revenue in the same 90-day window the heatmap above
+// covers — NOT by `lifetimeGMVPaise` (used elsewhere for the businesses table), which is
+// derived from *closed remittance periods* and can sit at 0 for a business with plenty of
+// live paid orders if its first billing period simply hasn't closed yet. Using that field
+// here would make "top N" an arbitrary/tied ordering instead of a real ranking.
+export const getTopBusinessesByRevenue = async (req: AuthRequest, res: Response) => {
+  try {
+    const limit = Math.min(Number(req.query.limit) || 8, 50);
+    const since = new Date(Date.now() - BUSINESS_HEATMAP_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+
+    const ranked = await Order.aggregate([
+      { $match: { paymentStatus: 'PAID', createdAt: { $gte: since } } },
+      { $group: { _id: '$businessId', revenuePaise: { $sum: '$totalAmountPaise' }, orders: { $sum: 1 } } },
+      { $sort: { revenuePaise: -1 } },
+      { $limit: limit },
+      {
+        $lookup: {
+          from: 'businesses',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'business'
+        }
+      },
+      { $unwind: '$business' },
+      {
+        $project: {
+          _id: 1,
+          revenuePaise: 1,
+          orders: 1,
+          name: '$business.name',
+          slug: '$business.slug'
+        }
+      }
+    ]);
+
+    return res.json({ success: true, data: { windowDays: BUSINESS_HEATMAP_WINDOW_DAYS, businesses: ranked } });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
+  }
+};
+
+export const getBusinessHourlyHeatmap = async (req: AuthRequest, res: Response) => {
+  try {
+    const { businessId } = req.query;
+    if (!businessId || !mongoose.Types.ObjectId.isValid(businessId as string)) {
+      return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'A valid businessId is required.' } });
+    }
+
+    const business = await Business.findById(businessId).select('name slug');
+    if (!business) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Business not found.' } });
+    }
+
+    const since = new Date(Date.now() - BUSINESS_HEATMAP_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+
+    const cellsRaw = await Order.aggregate([
+      {
+        $match: {
+          businessId: new mongoose.Types.ObjectId(businessId as string),
+          paymentStatus: 'PAID',
+          createdAt: { $gte: since }
+        }
+      },
+      {
+        $group: {
+          // $dayOfWeek: 1 = Sunday ... 7 = Saturday, timezone-aware so a day genuinely
+          // "belongs" to whichever local calendar day the order was placed on — the same
+          // Asia/Kolkata convention used for the platform-wide peakHeatmap above.
+          _id: {
+            day: { $dayOfWeek: { date: '$createdAt', timezone: 'Asia/Kolkata' } },
+            hour: { $hour: { date: '$createdAt', timezone: 'Asia/Kolkata' } }
+          },
+          revenuePaise: { $sum: '$totalAmountPaise' },
+          orders: { $sum: 1 }
+        }
+      }
+    ]);
+
+    const cells = cellsRaw.map((c) => ({
+      day: c._id.day,
+      hour: c._id.hour,
+      revenuePaise: c.revenuePaise,
+      orders: c.orders
+    }));
+
+    return res.json({
+      success: true,
+      data: {
+        business: { _id: business._id, name: business.name, slug: business.slug },
+        windowDays: BUSINESS_HEATMAP_WINDOW_DAYS,
+        cells
+      }
+    });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
+  }
+};
+
+// Super admin: repeat-customer rate, true item margins, and real kitchen speed for one
+// business, looked up by id — the same computations getOwnerAnalytics exposes to the business
+// itself, so support/ops can inspect any single business without impersonating its owner.
+export const getBusinessInsights = async (req: AuthRequest, res: Response) => {
+  try {
+    const { businessId } = req.query;
+    if (!businessId || !mongoose.Types.ObjectId.isValid(businessId as string)) {
+      return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'A valid businessId is required.' } });
+    }
+
+    const business = await Business.findById(businessId).select('name slug');
+    if (!business) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Business not found.' } });
+    }
+
+    const [repeatCustomers, itemMargins, kitchenSpeed] = await Promise.all([
+      computeRepeatCustomerStats(businessId as string),
+      computeItemMargins(businessId as string),
+      computeKitchenSpeed(businessId as string)
+    ]);
+
+    return res.json({
+      success: true,
+      data: {
+        business: { _id: business._id, name: business.name, slug: business.slug },
+        repeatCustomers,
+        itemMargins,
+        kitchenSpeed
+      }
     });
   } catch (error: any) {
     return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });

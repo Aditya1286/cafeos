@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { getTableByToken } from '../controllers/tableController';
 import { getPublicMenu, getMenuImage } from '../controllers/menuController';
-import { createOrder, getOrderById, markOrderPaidByCustomer, cancelOrderByCustomer } from '../controllers/orderController';
+import { createOrder, getOrderById, markOrderPaidByCustomer, cancelOrderByCustomer, requestOrderRefund } from '../controllers/orderController';
 import { SubscriptionPlan } from '../models/SubscriptionPlan';
 import { Business } from '../models/Business';
 import { confirmOtp, requestOtp } from '../controllers/otp.controller';
@@ -43,6 +43,7 @@ router.post('/orders', createOrder);
 router.get('/orders/:id', getOrderById);
 router.put('/orders/:id/mark-paid', markOrderPaidByCustomer);
 router.put('/orders/:id/cancel', cancelOrderByCustomer);
+router.put('/orders/:id/request-refund', requestOrderRefund);
 
 // Public: Subscription plans for marketing page
 router.get('/plans', async (req, res) => {

@@ -1,11 +1,14 @@
 import React from 'react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from 'recharts';
 import { BarChart3 } from 'lucide-react';
-import { DailySalesPoint } from '../../../types';
+import { DashboardAnalytics } from '../../../types';
 import { paiseToRupees } from '../../../utils/money';
+import { RepeatCustomerBar } from '../../molecules/RepeatCustomerBar';
+import { ItemMarginTable } from '../../molecules/ItemMarginTable';
+import { KitchenSpeedPanel } from '../../molecules/KitchenSpeedPanel';
 
 interface AnalyticsPanelProps {
-  dailySales: DailySalesPoint[];
+  analytics: DashboardAnalytics | null;
 }
 
 const tooltipStyle = {
@@ -13,9 +16,9 @@ const tooltipStyle = {
   borderRadius: '12px', fontSize: '12px', boxShadow: '0 8px 20px rgba(0,0,0,0.08)'
 };
 
-/** Renders exactly what the backend's daily-sales aggregation returns — no synthetic fallback data. */
-export const AnalyticsPanel = ({ dailySales }: AnalyticsPanelProps) => {
-  const chartData = dailySales.map(d => ({
+/** Renders exactly what the backend's aggregations return — no synthetic fallback data. */
+export const AnalyticsPanel = ({ analytics }: AnalyticsPanelProps) => {
+  const chartData = (analytics?.dailySales || []).map(d => ({
     day: d._id?.split('-').slice(1).join('/') || d._id,
     sales: paiseToRupees(d.salesPaise),
     orders: d.orders
@@ -53,6 +56,32 @@ export const AnalyticsPanel = ({ dailySales }: AnalyticsPanelProps) => {
             </ResponsiveContainer>
           </div>
         )}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+          <div>
+            <h3 className="text-sm font-black text-slate-900">Repeat Customer Rate</h3>
+            <p className="text-[11px] text-slate-500 font-medium">Who keeps coming back, and how much of your revenue they drive</p>
+          </div>
+          {analytics ? <RepeatCustomerBar stats={analytics.repeatCustomers} /> : null}
+        </div>
+
+        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+          <div>
+            <h3 className="text-sm font-black text-slate-900">Real Kitchen Speed</h3>
+            <p className="text-[11px] text-slate-500 font-medium">From actual order timestamps, not a marketing number</p>
+          </div>
+          {analytics ? <KitchenSpeedPanel stats={analytics.kitchenSpeed} /> : null}
+        </div>
+      </div>
+
+      <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+        <div>
+          <h3 className="text-sm font-black text-slate-900">True Item Margin</h3>
+          <p className="text-[11px] text-slate-500 font-medium">Selling price vs. actual ingredient cost from each item's recipe</p>
+        </div>
+        {analytics ? <ItemMarginTable data={analytics.itemMargins} /> : null}
       </div>
     </div>
   );

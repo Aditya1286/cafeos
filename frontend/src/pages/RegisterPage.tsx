@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { 
-  Coffee, Shield, UtensilsCrossed, ArrowRight, Lock, Mail, 
-  User, Phone, Store, Globe, CheckCircle2, Sparkles, Zap, Layers, UserPlus, Eye, EyeOff
+import {
+  Coffee, Shield, UtensilsCrossed, ArrowRight, Lock, Mail,
+  User, Phone, Store, Globe, CheckCircle2, Sparkles, Zap, Layers, UserPlus, Eye, EyeOff, Clock
 } from 'lucide-react';
 import { apiRequest, setAuthToken } from '../services/api';
 import { APP_NAME, APP_SLUG } from '../constants/app';
+import { useOtpVerification } from '../hooks/useOtpVerification';
+import { formatTime } from '../utils/DateUtils';
 
 interface RegisterPageProps {
   onRegisterSuccess: (userData: any) => void;
@@ -48,6 +50,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const otp = useOtpVerification(formData.phone);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -305,18 +308,83 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
                   {/* Mobile Phone */}
                   <div>
                     <label className="block text-xs font-extrabold text-slate-900 mb-1.5">Phone Number</label>
-                    <div className="relative">
-                      <Phone className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                      <input
-                        type="tel"
-                        required
-                        name="phone"
-                        value={formData.phone}
-                        onChange={handleInputChange}
-                        placeholder="+91 98765 43210"
-                        className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 border border-slate-300 focus:border-red-600 focus:bg-white focus:ring-2 focus:ring-red-600/15 text-xs text-slate-900 placeholder-slate-400 font-semibold outline-none transition-all"
-                      />
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <Phone className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <input
+                          type="tel"
+                          required
+                          disabled={otp.otpVerified}
+                          value={formData.phone}
+                          onChange={(e) => {
+                            const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
+                            setFormData((prev) => ({ ...prev, phone: digits }));
+                          }}
+                          placeholder="9876543210"
+                          className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 border border-slate-300 focus:border-red-600 focus:bg-white focus:ring-2 focus:ring-red-600/15 text-xs text-slate-900 placeholder-slate-400 font-semibold outline-none transition-all disabled:opacity-60"
+                        />
+                      </div>
+                      {!otp.otpVerified && (
+                        <button
+                          type="button"
+                          onClick={otp.sendOtp}
+                          disabled={otp.sending || !otp.canResend}
+                          className="px-3.5 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-extrabold whitespace-nowrap disabled:opacity-40 transition-all"
+                        >
+                          {otp.sending ? 'Sending...' : otp.otpSent ? 'Resend' : 'Send OTP'}
+                        </button>
+                      )}
                     </div>
+
+                    {otp.otpSent && !otp.canResend && !otp.otpVerified && (
+                      <span className="mt-1.5 flex items-center gap-1 text-[11px] font-bold text-slate-400 tabular-nums">
+                        <Clock className="w-3.5 h-3.5" /> Resend available in {formatTime(otp.resendSecondsLeft)}
+                      </span>
+                    )}
+
+                    {/* Staging-only: backend echoes the OTP back instead of sending a real
+                        SMS, so testers don't need a phone to complete the flow. Never
+                        appears against the production OTP provider. */}
+                    {otp.devOtp && (
+                      <div className="mt-2 flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-amber-50 border border-dashed border-amber-300">
+                        <span className="flex items-center gap-1.5 text-[10px] font-extrabold text-amber-700">
+                          <span className="px-1.5 py-0.5 rounded-md bg-amber-400/30 uppercase tracking-wider">Staging</span>
+                          Test OTP
+                        </span>
+                        <span className="text-sm font-black text-amber-800 tracking-[0.2em]">{otp.devOtp}</span>
+                      </div>
+                    )}
+
+                    {otp.otpVerified && (
+                      <p className="mt-1.5 text-[11px] font-bold text-emerald-600 flex items-center gap-1">
+                        <CheckCircle2 className="w-3.5 h-3.5" /> Phone verified
+                      </p>
+                    )}
+
+                    {otp.otpSent && !otp.otpVerified && (
+                      <div className="mt-2 flex gap-2">
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="Enter OTP"
+                          value={otp.otpCode}
+                          onChange={(e) => otp.setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                          className="flex-1 px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-xs text-slate-900 font-semibold outline-none focus:border-red-600 focus:bg-white focus:ring-2 focus:ring-red-600/15 transition-all"
+                        />
+                        <button
+                          type="button"
+                          onClick={otp.verifyOtp}
+                          disabled={otp.verifying}
+                          className="px-3.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-extrabold whitespace-nowrap disabled:opacity-40 transition-all"
+                        >
+                          {otp.verifying ? 'Verifying...' : 'Verify'}
+                        </button>
+                      </div>
+                    )}
+
+                    {otp.error && (
+                      <p className="mt-1.5 text-[11px] font-bold text-rose-600">{otp.error}</p>
+                    )}
                   </div>
 
                   {/* Password */}
@@ -350,10 +418,15 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
                         setError('Please fill in all fields before continuing.');
                         return;
                       }
+                      if (!otp.otpVerified) {
+                        setError('Please verify your phone number before continuing.');
+                        return;
+                      }
                       setError(null);
                       setStep(2);
                     }}
-                    className="w-full py-3.5 rounded-xl bg-red-600 hover:bg-red-700 active:scale-[0.99] text-white font-extrabold text-xs shadow-lg shadow-red-600/30 flex items-center justify-center gap-2 transition-all mt-2"
+                    disabled={!otp.otpVerified}
+                    className="w-full py-3.5 rounded-xl bg-red-600 hover:bg-red-700 active:scale-[0.99] text-white font-extrabold text-xs shadow-lg shadow-red-600/30 flex items-center justify-center gap-2 transition-all mt-2 disabled:opacity-50"
                   >
                     Continue to Business Details <ArrowRight className="w-4 h-4" />
                   </button>

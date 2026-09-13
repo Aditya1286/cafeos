@@ -239,17 +239,30 @@ export const FinancialLedgerPanel = ({ business, remittanceSummary, loadingRemit
             <div className="text-sm font-extrabold text-emerald-600">
               {formatCurrency(remittanceSummary.currentPeriod.commissionOwedPaise)}
             </div>
+            <div className="text-[10px] text-slate-400 font-medium mt-0.5">
+              Not due until {new Date(remittanceSummary.currentPeriod.periodEnd).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+            </div>
           </div>
         </div>
 
-        {remittanceSummary.totalUnpaidOwedPaise > 0 && (
+        {remittanceSummary.totalUnpaidOwedPaise > 0 ? (
           <PayCommissionCard
             business={business}
             remittanceSummary={remittanceSummary}
             markingPaid={markingPaid}
             onMarkPaid={onMarkPaid}
           />
-        )}
+        ) : remittanceSummary.currentPeriod.commissionOwedPaise > 0 ? (
+          <div className="bg-white p-5 rounded-3xl border border-dashed border-slate-200 flex items-start gap-2.5">
+            <Info className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+            <p className="text-xs text-slate-500 font-medium">
+              Nothing to pay yet — {formatCurrency(remittanceSummary.currentPeriod.commissionOwedPaise)} is
+              accruing this billing period. It becomes payable once the period closes on{' '}
+              {new Date(remittanceSummary.currentPeriod.periodEnd).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+              , and a "Pay your commission" option will appear here.
+            </p>
+          </div>
+        ) : null}
 
         <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
           <div>

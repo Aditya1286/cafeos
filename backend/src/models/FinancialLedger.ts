@@ -46,6 +46,10 @@ const FinancialLedgerSchema = new Schema<IFinancialLedger>(
 );
 
 FinancialLedgerSchema.index({ businessId: 1, createdAt: -1 });
-FinancialLedgerSchema.index({ type: 1, createdAt: -1 });
+// Super admin's platform-wide GMV/fees/subscription-revenue totals all match on
+// { type, status } (no createdAt range), and the revenue timeseries chart adds a createdAt
+// range on top of the same two fields — this one index covers both. Supersedes the old
+// { type, createdAt } index, which nothing queried without `status` alongside it.
+FinancialLedgerSchema.index({ status: 1, type: 1, createdAt: -1 });
 
 export const FinancialLedger = mongoose.model<IFinancialLedger>('FinancialLedger', FinancialLedgerSchema);

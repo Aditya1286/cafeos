@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { CheckCircle2, ShieldCheck, XCircle, HelpCircle } from 'lucide-react';
+import { CheckCircle2, ShieldCheck, XCircle, HelpCircle, Undo2 } from 'lucide-react';
 import { isMobileDevice } from '@/utils/device';
 import { apiRequest } from '../../services/api';
 import { UpiAppButtons } from './UpiAppButtons';
@@ -12,6 +12,8 @@ interface PaymentPanelProps {
   paymentStatus: 'UNPAID' | 'PAID' | 'REFUNDED' | 'FAILED';
   orderStatus: string;
   customerMarkedPaidAt?: string | null;
+  refundRequestedAt?: string | null;
+  refundedAt?: string | null;
   payeeVpa?: string;
   payeeName: string;
   amount: number; // rupees
@@ -31,6 +33,8 @@ export const PaymentPanel: React.FC<PaymentPanelProps> = ({
   paymentStatus,
   orderStatus,
   customerMarkedPaidAt,
+  refundRequestedAt,
+  refundedAt,
   payeeVpa,
   payeeName,
   amount,
@@ -40,11 +44,84 @@ export const PaymentPanel: React.FC<PaymentPanelProps> = ({
   const [outcome, setOutcome] = useState<'placed' | 'cancelled' | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [refundReason, setRefundReason] = useState('');
+  const [refundJustRequested, setRefundJustRequested] = useState(false);
+  const [submittingRefund, setSubmittingRefund] = useState(false);
+
+  const handleRequestRefund = async () => {
+    setSubmittingRefund(true);
+    setActionError(null);
+    try {
+      await apiRequest(`/public/orders/${orderId}/request-refund`, 'PUT', { reason: refundReason });
+      setRefundJustRequested(true);
+      onOrderChanged();
+    } catch (err: any) {
+      setActionError(err.message || 'Could not submit your refund request.');
+    } finally {
+      setSubmittingRefund(false);
+    }
+  };
 
   if (orderStatus === 'CANCELLED') {
+    if (paymentStatus === 'REFUNDED') {
+      return (
+        <div className="rounded-2xl border border-violet-200 bg-violet-50 p-5 text-center space-y-1">
+          <Undo2 className="w-6 h-6 text-violet-600 mx-auto" />
+          <p className="text-xs font-black text-violet-700">Refunded</p>
+          {refundedAt && (
+            <p className="text-[11px] text-violet-600">
+              on {new Date(refundedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+            </p>
+          )}
+        </div>
+      );
+    }
+
+    if (paymentStatus !== 'PAID') {
+      return (
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-center">
+          <p className="text-xs font-bold text-rose-700">This order was cancelled.</p>
+        </div>
+      );
+    }
+
+    // Paid, then cancelled — the customer's money needs to actually come back.
+    if (refundJustRequested || refundRequestedAt) {
+      return (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-center space-y-1">
+          <HelpCircle className="w-6 h-6 text-amber-600 mx-auto" />
+          <p className="text-xs font-black text-amber-700">Refund requested</p>
+          <p className="text-[11px] text-amber-600">The business will process this and confirm here.</p>
+        </div>
+      );
+    }
+
     return (
-      <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-center">
-        <p className="text-xs font-bold text-rose-700">This order was cancelled.</p>
+      <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 space-y-3">
+        <div className="text-center space-y-1">
+          <XCircle className="w-6 h-6 text-rose-600 mx-auto" />
+          <p className="text-xs font-black text-rose-700">This order was cancelled after you paid</p>
+          <p className="text-[11px] text-rose-600">Request a refund and the business will process it.</p>
+        </div>
+
+        {actionError && <p className="text-[11px] font-bold text-rose-700 text-center">{actionError}</p>}
+
+        <textarea
+          value={refundReason}
+          onChange={(e) => setRefundReason(e.target.value)}
+          placeholder="Anything the business should know? (optional)"
+          rows={2}
+          className="w-full px-3 py-2 rounded-xl bg-white border border-rose-200 text-xs text-slate-800 placeholder:text-slate-400 outline-none focus:border-rose-400"
+        />
+
+        <button
+          type="button"
+          onClick={handleRequestRefund}
+          disabled={submittingRefund}
+          className="w-full py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs shadow-md shadow-rose-600/20 transition-all disabled:opacity-50"
+        >
+          {submittingRefund ? 'Requesting…' : 'Request a Refund'}
+        </button>
       </div>
     );
   }

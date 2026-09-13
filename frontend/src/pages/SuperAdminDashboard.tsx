@@ -9,6 +9,7 @@ import BusinessFinanceDrawer from '../components/ui/BusinessFinanceDrawer';
 import { APP_SLUG } from '../constants/app';
 import { toast } from '../utils/toast';
 import { downloadCsv } from '../utils/exportCsv';
+import { AdminBusinessSummary } from '../types';
 
 import { useSuperAdminDashboardData } from '../hooks/useSuperAdminDashboardData';
 import { useSuperAdminAnalytics } from '../hooks/useSuperAdminAnalytics';
@@ -17,10 +18,12 @@ import { useRemittanceQueue } from '../hooks/useRemittanceQueue';
 import { KpiOverviewBento } from '../components/organisms/super-admin/KpiOverviewBento';
 import { RevenueChartPanel } from '../components/organisms/super-admin/RevenueChartPanel';
 import { LiveOrdersPanel } from '../components/organisms/super-admin/LiveOrdersPanel';
-import { BusinessesShowcase } from '../components/organisms/super-admin/BusinessesShowcase';
-import { PeakHoursHeatmap } from '../components/organisms/super-admin/PeakHoursHeatmap';
+import { BusinessConstellation } from '../components/organisms/super-admin/BusinessConstellation';
+import { BusinessSpotlightModal } from '../components/organisms/super-admin/BusinessSpotlightModal';
+import { CancellationRatePanel } from '../components/organisms/super-admin/CancellationRatePanel';
 import { BestSellersPanel } from '../components/organisms/super-admin/BestSellersPanel';
 import { PlatformInsightsPanel } from '../components/organisms/super-admin/PlatformInsightsPanel';
+import { BusinessHourlyHeatmapPanel } from '../components/organisms/super-admin/BusinessHourlyHeatmapPanel';
 import { BusinessesManagementTable } from '../components/organisms/super-admin/BusinessesManagementTable';
 import { BusinessesGridPanel } from '../components/organisms/super-admin/BusinessesGridPanel';
 import { RemittanceQueueTable } from '../components/organisms/super-admin/RemittanceQueueTable';
@@ -37,6 +40,7 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [selectedBusinessForModal, setSelectedBusinessForModal] = useState<any>(null);
   const [selectedBusinessForFinance, setSelectedBusinessForFinance] = useState<string | null>(null);
+  const [spotlightBusiness, setSpotlightBusiness] = useState<AdminBusinessSummary | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'SUSPENDED'>('ALL');
 
@@ -44,7 +48,7 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
     document.documentElement.classList.remove('dark');
   }, []);
 
-  const { overview, businesses, liveOrders, systemHealth, loading, fetchDashboardData, handleToggleBusinessStatus } = useSuperAdminDashboardData();
+  const { overview, businesses, liveOrders, systemHealth, loading, fetchDashboardData, handleToggleBusinessStatus, handleChangeBusinessPlan } = useSuperAdminDashboardData();
   const { analyticsData } = useSuperAdminAnalytics(dateRange);
   const remittanceQueue = useRemittanceQueue(activeTab);
 
@@ -94,6 +98,13 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
         businessId={selectedBusinessForFinance}
         onClose={() => setSelectedBusinessForFinance(null)}
         onChanged={fetchDashboardData}
+      />
+
+      <BusinessSpotlightModal
+        business={spotlightBusiness}
+        onClose={() => setSpotlightBusiness(null)}
+        onOpenFinance={setSelectedBusinessForFinance}
+        onOpenStatusModal={setSelectedBusinessForModal}
       />
 
       <NavbarAdmin
@@ -149,10 +160,14 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
               <LiveOrdersPanel liveOrders={liveOrders} />
             </div>
 
-            <BusinessesShowcase businesses={businesses} onSelectBusiness={setSelectedBusinessForModal} />
+            <BusinessConstellation businesses={businesses} onSelectBusiness={setSpotlightBusiness} />
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              <PeakHoursHeatmap peakHeatmap={analyticsData?.peakHeatmap ?? []} />
+              <CancellationRatePanel
+                stats={analyticsData?.cancellationStats ?? null}
+                timeseries={analyticsData?.cancellationTimeseries ?? []}
+                worstBusinesses={analyticsData?.worstBusinessesByCancellation ?? []}
+              />
               <BestSellersPanel bestSellers={analyticsData?.bestSellers ?? []} />
             </div>
 
@@ -162,12 +177,18 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
               peakHeatmap={analyticsData?.peakHeatmap ?? []}
             />
 
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              <BusinessHourlyHeatmapPanel businesses={businesses} />
+            </div>
+
             <BusinessesManagementTable
               businesses={filteredBusinesses}
+              plans={overview?.plans ?? []}
               searchQuery={searchQuery}
               onSearchChange={setSearchQuery}
               onOpenFinance={setSelectedBusinessForFinance}
               onOpenStatusModal={setSelectedBusinessForModal}
+              onChangePlan={handleChangeBusinessPlan}
             />
           </>
         )}
@@ -212,7 +233,7 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
         )}
 
         {activeTab === 'plans' && (
-          <SubscriptionPlansPanel plans={overview?.plans ?? []} />
+          <SubscriptionPlansPanel plans={overview?.plans ?? []} onPlansChanged={fetchDashboardData} />
         )}
 
         {activeTab === 'system' && (

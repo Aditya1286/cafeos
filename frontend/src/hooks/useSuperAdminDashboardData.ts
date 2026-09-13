@@ -67,6 +67,16 @@ export const useSuperAdminDashboardData = () => {
     }
   };
 
+  const handleChangeBusinessPlan = async (businessId: string, planId: string) => {
+    try {
+      const res = await apiRequest(`/admin/businesses/${businessId}/plan`, 'PUT', { planId });
+      toast.success(res.message || 'Plan updated');
+      fetchDashboardData();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to change plan');
+    }
+  };
+
   return {
     overview,
     businesses,
@@ -75,5 +85,6 @@ export const useSuperAdminDashboardData = () => {
     loading,
     fetchDashboardData,
     handleToggleBusinessStatus,
+    handleChangeBusinessPlan,
   };
 };

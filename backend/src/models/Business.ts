@@ -55,5 +55,7 @@ const BusinessSchema = new Schema<IBusiness>(
 );
 
 BusinessSchema.index({ status: 1 });
+// Super admin's businesses list sorts unfiltered by createdAt on nearly every dashboard load.
+BusinessSchema.index({ createdAt: -1 });
 
 export const Business = mongoose.model<IBusiness>('Business', BusinessSchema);

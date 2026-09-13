@@ -13,7 +13,10 @@ export const getPublicMenu = async (req: Request, res: Response) => {
     const { businessId } = req.params;
     
     const categories = await Category.find({ businessId, isAvailable: true }).sort({ displayOrder: 1 });
-    const products = await Product.find({ businessId, isAvailable: true }).sort({ displayOrder: 1 });
+    // isDeleted excluded defensively too — it's already unorderable via isAvailable:false,
+    // but a deleted item should never resurface here even if isAvailable were ever restored
+    // without also clearing isDeleted.
+    const products = await Product.find({ businessId, isAvailable: true, isDeleted: { $ne: true } }).sort({ displayOrder: 1 });
 
     return res.json({
       success: true,
@@ -84,7 +87,12 @@ export const deleteCategory = async (req: AuthRequest, res: Response) => {
 // Owner/Staff: Products
 export const getProducts = async (req: AuthRequest, res: Response) => {
   try {
-    const products = await Product.find({ businessId: req.businessId }).populate('categoryId').sort({ displayOrder: 1 });
+    // isDeleted excluded here — that's the whole point of "delete" vs "remove from menu"
+    // (isAvailable:false): a removed item still shows up for the owner to restore, a
+    // deleted one disappears from this list entirely while the document is kept intact.
+    const products = await Product.find({ businessId: req.businessId, isDeleted: { $ne: true } })
+      .populate('categoryId')
+      .sort({ displayOrder: 1 });
     return res.json({ success: true, data: products });
   } catch (error: any) {
     return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
@@ -131,10 +139,25 @@ export const createProduct = async (req: AuthRequest, res: Response) => {
 export const updateProduct = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
+    const { name, categoryId, pricePaise } = req.body;
+
+    if (name !== undefined && !String(name).trim()) {
+      return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Product name cannot be empty.' } });
+    }
+    if (pricePaise !== undefined && (isNaN(Number(pricePaise)) || Number(pricePaise) < 0)) {
+      return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'A valid price is required.' } });
+    }
+    if (categoryId !== undefined) {
+      const category = await Category.findOne({ _id: categoryId, businessId: req.businessId });
+      if (!category) {
+        return res.status(400).json({ success: false, error: { code: 'INVALID_CATEGORY', message: 'Selected category does not exist for this business.' } });
+      }
+    }
+
     const product = await Product.findOneAndUpdate(
       { _id: id, businessId: req.businessId },
       req.body,
-      { new: true }
+      { new: true, runValidators: true }
     );
     if (!product) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Product not found' } });
     return res.json({ success: true, data: product, message: 'Product updated' });
@@ -193,11 +216,44 @@ export const getMenuImage = async (req: Request, res: Response) => {
   }
 };
 
+// "Remove from menu" never hard-deletes the Product row — past orders keep a frozen
+// name/price snapshot but still reference this productId (Order.items[].productId), so
+// deleting the doc would leave historical orders pointing at nothing, with no way to
+// bring the item back without recreating it under a new id. Soft-remove via isAvailable
+// instead: it disappears from the public menu (getPublicMenu filters isAvailable:true)
+// and can no longer be ordered (createOrder rejects !product.isAvailable), but the owner
+// can still see and restore it from their own product list.
 export const deleteProduct = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    await Product.findOneAndDelete({ _id: id, businessId: req.businessId });
-    return res.json({ success: true, message: 'Product deleted' });
+    const product = await Product.findOneAndUpdate(
+      { _id: id, businessId: req.businessId },
+      { isAvailable: false },
+      { new: true }
+    );
+    if (!product) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Product not found' } });
+    return res.json({ success: true, data: product, message: 'Item removed from menu' });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
+  }
+};
+
+// "Delete" — distinct from "Remove from menu" above. Also never hard-deletes the row
+// (same reasoning: Order.items[].productId would dangle), but goes further: the item
+// disappears from the owner's own product list too, not just the public menu. There's
+// no restore button for this in the UI — the data is only ever recovered by clearing
+// isDeleted directly, which is intentional (this is the "actually gone" action; use
+// "Remove from menu" instead for anything that might come back later).
+export const archiveProduct = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const product = await Product.findOneAndUpdate(
+      { _id: id, businessId: req.businessId },
+      { isDeleted: true, isAvailable: false },
+      { new: true }
+    );
+    if (!product) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Product not found' } });
+    return res.json({ success: true, data: product, message: 'Item deleted' });
   } catch (error: any) {
     return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
   }

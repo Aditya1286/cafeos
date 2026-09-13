@@ -23,5 +23,8 @@ const CategorySchema = new Schema<ICategory>(
 );
 
 CategorySchema.index({ businessId: 1, displayOrder: 1 });
+// The public customer-facing menu (every QR scan) filters isAvailable and sorts by
+// displayOrder — the index above can't serve the isAvailable equality + ordered sort together.
+CategorySchema.index({ businessId: 1, isAvailable: 1, displayOrder: 1 });
 
 export const Category = mongoose.model<ICategory>('Category', CategorySchema);

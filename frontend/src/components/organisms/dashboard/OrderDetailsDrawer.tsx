@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, User, FileText } from 'lucide-react';
+import { X, User, FileText, Undo2, Wallet } from 'lucide-react';
 import { STATUS_CONFIG, isOrderCancellable } from '../../../constants/orderStatus';
 import { formatCurrency } from '../../../utils/money';
 
@@ -10,9 +10,20 @@ interface OrderDetailsDrawerProps {
   onClose: () => void;
   onViewBill: (orderId: string) => void;
   onCancel: (order: any) => void;
+  onMarkRefunded: (order: any) => void;
+  onConfirmPayment: (order: any) => void;
 }
 
-export const OrderDetailsDrawer = ({ order, orderDetails, onClose, onViewBill, onCancel }: OrderDetailsDrawerProps) => (
+const PAYMENT_BADGE_CLASS: Record<string, string> = {
+  PAID: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  REFUNDED: 'bg-violet-50 text-violet-700 border-violet-200',
+  FAILED: 'bg-rose-50 text-rose-700 border-rose-200',
+  UNPAID: 'bg-amber-50 text-amber-700 border-amber-200',
+};
+
+const needsRefund = (order: any) => order.orderStatus === 'CANCELLED' && order.paymentStatus === 'PAID';
+
+export const OrderDetailsDrawer = ({ order, orderDetails, onClose, onViewBill, onCancel, onMarkRefunded, onConfirmPayment }: OrderDetailsDrawerProps) => (
   <AnimatePresence>
     {order && (
       <div
@@ -126,7 +137,7 @@ export const OrderDetailsDrawer = ({ order, orderDetails, onClose, onViewBill, o
               <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5 text-xs">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-extrabold uppercase text-slate-400">Payment Information</span>
-                  <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-black">
+                  <span className={`px-2 py-0.5 rounded-full border text-[10px] font-black ${PAYMENT_BADGE_CLASS[order.paymentStatus] || PAYMENT_BADGE_CLASS.PAID}`}>
                     {order.paymentStatus || 'PAID'}
                   </span>
                 </div>
@@ -137,6 +148,17 @@ export const OrderDetailsDrawer = ({ order, orderDetails, onClose, onViewBill, o
                 {order.customerMarkedPaidAt && order.paymentStatus === 'UNPAID' && (
                   <div className="mt-1.5 px-2.5 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 text-[10px] font-black uppercase">
                     Customer says they've paid — verify before serving
+                  </div>
+                )}
+                {order.refundRequestedAt && order.paymentStatus === 'PAID' && (
+                  <div className="mt-1.5 px-2.5 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 text-[10px] font-black">
+                    Customer requested a refund on {new Date(order.refundRequestedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+                    {order.refundReason ? ` — "${order.refundReason}"` : ''}
+                  </div>
+                )}
+                {order.paymentStatus === 'REFUNDED' && order.refundedAt && (
+                  <div className="mt-1.5 px-2.5 py-1.5 rounded-xl bg-violet-50 border border-violet-200 text-violet-700 text-[10px] font-black">
+                    Refunded on {new Date(order.refundedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                   </div>
                 )}
               </div>
@@ -162,6 +184,26 @@ export const OrderDetailsDrawer = ({ order, orderDetails, onClose, onViewBill, o
                 <FileText className="w-4 h-4" />
                 <span>View & Print E-Bill</span>
               </button>
+
+              {order.paymentStatus === 'UNPAID' && order.orderStatus !== 'CANCELLED' && (
+                <button
+                  onClick={() => onConfirmPayment(order)}
+                  className="w-full py-3 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-700 font-black text-xs transition-all flex items-center justify-center gap-2"
+                >
+                  <Wallet className="w-4 h-4" />
+                  <span>{order.customerMarkedPaidAt ? 'Confirm Payment (Customer says paid)' : 'Confirm Payment'}</span>
+                </button>
+              )}
+
+              {needsRefund(order) && (
+                <button
+                  onClick={() => onMarkRefunded(order)}
+                  className="w-full py-3 rounded-xl bg-violet-50 hover:bg-violet-100 border border-violet-200 text-violet-700 font-black text-xs transition-all flex items-center justify-center gap-2"
+                >
+                  <Undo2 className="w-4 h-4" />
+                  <span>Mark Refunded</span>
+                </button>
+              )}
 
               {isOrderCancellable(order.orderStatus) && (
                 <button

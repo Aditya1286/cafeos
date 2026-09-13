@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import {
   getCategories, createCategory, updateCategory, deleteCategory,
-  getProducts, createProduct, updateProduct, deleteProduct,
+  getProducts, createProduct, updateProduct, deleteProduct, archiveProduct,
   uploadMenuImage
 } from '../controllers/menuController';
 import { protect } from '../middleware/auth';
@@ -26,5 +26,6 @@ router.get('/products', getProducts);
 router.post('/products', restrictTo('SUPER_ADMIN', 'OWNER', 'MANAGER'), createProduct);
 router.put('/products/:id', restrictTo('SUPER_ADMIN', 'OWNER', 'MANAGER'), updateProduct);
 router.delete('/products/:id', restrictTo('SUPER_ADMIN', 'OWNER', 'MANAGER'), deleteProduct);
+router.put('/products/:id/archive', restrictTo('SUPER_ADMIN', 'OWNER', 'MANAGER'), archiveProduct);
 
 export default router;

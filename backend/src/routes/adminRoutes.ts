@@ -3,7 +3,8 @@ import {
   getSuperAdminOverview, getAllBusinesses, toggleBusinessStatus,
   createSubscriptionPlan, updateSubscriptionPlan, getSystemHealth,
   getSuperAdminAnalytics, getBusinessRemittances, markRemittancePaid, markRemittanceUnpaid,
-  getAllRemittanceRequests, updateBusinessFinanceSettings
+  getAllRemittanceRequests, updateBusinessFinanceSettings, getBusinessHourlyHeatmap,
+  getTopBusinessesByRevenue, changeBusinessPlan, getBusinessInsights
 } from '../controllers/superAdminController';
 import { protect } from '../middleware/auth';
 import { restrictTo } from '../middleware/rbac';
@@ -14,9 +15,13 @@ router.use(protect, restrictTo('SUPER_ADMIN'));
 
 router.get('/overview', getSuperAdminOverview);
 router.get('/analytics', getSuperAdminAnalytics);
+router.get('/analytics/business-heatmap', getBusinessHourlyHeatmap);
+router.get('/analytics/business-insights', getBusinessInsights);
+router.get('/analytics/top-businesses', getTopBusinessesByRevenue);
 router.get('/businesses', getAllBusinesses);
 router.put('/businesses/:id/status', toggleBusinessStatus);
 router.put('/businesses/:id/finance-settings', updateBusinessFinanceSettings);
+router.put('/businesses/:id/plan', changeBusinessPlan);
 router.get('/businesses/:id/remittances', getBusinessRemittances);
 router.get('/remittances', getAllRemittanceRequests);
 router.put('/remittances/:id/pay', markRemittancePaid);

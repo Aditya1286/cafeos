@@ -5,6 +5,7 @@ import { FormField, inputCls } from '../../molecules/FormField';
 
 interface AddProductModalProps {
   open: boolean;
+  isEditing?: boolean;
   onClose: () => void;
   categories: any[];
   name: string; setName: (v: string) => void;
@@ -27,7 +28,7 @@ interface AddProductModalProps {
 }
 
 export const AddProductModal = ({
-  open, onClose, categories, name, setName, categoryId, setCategoryId,
+  open, isEditing, onClose, categories, name, setName, categoryId, setCategoryId,
   pricePaise, setPricePaise, description, setDescription, isVeg, setIsVeg, onSubmit,
   showAddCategory, setShowAddCategory, newCategoryName, setNewCategoryName, creatingCategory, onCreateCategory,
   imagePreviewUrl, uploadingImage, onSelectImage
@@ -49,7 +50,7 @@ export const AddProductModal = ({
   };
 
   return (
-    <Modal title="Add Menu Item" onClose={onClose}>
+    <Modal title={isEditing ? 'Edit Menu Item' : 'Add Menu Item'} onClose={onClose}>
       <form onSubmit={onSubmit} className="space-y-4">
         <FormField label="Photo (optional)">
           <div className="flex items-center gap-3">
@@ -201,7 +202,7 @@ export const AddProductModal = ({
           disabled={categories.length === 0 || uploadingImage}
           className="w-full py-3 rounded-xl bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-black text-xs shadow-md shadow-orange-600/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Add to Menu
+          {isEditing ? 'Save Changes' : 'Add to Menu'}
         </button>
       </form>
     </Modal>

@@ -50,6 +50,7 @@ export interface SubscriptionPlan {
   };
   isPopular?: boolean;
   status: 'ACTIVE' | 'DISABLED';
+  subscriberCount?: number;
 }
 
 export interface Category {
@@ -189,6 +190,39 @@ export interface TopProduct {
   totalRevenuePaise: number;
 }
 
+export interface RepeatCustomerStats {
+  totalCustomers: number;
+  repeatCustomers: number;
+  oneTimeCustomers: number;
+  repeatCustomerPercentage: number | null;
+  totalRevenuePaise: number;
+  repeatRevenuePaise: number;
+  repeatRevenuePercentage: number | null;
+}
+
+export interface ItemMarginRow {
+  productId: string;
+  name: string;
+  pricePaise: number;
+  ingredientCostPaise: number | null;
+  marginPaise: number | null;
+  marginPercentage: number | null;
+  hasRecipe: boolean;
+}
+
+export interface ItemMarginsData {
+  items: ItemMarginRow[];
+  productsWithoutRecipeCount: number;
+}
+
+export interface KitchenSpeedStats {
+  avgAcceptSeconds: number | null;
+  avgPrepSeconds: number | null;
+  avgFulfillmentSeconds: number | null;
+  sampleSize: number;
+  windowDays: number;
+}
+
 export interface DashboardSubscriptionInfo {
   planName: string;
   planCode: string;
@@ -206,6 +240,9 @@ export interface DashboardAnalytics {
   metrics: DashboardMetrics;
   dailySales: DailySalesPoint[];
   topProducts: TopProduct[];
+  repeatCustomers: RepeatCustomerStats;
+  itemMargins: ItemMarginsData;
+  kitchenSpeed: KitchenSpeedStats;
   subscription: DashboardSubscriptionInfo | null;
 }
 
@@ -254,6 +291,8 @@ export interface AdminBusinessSummary extends Business {
   totalCommissionOwedPaise: number;
   overdueAmountPaise: number;
   nextDueDate: string | null;
+  currentPlan: { _id: string; name: string; code: string } | null;
+  subscriptionStatus: string | null;
 }
 
 export interface RevenueTimeseriesPoint {
@@ -268,11 +307,68 @@ export interface PaymentMethodBreakdownPoint {
   amountPaise: number;
 }
 
+export interface CancellationStats {
+  totalTerminalCount: number;
+  cancelledCount: number;
+  refundedCount: number;
+  /** null when there are no terminal (completed/cancelled/refunded) orders yet in the range */
+  rate: number | null;
+}
+
+export interface CancellationTimeseriesPoint {
+  time: string;
+  cancelled: number;
+  refunded: number;
+  total: number;
+  rate: number | null;
+}
+
+export interface WorstBusinessByCancellation {
+  businessId: string;
+  name: string;
+  slug: string;
+  total: number;
+  cancelled: number;
+  refunded: number;
+  rate: number;
+}
+
 export interface AdminAnalytics {
   revenueTimeseries: RevenueTimeseriesPoint[];
   paymentMethodBreakdown: PaymentMethodBreakdownPoint[];
   bestSellers: TopProduct[];
   peakHeatmap: { _id: number; orders: number }[];
+  cancellationStats: CancellationStats;
+  cancellationTimeseries: CancellationTimeseriesPoint[];
+  worstBusinessesByCancellation: WorstBusinessByCancellation[];
+}
+
+export interface BusinessHeatmapCell {
+  day: number; // 1 = Sunday ... 7 = Saturday ($dayOfWeek convention)
+  hour: number; // 0-23
+  revenuePaise: number;
+  orders: number;
+}
+
+export interface BusinessHourlyHeatmap {
+  business: { _id: string; name: string; slug: string };
+  windowDays: number;
+  cells: BusinessHeatmapCell[];
+}
+
+export interface AdminBusinessInsights {
+  business: { _id: string; name: string; slug: string };
+  repeatCustomers: RepeatCustomerStats;
+  itemMargins: ItemMarginsData;
+  kitchenSpeed: KitchenSpeedStats;
+}
+
+export interface TopBusinessByRevenue {
+  _id: string;
+  name: string;
+  slug: string;
+  revenuePaise: number;
+  orders: number;
 }
 
 export interface SystemHealth {

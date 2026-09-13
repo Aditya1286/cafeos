@@ -29,7 +29,6 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
     const decoded = jwt.verify(token, config.jwtSecret) as { id: string; role: UserRole; businessId?: string };
 
     const currentUser = await User.findById(decoded.id);
-    console.log("CURRENT USER >>>>>>>>>> ", currentUser)
 
     if (!currentUser || currentUser.status !== 'ACTIVE') {
       return res.status(401).json({
@@ -39,9 +38,7 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
     }
 
     req.user = currentUser;
-    console.log("CURRENT USER >>>>>>>>>> ", currentUser)
     if (currentUser.businessId) {
-      console.log("TYPE>>>>>>",typeof currentUser.businessId , currentUser.businessId)
       req.businessId = currentUser.businessId;
     }
 

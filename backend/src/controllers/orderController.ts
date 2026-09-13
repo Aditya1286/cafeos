@@ -13,6 +13,39 @@ import { generateDailyOrderId } from '../utils/orderSequence';
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
 
+// Money never flows through the platform (UPI goes to the business's own VPA, cash stays with
+// the business), so the moment an order is genuinely paid for the first time — whether that's
+// the kitchen marking it SERVED/COMPLETED or the business explicitly confirming payment — this
+// records the gross amount and the commission owed. This is what GMV/fee dashboards and
+// remittance accrual read from. Callers must guard this themselves against firing on an order
+// that was already PAID, so it never double-writes the ledger.
+const recordOrderPaymentLedger = async (order: InstanceType<typeof Order>) => {
+  const gatewayRef = `order_${order.orderId}`;
+  await FinancialLedger.create({
+    transactionId: `TXN_PAY_${uuidv4().substring(0, 10).toUpperCase()}`,
+    businessId: order.businessId,
+    orderId: order._id,
+    type: 'ORDER_PAYMENT',
+    amountPaise: order.totalAmountPaise,
+    currency: 'INR',
+    status: 'SUCCESS',
+    paymentGatewayRef: gatewayRef,
+    metadata: { orderNumber: order.orderNumber, customerName: order.customerName }
+  });
+
+  await FinancialLedger.create({
+    transactionId: `TXN_FEE_${uuidv4().substring(0, 10).toUpperCase()}`,
+    businessId: order.businessId,
+    orderId: order._id,
+    type: 'PLATFORM_FEE',
+    amountPaise: order.platformFeePaise,
+    currency: 'INR',
+    status: 'SUCCESS',
+    paymentGatewayRef: gatewayRef,
+    metadata: { orderNumber: order.orderNumber, commissionRate: '3%' }
+  });
+};
+
 // Public: Place Order (Guest Customer scanning QR code)
 export const createOrder = async (req: Request, res: Response) => {
   try {
@@ -47,6 +80,12 @@ export const createOrder = async (req: Request, res: Response) => {
         return res.status(404).json({
           success: false,
           error: { code: 'TABLE_NOT_FOUND', message: 'Invalid or inactive table QR code token.' }
+        });
+      }
+      if (!table.isActive) {
+        return res.status(403).json({
+          success: false,
+          error: { code: 'TABLE_DISABLED', message: 'This table is temporarily unavailable. Please ask staff for assistance.' }
         });
       }
       business = await Business.findById(table.businessId);
@@ -141,7 +180,9 @@ export const createOrder = async (req: Request, res: Response) => {
     }
 
     // Calculate Tax & Platform Commission
-    const taxPaise = Math.round((subtotalPaise * (business.taxRatePercentage || 5)) / 100);
+    // `?? 5` not `|| 5` — a business legitimately set to 0% GST (exempt / below threshold)
+    // must not get silently taxed at the 5% default just because 0 is falsy.
+    const taxPaise = Math.round((subtotalPaise * (business.taxRatePercentage ?? 5)) / 100);
     // Commission is charged on the pre-tax order value (discountPaise reserved for a future
     // discount feature — always 0 today, included so commission stays correct once one ships).
     const discountPaise = 0;
@@ -195,7 +236,12 @@ export const createOrder = async (req: Request, res: Response) => {
       _id: order._id,
       orderId: order.orderId,
       orderNumber: order.orderNumber,
+      tableId: table ? table._id : null,
       tableName: order.tableName,
+      // Lets the owner dashboard flip this table to OCCUPIED in its own live
+      // table list without a manual refresh — see order:updated below for the
+      // matching AVAILABLE signal when the order finishes.
+      tableStatus: table ? 'OCCUPIED' : null,
       customerName: order.customerName,
       customerPhone: order.customerPhone,
       items: order.items,
@@ -295,10 +341,61 @@ export const cancelOrderByCustomer = async (req: Request, res: Response) => {
 
     emitToBusiness(order.businessId.toString(), 'order:updated', {
       orderId: order.orderId,
-      orderStatus: order.orderStatus
+      orderStatus: order.orderStatus,
+      tableId: order.tableId || null,
+      tableStatus: order.tableId ? 'AVAILABLE' : null
     });
 
     return res.json({ success: true, message: 'Order cancelled.', data: order });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
+  }
+};
+
+// Public: Customer requests a refund on an order that was already paid, then cancelled (by the
+// business — self-cancel above only ever fires pre-payment). This doesn't move any money itself
+// (there's no payment gateway to do that through) — it just flags the request for the business
+// to action from their dashboard, the same request-then-confirm pattern used for remittances.
+export const requestOrderRefund = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+    const order = mongoose.Types.ObjectId.isValid(id)
+      ? await Order.findById(id)
+      : await Order.findOne({ orderId: id });
+
+    if (!order) {
+      return res.status(404).json({ success: false, error: { code: 'ORDER_NOT_FOUND', message: 'Order not found' } });
+    }
+
+    if (order.orderStatus !== 'CANCELLED') {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'ORDER_NOT_CANCELLED', message: 'A refund can only be requested for a cancelled order.' }
+      });
+    }
+    if (order.paymentStatus !== 'PAID') {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'NOTHING_TO_REFUND', message: 'This order was never paid, so there is nothing to refund.' }
+      });
+    }
+
+    // Idempotent — a double-tap or page refresh just returns the existing request instead of
+    // erroring or resetting the timestamp.
+    if (!order.refundRequestedAt) {
+      order.refundRequestedAt = new Date();
+      order.refundReason = (reason || '').toString().slice(0, 500);
+      await order.save();
+
+      emitToBusiness(order.businessId.toString(), 'order:refund_requested', {
+        orderId: order.orderId,
+        orderNumber: order.orderNumber,
+        refundRequestedAt: order.refundRequestedAt
+      });
+    }
+
+    return res.json({ success: true, message: 'Refund requested — the business will process this and confirm here.', data: order });
   } catch (error: any) {
     return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
   }
@@ -455,133 +552,284 @@ export const searchOrders = async (req: AuthRequest, res: Response) => {
 };
 
 // Owner/Staff: Update Order Status
+const VALID_ORDER_STATUSES: OrderStatus[] = ['PLACED', 'CONFIRMED', 'PREPARING', 'READY', 'SERVED', 'COMPLETED', 'CANCELLED', 'REFUNDED'];
+
+interface StatusChangeResult {
+  success: boolean;
+  order?: InstanceType<typeof Order>;
+  errorCode?: string;
+  errorMessage?: string;
+}
+
+// The full side-effect chain for one order's status transition — timeline stamps, refund
+// ledger entry, table release, payment ledger entries, automatic BOM stock deduction, and both
+// socket broadcasts. Pulled out of updateOrderStatus so bulkUpdateOrderStatus can apply the
+// exact same behavior per order instead of a thinner, silently-diverging copy — returns a
+// result object rather than throwing/responding, so a bulk caller can keep going past one
+// order's failure and report it alongside the others.
+const applyOrderStatusChange = async (
+  order: InstanceType<typeof Order>,
+  status: OrderStatus,
+  businessId: string,
+  userId?: string
+): Promise<StatusChangeResult> => {
+  // A refund only makes sense for money that was actually collected, and only once the
+  // order itself is cancelled (no point refunding an order that's still being served).
+  if (status === 'REFUNDED') {
+    if (order.paymentStatus !== 'PAID') {
+      return { success: false, errorCode: 'NOTHING_TO_REFUND', errorMessage: 'This order was never marked as paid, so there is nothing to refund.' };
+    }
+    if (order.orderStatus !== 'CANCELLED') {
+      return { success: false, errorCode: 'ORDER_NOT_CANCELLED', errorMessage: 'Only a cancelled order can be marked as refunded.' };
+    }
+  }
+
+  const wasAlreadyPaid = order.paymentStatus === 'PAID';
+
+  order.orderStatus = status;
+  if (status === 'COMPLETED' || status === 'SERVED') {
+    order.paymentStatus = 'PAID';
+  }
+  if (status === 'REFUNDED') {
+    order.paymentStatus = 'REFUNDED';
+    order.refundedAt = new Date();
+    order.refundedByUserId = userId as any;
+  }
+
+  // Update timeline timestamp
+  if (!order.timeline) order.timeline = {};
+  if (status === 'CONFIRMED') order.timeline.acceptedAt = new Date();
+  if (status === 'PREPARING') order.timeline.preparingAt = new Date();
+  if (status === 'READY') order.timeline.readyAt = new Date();
+  if (status === 'COMPLETED') order.timeline.completedAt = new Date();
+  if (status === 'CANCELLED') order.timeline.cancelledAt = new Date();
+
+  await order.save();
+
+  // Record the money leaving, mirroring the ORDER_PAYMENT/PLATFORM_FEE entries written below
+  // when it first came in — same manual-transfer caveat: this logs that a refund happened,
+  // it doesn't move the money itself.
+  if (status === 'REFUNDED') {
+    await FinancialLedger.create({
+      transactionId: `TXN_REFUND_${uuidv4().substring(0, 10).toUpperCase()}`,
+      businessId: order.businessId,
+      orderId: order._id,
+      type: 'REFUND',
+      amountPaise: order.totalAmountPaise,
+      currency: 'INR',
+      status: 'SUCCESS',
+      metadata: { orderNumber: order.orderNumber, customerName: order.customerName }
+    });
+  }
+
+  // Free the table back up once its order reaches a terminal state, so the
+  // one-active-order-per-table limit in createOrder doesn't lock it forever.
+  if (order.tableId && ['COMPLETED', 'CANCELLED', 'REFUNDED'].includes(status)) {
+    await Table.findByIdAndUpdate(order.tableId, { status: 'AVAILABLE' });
+  }
+
+  if (!wasAlreadyPaid && order.paymentStatus === 'PAID') {
+    await recordOrderPaymentLedger(order);
+  }
+
+  // Deduct stock if order is COMPLETED or CONFIRMED (Automatic BOM Deduction)
+  if (status === 'COMPLETED' || status === 'CONFIRMED') {
+    for (const item of order.items) {
+      const recipe = await Recipe.findOne({ productId: item.productId, businessId });
+      if (recipe && recipe.ingredients && recipe.ingredients.length > 0) {
+        for (const ing of recipe.ingredients) {
+          const totalQuantityNeeded = ing.quantityRequired * item.quantity;
+
+          const invItem = await InventoryItem.findById(ing.inventoryItemId);
+          if (invItem) {
+            invItem.currentStock = Math.max(0, invItem.currentStock - totalQuantityNeeded);
+            if (invItem.currentStock <= invItem.minimumStockLevel) {
+              invItem.status = invItem.currentStock === 0 ? 'OUT_OF_STOCK' : 'LOW_STOCK';
+            } else {
+              invItem.status = 'IN_STOCK';
+            }
+            await invItem.save();
+
+            await InventoryTransaction.create({
+              businessId,
+              inventoryItemId: invItem._id,
+              type: 'USAGE_AUTO',
+              quantityChanged: -totalQuantityNeeded,
+              balanceAfter: invItem.currentStock,
+              reason: `Automatic BOM deduction for Order ${order.orderId}`,
+              referenceOrderId: order._id
+            });
+          }
+        }
+      }
+    }
+  }
+
+  // Emit real-time status update
+  emitToOrder(order._id.toString(), 'order:status_updated', {
+    orderId: order.orderId,
+    orderStatus: order.orderStatus,
+    paymentStatus: order.paymentStatus,
+    refundedAt: order.refundedAt
+  });
+
+  const tableWasFreed = !!order.tableId && ['COMPLETED', 'CANCELLED', 'REFUNDED'].includes(status);
+  emitToBusiness(businessId, 'order:updated', {
+    orderId: order.orderId,
+    orderStatus: order.orderStatus,
+    tableId: order.tableId || null,
+    // Only set when this update actually freed the table — most status
+    // transitions (PLACED -> CONFIRMED -> PREPARING -> READY) leave it
+    // occupied, so there's nothing new to tell the dashboard about it.
+    tableStatus: tableWasFreed ? 'AVAILABLE' : undefined
+  });
+
+  return { success: true, order };
+};
+
+const findOrderForBusiness = async (id: string, businessId: string) => {
+  // Mongoose's findOne({ _id }) throws (not just "no match") when the value isn't a valid
+  // ObjectId shape, so this has to check validity before trying the _id lookup at all —
+  // otherwise every caller passing the human-readable orderId (e.g. "ART-120926-0001") 500s
+  // instead of falling through to the orderId lookup below.
+  let order = mongoose.Types.ObjectId.isValid(id)
+    ? await Order.findOne({ _id: id, businessId })
+    : null;
+  if (!order) {
+    order = await Order.findOne({ orderId: id, businessId });
+  }
+  return order;
+};
+
 export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
 
-    const validStatuses: OrderStatus[] = ['PLACED', 'CONFIRMED', 'PREPARING', 'READY', 'SERVED', 'COMPLETED', 'CANCELLED', 'REFUNDED'];
-    if (!validStatuses.includes(status)) {
+    if (!VALID_ORDER_STATUSES.includes(status)) {
       return res.status(400).json({
         success: false,
         error: { code: 'INVALID_STATUS', message: 'Invalid order status specified.' }
       });
     }
 
-    let order = await Order.findOne({ _id: id, businessId: req.businessId });
-    if (!order) {
-      order = await Order.findOne({ orderId: id, businessId: req.businessId });
-    }
-
+    const order = await findOrderForBusiness(id, req.businessId!.toString());
     if (!order) {
       return res.status(404).json({ success: false, error: { code: 'ORDER_NOT_FOUND', message: 'Order not found.' } });
     }
 
-    const wasAlreadyPaid = order.paymentStatus === 'PAID';
-
-    order.orderStatus = status;
-    if (status === 'COMPLETED' || status === 'SERVED') {
-      order.paymentStatus = 'PAID';
+    const result = await applyOrderStatusChange(order, status, req.businessId!.toString(), req.user?._id?.toString());
+    if (!result.success) {
+      return res.status(400).json({ success: false, error: { code: result.errorCode, message: result.errorMessage } });
     }
 
-    // Update timeline timestamp
-    if (!order.timeline) order.timeline = {};
-    if (status === 'CONFIRMED') order.timeline.acceptedAt = new Date();
-    if (status === 'PREPARING') order.timeline.preparingAt = new Date();
-    if (status === 'READY') order.timeline.readyAt = new Date();
-    if (status === 'COMPLETED') order.timeline.completedAt = new Date();
-    if (status === 'CANCELLED') order.timeline.cancelledAt = new Date();
+    return res.json({
+      success: true,
+      message: `Order status updated to ${status}`,
+      data: result.order
+    });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
+  }
+};
 
-    await order.save();
+// Owner/Staff: Bulk-accept (or otherwise bulk-transition) several orders in one request — the
+// "select all in New Orders, review, then accept" flow. Applies the exact same per-order logic
+// as updateOrderStatus above and keeps going past an individual order's failure so one stale or
+// already-actioned order in the batch doesn't block the rest.
+const MAX_BULK_ORDERS = 50;
 
-    // Free the table back up once its order reaches a terminal state, so the
-    // one-active-order-per-table limit in createOrder doesn't lock it forever.
-    if (order.tableId && ['COMPLETED', 'CANCELLED', 'REFUNDED'].includes(status)) {
-      await Table.findByIdAndUpdate(order.tableId, { status: 'AVAILABLE' });
+export const bulkUpdateOrderStatus = async (req: AuthRequest, res: Response) => {
+  try {
+    const { orderIds, status } = req.body;
+
+    if (!VALID_ORDER_STATUSES.includes(status)) {
+      return res.status(400).json({ success: false, error: { code: 'INVALID_STATUS', message: 'Invalid order status specified.' } });
+    }
+    if (!Array.isArray(orderIds) || orderIds.length === 0) {
+      return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'orderIds must be a non-empty array.' } });
+    }
+    if (orderIds.length > MAX_BULK_ORDERS) {
+      return res.status(400).json({ success: false, error: { code: 'TOO_MANY_ORDERS', message: `You can update at most ${MAX_BULK_ORDERS} orders at once.` } });
     }
 
-    // Money never flows through the platform (UPI goes to the business's own VPA, cash stays
-    // with the business), so the moment an order is genuinely paid for the first time, record
-    // the gross amount and the commission owed — this is what GMV/fee dashboards and remittance
-    // accrual read from. Guarded by wasAlreadyPaid so re-saving an already-PAID order never
-    // double-writes the ledger.
-    if (!wasAlreadyPaid && order.paymentStatus === 'PAID') {
-      const gatewayRef = `order_${order.orderId}`;
-      await FinancialLedger.create({
-        transactionId: `TXN_PAY_${uuidv4().substring(0, 10).toUpperCase()}`,
-        businessId: order.businessId,
-        orderId: order._id,
-        type: 'ORDER_PAYMENT',
-        amountPaise: order.totalAmountPaise,
-        currency: 'INR',
-        status: 'SUCCESS',
-        paymentGatewayRef: gatewayRef,
-        metadata: { orderNumber: order.orderNumber, customerName: order.customerName }
-      });
+    const businessId = req.businessId!.toString();
+    const userId = req.user?._id?.toString();
+    const updated: any[] = [];
+    const failed: { orderId: string; message: string }[] = [];
 
-      await FinancialLedger.create({
-        transactionId: `TXN_FEE_${uuidv4().substring(0, 10).toUpperCase()}`,
-        businessId: order.businessId,
-        orderId: order._id,
-        type: 'PLATFORM_FEE',
-        amountPaise: order.platformFeePaise,
-        currency: 'INR',
-        status: 'SUCCESS',
-        paymentGatewayRef: gatewayRef,
-        metadata: { orderNumber: order.orderNumber, commissionRate: '3%' }
-      });
-    }
+    for (const id of orderIds as string[]) {
+      const order = await findOrderForBusiness(id, businessId);
+      if (!order) {
+        failed.push({ orderId: id, message: 'Order not found.' });
+        continue;
+      }
 
-    // Deduct stock if order is COMPLETED or CONFIRMED (Automatic BOM Deduction)
-    if (status === 'COMPLETED' || status === 'CONFIRMED') {
-      for (const item of order.items) {
-        const recipe = await Recipe.findOne({ productId: item.productId, businessId: req.businessId });
-        if (recipe && recipe.ingredients && recipe.ingredients.length > 0) {
-          for (const ing of recipe.ingredients) {
-            const totalQuantityNeeded = ing.quantityRequired * item.quantity;
-
-            const invItem = await InventoryItem.findById(ing.inventoryItemId);
-            if (invItem) {
-              invItem.currentStock = Math.max(0, invItem.currentStock - totalQuantityNeeded);
-              if (invItem.currentStock <= invItem.minimumStockLevel) {
-                invItem.status = invItem.currentStock === 0 ? 'OUT_OF_STOCK' : 'LOW_STOCK';
-              } else {
-                invItem.status = 'IN_STOCK';
-              }
-              await invItem.save();
-
-              await InventoryTransaction.create({
-                businessId: req.businessId,
-                inventoryItemId: invItem._id,
-                type: 'USAGE_AUTO',
-                quantityChanged: -totalQuantityNeeded,
-                balanceAfter: invItem.currentStock,
-                reason: `Automatic BOM deduction for Order ${order.orderId}`,
-                referenceOrderId: order._id
-              });
-            }
-          }
-        }
+      const result = await applyOrderStatusChange(order, status, businessId, userId);
+      if (result.success) {
+        updated.push(result.order);
+      } else {
+        failed.push({ orderId: id, message: result.errorMessage || 'Could not update this order.' });
       }
     }
 
-    // Emit real-time status update
+    return res.json({
+      success: true,
+      message: `${updated.length} order${updated.length === 1 ? '' : 's'} updated${failed.length ? `, ${failed.length} failed` : ''}.`,
+      data: { updated, failed }
+    });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
+  }
+};
+
+// Owner/Staff: Manually confirm an order's payment — independent of order status. Covers cash
+// handed over at the counter (which has no self-report flow at all) and an online payment the
+// customer claims (`customerMarkedPaidAt`) but which hasn't been verified yet, without forcing
+// the order to SERVED/COMPLETED just to flip paymentStatus (the only other path that does it).
+export const confirmOrderPayment = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    let order = mongoose.Types.ObjectId.isValid(id)
+      ? await Order.findOne({ _id: id, businessId: req.businessId })
+      : null;
+    if (!order) {
+      order = await Order.findOne({ orderId: id, businessId: req.businessId });
+    }
+    if (!order) {
+      return res.status(404).json({ success: false, error: { code: 'ORDER_NOT_FOUND', message: 'Order not found.' } });
+    }
+
+    if (order.paymentStatus === 'PAID') {
+      return res.json({ success: true, message: 'This order is already marked as paid.', data: order });
+    }
+    if (order.paymentStatus === 'REFUNDED') {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'ALREADY_REFUNDED', message: 'This order was already refunded and cannot be marked paid again.' }
+      });
+    }
+
+    order.paymentStatus = 'PAID';
+    order.paymentConfirmedAt = new Date();
+    order.paymentConfirmedByUserId = req.user?._id;
+    await order.save();
+
+    await recordOrderPaymentLedger(order);
+
     emitToOrder(order._id.toString(), 'order:status_updated', {
       orderId: order.orderId,
       orderStatus: order.orderStatus,
       paymentStatus: order.paymentStatus
     });
-
     emitToBusiness(req.businessId!.toString(), 'order:updated', {
       orderId: order.orderId,
-      orderStatus: order.orderStatus
+      orderStatus: order.orderStatus,
+      tableId: order.tableId || null
     });
 
-    return res.json({
-      success: true,
-      message: `Order status updated to ${status}`,
-      data: order
-    });
+    return res.json({ success: true, message: 'Payment confirmed.', data: order });
   } catch (error: any) {
     return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
   }
@@ -591,7 +839,10 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
 export const getOrderBill = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    let order = await Order.findById(id);
+    // Same findById-throws-on-non-ObjectId pitfall as updateOrderStatus above — every "View
+    // Bill" button in the dashboard passes the human-readable orderId first, which used to
+    // 500 here instead of falling through to the orderId lookup.
+    let order = mongoose.Types.ObjectId.isValid(id) ? await Order.findById(id) : null;
     if (!order) {
       order = await Order.findOne({ orderId: id });
     }
@@ -613,7 +864,7 @@ export const getOrderBill = async (req: Request, res: Response) => {
           address: business?.address || 'Mumbai, India',
           phone: business?.phone || '+91 9876543210',
           currencySymbol: business?.currencySymbol || '₹',
-          taxRatePercentage: business?.taxRatePercentage || 5
+          taxRatePercentage: business?.taxRatePercentage ?? 5
         },
         customer: {
           name: order.customerName,

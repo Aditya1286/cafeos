@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { Table } from '../models/Table';
 import { Business } from '../models/Business';
+import { Order } from '../models/Order';
 import qrcode from 'qrcode';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -15,6 +16,13 @@ export const getTableByToken = async (req: Request, res: Response) => {
       return res.status(404).json({
         success: false,
         error: { code: 'TABLE_NOT_FOUND', message: 'Invalid or inactive table QR code token.' }
+      });
+    }
+
+    if (!table.isActive) {
+      return res.status(403).json({
+        success: false,
+        error: { code: 'TABLE_DISABLED', message: 'This table is temporarily unavailable. Please ask staff for assistance.' }
       });
     }
 
@@ -124,10 +132,51 @@ export const getTableQRCode = async (req: AuthRequest, res: Response) => {
   }
 };
 
+// Owner/Staff: Enable/disable a table's QR without deleting it — stops new orders
+// from that QR while keeping the table row and its order history intact.
+export const toggleTableActive = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const table = await Table.findOne({ _id: id, businessId: req.businessId });
+    if (!table) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Table not found' } });
+    }
+
+    table.isActive = !table.isActive;
+    await table.save();
+
+    return res.json({
+      success: true,
+      data: table,
+      message: table.isActive ? 'Table enabled' : 'Table disabled'
+    });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
+  }
+};
+
 export const deleteTable = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    await Table.findOneAndDelete({ _id: id, businessId: req.businessId });
+    const table = await Table.findOne({ _id: id, businessId: req.businessId });
+    if (!table) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Table not found' } });
+    }
+
+    // Deleting out from under an in-progress order would orphan it — reject rather
+    // than silently leave the order's tableId pointing at nothing.
+    const activeOrder = await Order.findOne({
+      tableId: table._id,
+      orderStatus: { $nin: ['COMPLETED', 'CANCELLED', 'REFUNDED'] }
+    });
+    if (activeOrder) {
+      return res.status(409).json({
+        success: false,
+        error: { code: 'TABLE_HAS_ACTIVE_ORDER', message: 'This table has an order in progress — complete or cancel it before deleting the table.' }
+      });
+    }
+
+    await table.deleteOne();
     return res.json({ success: true, message: 'Table deleted' });
   } catch (error: any) {
     return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });

@@ -69,6 +69,21 @@ export interface IOrder extends Document {
   timeline?: IOrderTimeline;
   cancellationReason?: string;
   customerMarkedPaidAt?: Date;
+  // Owner/staff manually verifying a payment happened (cash handed over at the counter, or an
+  // online payment the customer claims but hasn't yet been confirmed by advancing the order to
+  // SERVED/COMPLETED). Independent of `customerMarkedPaidAt`, which is only the customer's own
+  // unverified claim.
+  paymentConfirmedAt?: Date;
+  paymentConfirmedByUserId?: mongoose.Types.ObjectId;
+  // Refund lifecycle — money never flows through the platform (see the PAID ledger comment in
+  // orderController.updateOrderStatus), so a refund is always a manual UPI/cash transfer the
+  // business makes on their own. These fields just track that request-then-confirm handshake:
+  // the customer flags a paid-then-cancelled order for a refund, and the business marks it
+  // done once they've actually sent the money back.
+  refundRequestedAt?: Date;
+  refundReason?: string;
+  refundedAt?: Date;
+  refundedByUserId?: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -145,7 +160,13 @@ const OrderSchema = new Schema<IOrder>(
     notes: { type: String, default: '' },
     timeline: { type: TimelineSchema, default: () => ({ placedAt: new Date() }) },
     cancellationReason: { type: String, default: '' },
-    customerMarkedPaidAt: { type: Date }
+    customerMarkedPaidAt: { type: Date },
+    paymentConfirmedAt: { type: Date },
+    paymentConfirmedByUserId: { type: Schema.Types.ObjectId, ref: 'User' },
+    refundRequestedAt: { type: Date },
+    refundReason: { type: String, default: '' },
+    refundedAt: { type: Date },
+    refundedByUserId: { type: Schema.Types.ObjectId, ref: 'User' }
   },
   { timestamps: true }
 );
@@ -156,5 +177,16 @@ OrderSchema.index({ businessId: 1, createdAt: -1 });
 OrderSchema.index({ businessId: 1, orderStatus: 1 });
 OrderSchema.index({ businessId: 1, paymentStatus: 1 });
 OrderSchema.index({ businessId: 1, customerPhone: 1, createdAt: -1 });
+// Backs every "paid orders in [start, end)" aggregation for one business — owner analytics
+// (today/week/previous-week sales, daily sales chart), remittance period generation and
+// summaries, and the per-business hourly revenue heatmap all match on exactly these three
+// fields, several of them in tight loops (one per historical billing period).
+OrderSchema.index({ businessId: 1, paymentStatus: 1, createdAt: 1 });
+// A table can only host one active order at a time — checked on every new order placement
+// via { tableId, orderStatus: { $nin: [...] } }, previously with no supporting index at all.
+OrderSchema.index({ tableId: 1, orderStatus: 1 });
+// Super admin's platform-wide "recent orders" feed has no businessId filter, so none of the
+// businessId-prefixed indexes above can serve it — needs its own top-level recency index.
+OrderSchema.index({ createdAt: -1 });
 
 export const Order = mongoose.model<IOrder>('Order', OrderSchema);

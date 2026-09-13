@@ -1,5 +1,5 @@
 import React from 'react';
-import { RefreshCw, Search, X, FileText } from 'lucide-react';
+import { RefreshCw, X, FileText, Undo2, Wallet } from 'lucide-react';
 import ResponsiveDataView, { ResponsiveColumn } from '../../ui/ResponsiveDataView';
 import { STATUS_CONFIG, isOrderCancellable } from '../../../constants/orderStatus';
 import { formatCurrency } from '../../../utils/money';
@@ -12,6 +12,7 @@ interface OrderHistoryPanelProps {
   loadingHistory: boolean;
   pagination: { page: number; limit: number; total: number; totalPages: number };
   onPageChange: (page: number) => void;
+  onPageSizeChange: (pageSize: number) => void;
   filters: {
     orderSearchQuery: string; setOrderSearchQuery: (v: string) => void;
     selectedStatusFilter: string; setSelectedStatusFilter: (v: string) => void;
@@ -23,10 +24,22 @@ interface OrderHistoryPanelProps {
   onOpenDrawer: (order: any) => void;
   onOpenBill: (orderId: string) => void;
   onCancel: (order: any) => void;
+  onMarkRefunded: (order: any) => void;
+  onConfirmPayment: (order: any) => void;
 }
 
+const PAYMENT_BADGE_CLASS: Record<string, string> = {
+  PAID: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  REFUNDED: 'bg-violet-50 text-violet-700 border-violet-200',
+  FAILED: 'bg-rose-50 text-rose-700 border-rose-200',
+  UNPAID: 'bg-amber-50 text-amber-700 border-amber-200',
+};
+
+/** A paid order that's been cancelled but not yet refunded needs the owner's attention. */
+const needsRefund = (o: any) => o.orderStatus === 'CANCELLED' && o.paymentStatus === 'PAID';
+
 export const OrderHistoryPanel = ({
-  business, orderHistory, todaySalesPaise, loadingHistory, pagination, onPageChange, filters, onRefresh, onOpenDrawer, onOpenBill, onCancel
+  business, orderHistory, todaySalesPaise, loadingHistory, pagination, onPageChange, onPageSizeChange, filters, onRefresh, onOpenDrawer, onOpenBill, onCancel, onMarkRefunded, onConfirmPayment
 }: OrderHistoryPanelProps) => {
   const rows = orderHistory.map(o => ({
     ...o,
@@ -90,9 +103,7 @@ export const OrderHistoryPanel = ({
       render: (o) => (
         <>
           <div className="flex flex-col items-start gap-1">
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black border ${
-              o.paymentStatus === 'PAID' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'
-            }`}>
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black border ${PAYMENT_BADGE_CLASS[o.paymentStatus] || PAYMENT_BADGE_CLASS.PAID}`}>
               {o.paymentStatus || 'PAID'}
             </span>
             <span className="text-[10px] font-bold text-slate-400 uppercase">{o.paymentMethod || 'ONLINE'}</span>
@@ -100,6 +111,18 @@ export const OrderHistoryPanel = ({
           {o.transactionId && (
             <div className="text-[9px] font-mono text-slate-400 truncate max-w-[100px]" title={o.transactionId}>
               {o.transactionId}
+            </div>
+          )}
+          {needsRefund(o) && (
+            <div className={`mt-1 text-[9px] font-black uppercase px-1.5 py-0.5 rounded-full inline-block ${
+              o.refundRequestedAt ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-slate-100 text-slate-500 border border-slate-200'
+            }`}>
+              {o.refundRequestedAt ? 'Refund requested' : 'Refund pending'}
+            </div>
+          )}
+          {o.paymentStatus === 'UNPAID' && o.customerMarkedPaidAt && (
+            <div className="mt-1 text-[9px] font-black uppercase px-1.5 py-0.5 rounded-full inline-block bg-amber-50 text-amber-700 border border-amber-200">
+              Customer says paid
             </div>
           )}
         </>
@@ -129,6 +152,18 @@ export const OrderHistoryPanel = ({
             <FileText className="w-3.5 h-3.5" />
             <span>E-Bill</span>
           </button>
+          {o.paymentStatus === 'UNPAID' && o.orderStatus !== 'CANCELLED' && (
+            <button onClick={() => onConfirmPayment(o)} className="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-700 text-xs font-black transition-colors flex items-center gap-1">
+              <Wallet className="w-3.5 h-3.5" />
+              <span>Confirm Payment</span>
+            </button>
+          )}
+          {needsRefund(o) && (
+            <button onClick={() => onMarkRefunded(o)} className="px-3 py-1.5 rounded-xl bg-violet-50 hover:bg-violet-100 border border-violet-200 text-violet-700 text-xs font-black transition-colors flex items-center gap-1">
+              <Undo2 className="w-3.5 h-3.5" />
+              <span>Mark Refunded</span>
+            </button>
+          )}
           {isOrderCancellable(o.orderStatus) && (
             <button onClick={() => onCancel(o)} className="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 text-xs font-black transition-colors flex items-center gap-1">
               <X className="w-3.5 h-3.5" />
@@ -174,9 +209,7 @@ export const OrderHistoryPanel = ({
 
       <div className="flex items-end justify-between gap-3 pt-1 border-t border-slate-100">
         <div className="flex flex-wrap items-center gap-1.5 pt-2">
-          <span className={`px-2 py-0.5 rounded-full text-[10px] font-black border whitespace-nowrap ${
-            o.paymentStatus === 'PAID' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'
-          }`}>
+          <span className={`px-2 py-0.5 rounded-full text-[10px] font-black border whitespace-nowrap ${PAYMENT_BADGE_CLASS[o.paymentStatus] || PAYMENT_BADGE_CLASS.PAID}`}>
             {o.paymentStatus || 'PAID'}
           </span>
           <span className="text-[10px] font-bold text-slate-400 uppercase whitespace-nowrap">{o.paymentMethod || 'ONLINE'}</span>
@@ -186,6 +219,19 @@ export const OrderHistoryPanel = ({
         </div>
       </div>
 
+      {needsRefund(o) && (
+        <div className={`text-[10px] font-black uppercase px-2 py-1 rounded-full inline-block ${
+          o.refundRequestedAt ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-slate-100 text-slate-500 border border-slate-200'
+        }`}>
+          {o.refundRequestedAt ? 'Refund requested' : 'Refund pending'}
+        </div>
+      )}
+      {o.paymentStatus === 'UNPAID' && o.customerMarkedPaidAt && (
+        <div className="text-[10px] font-black uppercase px-2 py-1 rounded-full inline-block bg-amber-50 text-amber-700 border border-amber-200">
+          Customer says paid
+        </div>
+      )}
+
       <div className="flex flex-wrap items-center gap-2 pt-1">
         <button onClick={() => onOpenDrawer(o)} className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-black transition-colors shadow-xs whitespace-nowrap">
           Details
@@ -194,6 +240,18 @@ export const OrderHistoryPanel = ({
           <FileText className="w-3.5 h-3.5" />
           <span>E-Bill</span>
         </button>
+        {o.paymentStatus === 'UNPAID' && o.orderStatus !== 'CANCELLED' && (
+          <button onClick={() => onConfirmPayment(o)} className="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-700 text-xs font-black transition-colors flex items-center gap-1 whitespace-nowrap">
+            <Wallet className="w-3.5 h-3.5" />
+            <span>Confirm Payment</span>
+          </button>
+        )}
+        {needsRefund(o) && (
+          <button onClick={() => onMarkRefunded(o)} className="px-3 py-1.5 rounded-xl bg-violet-50 hover:bg-violet-100 border border-violet-200 text-violet-700 text-xs font-black transition-colors flex items-center gap-1 whitespace-nowrap">
+            <Undo2 className="w-3.5 h-3.5" />
+            <span>Mark Refunded</span>
+          </button>
+        )}
         {isOrderCancellable(o.orderStatus) && (
           <button onClick={() => onCancel(o)} className="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 text-xs font-black transition-colors flex items-center gap-1 whitespace-nowrap">
             <X className="w-3.5 h-3.5" />
@@ -265,26 +323,6 @@ export const OrderHistoryPanel = ({
       </div>
 
       <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-4">
-        <div className="relative">
-          <Search className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
-          <input
-            id="order-search-input"
-            type="text"
-            placeholder="Search by Order ID (e.g. ART-120926-0001), Customer Name, Phone, Table 04, or Transaction ID..."
-            value={filters.orderSearchQuery}
-            onChange={e => filters.setOrderSearchQuery(e.target.value)}
-            className="w-full pl-12 pr-10 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-orange-500 focus:bg-white focus:ring-4 focus:ring-orange-500/10 transition-all shadow-inner"
-          />
-          {filters.orderSearchQuery && (
-            <button
-              onClick={() => filters.setOrderSearchQuery('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg hover:bg-slate-200 text-slate-400 hover:text-slate-600"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          )}
-        </div>
-
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
           <div>
             <label className="text-[10px] font-extrabold uppercase text-slate-400 mb-1 block">Order Status</label>
@@ -300,6 +338,7 @@ export const OrderHistoryPanel = ({
               <option value="READY">Ready</option>
               <option value="COMPLETED">Completed</option>
               <option value="CANCELLED">Cancelled</option>
+              <option value="REFUNDED">Refunded</option>
             </select>
           </div>
 
@@ -353,44 +392,34 @@ export const OrderHistoryPanel = ({
             <RefreshCw className="w-8 h-8 text-orange-500 animate-spin mx-auto" />
             <p className="text-xs font-bold text-slate-500">Searching orders database...</p>
           </div>
-        ) : orderHistory.length === 0 ? (
-          <div className="p-12 text-center space-y-3">
-            <FileText className="w-12 h-12 text-slate-300 mx-auto" />
-            <h3 className="text-base font-black text-slate-800">No matching orders found</h3>
-            <p className="text-xs font-medium text-slate-500">Try adjusting your search query or filter options.</p>
-          </div>
         ) : (
           <ResponsiveDataView
             data={rows}
             keyExtractor={(o) => o._id || o.orderId}
             columns={columns}
             renderCard={renderCard}
+            search={{
+              id: 'order-search-input',
+              value: filters.orderSearchQuery,
+              onChange: filters.setOrderSearchQuery,
+              placeholder: 'Search by Order ID, Customer Name, Phone, Table, or Transaction ID...',
+            }}
+            pagination={{
+              page: pagination.page,
+              pageSize: pagination.limit,
+              total: pagination.total,
+              onPageChange,
+              onPageSizeChange,
+              pageSizeOptions: [10, 15, 25, 50],
+            }}
+            emptyState={
+              <div className="p-12 text-center space-y-3">
+                <FileText className="w-12 h-12 text-slate-300 mx-auto" />
+                <h3 className="text-base font-black text-slate-800">No matching orders found</h3>
+                <p className="text-xs font-medium text-slate-500">Try adjusting your search query or filter options.</p>
+              </div>
+            }
           />
-        )}
-
-        {pagination.totalPages > 1 && (
-          <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500">
-              Page {pagination.page} of {pagination.totalPages} ({pagination.total} total orders)
-            </span>
-
-            <div className="flex items-center gap-2">
-              <button
-                disabled={pagination.page <= 1}
-                onClick={() => onPageChange(pagination.page - 1)}
-                className="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-100"
-              >
-                Previous
-              </button>
-              <button
-                disabled={pagination.page >= pagination.totalPages}
-                onClick={() => onPageChange(pagination.page + 1)}
-                className="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-100"
-              >
-                Next
-              </button>
-            </div>
-          </div>
         )}
       </div>
     </div>

@@ -112,7 +112,7 @@ export const CustomerMenuPage: React.FC = () => {
       ? 'Counter Order'
       : 'Scan Table QR';
 
-  const taxRate = business?.taxRatePercentage || 5;
+  const taxRate = business?.taxRatePercentage ?? 5;
   const taxPaise = Math.round((cartSubtotalPaise * taxRate) / 100);
   const totalAmountPaise = cartSubtotalPaise + taxPaise;
 

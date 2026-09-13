@@ -9,6 +9,7 @@ interface UseOwnerDashboardDataOptions {
   onOrderNew?: (order: any) => void;
   onOrderUpdated?: (patch: { orderId: string; orderStatus: string }) => void;
   onCustomerMarkedPaid?: (patch: { orderId: string; customerMarkedPaidAt: string }) => void;
+  onRefundRequested?: (patch: { orderId: string; refundRequestedAt: string }) => void;
 }
 
 /**
@@ -69,6 +70,17 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
   useEffect(() => {
     fetchDashboardData();
 
+    // A table's status (AVAILABLE/OCCUPIED) is only ever pushed as a side-effect of an
+    // order event, never its own event — so both order:new (table gets occupied) and
+    // order:updated (table gets freed once the order reaches a terminal state) patch
+    // `tables` here. Without this, the Tables & QR tab only reflected reality after a
+    // manual refresh, even though the DB and the customer-facing QR flow were already
+    // correct in real time.
+    const patchTableStatus = (tableId: string | null | undefined, tableStatus: string | null | undefined) => {
+      if (!tableId || !tableStatus) return;
+      setTables(prev => prev.map(t => (t._id === tableId ? { ...t, status: tableStatus } : t)));
+    };
+
     const socket = getSocket();
     socket.on('order:new', (newOrder: any) => {
       setOrders(prev => [newOrder, ...prev]);
@@ -77,10 +89,12 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
       const arrivedId = newOrder._id || newOrder.orderId;
       setNewlyArrivedOrderId(arrivedId);
       setTimeout(() => setNewlyArrivedOrderId(prev => (prev === arrivedId ? null : prev)), 5000);
+      patchTableStatus(newOrder.tableId, newOrder.tableStatus);
       callbacksRef.current.onOrderNew?.(newOrder);
     });
     socket.on('order:updated', (updated: any) => {
       setOrders(prev => prev.map(o => ((o._id === updated.orderId || o.orderId === updated.orderId) ? { ...o, orderStatus: updated.orderStatus } : o)));
+      patchTableStatus(updated.tableId, updated.tableStatus);
       callbacksRef.current.onOrderUpdated?.(updated);
     });
     socket.on('order:customer_marked_paid', (updated: any) => {
@@ -89,8 +103,17 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
       toast(`💳 ${updated.orderNumber || 'An order'} — customer says they've paid`);
       callbacksRef.current.onCustomerMarkedPaid?.(updated);
     });
+    socket.on('order:refund_requested', (updated: any) => {
+      const patch = (o: any) => ((o._id === updated.orderId || o.orderId === updated.orderId) ? { ...o, refundRequestedAt: updated.refundRequestedAt } : o);
+      setOrders(prev => prev.map(patch));
+      toast(`💸 ${updated.orderNumber || 'A customer'} requested a refund`);
+      callbacksRef.current.onRefundRequested?.(updated);
+    });
 
-    return () => { socket.off('order:new'); socket.off('order:updated'); socket.off('order:customer_marked_paid'); };
+    return () => {
+      socket.off('order:new'); socket.off('order:updated'); socket.off('order:customer_marked_paid');
+      socket.off('order:refund_requested');
+    };
   }, []);
 
   const handleUpdateOrderStatus = async (orderId: string, status: string) => {
@@ -100,12 +123,52 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
     }
     try {
       await apiRequest(`/orders/${orderId}/status`, 'PUT', { status });
-      setOrders(prev => prev.map(o => ((o._id === orderId || o.orderId === orderId) ? { ...o, orderStatus: status } : o)));
+      setOrders(prev => prev.map(o => ((o._id === orderId || o.orderId === orderId)
+        ? { ...o, orderStatus: status, ...(status === 'REFUNDED' ? { paymentStatus: 'REFUNDED' } : {}) }
+        : o)));
       toast.success(`Order status updated to ${status}`);
     } catch (err: any) {
       toast.error(err.message);
       throw err;
     }
+  };
+
+  // Manually verifying a payment (cash at the counter, or an online payment the customer
+  // claims) — independent of order status, unlike handleUpdateOrderStatus above which only
+  // ever flips paymentStatus as a side effect of reaching SERVED/COMPLETED.
+  const handleConfirmPayment = async (orderId: string) => {
+    if (!orderId) {
+      toast.error('Missing order ID.');
+      return;
+    }
+    try {
+      const res = await apiRequest(`/orders/${orderId}/confirm-payment`, 'PUT');
+      setOrders(prev => prev.map(o => ((o._id === orderId || o.orderId === orderId) ? { ...o, paymentStatus: 'PAID' } : o)));
+      toast.success(res.message || 'Payment confirmed');
+    } catch (err: any) {
+      toast.error(err.message || 'Could not confirm payment');
+      throw err;
+    }
+  };
+
+  // Bulk-accept (or any other bulk transition) for the "select all in New Orders, review,
+  // confirm" flow. Keeps going past individual order failures on the backend, so this reports
+  // back exactly which orders updated and which didn't rather than an all-or-nothing result.
+  const handleBulkUpdateOrderStatus = async (orderIds: string[], status: string): Promise<{ updatedIds: string[]; failed: { orderId: string; message: string }[] }> => {
+    const res = await apiRequest('/orders/bulk-status', 'PUT', { orderIds, status });
+    const updated: any[] = res.data?.updated || [];
+    const failed: { orderId: string; message: string }[] = res.data?.failed || [];
+
+    const updatedIds = updated.map((o) => o._id || o.orderId);
+    setOrders(prev => prev.map(o => {
+      const match = updated.find((u) => u._id === o._id || u.orderId === o.orderId);
+      return match ? { ...o, orderStatus: match.orderStatus, paymentStatus: match.paymentStatus } : o;
+    }));
+
+    if (updated.length > 0) toast.success(`${updated.length} order${updated.length === 1 ? '' : 's'} accepted`);
+    if (failed.length > 0) toast.error(`${failed.length} order${failed.length === 1 ? '' : 's'} could not be updated`);
+
+    return { updatedIds, failed };
   };
 
   const [savingUpiVpa, setSavingUpiVpa] = useState(false);
@@ -137,6 +200,64 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
     }
   };
 
+  // Disables/re-enables one table's QR without deleting it (table row + its order history stay).
+  const handleToggleTableActive = async (tableId: string) => {
+    try {
+      const res = await apiRequest(`/tables/${tableId}/toggle`, 'PUT');
+      setTables(prev => prev.map(t => (t._id === tableId ? { ...t, isActive: res.data.isActive } : t)));
+      toast.success(res.message || 'Table updated');
+    } catch (err: any) {
+      toast.error(err.message || 'Could not update table');
+    }
+  };
+
+  const handleDeleteTable = async (tableId: string) => {
+    try {
+      await apiRequest(`/tables/${tableId}`, 'DELETE');
+      setTables(prev => prev.filter(t => t._id !== tableId));
+      toast.success('Table deleted');
+    } catch (err: any) {
+      toast.error(err.message || 'Could not delete table');
+    }
+  };
+
+  // "Remove" never deletes the product row (see menuController.deleteProduct) — it just
+  // flips isAvailable off, so the item vanishes from the public menu and can't be ordered,
+  // but stays in this list for the owner to restore later.
+  const handleRemoveProduct = async (productId: string) => {
+    try {
+      await apiRequest(`/menu/products/${productId}`, 'DELETE');
+      setProducts(prev => prev.map(p => (p._id === productId ? { ...p, isAvailable: false } : p)));
+      toast.success('Item removed from menu');
+    } catch (err: any) {
+      toast.error(err.message || 'Could not remove item');
+    }
+  };
+
+  const handleRestoreProduct = async (productId: string) => {
+    try {
+      await apiRequest(`/menu/products/${productId}`, 'PUT', { isAvailable: true });
+      setProducts(prev => prev.map(p => (p._id === productId ? { ...p, isAvailable: true } : p)));
+      toast.success('Item restored to menu');
+    } catch (err: any) {
+      toast.error(err.message || 'Could not restore item');
+    }
+  };
+
+  // Distinct from handleRemoveProduct — this one drops the item from `products` entirely
+  // (see menuController.archiveProduct: sets isDeleted, which the backend list query now
+  // excludes), so it's really gone from this dashboard, not just flagged unavailable. The
+  // document itself is still kept server-side.
+  const handleDeleteProduct = async (productId: string) => {
+    try {
+      await apiRequest(`/menu/products/${productId}/archive`, 'PUT');
+      setProducts(prev => prev.filter(p => p._id !== productId));
+      toast.success('Item deleted');
+    } catch (err: any) {
+      toast.error(err.message || 'Could not delete item');
+    }
+  };
+
   return {
     orders, setOrders,
     categories,
@@ -149,7 +270,11 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
     newlyArrivedOrderId,
     fetchDashboardData,
     handleUpdateOrderStatus,
+    handleBulkUpdateOrderStatus,
+    handleConfirmPayment,
     savingUpiVpa, handleSaveUpiVpa,
     savingTablesEnabled, handleToggleTablesEnabled,
+    handleToggleTableActive, handleDeleteTable,
+    handleRemoveProduct, handleRestoreProduct, handleDeleteProduct,
   };
 };

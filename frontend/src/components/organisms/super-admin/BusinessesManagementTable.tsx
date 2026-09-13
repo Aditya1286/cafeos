@@ -3,17 +3,43 @@ import { Search, AlertTriangle } from 'lucide-react';
 import ResponsiveDataView from '../../ui/ResponsiveDataView';
 import EmptyState from '../../ui/EmptyState';
 import { formatCurrency } from '../../../utils/money';
-import { AdminBusinessSummary } from '../../../types';
+import { AdminBusinessSummary, SubscriptionPlan } from '../../../types';
 
 interface BusinessesManagementTableProps {
   businesses: AdminBusinessSummary[];
+  plans: SubscriptionPlan[];
   searchQuery: string;
   onSearchChange: (q: string) => void;
   onOpenFinance: (businessId: string) => void;
   onOpenStatusModal: (business: { id: string; name: string; status: string }) => void;
+  onChangePlan: (businessId: string, planId: string) => void;
 }
 
-export const BusinessesManagementTable = ({ businesses, searchQuery, onSearchChange, onOpenFinance, onOpenStatusModal }: BusinessesManagementTableProps) => (
+const PlanSelect = ({
+  business,
+  plans,
+  onChangePlan,
+}: {
+  business: AdminBusinessSummary;
+  plans: SubscriptionPlan[];
+  onChangePlan: (businessId: string, planId: string) => void;
+}) => (
+  <select
+    value={business.currentPlan?._id || ''}
+    onChange={(e) => e.target.value && onChangePlan(business._id, e.target.value)}
+    className="px-2.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-[11px] font-bold text-slate-700 outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100 transition-all"
+  >
+    {!business.currentPlan && <option value="">No plan</option>}
+    {plans.map((p) => (
+      <option key={p._id} value={p._id} disabled={p.status === 'DISABLED' && p._id !== business.currentPlan?._id}>
+        {p.name}
+        {p.status === 'DISABLED' ? ' (disabled)' : ''}
+      </option>
+    ))}
+  </select>
+);
+
+export const BusinessesManagementTable = ({ businesses, plans, searchQuery, onSearchChange, onOpenFinance, onOpenStatusModal, onChangePlan }: BusinessesManagementTableProps) => (
   <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
@@ -68,6 +94,10 @@ export const BusinessesManagementTable = ({ businesses, searchQuery, onSearchCha
         },
         { header: 'URL Slug', render: (r) => <span className="font-mono text-red-600 font-bold">/c/{r.slug}</span> },
         { header: 'Contact Email', render: (r) => <span className="font-medium text-slate-600">{r.email}</span> },
+        {
+          header: 'Plan',
+          render: (r) => <PlanSelect business={r} plans={plans} onChangePlan={onChangePlan} />,
+        },
         {
           header: 'Commission Owed',
           render: (r) => (
@@ -140,6 +170,11 @@ export const BusinessesManagementTable = ({ businesses, searchQuery, onSearchCha
           </div>
 
           <div className="text-[11px] text-slate-500 font-medium">{r.email}</div>
+
+          <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+            <div className="text-[10px] text-slate-400 font-bold uppercase">Plan</div>
+            <PlanSelect business={r} plans={plans} onChangePlan={onChangePlan} />
+          </div>
 
           <div className="flex items-center justify-between pt-2 border-t border-slate-100">
             <div>

@@ -5,6 +5,7 @@ export const STATUS_CONFIG: Record<string, { label: string; color: string; borde
   READY:     { label: 'Ready to Serve', color: 'text-emerald-700', borderAccent: 'border-t-emerald-500', badgeBg: 'bg-emerald-50', badgeText: 'text-emerald-700 border-emerald-200', dot: 'bg-emerald-500'},
   COMPLETED: { label: 'Completed', color: 'text-slate-500',  borderAccent: 'border-t-slate-400', badgeBg: 'bg-slate-50',   badgeText: 'text-slate-600 border-slate-200',  dot: 'bg-slate-400'  },
   CANCELLED: { label: 'Cancelled', color: 'text-rose-700',   borderAccent: 'border-t-rose-500',   badgeBg: 'bg-rose-50',    badgeText: 'text-rose-700 border-rose-200',   dot: 'bg-rose-500'   },
+  REFUNDED:  { label: 'Refunded', color: 'text-violet-700',  borderAccent: 'border-t-violet-500', badgeBg: 'bg-violet-50',  badgeText: 'text-violet-700 border-violet-200', dot: 'bg-violet-500' },
 };
 
 export const NEXT_STATUS: Record<string, { label: string; status: string; color: string }> = {
