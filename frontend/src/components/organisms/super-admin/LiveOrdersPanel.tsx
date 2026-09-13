@@ -16,7 +16,7 @@ export const LiveOrdersPanel = ({ liveOrders }: LiveOrdersPanelProps) => (
         </h3>
       </div>
       <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
-        Socket.IO Active
+        Real-Time Updates Active
       </span>
     </div>
 

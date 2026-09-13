@@ -12,8 +12,10 @@ import { downloadCsv } from '../utils/exportCsv';
 import { AdminBusinessSummary } from '../types';
 
 import { useSuperAdminDashboardData } from '../hooks/useSuperAdminDashboardData';
+import { useSystemHealth } from '../hooks/useSystemHealth';
 import { useSuperAdminAnalytics } from '../hooks/useSuperAdminAnalytics';
 import { useRemittanceQueue } from '../hooks/useRemittanceQueue';
+import { useSubscriptionRequests } from '../hooks/useSubscriptionRequests';
 
 import { KpiOverviewBento } from '../components/organisms/super-admin/KpiOverviewBento';
 import { RevenueChartPanel } from '../components/organisms/super-admin/RevenueChartPanel';
@@ -30,7 +32,11 @@ import { RemittanceQueueTable } from '../components/organisms/super-admin/Remitt
 import { PlatformAnalyticsPanel } from '../components/organisms/super-admin/PlatformAnalyticsPanel';
 import { GlobalKitchenMonitor } from '../components/organisms/super-admin/GlobalKitchenMonitor';
 import { SubscriptionPlansPanel } from '../components/organisms/super-admin/SubscriptionPlansPanel';
+import { SubscriptionRequestsQueue } from '../components/organisms/super-admin/SubscriptionRequestsQueue';
 import { SystemHealthPanel } from '../components/organisms/super-admin/SystemHealthPanel';
+import { AdminRefundsPanel } from '../components/organisms/super-admin/AdminRefundsPanel';
+import { RefundHistoryModal } from '../components/molecules/RefundHistoryModal';
+import { useAdminRefunds } from '../hooks/useAdminRefunds';
 
 export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -48,9 +54,13 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
     document.documentElement.classList.remove('dark');
   }, []);
 
-  const { overview, businesses, liveOrders, systemHealth, loading, fetchDashboardData, handleToggleBusinessStatus, handleChangeBusinessPlan } = useSuperAdminDashboardData();
+  const { overview, businesses, liveOrders, loading, fetchDashboardData, handleToggleBusinessStatus, handleChangeBusinessPlan } = useSuperAdminDashboardData();
+  const { systemHealth } = useSystemHealth(activeTab === 'system');
   const { analyticsData } = useSuperAdminAnalytics(dateRange);
   const remittanceQueue = useRemittanceQueue(activeTab);
+  const subscriptionRequestsQueue = useSubscriptionRequests(activeTab);
+  const adminRefunds = useAdminRefunds(activeTab === 'refunds');
+  const [refundHistoryOrder, setRefundHistoryOrder] = useState<any | null>(null);
 
   const handleExport = (format: 'csv' | 'pdf') => {
     if (format === 'csv') {
@@ -107,6 +117,8 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
         onOpenStatusModal={setSelectedBusinessForModal}
       />
 
+      <RefundHistoryModal order={refundHistoryOrder} onClose={() => setRefundHistoryOrder(null)} />
+
       <NavbarAdmin
         activeTab={activeTab}
         onTabChange={setActiveTab}
@@ -123,6 +135,8 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
         }}
         businessesCount={businesses.length}
         pendingRemittancesCount={remittanceQueue.pendingRemittancesCount}
+        pendingSubscriptionRequestsCount={subscriptionRequestsQueue.pendingSubscriptionRequestsCount}
+        refundsNeededCount={adminRefunds.insights?.needsRefundCount}
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
@@ -218,6 +232,26 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
           />
         )}
 
+        {activeTab === 'refunds' && (
+          <AdminRefundsPanel
+            businesses={businesses}
+            orders={adminRefunds.orders}
+            loading={adminRefunds.loading}
+            insights={adminRefunds.insights}
+            pagination={adminRefunds.pagination}
+            onPageChange={(page) => adminRefunds.setPagination(prev => ({ ...prev, page }))}
+            onPageSizeChange={(limit) => adminRefunds.setPagination(prev => ({ ...prev, limit, page: 1 }))}
+            searchQuery={adminRefunds.searchQuery}
+            onSearchChange={adminRefunds.setSearchQuery}
+            paymentStatusFilter={adminRefunds.paymentStatusFilter}
+            onPaymentStatusFilterChange={adminRefunds.setPaymentStatusFilter}
+            selectedBusinessId={adminRefunds.businessId}
+            onSelectBusiness={adminRefunds.setBusinessId}
+            onRefresh={adminRefunds.refresh}
+            onViewHistory={setRefundHistoryOrder}
+          />
+        )}
+
         {activeTab === 'analytics' && (
           <PlatformAnalyticsPanel
             metrics={overview?.metrics ?? null}
@@ -233,7 +267,18 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
         )}
 
         {activeTab === 'plans' && (
-          <SubscriptionPlansPanel plans={overview?.plans ?? []} onPlansChanged={fetchDashboardData} />
+          <div className="space-y-8">
+            <SubscriptionRequestsQueue
+              requestsView={subscriptionRequestsQueue.requestsView}
+              onChangeView={subscriptionRequestsQueue.setRequestsView}
+              pendingCount={subscriptionRequestsQueue.pendingSubscriptionRequestsCount}
+              requests={subscriptionRequestsQueue.subscriptionRequests}
+              loading={subscriptionRequestsQueue.loadingSubscriptionRequests}
+              onApprove={subscriptionRequestsQueue.handleApproveRequest}
+              onReject={subscriptionRequestsQueue.handleRejectRequest}
+            />
+            <SubscriptionPlansPanel plans={overview?.plans ?? []} onPlansChanged={fetchDashboardData} />
+          </div>
         )}
 
         {activeTab === 'system' && (

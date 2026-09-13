@@ -41,3 +41,5 @@ yarn-error.log*
 *.swp
 
 touch.md
+
+config.development.json

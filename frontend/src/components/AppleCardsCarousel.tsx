@@ -31,7 +31,7 @@ const businessCards: BusinessCardData[] = [
     imageUrl: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=1000&q=80',
     slug: 'artisan-cafe',
     description: `Premier specialty coffee roastery serving single-origin pour-overs and sourdough pizzas powered by ${APP_NAME} real-time kitchen displays.`,
-    highlights: ['Instant Socket.IO Kitchen Dispatch', 'QR Code Table Ordering', 'Double-Entry Financial Ledger'],
+    highlights: ['Instant Real-Time Kitchen Dispatch', 'QR Code Table Ordering', 'Double-Entry Financial Ledger'],
     popularDishes: ['Paneer Tikka Passion Pizza', 'Signature Cold Coffee', 'Peri Peri Fries']
   },
   {

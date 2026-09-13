@@ -13,6 +13,7 @@ import { seedDatabase } from './database/seed';
 import { initSocketServer } from './websocket/socketManager';
 import { errorHandler } from './middleware/errorHandler';
 import { logger } from './utils/logger';
+import { startSystemMetricsCollector } from './services/systemMetrics.service';
 
 // Route Imports
 import authRoutes from './routes/authRoutes';
@@ -25,6 +26,7 @@ import analyticsRoutes from './routes/analyticsRoutes';
 import adminRoutes from './routes/adminRoutes';
 import publicRoutes from './routes/publicRoutes';
 import businessRoutes from './routes/businessRoutes';
+import subscriptionRoutes from './routes/subscriptionRoutes';
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -71,6 +73,7 @@ app.use('/api/v1/analytics', analyticsRoutes);
 app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/public', publicRoutes);
 app.use('/api/v1/business', businessRoutes);
+app.use('/api/v1/subscriptions', subscriptionRoutes);
 
 // Health Check
 app.get('/health', (req, res) => {
@@ -91,6 +94,7 @@ process.on('unhandledRejection', (reason) => {
 const startServer = async () => {
   await connectDB();
   await seedDatabase(false);
+  startSystemMetricsCollector();
 
   const port = Number(config.port) || 5000;
 

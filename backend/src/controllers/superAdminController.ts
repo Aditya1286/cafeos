@@ -8,8 +8,12 @@ import { SubscriptionPlan } from '../models/SubscriptionPlan';
 import { Subscription } from '../models/Subscription';
 import { Remittance } from '../models/Remittance';
 import { InventoryItem } from '../models/InventoryItem';
+import { SubscriptionUpgradeRequest } from '../models/SubscriptionUpgradeRequest';
 import { ensureClosedRemittancePeriods, getRemittanceSummary } from '../services/remittance.service';
 import { computeRepeatCustomerStats, computeItemMargins, computeKitchenSpeed } from '../services/businessInsights.service';
+import { computeRefundInsights } from '../services/refundInsights.service';
+import { applyPlanChange } from '../services/subscription.service';
+import { getCurrentSnapshot, getMetricsHistory } from '../services/systemMetrics.service';
 import mongoose from 'mongoose';
 
 export const getSuperAdminOverview = async (req: AuthRequest, res: Response) => {
@@ -365,31 +369,92 @@ export const changeBusinessPlan = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Business not found' } });
     }
 
-    const plan = await SubscriptionPlan.findById(planId);
-    if (!plan || plan.status !== 'ACTIVE') {
-      return res.status(400).json({ success: false, error: { code: 'INVALID_PLAN', message: 'Selected plan does not exist or is disabled.' } });
-    }
-
-    let subscription = await Subscription.findOne({ businessId: business._id });
-    if (subscription) {
-      subscription.planId = plan._id;
-      subscription.status = 'ACTIVE';
-      await subscription.save();
-    } else {
-      subscription = await Subscription.create({
-        businessId: business._id,
-        planId: plan._id,
-        status: 'ACTIVE',
-        currentPeriodStart: new Date(),
-        currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-      });
-    }
+    const { subscription, plan } = await applyPlanChange(business._id, planId);
 
     return res.json({
       success: true,
       message: `${business.name} moved to the ${plan.name} plan`,
       data: { subscription, plan: { _id: plan._id, name: plan.name, code: plan.code } }
     });
+  } catch (error: any) {
+    if (error.message === 'Selected plan does not exist or is disabled.') {
+      return res.status(400).json({ success: false, error: { code: 'INVALID_PLAN', message: error.message } });
+    }
+    return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
+  }
+};
+
+// Super admin: every business-initiated plan-upgrade request, defaulting to the actionable
+// (PENDING) queue — same shape as the remittance queue: ?status=APPROVED|REJECTED|ALL reads
+// the reviewed log instead.
+export const getSubscriptionRequests = async (req: AuthRequest, res: Response) => {
+  try {
+    const statusFilter = (req.query.status as string) || 'PENDING';
+    const query: any = {};
+    if (statusFilter !== 'ALL') {
+      query.status = statusFilter;
+    }
+
+    const requests = await SubscriptionUpgradeRequest.find(query)
+      .populate('businessId', 'name slug')
+      .populate('planId', 'name code monthlyPricePaise annualPricePaise')
+      .populate('reviewedByUserId', 'name email')
+      .sort(statusFilter === 'PENDING' ? { createdAt: 1 } : { updatedAt: -1 })
+      .lean();
+
+    return res.json({ success: true, data: requests });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
+  }
+};
+
+// Super admin: approve a pending request — actually applies the plan change via the same
+// service changeBusinessPlan uses, so a direct admin override and an approved self-service
+// request end up in exactly the same state.
+export const approveSubscriptionRequest = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const request = await SubscriptionUpgradeRequest.findById(id);
+    if (!request) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Request not found' } });
+    }
+    if (request.status !== 'PENDING') {
+      return res.status(400).json({ success: false, error: { code: 'ALREADY_REVIEWED', message: 'This request has already been reviewed.' } });
+    }
+
+    const { subscription, plan } = await applyPlanChange(request.businessId, request.planId, request.billingCycle);
+
+    request.status = 'APPROVED';
+    request.reviewedAt = new Date();
+    request.reviewedByUserId = req.user?._id;
+    await request.save();
+
+    return res.json({ success: true, message: `Activated the ${plan.name} plan`, data: { request, subscription } });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
+  }
+};
+
+// Super admin: reject a pending request — the business's active plan is left untouched.
+export const rejectSubscriptionRequest = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+    const request = await SubscriptionUpgradeRequest.findById(id);
+    if (!request) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Request not found' } });
+    }
+    if (request.status !== 'PENDING') {
+      return res.status(400).json({ success: false, error: { code: 'ALREADY_REVIEWED', message: 'This request has already been reviewed.' } });
+    }
+
+    request.status = 'REJECTED';
+    request.reviewedAt = new Date();
+    request.reviewedByUserId = req.user?._id;
+    request.rejectionReason = reason || '';
+    await request.save();
+
+    return res.json({ success: true, message: 'Request rejected', data: request });
   } catch (error: any) {
     return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
   }
@@ -777,21 +842,161 @@ export const getBusinessInsights = async (req: AuthRequest, res: Response) => {
   }
 };
 
+// Super Admin: cancelled & refunded orders across the whole platform — the "Refunds &
+// Cancellations" tab. Optionally scoped to one business (?businessId=...) so an admin
+// can actually search for and drill into a specific business instead of scrolling one
+// combined feed with no way to filter it down.
+export const getAdminRefundOrders = async (req: AuthRequest, res: Response) => {
+  try {
+    const { q, businessId, paymentStatus, page, limit } = req.query;
+    const query: any = { orderStatus: { $in: ['CANCELLED', 'REFUNDED'] } };
+
+    if (businessId && mongoose.Types.ObjectId.isValid(businessId as string)) {
+      query.businessId = businessId;
+    }
+    if (paymentStatus && paymentStatus !== 'ALL') {
+      query.paymentStatus = paymentStatus;
+    }
+    if (q && (q as string).trim() !== '') {
+      const searchRegex = new RegExp((q as string).trim(), 'i');
+      query.$or = [
+        { orderId: searchRegex },
+        { orderNumber: searchRegex },
+        { customerName: searchRegex },
+        { customerPhone: searchRegex },
+        { transactionId: searchRegex }
+      ];
+    }
+
+    const pageNum = parseInt(page as string) || 1;
+    const limitNum = parseInt(limit as string) || 25;
+    const skip = (pageNum - 1) * limitNum;
+
+    const [orders, total] = await Promise.all([
+      Order.find(query)
+        .populate('businessId', 'name slug')
+        .populate('refundedByUserId', 'name email')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limitNum),
+      Order.countDocuments(query)
+    ]);
+
+    return res.json({
+      success: true,
+      data: orders,
+      pagination: { page: pageNum, limit: limitNum, total, totalPages: Math.ceil(total / limitNum) }
+    });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
+  }
+};
+
+// Super Admin: platform-wide (or one-business) refund/cancellation insights, plus a
+// per-business breakdown so a business with an outsized cancellation/refund footprint
+// is visible without opening each business individually — the "byBusiness" leaderboard
+// only makes sense platform-wide, so it's omitted once a single business is selected.
+export const getAdminRefundInsights = async (req: AuthRequest, res: Response) => {
+  try {
+    const { businessId } = req.query;
+    const matchBase: Record<string, any> = {};
+    if (businessId && mongoose.Types.ObjectId.isValid(businessId as string)) {
+      matchBase.businessId = new mongoose.Types.ObjectId(businessId as string);
+    }
+
+    const insights = await computeRefundInsights(matchBase);
+
+    let byBusiness: any[] = [];
+    if (!matchBase.businessId) {
+      byBusiness = await Order.aggregate([
+        { $match: { orderStatus: { $in: ['CANCELLED', 'REFUNDED'] } } },
+        {
+          $group: {
+            _id: '$businessId',
+            cancellations: { $sum: 1 },
+            refundedCount: { $sum: { $cond: [{ $eq: ['$paymentStatus', 'REFUNDED'] }, 1, 0] } },
+            refundedAmountPaise: { $sum: { $cond: [{ $eq: ['$paymentStatus', 'REFUNDED'] }, '$totalAmountPaise', 0] } },
+            needsRefundCount: { $sum: { $cond: [{ $and: [{ $eq: ['$orderStatus', 'CANCELLED'] }, { $eq: ['$paymentStatus', 'PAID'] }] }, 1, 0] } }
+          }
+        },
+        { $sort: { refundedAmountPaise: -1 } },
+        { $limit: 20 },
+        { $lookup: { from: 'businesses', localField: '_id', foreignField: '_id', as: 'business' } },
+        { $unwind: '$business' },
+        {
+          $project: {
+            _id: 0,
+            businessId: '$_id',
+            name: '$business.name',
+            slug: '$business.slug',
+            cancellations: 1,
+            refundedCount: 1,
+            refundedAmountPaise: 1,
+            needsRefundCount: 1
+          }
+        }
+      ]);
+    }
+
+    return res.json({ success: true, data: { ...insights, byBusiness } });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
+  }
+};
+
+const READY_STATE_LABELS: Record<number, string> = {
+  0: 'DISCONNECTED',
+  1: 'CONNECTED',
+  2: 'CONNECTING',
+  3: 'DISCONNECTING'
+};
+
 export const getSystemHealth = async (req: AuthRequest, res: Response) => {
   try {
-    const uptime = process.uptime();
-    const memoryUsage = process.memoryUsage();
+    const current = getCurrentSnapshot();
+
+    const readyState = mongoose.connection.readyState;
+    const database = READY_STATE_LABELS[readyState] || 'UNKNOWN';
+
+    // serverStatus is a standard admin command on a standalone/replica-set mongod, but a
+    // restricted-permission user (some managed Atlas tiers) can have it blocked — so this
+    // degrades to `mongo: null` instead of failing the whole health check over a stat that
+    // was always a bonus, not the point.
+    let mongo: any = null;
+    if (readyState === 1 && mongoose.connection.db) {
+      try {
+        const status = await mongoose.connection.db.admin().serverStatus();
+        mongo = {
+          version: status.version,
+          uptimeSeconds: Math.floor(status.uptime),
+          connections: status.connections,
+          opcounters: status.opcounters,
+          memMB: { resident: status.mem?.resident, virtual: status.mem?.virtual },
+          network: { bytesInMB: Math.round((status.network?.bytesIn || 0) / 1024 / 1024), bytesOutMB: Math.round((status.network?.bytesOut || 0) / 1024 / 1024) }
+        };
+      } catch {
+        // Left as null — see comment above.
+      }
+    }
+
+    const history = getMetricsHistory();
+    const latestSample = history[history.length - 1];
 
     return res.json({
       success: true,
       data: {
         status: 'HEALTHY',
-        uptimeSeconds: Math.floor(uptime),
+        uptimeSeconds: current.uptimeSeconds,
+        cpuPercent: latestSample?.cpuPercent ?? 0,
+        eventLoopLagMs: current.eventLoopLagMsMean,
         memoryUsage: {
-          heapUsedMB: Math.round(memoryUsage.heapUsed / 1024 / 1024),
-          heapTotalMB: Math.round(memoryUsage.heapTotal / 1024 / 1024)
+          heapUsedMB: current.heapUsedMB,
+          heapTotalMB: current.heapTotalMB,
+          rssMB: current.rssMB
         },
-        database: 'CONNECTED',
+        database,
+        mongo,
+        history,
         timestamp: new Date()
       }
     });

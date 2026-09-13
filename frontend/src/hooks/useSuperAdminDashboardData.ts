@@ -2,19 +2,20 @@ import { useEffect, useState } from 'react';
 import { apiRequest } from '../services/api';
 import { getSocket } from '../services/socket';
 import { toast } from '../utils/toast';
-import { SuperAdminOverview, AdminBusinessSummary, SystemHealth } from '../types';
+import { SuperAdminOverview, AdminBusinessSummary } from '../types';
 
 /**
  * Loads every platform-wide dataset the super admin overview renders (global
- * metrics, the registered business list with their financial snapshot, and
- * process/DB health), and keeps the live order stream in sync via socket
- * events. All numbers here come straight from `/admin/*` aggregations.
+ * metrics and the registered business list with their financial snapshot),
+ * and keeps the live order stream in sync via socket events. All numbers
+ * here come straight from `/admin/*` aggregations. System/DB health lives in
+ * its own polling hook (useSystemHealth) since it needs to refresh on an
+ * interval, not just once per dashboard load.
  */
 export const useSuperAdminDashboardData = () => {
   const [overview, setOverview] = useState<SuperAdminOverview | null>(null);
   const [businesses, setBusinesses] = useState<AdminBusinessSummary[]>([]);
   const [liveOrders, setLiveOrders] = useState<any[]>([]);
-  const [systemHealth, setSystemHealth] = useState<SystemHealth | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchDashboardData = async () => {
@@ -29,9 +30,6 @@ export const useSuperAdminDashboardData = () => {
       }
       const businessesRes = await apiRequest('/admin/businesses').catch(() => null);
       if (businessesRes?.data) setBusinesses(businessesRes.data);
-
-      const healthRes = await apiRequest('/admin/system/health').catch(() => null);
-      if (healthRes?.data) setSystemHealth(healthRes.data);
     } catch (err) {
       console.error('Error fetching admin data:', err);
     } finally {
@@ -81,7 +79,6 @@ export const useSuperAdminDashboardData = () => {
     overview,
     businesses,
     liveOrders,
-    systemHealth,
     loading,
     fetchDashboardData,
     handleToggleBusinessStatus,

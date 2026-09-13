@@ -371,11 +371,33 @@ export interface TopBusinessByRevenue {
   orders: number;
 }
 
+export interface SystemMetricsSample {
+  timestamp: number;
+  cpuPercent: number;
+  heapUsedMB: number;
+  rssMB: number;
+  eventLoopLagMsMean: number;
+  eventLoopLagMsP99: number;
+}
+
+export interface MongoServerStats {
+  version: string;
+  uptimeSeconds: number;
+  connections: { current: number; available: number; totalCreated: number; active: number };
+  opcounters: { insert: number; query: number; update: number; delete: number; getmore: number; command: number };
+  memMB: { resident: number; virtual: number };
+  network: { bytesInMB: number; bytesOutMB: number };
+}
+
 export interface SystemHealth {
   status: string;
   uptimeSeconds: number;
-  memoryUsage: { heapUsedMB: number; heapTotalMB: number };
+  cpuPercent: number;
+  eventLoopLagMs: number;
+  memoryUsage: { heapUsedMB: number; heapTotalMB: number; rssMB: number };
   database: string;
+  mongo: MongoServerStats | null;
+  history: SystemMetricsSample[];
   timestamp: string;
 }
 
@@ -393,4 +415,80 @@ export interface AdminRemittanceRequest {
   markedPaidByUserId?: { name: string; email: string };
   merchantMarkedPaidAt?: string;
   merchantReportedUtr?: string;
+}
+
+export type SubscriptionRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+
+export interface MySubscriptionUpgradeRequest {
+  _id: string;
+  businessId: string;
+  planId: SubscriptionPlan | string;
+  billingCycle: 'MONTHLY' | 'ANNUAL';
+  amountPaise: number;
+  status: SubscriptionRequestStatus;
+  merchantMarkedPaidAt?: string;
+  merchantReportedUtr?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MySubscriptionStatus {
+  currentPlan: SubscriptionPlan | null;
+  billingCycle: 'MONTHLY' | 'ANNUAL';
+  currentPeriodEnd: string | null;
+  pendingRequest: MySubscriptionUpgradeRequest | null;
+  platformUpiVpa: string;
+  platformPayeeName: string;
+}
+
+export interface RefundPaymentMethodBreakdown {
+  _id: string;
+  count: number;
+  amountPaise: number;
+}
+
+export interface RefundInsights {
+  /** Every order that ever reached CANCELLED, whether or not it's since been refunded (orderStatus flips to REFUNDED once it is). */
+  totalCancellations: number;
+  totalRefundedCount: number;
+  totalRefundedAmountPaise: number;
+  /** Cancelled + still paid — money owed back right now, regardless of whether the customer formally asked for it. */
+  needsRefundCount: number;
+  /** Of `needsRefundCount`, how many the customer explicitly requested via the self-service flow. */
+  refundRequestedCount: number;
+  /** Cancelled orders that were never paid — no refund was ever needed. */
+  unpaidCancellationsCount: number;
+  /** null when no order yet has both a request and a completion timestamp to measure. */
+  avgRefundTurnaroundHours: number | null;
+  paymentMethodBreakdown: RefundPaymentMethodBreakdown[];
+}
+
+export interface AdminRefundByBusiness {
+  businessId: string;
+  name: string;
+  slug: string;
+  cancellations: number;
+  refundedCount: number;
+  refundedAmountPaise: number;
+  needsRefundCount: number;
+}
+
+export interface AdminRefundInsights extends RefundInsights {
+  byBusiness: AdminRefundByBusiness[];
+}
+
+export interface AdminSubscriptionRequest {
+  _id: string;
+  businessId: { name: string; slug: string } | string;
+  planId: { _id: string; name: string; code: string; monthlyPricePaise: number; annualPricePaise: number } | string;
+  billingCycle: 'MONTHLY' | 'ANNUAL';
+  amountPaise: number;
+  status: SubscriptionRequestStatus;
+  merchantMarkedPaidAt?: string;
+  merchantReportedUtr?: string;
+  reviewedAt?: string;
+  reviewedByUserId?: { name: string; email: string };
+  rejectionReason?: string;
+  createdAt: string;
+  updatedAt: string;
 }

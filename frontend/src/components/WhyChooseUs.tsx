@@ -11,7 +11,7 @@ export interface ComparisonFeature {
 const comparisonFeatures: ComparisonFeature[] = [
   {
     oldWay: 'Handwritten tickets causing kitchen errors & missing items',
-    newWay: 'Live WebSocket Kitchen Display System (KDS)',
+    newWay: 'Live real-time Kitchen Display System (KDS)',
   },
   {
     oldWay: 'End-of-day manual cash and payment reconciliation headaches',

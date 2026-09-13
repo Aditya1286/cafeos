@@ -325,7 +325,7 @@ export const LandingPage: React.FC = () => {
 
             <ul className="space-y-3 text-xs text-slate-700 font-semibold">
               <li className="flex items-center gap-2.5">
-                <CheckCircle2 className="w-4 h-4 text-red-600 flex-shrink-0" /> Live WebSocket stream push notifications
+                <CheckCircle2 className="w-4 h-4 text-red-600 flex-shrink-0" /> Live real-time push notifications
               </li>
               <li className="flex items-center gap-2.5">
                 <CheckCircle2 className="w-4 h-4 text-red-600 flex-shrink-0" /> Color-coded preparation timers & audio alert chimes

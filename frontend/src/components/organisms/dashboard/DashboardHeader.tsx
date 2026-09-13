@@ -1,17 +1,18 @@
 import React from 'react';
 import {
   Coffee, Copy, Check, Wifi, Plus, RefreshCw, LogOut, FileText, UtensilsCrossed, QrCode,
-  Package, BarChart3, Wallet, Settings, Flame
+  Package, BarChart3, Wallet, Settings, Flame, Undo2
 } from 'lucide-react';
 import { APP_SLUG } from '../../../constants/app';
 
-export type DashboardTab = 'kds' | 'orders' | 'menu' | 'tables' | 'inventory' | 'analytics' | 'ledger' | 'settings';
+export type DashboardTab = 'kds' | 'orders' | 'menu' | 'tables' | 'inventory' | 'analytics' | 'ledger' | 'refunds' | 'settings';
 
 interface DashboardHeaderProps {
   user: any;
   business: any;
   activeOrdersCount: number;
   lowStockCount: number;
+  refundsNeededCount?: number;
   activeTab: DashboardTab;
   onChangeTab: (tab: DashboardTab) => void;
   copiedUrl: boolean;
@@ -29,16 +30,18 @@ const TABS: { id: DashboardTab; label: string; icon: typeof Flame }[] = [
   { id: 'inventory', label: 'Inventory',   icon: Package },
   { id: 'analytics', label: 'Analytics',   icon: BarChart3 },
   { id: 'ledger',    label: 'Financial Ledger', icon: Wallet },
+  { id: 'refunds',   label: 'Refunds & Cancellations', icon: Undo2 },
   { id: 'settings',  label: 'Settings Hub', icon: Settings },
 ];
 
 export const DashboardHeader = ({
-  user, business, activeOrdersCount, lowStockCount, activeTab, onChangeTab,
+  user, business, activeOrdersCount, lowStockCount, refundsNeededCount, activeTab, onChangeTab,
   copiedUrl, onCopyMenuUrl, loading, onRefresh, onAddItem
 }: DashboardHeaderProps) => {
   const badgeFor = (tabId: DashboardTab): number | null => {
     if (tabId === 'kds') return activeOrdersCount || null;
     if (tabId === 'inventory') return lowStockCount || null;
+    if (tabId === 'refunds') return refundsNeededCount || null;
     return null;
   };
 

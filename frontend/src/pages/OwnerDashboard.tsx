@@ -5,6 +5,8 @@ import { toast } from '../utils/toast';
 import { useOwnerDashboardData } from '../hooks/useOwnerDashboardData';
 import { useOrderHistory } from '../hooks/useOrderHistory';
 import { useRemittance } from '../hooks/useRemittance';
+import { useSubscription } from '../hooks/useSubscription';
+import { useRefundsAndCancellations } from '../hooks/useRefundsAndCancellations';
 
 import { DashboardHeader, DashboardTab } from '../components/organisms/dashboard/DashboardHeader';
 import { KpiStatsGrid } from '../components/organisms/dashboard/KpiStatsGrid';
@@ -23,6 +25,8 @@ import { EBillModal } from '../components/organisms/dashboard/EBillModal';
 import { AddProductModal } from '../components/organisms/dashboard/AddProductModal';
 import { AddTableModal } from '../components/organisms/dashboard/AddTableModal';
 import { AddInventoryModal } from '../components/organisms/dashboard/AddInventoryModal';
+import { RefundsPanel } from '../components/organisms/dashboard/RefundsPanel';
+import { RefundHistoryModal } from '../components/molecules/RefundHistoryModal';
 
 export const OwnerDashboard = ({ user }: { user: any }) => {
   const [activeTab, setActiveTab] = useState<DashboardTab>('kds');
@@ -45,8 +49,14 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
     handleRemoveProduct, handleRestoreProduct, handleDeleteProduct,
   } = dashboard;
   const { remittanceSummary, loadingRemittance, markingPaid, handleMarkRemittancePaid } = useRemittance(activeTab);
+  const {
+    subscriptionStatus, subscriptionPlans, loadingSubscription, requestingPlanId,
+    markingUpgradePaid, cancellingUpgrade, handleRequestUpgrade, handleMarkUpgradePaid, handleCancelUpgrade,
+  } = useSubscription(activeTab);
+  const refundsState = useRefundsAndCancellations(activeTab === 'refunds');
 
   // Drawer & Bill Modal states
+  const [historyOrder, setHistoryOrder] = useState<any | null>(null);
   const [selectedOrderForDrawer, setSelectedOrderForDrawer] = useState<any | null>(null);
   const [selectedOrderDetails, setSelectedOrderDetails] = useState<any | null>(null);
   const [selectedOrderForBill, setSelectedOrderForBill] = useState<any | null>(null);
@@ -129,8 +139,12 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
 
   const patchOrderEverywhere = (orderId: string, patch: Record<string, any>) => {
     orderHistoryState.patchOrder(orderId, patch);
+    refundsState.patchOrder(orderId, patch);
     if (selectedOrderForDrawer && (selectedOrderForDrawer._id === orderId || selectedOrderForDrawer.orderId === orderId)) {
       setSelectedOrderForDrawer((prev: any) => ({ ...prev, ...patch }));
+    }
+    if (historyOrder && (historyOrder._id === orderId || historyOrder.orderId === orderId)) {
+      setHistoryOrder((prev: any) => ({ ...prev, ...patch }));
     }
   };
 
@@ -313,6 +327,7 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
         business={business}
         activeOrdersCount={activeOrders.length}
         lowStockCount={lowStockCount}
+        refundsNeededCount={refundsState.insights?.needsRefundCount}
         activeTab={activeTab}
         onChangeTab={setActiveTab}
         copiedUrl={copiedUrl}
@@ -405,6 +420,24 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
           />
         )}
 
+        {activeTab === 'refunds' && (
+          <RefundsPanel
+            orders={refundsState.orders}
+            loading={refundsState.loading}
+            insights={refundsState.insights}
+            pagination={refundsState.pagination}
+            onPageChange={(page) => refundsState.setPagination(prev => ({ ...prev, page }))}
+            onPageSizeChange={(limit) => refundsState.setPagination(prev => ({ ...prev, limit, page: 1 }))}
+            searchQuery={refundsState.searchQuery}
+            onSearchChange={refundsState.setSearchQuery}
+            paymentStatusFilter={refundsState.paymentStatusFilter}
+            onPaymentStatusFilterChange={refundsState.setPaymentStatusFilter}
+            onRefresh={refundsState.refresh}
+            onViewHistory={setHistoryOrder}
+            onMarkRefunded={handleMarkRefunded}
+          />
+        )}
+
         {activeTab === 'settings' && (
           <SettingsPanel
             business={business}
@@ -416,6 +449,15 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
             publicMenuUrl={publicMenuUrl}
             copiedUrl={copiedUrl}
             onCopyMenuUrl={copyMenuUrl}
+            subscriptionStatus={subscriptionStatus}
+            subscriptionPlans={subscriptionPlans}
+            loadingSubscription={loadingSubscription}
+            requestingPlanId={requestingPlanId}
+            markingUpgradePaid={markingUpgradePaid}
+            cancellingUpgrade={cancellingUpgrade}
+            onRequestUpgrade={handleRequestUpgrade}
+            onMarkUpgradePaid={handleMarkUpgradePaid}
+            onCancelUpgrade={handleCancelUpgrade}
           />
         )}
       </main>
@@ -429,6 +471,8 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
         onMarkRefunded={handleMarkRefunded}
         onConfirmPayment={confirmPayment}
       />
+
+      <RefundHistoryModal order={historyOrder} onClose={() => setHistoryOrder(null)} />
 
       <CancelOrderModal
         order={cancelTarget}

@@ -20,12 +20,14 @@ services:
     restart: always
     ports:
       - "5000:5000"
+    env_file:
+      - .env
     environment:
       PORT: 5000
       NODE_ENV: production
+      # Always the in-network hostname — never read from .env, which points at
+      # 127.0.0.1 for local (non-Docker) development instead.
       MONGO_URI: mongodb://mongodb:27017/cafeos
-      JWT_SECRET: cafeos_super_secret_jwt_key_2026_production_ready
-      FRONTEND_URL: http://localhost:5173
     depends_on:
       - mongodb
 

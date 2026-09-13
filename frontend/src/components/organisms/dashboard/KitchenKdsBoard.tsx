@@ -85,7 +85,7 @@ export const KitchenKdsBoard = ({ orders, newlyArrivedOrderId, onViewAllOrders, 
 
           <div className="px-3.5 py-1.5 rounded-full bg-purple-50 border border-purple-200 text-purple-700 text-xs font-black flex items-center gap-1.5 hidden sm:flex">
             <Sparkles className="w-3.5 h-3.5 text-purple-500 animate-pulse" />
-            <span>WebSocket Active</span>
+            <span>Real-Time Updates Active</span>
           </div>
         </div>
       </div>

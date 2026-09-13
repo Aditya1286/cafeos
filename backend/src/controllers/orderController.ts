@@ -10,6 +10,7 @@ import { InventoryTransaction } from '../models/InventoryTransaction';
 import { FinancialLedger } from '../models/FinancialLedger';
 import { emitToBusiness, emitToOrder } from '../websocket/socketManager';
 import { generateDailyOrderId } from '../utils/orderSequence';
+import { computeRefundInsights } from '../services/refundInsights.service';
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -517,6 +518,65 @@ export const getOrders = async (req: AuthRequest, res: Response) => {
         totalPages: Math.ceil(total / limitNum)
       }
     });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
+  }
+};
+
+// Owner/Staff: Cancelled & refunded orders in one dedicated list — the "Refunds &
+// Cancellations" tab. Same search shape as getOrders above, just pre-scoped to the
+// statuses that tab cares about, and with the staff member who processed a refund
+// populated in so the history view can show who actioned it.
+export const getRefundOrders = async (req: AuthRequest, res: Response) => {
+  try {
+    const { q, paymentStatus, page, limit } = req.query;
+    const query: any = { businessId: req.businessId, orderStatus: { $in: ['CANCELLED', 'REFUNDED'] } };
+
+    if (paymentStatus && paymentStatus !== 'ALL') {
+      query.paymentStatus = paymentStatus;
+    }
+
+    if (q && (q as string).trim() !== '') {
+      const searchRegex = new RegExp((q as string).trim(), 'i');
+      query.$or = [
+        { orderId: searchRegex },
+        { orderNumber: searchRegex },
+        { customerName: searchRegex },
+        { customerPhone: searchRegex },
+        { tableName: searchRegex },
+        { transactionId: searchRegex }
+      ];
+    }
+
+    const pageNum = parseInt(page as string) || 1;
+    const limitNum = parseInt(limit as string) || 25;
+    const skip = (pageNum - 1) * limitNum;
+
+    const [orders, total] = await Promise.all([
+      Order.find(query)
+        .populate('refundedByUserId', 'name email')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limitNum),
+      Order.countDocuments(query)
+    ]);
+
+    return res.json({
+      success: true,
+      data: orders,
+      pagination: { page: pageNum, limit: limitNum, total, totalPages: Math.ceil(total / limitNum) }
+    });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
+  }
+};
+
+// Owner/Staff: Precomputed refund/cancellation insights for this business — every
+// figure is a real aggregation over the same Order fields the list above reads.
+export const getRefundInsights = async (req: AuthRequest, res: Response) => {
+  try {
+    const insights = await computeRefundInsights({ businessId: req.businessId });
+    return res.json({ success: true, data: insights });
   } catch (error: any) {
     return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
   }

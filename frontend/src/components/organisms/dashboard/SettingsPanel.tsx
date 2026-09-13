@@ -3,7 +3,8 @@ import { Copy, Check, ShieldCheck, QrCode, ExternalLink } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { APP_NAME } from '../../../constants/app';
 import { inputCls } from '../../molecules/FormField';
-import { DashboardSubscriptionInfo } from '../../../types';
+import { DashboardSubscriptionInfo, MySubscriptionStatus, SubscriptionPlan } from '../../../types';
+import { PlanUpgradePanel } from './PlanUpgradePanel';
 
 interface SettingsPanelProps {
   business: any;
@@ -15,10 +16,21 @@ interface SettingsPanelProps {
   publicMenuUrl: string;
   copiedUrl: boolean;
   onCopyMenuUrl: () => void;
+  subscriptionStatus: MySubscriptionStatus | null;
+  subscriptionPlans: SubscriptionPlan[];
+  loadingSubscription: boolean;
+  requestingPlanId: string | null;
+  markingUpgradePaid: boolean;
+  cancellingUpgrade: boolean;
+  onRequestUpgrade: (planId: string, billingCycle: 'MONTHLY' | 'ANNUAL') => void;
+  onMarkUpgradePaid: (utr?: string) => void;
+  onCancelUpgrade: () => void;
 }
 
 export const SettingsPanel = ({
-  business, subscription, upiVpaInput, setUpiVpaInput, savingUpiVpa, onSaveUpiVpa, publicMenuUrl, copiedUrl, onCopyMenuUrl
+  business, subscription, upiVpaInput, setUpiVpaInput, savingUpiVpa, onSaveUpiVpa, publicMenuUrl, copiedUrl, onCopyMenuUrl,
+  subscriptionStatus, subscriptionPlans, loadingSubscription, requestingPlanId, markingUpgradePaid, cancellingUpgrade,
+  onRequestUpgrade, onMarkUpgradePaid, onCancelUpgrade,
 }: SettingsPanelProps) => (
   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
@@ -130,6 +142,19 @@ export const SettingsPanel = ({
           </div>
         </div>
       </div>
+
+      <PlanUpgradePanel
+        business={business}
+        subscriptionStatus={subscriptionStatus}
+        subscriptionPlans={subscriptionPlans}
+        loadingSubscription={loadingSubscription}
+        requestingPlanId={requestingPlanId}
+        markingUpgradePaid={markingUpgradePaid}
+        cancellingUpgrade={cancellingUpgrade}
+        onRequestUpgrade={onRequestUpgrade}
+        onMarkUpgradePaid={onMarkUpgradePaid}
+        onCancelUpgrade={onCancelUpgrade}
+      />
     </div>
 
     <div className="space-y-6">

@@ -17,7 +17,7 @@ const carouselSlides = [
     image: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=1400&q=80',
     tag: 'INTELLIGENT POS & KDS',
     title: "Automate Kitchen Operations.",
-    subtitle: 'Reduce order fulfillment time by 65% with real-time Socket.IO ticket routing across kitchens & baristas.'
+    subtitle: 'Reduce order fulfillment time by 65% with real-time ticket routing across kitchens & baristas.'
   },
   {
     image: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=1400&q=80',
