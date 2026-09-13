@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
 import path from 'path';
-import { APP_SLUG } from './constants';
+import { APP_NAME, APP_SLUG } from './constants';
 // Load .env from backend folder and root project folder
 dotenv.config({ path: path.join(__dirname, '../../.env') });
 dotenv.config({ path: path.join(__dirname, '../../../.env') });
@@ -22,5 +22,9 @@ export const config = {
   // (e.g. for a pre-prod staging env that wants to test the real integration).
   otpMode: (process.env.OTP_MODE as 'mock' | 'live') || (process.env.NODE_ENV === 'production' ? 'live' : 'mock'),
 
+  // Platform's own UPI ID — where businesses pay their commission dues. Distinct from any
+  // business's own upiVpa (that one collects customer payments, this one collects ours).
+  platformUpiVpa: process.env.PLATFORM_UPI_VPA || `${APP_SLUG}@okhdfcbank`,
+  platformPayeeName: process.env.PLATFORM_PAYEE_NAME || `${APP_NAME} Technologies`,
 };
 

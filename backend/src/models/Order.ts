@@ -11,7 +11,7 @@ export type OrderStatus =
   | 'REFUNDED';
 
 export type PaymentStatus = 'UNPAID' | 'PAID' | 'REFUNDED' | 'FAILED';
-export type PaymentMethod = 'ONLINE' | 'CASH' | 'UPI' | 'CARD';
+export type PaymentMethod = 'ONLINE' | 'CASH' | 'CARD';
 export type OrderSource = 'QR_TABLE' | 'STAFF' | 'TAKEAWAY' | 'ADMIN';
 
 export interface IOrderItemAddonSnapshot {
@@ -46,7 +46,7 @@ export interface IOrder extends Document {
   businessId: mongoose.Types.ObjectId;
   dateKey?: string; // Format: "YYYY-MM-DD"
   sequenceNumber?: number; // Daily sequence number
-  tableId: mongoose.Types.ObjectId;
+  tableId?: mongoose.Types.ObjectId; // absent for businesses with tablesEnabled=false (counter/takeaway orders)
   tableName: string;
   customerName: string;
   customerPhone: string;
@@ -68,6 +68,7 @@ export interface IOrder extends Document {
   notes?: string;
   timeline?: IOrderTimeline;
   cancellationReason?: string;
+  customerMarkedPaidAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -104,7 +105,7 @@ const OrderSchema = new Schema<IOrder>(
     businessId: { type: Schema.Types.ObjectId, ref: 'Business', required: true, index: true },
     dateKey: { type: String, index: true },
     sequenceNumber: { type: Number },
-    tableId: { type: Schema.Types.ObjectId, ref: 'Table', required: true },
+    tableId: { type: Schema.Types.ObjectId, ref: 'Table' },
     tableName: { type: String, required: true },
     customerName: { type: String, required: true, trim: true, index: true },
     customerPhone: { type: String, required: true, trim: true, index: true },
@@ -136,14 +137,15 @@ const OrderSchema = new Schema<IOrder>(
     },
     paymentMethod: {
       type: String,
-      enum: ['ONLINE', 'CASH', 'UPI', 'CARD'],
+      enum: ['ONLINE', 'CASH', 'CARD'],
       default: 'ONLINE'
     },
     transactionId: { type: String, default: '' },
     idempotencyKey: { type: String, unique: true, sparse: true },
     notes: { type: String, default: '' },
     timeline: { type: TimelineSchema, default: () => ({ placedAt: new Date() }) },
-    cancellationReason: { type: String, default: '' }
+    cancellationReason: { type: String, default: '' },
+    customerMarkedPaidAt: { type: Date }
   },
   { timestamps: true }
 );

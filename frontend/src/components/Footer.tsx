@@ -40,7 +40,7 @@ export const Footer: React.FC = () => {
         <div>
           <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900 mb-3">Monetization & Fees</h4>
           <p className="text-xs text-slate-500 leading-relaxed">
-            Configurable subscription plans (Free, ₹299/mo, ₹799/mo) and automated per-order platform fee engine with double-entry ledgers.
+            Configurable subscription plans (Free, ₹299/mo, ₹799/mo) and an automated 3% commission engine with double-entry ledgers.
           </p>
         </div>
       </div>

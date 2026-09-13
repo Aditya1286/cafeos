@@ -47,6 +47,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -68,6 +69,10 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!agreedToTerms) {
+      setError('Please agree to the Merchant Terms of Service to continue.');
+      return;
+    }
     setLoading(true);
     setError(null);
 
@@ -392,6 +397,22 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
                     </p>
                   </div>
 
+                  <label className="flex items-start gap-2.5 cursor-pointer pt-1">
+                    <input
+                      type="checkbox"
+                      checked={agreedToTerms}
+                      onChange={(e) => setAgreedToTerms(e.target.checked)}
+                      className="w-4 h-4 mt-0.5 rounded text-red-600 border-slate-300 focus:ring-red-500 cursor-pointer accent-red-600 shrink-0"
+                    />
+                    <span className="text-[11px] text-slate-600 font-medium leading-relaxed">
+                      I agree to the{' '}
+                      <Link to="/terms" target="_blank" className="text-red-600 font-bold hover:underline">
+                        Merchant Terms of Service
+                      </Link>
+                      , including the commission and billing terms.
+                    </span>
+                  </label>
+
                   <div className="flex gap-3 pt-2">
                     <button
                       type="button"
@@ -403,7 +424,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
 
                     <button
                       type="submit"
-                      disabled={loading}
+                      disabled={loading || !agreedToTerms}
                       className="w-2/3 py-3.5 rounded-xl bg-red-600 hover:bg-red-700 active:scale-[0.99] text-white font-extrabold text-xs shadow-lg shadow-red-600/30 flex items-center justify-center gap-2 transition-all disabled:opacity-50"
                     >
                       {loading ? (
@@ -430,7 +451,10 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
             </div>
 
             <p className="text-[10px] text-center text-slate-400">
-              By creating an account, you agree to {APP_NAME} Service Terms and Privacy Policy.
+              By creating an account, you agree to {APP_NAME}'s{' '}
+              <Link to="/terms" target="_blank" className="text-slate-500 font-bold hover:underline">
+                Merchant Terms of Service
+              </Link>.
             </p>
           </div>
 

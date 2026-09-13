@@ -6,6 +6,7 @@ import { SuperAdminDashboard } from './pages/SuperAdminDashboard';
 import { OwnerDashboard } from './pages/OwnerDashboard';
 import { CustomerMenuPage } from './pages/CustomerMenuPage';
 import { CustomerOrderTrackingPage } from './pages/CustomerOrderTrackingPage';
+import { MerchantTermsPage } from './pages/MerchantTermsPage';
 
 // 'public'      - anyone, regardless of auth state
 // 'guest'       - only signed-out visitors (login/register); signed-in users get bounced to their dashboard
@@ -30,6 +31,7 @@ export const routes: AppRoute[] = [
   { path: '/', access: 'public', element: () => <LandingPage /> },
   { path: '/login', access: 'guest', element: ({ onAuthSuccess }) => <LoginPage onLoginSuccess={onAuthSuccess} /> },
   { path: '/register', access: 'guest', element: ({ onAuthSuccess }) => <RegisterPage onRegisterSuccess={onAuthSuccess} /> },
+  { path: '/terms', access: 'public', element: () => <MerchantTermsPage /> },
   { path: '/admin/*', access: 'super-admin', element: ({ user }) => <SuperAdminDashboard user={user} /> },
   { path: '/dashboard/*', access: 'private', element: ({ user }) => <OwnerDashboard user={user} /> },
   { path: '/c/:slug', access: 'public', element: () => <CustomerMenuPage /> },

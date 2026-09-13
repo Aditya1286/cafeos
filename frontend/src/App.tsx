@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
+import { Toaster } from 'sonner';
 import { apiRequest, getAuthToken, removeAuthToken } from './services/api';
 import { routes } from './routes';
 import { RequireAuth } from './components/RequireAuth';
@@ -34,6 +35,8 @@ export const App: React.FC = () => {
   };
 
   return (
+    <>
+    <Toaster position="top-right" richColors closeButton />
     <Routes>
       {routes.map(({ path, access, element }) => {
         const page = element({ user, onAuthSuccess: handleAuthSuccess });
@@ -54,6 +57,7 @@ export const App: React.FC = () => {
         );
       })}
     </Routes>
+    </>
   );
 };
 

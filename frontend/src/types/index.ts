@@ -131,7 +131,7 @@ export interface Order {
   businessEarningsPaise: number;
   orderStatus: OrderStatus;
   paymentStatus: 'UNPAID' | 'PAID' | 'REFUNDED';
-  paymentMethod: 'ONLINE' | 'CASH' | 'UPI';
+  paymentMethod: 'ONLINE' | 'CASH';
   createdAt: string;
 }
 
@@ -157,4 +157,144 @@ export interface InventoryItem {
   costPerUnitPaise: number;
   supplierName?: string;
   status: 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK';
+}
+
+export interface DashboardMetrics {
+  totalOrders: number;
+  completedOrders: number;
+  pendingOrders: number;
+  totalSalesPaise: number;
+  totalEarningsPaise: number;
+  totalTables: number;
+  occupiedTables: number;
+  lowStockItems: number;
+  totalMenuItems: number;
+  todaySalesPaise: number;
+  todayOrdersCount: number;
+  weekSalesPaise: number;
+  previousWeekSalesPaise: number;
+  /** null when there is no prior-week baseline to compare against */
+  salesTrendPercentage: number | null;
+}
+
+export interface DailySalesPoint {
+  _id: string; // "YYYY-MM-DD"
+  orders: number;
+  salesPaise: number;
+}
+
+export interface TopProduct {
+  _id: string; // product name
+  totalQuantity: number;
+  totalRevenuePaise: number;
+}
+
+export interface DashboardSubscriptionInfo {
+  planName: string;
+  planCode: string;
+  limits: {
+    maxTables: number;
+    maxMenuItems: number;
+    maxStaff: number;
+    inventoryEnabled: boolean;
+    analyticsAdvanced: boolean;
+  };
+  usage: { tables: number; menuItems: number };
+}
+
+export interface DashboardAnalytics {
+  metrics: DashboardMetrics;
+  dailySales: DailySalesPoint[];
+  topProducts: TopProduct[];
+  subscription: DashboardSubscriptionInfo | null;
+}
+
+export interface SuperAdminMetrics {
+  totalBusinesses: number;
+  activeBusinesses: number;
+  suspendedBusinesses: number;
+  totalUsers: number;
+  totalOrders: number;
+  paidOrders: number;
+  totalGMVPaise: number;
+  totalPlatformFeesPaise: number;
+  totalSubscriptionRevenuePaise: number;
+  totalPlatformRevenuePaise: number;
+  avgOrderValuePaise: number;
+  lowStockItemsCount: number;
+  totalCustomers: number;
+  repeatCustomers: number;
+  /** null when there's no order history to compute a rate from */
+  repeatCustomerPercentage: number | null;
+}
+
+export interface SuperAdminRecentOrder {
+  _id: string;
+  orderNumber: string;
+  businessName: string;
+  tableName: string;
+  customerName: string;
+  itemsCount: number;
+  total: number; // whole rupees, not paise — set directly by the backend
+  status: string;
+  paymentMethod: string;
+  createdAt: string;
+}
+
+export interface SuperAdminOverview {
+  metrics: SuperAdminMetrics;
+  recentOrders: SuperAdminRecentOrder[];
+  plans: SubscriptionPlan[];
+}
+
+export interface AdminBusinessSummary extends Business {
+  _id: string;
+  commissionRatePercentage: number;
+  lifetimeGMVPaise: number;
+  totalCommissionOwedPaise: number;
+  overdueAmountPaise: number;
+  nextDueDate: string | null;
+}
+
+export interface RevenueTimeseriesPoint {
+  time: string;
+  revenue: number; // whole rupees
+  fees: number; // whole rupees
+}
+
+export interface PaymentMethodBreakdownPoint {
+  _id: string;
+  count: number;
+  amountPaise: number;
+}
+
+export interface AdminAnalytics {
+  revenueTimeseries: RevenueTimeseriesPoint[];
+  paymentMethodBreakdown: PaymentMethodBreakdownPoint[];
+  bestSellers: TopProduct[];
+  peakHeatmap: { _id: number; orders: number }[];
+}
+
+export interface SystemHealth {
+  status: string;
+  uptimeSeconds: number;
+  memoryUsage: { heapUsedMB: number; heapTotalMB: number };
+  database: string;
+  timestamp: string;
+}
+
+export interface AdminRemittanceRequest {
+  _id: string;
+  businessId: { name: string; slug: string } | string;
+  periodStart: string;
+  periodEnd: string;
+  ordersCount: number;
+  grossAmountPaise: number;
+  commissionOwedPaise: number;
+  dueDate: string;
+  status: 'UNPAID' | 'PAID';
+  paidAt?: string;
+  markedPaidByUserId?: { name: string; email: string };
+  merchantMarkedPaidAt?: string;
+  merchantReportedUtr?: string;
 }

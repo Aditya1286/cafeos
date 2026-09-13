@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { getTableByToken } from '../controllers/tableController';
-import { getPublicMenu } from '../controllers/menuController';
-import { createOrder, getOrderById } from '../controllers/orderController';
+import { getPublicMenu, getMenuImage } from '../controllers/menuController';
+import { createOrder, getOrderById, markOrderPaidByCustomer, cancelOrderByCustomer } from '../controllers/orderController';
 import { SubscriptionPlan } from '../models/SubscriptionPlan';
 import { Business } from '../models/Business';
 import { confirmOtp, requestOtp } from '../controllers/otp.controller';
@@ -35,9 +35,14 @@ router.get('/c/:slug', async (req, res) => {
 
 router.get('/c/:businessId/menu', getPublicMenu);
 
+// Public: Serve an uploaded menu image (<img> tags can't send auth headers)
+router.get('/images/:id', getMenuImage);
+
 // Public: Order endpoints
 router.post('/orders', createOrder);
 router.get('/orders/:id', getOrderById);
+router.put('/orders/:id/mark-paid', markOrderPaidByCustomer);
+router.put('/orders/:id/cancel', cancelOrderByCustomer);
 
 // Public: Subscription plans for marketing page
 router.get('/plans', async (req, res) => {

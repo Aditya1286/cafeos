@@ -65,11 +65,21 @@ export const getTables = async (req: AuthRequest, res: Response) => {
 export const createTable = async (req: AuthRequest, res: Response) => {
   try {
     const { tableNumber, capacity } = req.body;
+
+    if (!tableNumber || !String(tableNumber).trim()) {
+      return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Table number is required.' } });
+    }
+
+    const existing = await Table.findOne({ businessId: req.businessId, tableNumber: String(tableNumber).trim() });
+    if (existing) {
+      return res.status(409).json({ success: false, error: { code: 'DUPLICATE_TABLE', message: `Table "${tableNumber}" already exists.` } });
+    }
+
     const qrToken = `qr_${req.businessId?.toString().slice(-6)}_${uuidv4().substring(0, 8)}`;
 
     const table = await Table.create({
       businessId: req.businessId,
-      tableNumber,
+      tableNumber: String(tableNumber).trim(),
       capacity: capacity || 4,
       qrToken,
       status: 'AVAILABLE'

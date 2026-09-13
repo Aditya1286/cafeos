@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { openUpiApp } from '@/utils/upiIntent';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Coffee,
@@ -22,6 +21,7 @@ import { apiRequest } from '../services/api';
 import confetti from 'canvas-confetti';
 import { useOtpVerification } from '@/hooks/useOtpVerification';
 import { formatTime } from '@/utils/DateUtils';
+import { toast } from '@/utils/toast';
 
 export const CustomerMenuPage: React.FC = () => {
   const { slug, qrToken } = useParams<{ slug: string; qrToken?: string }>();
@@ -42,7 +42,7 @@ export const CustomerMenuPage: React.FC = () => {
   // Customer guest details
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<'ONLINE' | 'UPI' | 'CASH'>('ONLINE');
+  const [paymentMethod, setPaymentMethod] = useState<'ONLINE' | 'CASH'>('ONLINE');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -106,6 +106,12 @@ export const CustomerMenuPage: React.FC = () => {
     (acc, item) => acc + item.product.pricePaise * item.quantity,
     0,
   );
+  const orderContextLabel = table
+    ? table.tableNumber
+    : business?.tablesEnabled === false
+      ? 'Counter Order'
+      : 'Scan Table QR';
+
   const taxRate = business?.taxRatePercentage || 5;
   const taxPaise = Math.round((cartSubtotalPaise * taxRate) / 100);
   const totalAmountPaise = cartSubtotalPaise + taxPaise;
@@ -113,17 +119,17 @@ export const CustomerMenuPage: React.FC = () => {
   const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!customerName || !customerPhone) {
-      alert('Please enter your name and phone number');
+      toast.error('Please enter your name and phone number');
       return;
     }
     if (!otp.otpVerified) {
-      alert('Please verify your phone number first.');
+      toast.error('Please verify your phone number first.');
       return;
     }
     setSubmitting(true);
     try {
-      const payload = {
-        qrToken: qrToken || table?.qrToken || 'tok_artisan_tbl_01',
+      const resolvedQrToken = qrToken || table?.qrToken;
+      const payload: Record<string, any> = {
         customerName,
         customerPhone,
         paymentMethod,
@@ -133,21 +139,13 @@ export const CustomerMenuPage: React.FC = () => {
           name: item.product.name,
         })),
       };
+      if (resolvedQrToken) {
+        payload.qrToken = resolvedQrToken;
+      } else {
+        payload.businessSlug = business?.slug;
+      }
 
       const res = await apiRequest('/public/orders', 'POST', payload);
-
-      if (paymentMethod !== 'CASH') {
-        if (!business?.upiVpa) {
-          console.error('Business has no UPI VPA configured — skipping intent.');
-        } else {
-          openUpiApp({
-            payeeVpa: business.upiVpa,
-            payeeName: business.name,
-            amount: totalAmountPaise / 100,
-            transactionRef: res.data._id,
-          });
-        }
-      }
 
       try {
         confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
@@ -155,7 +153,7 @@ export const CustomerMenuPage: React.FC = () => {
 
       navigate(`/c/${business?.slug}/order/${res.data._id}`);
     } catch (err: any) {
-      alert(err.message || 'Failed to place order.');
+      toast.error(err.message || 'Failed to place order.');
     } finally {
       setSubmitting(false);
     }
@@ -186,7 +184,7 @@ export const CustomerMenuPage: React.FC = () => {
           {/* Table Badge */}
           <div className="absolute top-4 right-4 z-10 px-3.5 py-1.5 rounded-full bg-white/95 backdrop-blur-md shadow-md text-xs font-black text-orange-600 border border-orange-200 flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
-            {table ? table.tableNumber : 'Table 01'}
+            {orderContextLabel}
           </div>
         </div>
 
@@ -417,7 +415,7 @@ export const CustomerMenuPage: React.FC = () => {
                   <ShoppingBag className="w-4 h-4 text-orange-500" /> Confirm Your Order
                 </h3>
                 <p className="text-xs text-slate-400 font-medium">
-                  {table ? table.tableNumber : 'Table 01'} • {business?.name || 'Artisan Roastery'}
+                  {orderContextLabel} • {business?.name || 'Artisan Roastery'}
                 </p>
               </div>
               <button
@@ -574,10 +572,9 @@ export const CustomerMenuPage: React.FC = () => {
                 <label className="block text-xs font-bold text-slate-700 mb-1.5">
                   Payment Method
                 </label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 gap-2">
                   {[
                     { id: 'ONLINE', label: 'Online' },
-                    { id: 'UPI', label: 'UPI' },
                     { id: 'CASH', label: 'Pay at Counter' },
                   ].map((pm) => (
                     <button

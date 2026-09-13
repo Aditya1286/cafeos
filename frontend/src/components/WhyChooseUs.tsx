@@ -15,7 +15,7 @@ const comparisonFeatures: ComparisonFeature[] = [
   },
   {
     oldWay: 'End-of-day manual cash and payment reconciliation headaches',
-    newWay: 'Double-entry automated ledger with ₹2 flat fee transparency',
+    newWay: 'Double-entry automated ledger with 3% commission transparency',
   },
   {
     oldWay: 'Guests waiting 10 minutes for printed paper menus',

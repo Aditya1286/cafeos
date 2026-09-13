@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { apiRequest } from '../services/api';
 import { getSocket } from '../services/socket';
+import { PaymentPanel } from '../components/payments/PaymentPanel';
 
 export const CustomerOrderTrackingPage: React.FC = () => {
   const { orderId } = useParams<{ orderId: string }>();
@@ -137,6 +138,24 @@ export const CustomerOrderTrackingPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* ── Payment (Online orders only — cash orders just show the pill above) ── */}
+      {order?.paymentMethod === 'ONLINE' && (
+        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-3 mb-6">
+          <h3 className="font-black text-slate-900 text-sm">Payment</h3>
+          <PaymentPanel
+            orderId={order._id}
+            paymentMethod={order.paymentMethod}
+            paymentStatus={order.paymentStatus}
+            orderStatus={order.orderStatus}
+            customerMarkedPaidAt={order.customerMarkedPaidAt}
+            payeeVpa={business?.upiVpa}
+            payeeName={business?.name}
+            amount={(order.totalAmountPaise || 0) / 100}
+            onOrderChanged={fetchOrderDetails}
+          />
+        </div>
+      )}
 
       {/* ── Digital E-Bill Breakdown Card ────────────────────── */}
       <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-3 text-xs">

@@ -13,10 +13,19 @@ export const getInventoryItems = async (req: AuthRequest, res: Response) => {
   }
 };
 
+const VALID_INVENTORY_UNITS = ['KG', 'GRAM', 'LITER', 'ML', 'PIECE', 'PACKET'];
+
 export const createInventoryItem = async (req: AuthRequest, res: Response) => {
   try {
     const { name, unit, currentStock, minimumStockLevel, costPerUnitPaise, supplierName, supplierContact } = req.body;
-    
+
+    if (!name || !String(name).trim()) {
+      return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Ingredient name is required.' } });
+    }
+    if (!unit || !VALID_INVENTORY_UNITS.includes(unit)) {
+      return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: `Unit must be one of: ${VALID_INVENTORY_UNITS.join(', ')}.` } });
+    }
+
     const status = currentStock <= 0 ? 'OUT_OF_STOCK' : currentStock <= (minimumStockLevel || 5) ? 'LOW_STOCK' : 'IN_STOCK';
 
     const item = await InventoryItem.create({

@@ -5,6 +5,7 @@ import {
   Eye, EyeOff, CheckCircle2, Sparkles, Zap, Layers, UserCheck
 } from 'lucide-react';
 import { apiRequest, setAuthToken } from '../services/api';
+import { toast } from '../utils/toast';
 import { APP_NAME, APP_SLUG } from '../constants/app';
 
 interface LoginPageProps {
@@ -351,7 +352,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                   <label className="block text-xs font-extrabold text-slate-900">
                     Password
                   </label>
-                  <a href="#forgot" onClick={(e) => { e.preventDefault(); alert('Demo environment: Use password123 or click the instant demo buttons above.'); }} className="text-[11px] font-bold text-red-600 hover:underline">
+                  <a href="#forgot" onClick={(e) => { e.preventDefault(); toast('Demo environment: Use password123 or click the instant demo buttons above.'); }} className="text-[11px] font-bold text-red-600 hover:underline">
                     Forgot password?
                   </a>
                 </div>

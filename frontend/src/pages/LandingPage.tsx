@@ -55,8 +55,8 @@ export const LandingPage: React.FC = () => {
       a: `No special hardware is required! ${APP_NAME} works on any web-enabled browser, including standard iPads, Android tablets, laptops, or smartphones already in your kitchen.`
     },
     {
-      q: 'How does the per-order platform fee work?',
-      a: 'The platform fee is a flat ₹2 per completed order (configurable from the Super Admin dashboard). Every order generates an immutable double-entry ledger record for gross sales, platform fee, and net business payout.'
+      q: 'How does the platform commission work?',
+      a: 'We take a 3% commission on every completed order, excluding GST (configurable from the Super Admin dashboard). Since payments go straight to your own UPI or counter, commission accrues into a running ledger that you settle with us on a fixed cycle — never deducted from a customer\'s payment.'
     },
     {
       q: 'Can customers order directly without downloading an app?',
@@ -166,8 +166,8 @@ export const LandingPage: React.FC = () => {
                 </div>
 
                 <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                  <span className="text-[10px] text-slate-500 font-bold uppercase">Platform Fee Recorded</span>
-                  <div className="text-2xl font-black text-slate-900 mt-1">₹2.00 / order</div>
+                  <span className="text-[10px] text-slate-500 font-bold uppercase">Commission Accrued</span>
+                  <div className="text-2xl font-black text-slate-900 mt-1">3% / order</div>
                   <span className="text-[10px] text-slate-500 font-semibold">Double-entry ledger</span>
                 </div>
               </div>
@@ -353,7 +353,7 @@ export const LandingPage: React.FC = () => {
             </h2>
 
             <p className="text-slate-600 text-sm leading-relaxed font-medium">
-              Know exactly what you made, spent, and owe — without spreadsheets or a bookkeeper on standby. Flat ₹2 per-order platform fee settlement recorded automatically.
+              Know exactly what you made, spent, and owe — without spreadsheets or a bookkeeper on standby. A 3% commission accrues per order, excluding GST, and settles with us on your own cycle.
             </p>
 
             <ul className="space-y-3 text-xs text-slate-700 font-semibold">
@@ -406,12 +406,12 @@ export const LandingPage: React.FC = () => {
             {activeLedgerTab === 'expenses' && (
               <div className="space-y-3 text-xs">
                 <div className="flex justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">
-                  <span className="font-semibold text-slate-700">Platform Per-Order Fee Rate</span>
-                  <span className="font-extrabold text-red-600">₹2.00 / order</span>
+                  <span className="font-semibold text-slate-700">Platform Commission Rate</span>
+                  <span className="font-extrabold text-red-600">3% (excl. GST)</span>
                 </div>
                 <div className="flex justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">
-                  <span className="font-semibold text-slate-700">Total Platform Commission (48 orders)</span>
-                  <span className="font-bold text-red-600">₹96.00</span>
+                  <span className="font-semibold text-slate-700">Commission Accrued (48 orders)</span>
+                  <span className="font-bold text-red-600">₹1,285.50</span>
                 </div>
               </div>
             )}
@@ -419,12 +419,12 @@ export const LandingPage: React.FC = () => {
             {activeLedgerTab === 'reports' && (
               <div className="space-y-3 text-xs">
                 <div className="flex justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">
-                  <span className="font-semibold text-slate-700">Net Business Payout (Settled)</span>
-                  <span className="font-extrabold text-slate-900">₹42,754.00</span>
+                  <span className="font-semibold text-slate-700">You Collect Directly (UPI/Cash)</span>
+                  <span className="font-extrabold text-slate-900">₹44,992.50</span>
                 </div>
                 <div className="flex justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">
-                  <span className="font-semibold text-slate-700">Ledger Reconciliation Status</span>
-                  <span className="font-extrabold text-emerald-700">100% Matched</span>
+                  <span className="font-semibold text-slate-700">Commission Due This Cycle</span>
+                  <span className="font-extrabold text-emerald-700">₹1,285.50</span>
                 </div>
               </div>
             )}
@@ -597,7 +597,7 @@ export const LandingPage: React.FC = () => {
                     <div className="w-4 h-4 rounded-full bg-[#2d2d30] flex items-center justify-center shrink-0">
                       <Check className="w-2.5 h-2.5 text-zinc-400 stroke-[3]" />
                     </div>
-                    <span><strong className="font-bold text-white">₹2</strong> Per-Order Fee</span>
+                    <span><strong className="font-bold text-white">3%</strong> Order Commission</span>
                   </li>
                   <li className="flex items-center gap-3">
                     <div className="w-4 h-4 rounded-full bg-[#2d2d30] flex items-center justify-center shrink-0">

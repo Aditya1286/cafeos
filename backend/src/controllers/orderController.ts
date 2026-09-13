@@ -7,19 +7,21 @@ import { Product } from '../models/Product';
 import { Recipe } from '../models/Recipe';
 import { InventoryItem } from '../models/InventoryItem';
 import { InventoryTransaction } from '../models/InventoryTransaction';
+import { FinancialLedger } from '../models/FinancialLedger';
 import { emitToBusiness, emitToOrder } from '../websocket/socketManager';
 import { generateDailyOrderId } from '../utils/orderSequence';
 import mongoose from 'mongoose';
+import { v4 as uuidv4 } from 'uuid';
 
 // Public: Place Order (Guest Customer scanning QR code)
 export const createOrder = async (req: Request, res: Response) => {
   try {
-    const { qrToken, customerName, customerPhone, items, paymentMethod, idempotencyKey, notes } = req.body;
+    const { qrToken, businessSlug, customerName, customerPhone, items, paymentMethod, idempotencyKey, notes } = req.body;
 
-    if (!qrToken || !customerName || !customerPhone || !items || !items.length) {
+    if ((!qrToken && !businessSlug) || !customerName || !customerPhone || !items || !items.length) {
       return res.status(400).json({
         success: false,
-        error: { code: 'VALIDATION_ERROR', message: 'Table token, customer details, and at least one item are required.' }
+        error: { code: 'VALIDATION_ERROR', message: 'A table token (or business), customer details, and at least one item are required.' }
       });
     }
 
@@ -35,21 +37,56 @@ export const createOrder = async (req: Request, res: Response) => {
       }
     }
 
-    // 2. Validate Table & Business Business
-    const table = await Table.findOne({ qrToken });
-    if (!table) {
-      return res.status(404).json({
-        success: false,
-        error: { code: 'TABLE_NOT_FOUND', message: 'Invalid or inactive table QR code token.' }
-      });
+    // 2. Resolve Table (if provided) & Business
+    let table = null;
+    let business;
+
+    if (qrToken) {
+      table = await Table.findOne({ qrToken });
+      if (!table) {
+        return res.status(404).json({
+          success: false,
+          error: { code: 'TABLE_NOT_FOUND', message: 'Invalid or inactive table QR code token.' }
+        });
+      }
+      business = await Business.findById(table.businessId);
+    } else {
+      business = await Business.findOne({ slug: String(businessSlug).toLowerCase() });
+      if (!business) {
+        return res.status(404).json({
+          success: false,
+          error: { code: 'BUSINESS_NOT_FOUND', message: 'Business not found.' }
+        });
+      }
+      if (business.tablesEnabled) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'TABLE_REQUIRED', message: 'This business requires a table — please scan your table\'s QR code to order.' }
+        });
+      }
     }
 
-    const business = await Business.findById(table.businessId);
     if (!business || business.status === 'SUSPENDED') {
       return res.status(403).json({
         success: false,
         error: { code: 'BUSINESS_INACTIVE', message: 'This business is currently inactive.' }
       });
+    }
+
+    // A table can only host one active order at a time, so the number of
+    // concurrently-occupied tables never exceeds the tables that actually
+    // exist — reject a new order on a table that's still mid-service.
+    if (table) {
+      const activeOrderOnTable = await Order.findOne({
+        tableId: table._id,
+        orderStatus: { $nin: ['COMPLETED', 'CANCELLED', 'REFUNDED'] }
+      });
+      if (activeOrderOnTable) {
+        return res.status(409).json({
+          success: false,
+          error: { code: 'TABLE_OCCUPIED', message: 'This table already has an active order in progress. Please wait for it to be completed, or ask staff for assistance.' }
+        });
+      }
     }
 
     // 3. Process Items and build exact snapshots
@@ -103,9 +140,13 @@ export const createOrder = async (req: Request, res: Response) => {
       });
     }
 
-    // Calculate Tax & Platform Fee
+    // Calculate Tax & Platform Commission
     const taxPaise = Math.round((subtotalPaise * (business.taxRatePercentage || 5)) / 100);
-    const platformFeePaise = business.perOrderFeePaise || 200; // ₹2
+    // Commission is charged on the pre-tax order value (discountPaise reserved for a future
+    // discount feature — always 0 today, included so commission stays correct once one ships).
+    const discountPaise = 0;
+    const commissionableAmountPaise = subtotalPaise - discountPaise;
+    const platformFeePaise = Math.round((commissionableAmountPaise * (business.commissionRatePercentage ?? 3)) / 100);
     const totalAmountPaise = subtotalPaise + taxPaise;
     const businessEarningsPaise = totalAmountPaise - platformFeePaise;
 
@@ -118,11 +159,11 @@ export const createOrder = async (req: Request, res: Response) => {
       businessId: business._id,
       dateKey,
       sequenceNumber,
-      tableId: table._id,
-      tableName: table.tableNumber,
+      tableId: table ? table._id : undefined,
+      tableName: table ? table.tableNumber : 'Counter',
       customerName,
       customerPhone,
-      source: 'QR_TABLE',
+      source: table ? 'QR_TABLE' : 'TAKEAWAY',
       items: itemSnapshots,
       subtotalPaise,
       taxPaise,
@@ -130,17 +171,24 @@ export const createOrder = async (req: Request, res: Response) => {
       totalAmountPaise,
       businessEarningsPaise,
       orderStatus: 'PLACED',
-      paymentStatus: paymentMethod === 'ONLINE' ? 'PAID' : 'UNPAID',
+      // There's no payment gateway webhook in this flow (v1), so an ONLINE order
+      // can't be trusted as paid just because the customer chose that method —
+      // it stays UNPAID until the business confirms receipt themselves (see
+      // markOrderPaidByCustomer for the customer's own "I've paid" signal, which
+      // is informational only and never flips this field).
+      paymentStatus: 'UNPAID',
       paymentMethod: paymentMethod || 'ONLINE',
-      transactionId: paymentMethod === 'ONLINE' ? `PAY_${Date.now()}` : '',
+      transactionId: '',
       idempotencyKey,
       notes: notes || '',
       timeline: { placedAt: new Date() }
     });
 
     // Update table status to occupied
-    table.status = 'OCCUPIED';
-    await table.save();
+    if (table) {
+      table.status = 'OCCUPIED';
+      await table.save();
+    }
 
     // 5. Trigger Realtime WebSocket Notification
     emitToBusiness(business._id.toString(), 'order:new', {
@@ -165,6 +213,92 @@ export const createOrder = async (req: Request, res: Response) => {
       message: 'Order placed successfully',
       data: order
     });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
+  }
+};
+
+// Public: Customer self-reports that they completed the UPI payment on their end.
+// There's no gateway webhook in this flow (v1), so this is informational only —
+// it never flips paymentStatus to PAID, it just timestamps the claim so the
+// business knows to check their own UPI app/bank before handing the order over.
+export const markOrderPaidByCustomer = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const order = mongoose.Types.ObjectId.isValid(id)
+      ? await Order.findById(id)
+      : await Order.findOne({ orderId: id });
+
+    if (!order) {
+      return res.status(404).json({ success: false, error: { code: 'ORDER_NOT_FOUND', message: 'Order not found' } });
+    }
+
+    if (order.paymentMethod !== 'ONLINE') {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'NOT_ONLINE_ORDER', message: 'This order is not paid via online/UPI.' }
+      });
+    }
+
+    if (order.paymentStatus === 'UNPAID') {
+      order.customerMarkedPaidAt = new Date();
+      await order.save();
+
+      emitToBusiness(order.businessId.toString(), 'order:customer_marked_paid', {
+        orderId: order._id,
+        orderNumber: order.orderNumber,
+        customerMarkedPaidAt: order.customerMarkedPaidAt
+      });
+    }
+
+    return res.json({ success: true, message: 'Thanks — the business will confirm your payment shortly.', data: order });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
+  }
+};
+
+// Public: Customer cancels their own order — only while it's still awaiting the
+// business's acceptance, so the kitchen never loses an order mid-preparation.
+export const cancelOrderByCustomer = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const order = mongoose.Types.ObjectId.isValid(id)
+      ? await Order.findById(id)
+      : await Order.findOne({ orderId: id });
+
+    if (!order) {
+      return res.status(404).json({ success: false, error: { code: 'ORDER_NOT_FOUND', message: 'Order not found' } });
+    }
+
+    if (order.orderStatus !== 'PLACED') {
+      const message = order.orderStatus === 'CANCELLED'
+        ? 'This order is already cancelled.'
+        : 'This order is already being prepared — please contact the business directly to cancel.';
+      return res.status(400).json({ success: false, error: { code: 'CANNOT_CANCEL', message } });
+    }
+
+    order.orderStatus = 'CANCELLED';
+    order.cancellationReason = 'Cancelled by customer before payment confirmation';
+    if (!order.timeline) order.timeline = {};
+    order.timeline.cancelledAt = new Date();
+    await order.save();
+
+    if (order.tableId) {
+      await Table.findByIdAndUpdate(order.tableId, { status: 'AVAILABLE' });
+    }
+
+    emitToOrder(order._id.toString(), 'order:status_updated', {
+      orderId: order.orderId,
+      orderStatus: order.orderStatus,
+      paymentStatus: order.paymentStatus
+    });
+
+    emitToBusiness(order.businessId.toString(), 'order:updated', {
+      orderId: order.orderId,
+      orderStatus: order.orderStatus
+    });
+
+    return res.json({ success: true, message: 'Order cancelled.', data: order });
   } catch (error: any) {
     return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
   }
@@ -217,7 +351,8 @@ export const getOrderById = async (req: Request, res: Response) => {
           currencySymbol: business.currencySymbol,
           address: business.address,
           phone: business.phone,
-          taxRatePercentage: business.taxRatePercentage
+          taxRatePercentage: business.taxRatePercentage,
+          upiVpa: business.upiVpa
         } : null
       }
     });
@@ -342,6 +477,8 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ success: false, error: { code: 'ORDER_NOT_FOUND', message: 'Order not found.' } });
     }
 
+    const wasAlreadyPaid = order.paymentStatus === 'PAID';
+
     order.orderStatus = status;
     if (status === 'COMPLETED' || status === 'SERVED') {
       order.paymentStatus = 'PAID';
@@ -356,6 +493,44 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
     if (status === 'CANCELLED') order.timeline.cancelledAt = new Date();
 
     await order.save();
+
+    // Free the table back up once its order reaches a terminal state, so the
+    // one-active-order-per-table limit in createOrder doesn't lock it forever.
+    if (order.tableId && ['COMPLETED', 'CANCELLED', 'REFUNDED'].includes(status)) {
+      await Table.findByIdAndUpdate(order.tableId, { status: 'AVAILABLE' });
+    }
+
+    // Money never flows through the platform (UPI goes to the business's own VPA, cash stays
+    // with the business), so the moment an order is genuinely paid for the first time, record
+    // the gross amount and the commission owed — this is what GMV/fee dashboards and remittance
+    // accrual read from. Guarded by wasAlreadyPaid so re-saving an already-PAID order never
+    // double-writes the ledger.
+    if (!wasAlreadyPaid && order.paymentStatus === 'PAID') {
+      const gatewayRef = `order_${order.orderId}`;
+      await FinancialLedger.create({
+        transactionId: `TXN_PAY_${uuidv4().substring(0, 10).toUpperCase()}`,
+        businessId: order.businessId,
+        orderId: order._id,
+        type: 'ORDER_PAYMENT',
+        amountPaise: order.totalAmountPaise,
+        currency: 'INR',
+        status: 'SUCCESS',
+        paymentGatewayRef: gatewayRef,
+        metadata: { orderNumber: order.orderNumber, customerName: order.customerName }
+      });
+
+      await FinancialLedger.create({
+        transactionId: `TXN_FEE_${uuidv4().substring(0, 10).toUpperCase()}`,
+        businessId: order.businessId,
+        orderId: order._id,
+        type: 'PLATFORM_FEE',
+        amountPaise: order.platformFeePaise,
+        currency: 'INR',
+        status: 'SUCCESS',
+        paymentGatewayRef: gatewayRef,
+        metadata: { orderNumber: order.orderNumber, commissionRate: '3%' }
+      });
+    }
 
     // Deduct stock if order is COMPLETED or CONFIRMED (Automatic BOM Deduction)
     if (status === 'COMPLETED' || status === 'CONFIRMED') {

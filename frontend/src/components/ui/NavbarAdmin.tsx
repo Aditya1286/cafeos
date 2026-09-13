@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   Search, Calendar, Download, Sun, Moon, Check, 
   ChevronDown, FileSpreadsheet, FileText,
-  Activity, Store, Layers, Server, BarChart3, Flame, LogOut,
+  Activity, Store, Layers, Server, BarChart3, Flame, LogOut, Wallet,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { APP_NAME, APP_SLUG } from '../../constants/app';
@@ -19,6 +19,7 @@ interface NavbarAdminProps {
   user?: any;
   onLogout?: () => void;
   businessesCount?: number;
+  pendingRemittancesCount?: number;
 }
 
 export const NavbarAdmin: React.FC<NavbarAdminProps> = ({
@@ -33,6 +34,7 @@ export const NavbarAdmin: React.FC<NavbarAdminProps> = ({
   user,
   onLogout,
   businessesCount = 3,
+  pendingRemittancesCount = 0,
 }) => {
   const [isDateOpen, setIsDateOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
@@ -47,7 +49,8 @@ export const NavbarAdmin: React.FC<NavbarAdminProps> = ({
 
   const navItems = [
     { id: 'overview', label: 'Overview', icon: Activity },
-    { id: 'businesses', label: 'Businesses', icon: Store, count: businessesCount },
+    { id: 'businesses', label: 'Businesses & Finance', icon: Store, count: businessesCount },
+    { id: 'remittances', label: 'Remittances', icon: Wallet, count: pendingRemittancesCount || undefined },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'kitchen', label: 'Kitchen KDS', icon: Flame },
     { id: 'plans', label: 'Plans & Subscriptions', icon: Layers },
