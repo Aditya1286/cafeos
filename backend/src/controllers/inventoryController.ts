@@ -6,21 +6,30 @@ import { InventoryTransaction } from '../models/InventoryTransaction';
 
 export const getInventoryItems = async (req: AuthRequest, res: Response) => {
   try {
-    const items = await InventoryItem.find({ tenantId: req.tenantId }).sort({ name: 1 });
+    const items = await InventoryItem.find({ businessId: req.businessId }).sort({ name: 1 });
     return res.json({ success: true, data: items });
   } catch (error: any) {
     return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
   }
 };
 
+const VALID_INVENTORY_UNITS = ['KG', 'GRAM', 'LITER', 'ML', 'PIECE', 'PACKET'];
+
 export const createInventoryItem = async (req: AuthRequest, res: Response) => {
   try {
     const { name, unit, currentStock, minimumStockLevel, costPerUnitPaise, supplierName, supplierContact } = req.body;
-    
+
+    if (!name || !String(name).trim()) {
+      return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Ingredient name is required.' } });
+    }
+    if (!unit || !VALID_INVENTORY_UNITS.includes(unit)) {
+      return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: `Unit must be one of: ${VALID_INVENTORY_UNITS.join(', ')}.` } });
+    }
+
     const status = currentStock <= 0 ? 'OUT_OF_STOCK' : currentStock <= (minimumStockLevel || 5) ? 'LOW_STOCK' : 'IN_STOCK';
 
     const item = await InventoryItem.create({
-      tenantId: req.tenantId,
+      businessId: req.businessId,
       name,
       unit,
       currentStock: currentStock || 0,
@@ -33,7 +42,7 @@ export const createInventoryItem = async (req: AuthRequest, res: Response) => {
 
     if (currentStock > 0) {
       await InventoryTransaction.create({
-        tenantId: req.tenantId,
+        businessId: req.businessId,
         inventoryItemId: item._id,
         type: 'PURCHASE',
         quantityChanged: currentStock,
@@ -53,7 +62,7 @@ export const adjustStock = async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
     const { type, quantityChanged, reason } = req.body; // type: 'PURCHASE' | 'WASTAGE' | 'ADJUSTMENT'
 
-    const item = await InventoryItem.findOne({ _id: id, tenantId: req.tenantId });
+    const item = await InventoryItem.findOne({ _id: id, businessId: req.businessId });
     if (!item) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Item not found' } });
 
     const newStock = Math.max(0, item.currentStock + quantityChanged);
@@ -62,7 +71,7 @@ export const adjustStock = async (req: AuthRequest, res: Response) => {
     await item.save();
 
     const transaction = await InventoryTransaction.create({
-      tenantId: req.tenantId,
+      businessId: req.businessId,
       inventoryItemId: item._id,
       type: type || 'ADJUSTMENT',
       quantityChanged,
@@ -79,7 +88,7 @@ export const adjustStock = async (req: AuthRequest, res: Response) => {
 // Recipe BOM
 export const getRecipes = async (req: AuthRequest, res: Response) => {
   try {
-    const recipes = await Recipe.find({ tenantId: req.tenantId })
+    const recipes = await Recipe.find({ businessId: req.businessId })
       .populate('productId')
       .populate('ingredients.inventoryItemId');
     return res.json({ success: true, data: recipes });
@@ -93,8 +102,8 @@ export const upsertRecipe = async (req: AuthRequest, res: Response) => {
     const { productId, ingredients } = req.body; // ingredients: [{ inventoryItemId, quantityRequired }]
 
     const recipe = await Recipe.findOneAndUpdate(
-      { tenantId: req.tenantId, productId },
-      { tenantId: req.tenantId, productId, ingredients },
+      { businessId: req.businessId, productId },
+      { businessId: req.businessId, productId, ingredients },
       { new: true, upsert: true }
     );
 

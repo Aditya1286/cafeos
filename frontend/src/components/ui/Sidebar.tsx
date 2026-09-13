@@ -5,6 +5,7 @@ import {
   ChevronLeft, ChevronRight, ShieldCheck, Sparkles, LogOut, CheckCircle2
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { APP_NAME } from '../../constants/app';
 
 interface SidebarProps {
   activeTab: string;
@@ -38,7 +39,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       items: [
         { id: 'inventory', label: 'Inventory', icon: Boxes },
         { id: 'payments', label: 'Payments', icon: CreditCard },
-        { id: 'tenants', label: 'Tenants & Cafés', icon: UserCheck },
+        { id: 'businesses', label: 'Businesses', icon: UserCheck },
         { id: 'kitchen', label: 'Kitchen KDS', icon: Flame },
       ],
     },
@@ -81,7 +82,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {!isCollapsed && (
             <div>
               <h1 className="text-base font-black tracking-tight text-slate-900 dark:text-zinc-100 leading-tight">
-                CaféFlow
+                {APP_NAME}
               </h1>
               <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
                 Admin Console

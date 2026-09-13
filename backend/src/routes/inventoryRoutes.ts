@@ -4,12 +4,12 @@ import {
   getRecipes, upsertRecipe
 } from '../controllers/inventoryController';
 import { protect } from '../middleware/auth';
-import { enforceTenant } from '../middleware/tenant';
+import { enforceBusiness } from '../middleware/business';
 import { restrictTo } from '../middleware/rbac';
 
 const router = Router();
 
-router.use(protect, enforceTenant);
+router.use(protect, enforceBusiness);
 
 router.get('/items', restrictTo('SUPER_ADMIN', 'OWNER', 'MANAGER', 'INVENTORY_MANAGER'), getInventoryItems);
 router.post('/items', restrictTo('SUPER_ADMIN', 'OWNER', 'MANAGER', 'INVENTORY_MANAGER'), createInventoryItem);

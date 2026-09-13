@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, X, Coffee, ShoppingBag, Users, Store, ArrowRight, Shield } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { APP_NAME } from '../../constants/app';
 
 interface CommandPaletteProps {
   isOpen: boolean;
@@ -34,8 +35,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     { type: 'Orders', id: 'ORD-8921', label: 'Order #ORD-8921 (Table 12) - ₹1,250', icon: ShoppingBag, category: 'Active Orders' },
     { type: 'Products', id: 'PROD-101', label: 'Iced Artisan Latte - Specialty Coffee', icon: Coffee, category: 'Products' },
     { type: 'Products', id: 'PROD-104', label: 'Sourdough Avocado Toast - Bakery', icon: Coffee, category: 'Products' },
-    { type: 'Tenants', id: 'TENANT-1', label: 'The Artisan Roastery (Bandra)', icon: Store, category: 'Cafés & Tenants' },
-    { type: 'Tenants', id: 'TENANT-2', label: 'Bean & Butter Bakery (Indiranagar)', icon: Store, category: 'Cafés & Tenants' },
+    { type: 'Businesses', id: 'BUSINESS-1', label: 'The Artisan Roastery (Bandra)', icon: Store, category: 'Businesses' },
+    { type: 'Businesses', id: 'BUSINESS-2', label: 'Bean & Butter Bakery (Indiranagar)', icon: Store, category: 'Businesses' },
     { type: 'Customers', id: 'CUST-001', label: 'Priya Sharma (VIP · 14 orders)', icon: Users, category: 'Customers' },
   ];
 
@@ -65,7 +66,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
               <input
                 type="text"
                 autoFocus
-                placeholder="Search orders, products, customers, cafés... (⌘K)"
+                placeholder="Search orders, products, customers, businesses... (⌘K)"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 className="flex-1 bg-transparent text-sm font-medium text-slate-900 placeholder-slate-400 outline-none"
@@ -82,7 +83,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
             <div className="max-h-96 overflow-y-auto p-2">
               {filtered.length === 0 ? (
                 <div className="py-12 text-center text-xs text-slate-400">
-                  No matching orders, products, or tenants found for "{query}"
+                  No matching orders, products, or businesses found for "{query}"
                 </div>
               ) : (
                 <div className="space-y-1">
@@ -125,7 +126,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                 <span className="px-1.5 py-0.5 rounded bg-slate-200 text-slate-600 font-mono text-[10px]">ESC</span> to close
               </div>
               <div className="flex items-center gap-1">
-                <Shield className="w-3 h-3 text-red-500" /> CaféFlow Command
+                <Shield className="w-3 h-3 text-red-500" /> {APP_NAME} Command
               </div>
             </div>
           </motion.div>

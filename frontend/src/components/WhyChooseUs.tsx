@@ -1,28 +1,29 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { ShieldAlert, Zap, Check, X } from 'lucide-react';
+import { APP_NAME } from '../constants/app';
 
 export interface ComparisonFeature {
   oldWay: string;
-  cafeOsWay: string;
+  newWay: string;
 }
 
 const comparisonFeatures: ComparisonFeature[] = [
   {
     oldWay: 'Handwritten tickets causing kitchen errors & missing items',
-    cafeOsWay: 'Live WebSocket Kitchen Display System (KDS)',
+    newWay: 'Live real-time Kitchen Display System (KDS)',
   },
   {
     oldWay: 'End-of-day manual cash and payment reconciliation headaches',
-    cafeOsWay: 'Double-entry automated ledger with ₹2 flat fee transparency',
+    newWay: 'Double-entry automated ledger with 3% commission transparency',
   },
   {
     oldWay: 'Guests waiting 10 minutes for printed paper menus',
-    cafeOsWay: 'Instant QR table ordering in under 45 seconds',
+    newWay: 'Instant QR table ordering in under 45 seconds',
   },
   {
     oldWay: 'Spreadsheet inventory math with zero stock alerts',
-    cafeOsWay: 'Automatic ingredient BOM stock deduction on completed orders',
+    newWay: 'Automatic ingredient BOM stock deduction on completed orders',
   },
 ];
 
@@ -38,7 +39,7 @@ export const WhyChooseUs: React.FC = () => {
         className="text-center mb-14"
       >
         <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mb-3">
-          Why Cafés Choose CaféOS
+          Why Businesses Choose {APP_NAME}
         </h2>
         <p className="text-sm sm:text-base text-slate-500 font-medium max-w-xl mx-auto">
           The old manual way vs. the modern automated platform
@@ -74,7 +75,7 @@ export const WhyChooseUs: React.FC = () => {
           </div>
         </motion.div>
 
-        {/* Right Card: The CaféOS Way */}
+        {/* Right Card: The new way */}
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           whileInView={{ opacity: 1, x: 0 }}
@@ -89,14 +90,14 @@ export const WhyChooseUs: React.FC = () => {
           <div>
             <div className="flex items-center gap-2.5 mb-6 pb-4 border-b border-slate-100 text-red-600 font-bold text-sm sm:text-base">
               <Zap className="w-5 h-5 text-red-500 fill-red-500/10 flex-shrink-0" />
-              <span>The CaféOS Way</span>
+              <span>The {APP_NAME} Way</span>
             </div>
 
             <ul className="space-y-4 text-xs sm:text-sm text-slate-900 font-semibold">
               {comparisonFeatures.map((feature, idx) => (
                 <li key={idx} className="flex items-start gap-3">
                   <Check className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
-                  <span className="leading-relaxed font-bold">{feature.cafeOsWay}</span>
+                  <span className="leading-relaxed font-bold">{feature.newWay}</span>
                 </li>
               ))}
             </ul>

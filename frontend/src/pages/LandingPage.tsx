@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { Navbar } from '../components/Navbar';
 import { Footer } from '../components/Footer';
+import { APP_NAME, APP_SLUG } from '../constants/app';
 import { AppleCardsCarousel } from '../components/AppleCardsCarousel';
 import { WhyChooseUs } from '../components/WhyChooseUs';
 
@@ -28,21 +29,21 @@ export const LandingPage: React.FC = () => {
     {
       name: 'Aditya Sharma',
       role: 'Owner & Head Barista',
-      cafe: 'The Artisan Roastery, Mumbai',
+      business: 'The Artisan Roastery, Mumbai',
       avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&q=80',
-      quote: 'CaféOS completely eliminated printed paper tickets. Our kitchen staff receives orders instantly, and our table turnover increased by 30% in the first month.'
+      quote: `${APP_NAME} completely eliminated printed paper tickets. Our kitchen staff receives orders instantly, and our table turnover increased by 30% in the first month.`
     },
     {
       name: 'Elena Rostova',
       role: 'Founder & Manager',
-      cafe: 'Velvet Espresso & Bakery, Delhi',
+      business: 'Velvet Espresso & Bakery, Delhi',
       avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&q=80',
       quote: 'The financial ledger is a game changer. I used to spend 2 hours every Sunday matching payments and fees. Now it is double-entry reconciled automatically.'
     },
     {
       name: 'Rohan Deshmukh',
       role: 'Operations Lead',
-      cafe: 'Bean & Bloom Chain (3 Locations), Bangalore',
+      business: 'Bean & Bloom Chain (3 Locations), Bangalore',
       avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&q=80',
       quote: 'Our guests love the contactless QR menu. No app downloads needed — they just scan, order, and pay in 45 seconds.'
     }
@@ -51,19 +52,19 @@ export const LandingPage: React.FC = () => {
   const faqs = [
     {
       q: 'Do I need special hardware to run the KDS (Kitchen Display System)?',
-      a: 'No special hardware is required! CaféOS works on any web-enabled browser, including standard iPads, Android tablets, laptops, or smartphones already in your kitchen.'
+      a: `No special hardware is required! ${APP_NAME} works on any web-enabled browser, including standard iPads, Android tablets, laptops, or smartphones already in your kitchen.`
     },
     {
-      q: 'How does the per-order platform fee work?',
-      a: 'The platform fee is a flat ₹2 per completed order (configurable from the Super Admin dashboard). Every order generates an immutable double-entry ledger record for gross sales, platform fee, and net restaurant payout.'
+      q: 'How does the platform commission work?',
+      a: 'We take a 3% commission on every completed order, excluding GST (configurable from the Super Admin dashboard). Since payments go straight to your own UPI or counter, commission accrues into a running ledger that you settle with us on a fixed cycle — never deducted from a customer\'s payment.'
     },
     {
       q: 'Can customers order directly without downloading an app?',
-      a: 'Yes! Customers scan the unique table QR code, which opens the café’s digital menu directly in their mobile browser. They can browse, select variants, and order as a guest in under 45 seconds.'
+      a: 'Yes! Customers scan the unique table QR code, which opens the business’s digital menu directly in their mobile browser. They can browse, select variants, and order as a guest in under 45 seconds.'
     },
     {
-      q: 'Can I manage multiple café locations under one account?',
-      a: 'Absolutely. Multi-tenant architecture allows café owners to manage multiple branch locations, menus, tables, and staff permissions from a single unified owner dashboard.'
+      q: 'Can I manage multiple business locations under one account?',
+      a: 'Absolutely. Multi-tenant architecture allows business owners to manage multiple branch locations, menus, tables, and staff permissions from a single unified owner dashboard.'
     }
   ];
 
@@ -100,12 +101,12 @@ export const LandingPage: React.FC = () => {
           {/* Trust Pill Badge */}
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-50 border border-red-200 text-red-700 text-xs font-bold mb-8 shadow-sm">
             <span className="flex h-2 w-2 rounded-full bg-red-600 animate-ping" />
-            <span>Trusted by 500+ independent cafés & QSRs</span>
+            <span>Trusted by 500+ independent businesses & QSRs</span>
           </div>
 
           {/* Animated Hero Headline */}
           <h1 className="text-4xl sm:text-6xl md:text-7xl font-black tracking-tight text-slate-900 mb-6 leading-[1.1] max-w-4xl mx-auto">
-            Run Your Café{' '}
+            Run Your Business{' '}
             <span className="relative inline-block text-red-600">
               Smarter.
               <span className="absolute bottom-1 left-0 w-full h-2.5 bg-red-200 rounded-full -z-10" />
@@ -144,7 +145,7 @@ export const LandingPage: React.FC = () => {
                   <div className="w-3 h-3 rounded-full bg-emerald-500/80" />
                 </div>
                 <div className="px-4 py-1 rounded-md bg-white text-[11px] font-mono text-slate-600 border border-slate-200 font-semibold">
-                  https://app.cafeos.com/dashboard
+                  https://app.{APP_SLUG}.com/dashboard
                 </div>
                 <div className="text-[11px] font-bold text-emerald-700 flex items-center gap-1">
                   <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse" /> Live KDS Sync
@@ -165,8 +166,8 @@ export const LandingPage: React.FC = () => {
                 </div>
 
                 <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                  <span className="text-[10px] text-slate-500 font-bold uppercase">Platform Fee Recorded</span>
-                  <div className="text-2xl font-black text-slate-900 mt-1">₹2.00 / order</div>
+                  <span className="text-[10px] text-slate-500 font-bold uppercase">Commission Accrued</span>
+                  <div className="text-2xl font-black text-slate-900 mt-1">3% / order</div>
                   <span className="text-[10px] text-slate-500 font-semibold">Double-entry ledger</span>
                 </div>
               </div>
@@ -179,7 +180,7 @@ export const LandingPage: React.FC = () => {
       <section className="py-10 bg-slate-100/70 border-b border-slate-200 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 text-center">
           <p className="text-xs font-extrabold text-slate-500 uppercase tracking-widest mb-6">
-            Powering café operations across the country
+            Powering business operations across the country
           </p>
 
           <div className="flex items-center justify-center flex-wrap gap-8 md:gap-16 text-slate-700 font-bold text-sm md:text-base">
@@ -237,7 +238,7 @@ export const LandingPage: React.FC = () => {
             <div className="bg-slate-50 rounded-2xl p-4 flex flex-col justify-between border border-slate-200 space-y-4">
               <div className="flex items-center justify-between pb-3 border-b border-slate-200">
                 <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                  <Coffee className="w-4 h-4 text-red-600" /> Artisan Café • Table 02
+                  <Coffee className="w-4 h-4 text-red-600" /> Artisan Roastery • Table 02
                 </span>
                 <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-extrabold border border-emerald-200">QR Active</span>
               </div>
@@ -324,7 +325,7 @@ export const LandingPage: React.FC = () => {
 
             <ul className="space-y-3 text-xs text-slate-700 font-semibold">
               <li className="flex items-center gap-2.5">
-                <CheckCircle2 className="w-4 h-4 text-red-600 flex-shrink-0" /> Live WebSocket stream push notifications
+                <CheckCircle2 className="w-4 h-4 text-red-600 flex-shrink-0" /> Live real-time push notifications
               </li>
               <li className="flex items-center gap-2.5">
                 <CheckCircle2 className="w-4 h-4 text-red-600 flex-shrink-0" /> Color-coded preparation timers & audio alert chimes
@@ -352,7 +353,7 @@ export const LandingPage: React.FC = () => {
             </h2>
 
             <p className="text-slate-600 text-sm leading-relaxed font-medium">
-              Know exactly what you made, spent, and owe — without spreadsheets or a bookkeeper on standby. Flat ₹2 per-order platform fee settlement recorded automatically.
+              Know exactly what you made, spent, and owe — without spreadsheets or a bookkeeper on standby. A 3% commission accrues per order, excluding GST, and settles with us on your own cycle.
             </p>
 
             <ul className="space-y-3 text-xs text-slate-700 font-semibold">
@@ -405,12 +406,12 @@ export const LandingPage: React.FC = () => {
             {activeLedgerTab === 'expenses' && (
               <div className="space-y-3 text-xs">
                 <div className="flex justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">
-                  <span className="font-semibold text-slate-700">Platform Per-Order Fee Rate</span>
-                  <span className="font-extrabold text-red-600">₹2.00 / order</span>
+                  <span className="font-semibold text-slate-700">Platform Commission Rate</span>
+                  <span className="font-extrabold text-red-600">3% (excl. GST)</span>
                 </div>
                 <div className="flex justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">
-                  <span className="font-semibold text-slate-700">Total Platform Commission (48 orders)</span>
-                  <span className="font-bold text-red-600">₹96.00</span>
+                  <span className="font-semibold text-slate-700">Commission Accrued (48 orders)</span>
+                  <span className="font-bold text-red-600">₹1,285.50</span>
                 </div>
               </div>
             )}
@@ -418,12 +419,12 @@ export const LandingPage: React.FC = () => {
             {activeLedgerTab === 'reports' && (
               <div className="space-y-3 text-xs">
                 <div className="flex justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">
-                  <span className="font-semibold text-slate-700">Net Café Payout (Settled)</span>
-                  <span className="font-extrabold text-slate-900">₹42,754.00</span>
+                  <span className="font-semibold text-slate-700">You Collect Directly (UPI/Cash)</span>
+                  <span className="font-extrabold text-slate-900">₹44,992.50</span>
                 </div>
                 <div className="flex justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">
-                  <span className="font-semibold text-slate-700">Ledger Reconciliation Status</span>
-                  <span className="font-extrabold text-emerald-700">100% Matched</span>
+                  <span className="font-semibold text-slate-700">Commission Due This Cycle</span>
+                  <span className="font-extrabold text-emerald-700">₹1,285.50</span>
                 </div>
               </div>
             )}
@@ -436,7 +437,7 @@ export const LandingPage: React.FC = () => {
         <div className="max-w-6xl mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
           <div>
             <div className="text-4xl md:text-5xl font-black text-slate-900 mb-2">500+</div>
-            <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Independent Cafés</p>
+            <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Independent Businesses</p>
           </div>
 
           <div>
@@ -456,7 +457,7 @@ export const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* FEATURED CAFES APPLE CARDS CAROUSEL */}
+      {/* FEATURED BUSINESSES APPLE CARDS CAROUSEL */}
       <AppleCardsCarousel />
 
       {/* 6. OLD WAY VS. NEW WAY */}
@@ -484,7 +485,7 @@ export const LandingPage: React.FC = () => {
             <div className="text-left text-xs">
               <div className="font-bold text-slate-900">{testimonials[testimonialIndex].name}</div>
               <div className="text-slate-500">{testimonials[testimonialIndex].role}</div>
-              <div className="text-red-600 font-bold">{testimonials[testimonialIndex].cafe}</div>
+              <div className="text-red-600 font-bold">{testimonials[testimonialIndex].business}</div>
             </div>
           </div>
 
@@ -512,7 +513,7 @@ export const LandingPage: React.FC = () => {
               Simple, Transparent Pricing
             </h2>
             <p className="text-sm sm:text-base text-slate-600 font-medium max-w-md mx-auto mb-8">
-              No hidden setup fees. Choose the plan that fits your café needs.
+              No hidden setup fees. Choose the plan that fits your business needs.
             </p>
 
             {/* Toggle switch */}
@@ -596,7 +597,7 @@ export const LandingPage: React.FC = () => {
                     <div className="w-4 h-4 rounded-full bg-[#2d2d30] flex items-center justify-center shrink-0">
                       <Check className="w-2.5 h-2.5 text-zinc-400 stroke-[3]" />
                     </div>
-                    <span><strong className="font-bold text-white">₹2</strong> Per-Order Fee</span>
+                    <span><strong className="font-bold text-white">3%</strong> Order Commission</span>
                   </li>
                   <li className="flex items-center gap-3">
                     <div className="w-4 h-4 rounded-full bg-[#2d2d30] flex items-center justify-center shrink-0">
@@ -702,7 +703,7 @@ export const LandingPage: React.FC = () => {
                 <div className="bg-[#28282b] rounded-2xl p-6 mb-8 border border-zinc-800/40">
                   <h3 className="text-2xl font-bold text-white mb-2">Premium Growth</h3>
                   <p className="text-xs text-zinc-400 leading-relaxed font-normal">
-                    For multi-location dining & busy restaurants.
+                    For multi-location dining & busy businesses.
                   </p>
                 </div>
 
@@ -779,7 +780,7 @@ export const LandingPage: React.FC = () => {
       <section className="py-24 px-4 lg:px-8 max-w-3xl mx-auto">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-black text-slate-900 mb-3">Frequently Asked Questions</h2>
-          <p className="text-xs text-slate-500 font-semibold">Everything you need to know about setting up CaféOS</p>
+          <p className="text-xs text-slate-500 font-semibold">Everything you need to know about setting up {APP_NAME}</p>
         </div>
 
         <div className="space-y-3">
@@ -810,11 +811,11 @@ export const LandingPage: React.FC = () => {
           </div>
 
           <h2 className="text-4xl md:text-5xl font-black text-white tracking-tight">
-            Ready to run your café smarter?
+            Ready to run your business smarter?
           </h2>
 
           <p className="text-sm md:text-base text-slate-300 max-w-2xl mx-auto font-medium">
-            Join 500+ independent cafés streamlining QR ordering, kitchen display systems, and financial ledgers today.
+            Join 500+ independent businesses streamlining QR ordering, kitchen display systems, and financial ledgers today.
           </p>
 
           <div>

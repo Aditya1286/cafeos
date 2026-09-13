@@ -1,13 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, useNavigate } from 'react-router-dom';
-import { LandingPage } from './pages/LandingPage';
-import { LoginPage } from './pages/LoginPage';
-import { RegisterPage } from './pages/RegisterPage';
-import { SuperAdminDashboard } from './pages/SuperAdminDashboard';
-import { OwnerDashboard } from './pages/OwnerDashboard';
-import { CustomerMenuPage } from './pages/CustomerMenuPage';
-import { CustomerOrderTrackingPage } from './pages/CustomerOrderTrackingPage';
-import { apiRequest, getAuthToken } from './services/api';
+import { Routes, Route } from 'react-router-dom';
+import { Toaster } from 'sonner';
+import { apiRequest, getAuthToken, removeAuthToken } from './services/api';
+import { routes } from './routes';
+import { RequireAuth } from './components/RequireAuth';
 
 export const App: React.FC = () => {
   const [user, setUser] = useState<any>(null);
@@ -21,7 +17,11 @@ export const App: React.FC = () => {
           const res = await apiRequest('/auth/me');
           setUser(res.data.user);
         } catch (err) {
-          console.error('Session expired');
+          // Token is stale/invalid (e.g. user no longer exists) - drop it so
+          // the guards below correctly treat this as signed-out instead of
+          // leaving a dead token in localStorage forever.
+          removeAuthToken();
+          setUser(null);
         }
       }
       setLoading(false);
@@ -30,27 +30,34 @@ export const App: React.FC = () => {
     fetchMe();
   }, []);
 
-  const handleLoginSuccess = (data: any) => {
+  const handleAuthSuccess = (data: any) => {
     setUser(data.user);
   };
 
   return (
+    <>
+    <Toaster position="top-right" richColors closeButton />
     <Routes>
-      <Route path="/" element={<LandingPage />} />
-      <Route path="/login" element={<LoginPage onLoginSuccess={handleLoginSuccess} />} />
-      <Route path="/register" element={<RegisterPage onRegisterSuccess={handleLoginSuccess} />} />
-      
-      {/* Super Admin Dashboard */}
-      <Route path="/admin/*" element={<SuperAdminDashboard user={user} />} />
-      
-      {/* Restaurant Owner Dashboard */}
-      <Route path="/dashboard/*" element={<OwnerDashboard user={user} />} />
-
-      {/* Public Customer Mobile Ordering Routes */}
-      <Route path="/c/:slug" element={<CustomerMenuPage />} />
-      <Route path="/c/:slug/t/:qrToken" element={<CustomerMenuPage />} />
-      <Route path="/c/:slug/order/:orderId" element={<CustomerOrderTrackingPage />} />
+      {routes.map(({ path, access, element }) => {
+        const page = element({ user, onAuthSuccess: handleAuthSuccess });
+        return (
+          <Route
+            key={path}
+            path={path}
+            element={
+              access === 'public' ? (
+                page
+              ) : (
+                <RequireAuth access={access} user={user} loading={loading}>
+                  {page}
+                </RequireAuth>
+              )
+            }
+          />
+        );
+      })}
     </Routes>
+    </>
   );
 };
 

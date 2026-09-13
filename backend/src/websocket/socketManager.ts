@@ -15,11 +15,11 @@ export const initSocketServer = (httpServer: HttpServer, frontendUrl: string): S
   io.on('connection', (socket: Socket) => {
     console.log(`[Socket.IO] Client connected: ${socket.id}`);
 
-    // Join tenant room (e.g. for restaurant staff dashboard)
-    socket.on('join_tenant_room', (tenantId: string) => {
-      if (tenantId) {
-        socket.join(`tenant:${tenantId}`);
-        console.log(`[Socket.IO] Socket ${socket.id} joined room tenant:${tenantId}`);
+    // Join business room (e.g. for business staff dashboard)
+    socket.on('join_business_room', (businessId: string) => {
+      if (businessId) {
+        socket.join(`business:${businessId}`);
+        console.log(`[Socket.IO] Socket ${socket.id} joined room business:${businessId}`);
       }
     });
 
@@ -46,9 +46,9 @@ export const getIO = (): SocketIOServer => {
   return io;
 };
 
-export const emitToTenant = (tenantId: string, event: string, data: any) => {
+export const emitToBusiness = (businessId: string, event: string, data: any) => {
   if (io) {
-    io.to(`tenant:${tenantId}`).emit(event, data);
+    io.to(`business:${businessId}`).emit(event, data);
   }
 };
 

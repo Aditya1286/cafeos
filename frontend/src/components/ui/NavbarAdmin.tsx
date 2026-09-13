@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { 
   Search, Calendar, Download, Sun, Moon, Check, 
   ChevronDown, FileSpreadsheet, FileText,
-  Activity, Store, Layers, Server, BarChart3, Flame, LogOut,
+  Activity, Store, Layers, Server, BarChart3, Flame, LogOut, Wallet, Undo2,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { APP_NAME, APP_SLUG } from '../../constants/app';
 
 interface NavbarAdminProps {
   activeTab: string;
@@ -17,7 +18,10 @@ interface NavbarAdminProps {
   onExport: (format: 'csv' | 'pdf') => void;
   user?: any;
   onLogout?: () => void;
-  restaurantsCount?: number;
+  businessesCount?: number;
+  pendingRemittancesCount?: number;
+  pendingSubscriptionRequestsCount?: number;
+  refundsNeededCount?: number;
 }
 
 export const NavbarAdmin: React.FC<NavbarAdminProps> = ({
@@ -31,7 +35,10 @@ export const NavbarAdmin: React.FC<NavbarAdminProps> = ({
   onExport,
   user,
   onLogout,
-  restaurantsCount = 3,
+  businessesCount = 3,
+  pendingRemittancesCount = 0,
+  pendingSubscriptionRequestsCount = 0,
+  refundsNeededCount = 0,
 }) => {
   const [isDateOpen, setIsDateOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
@@ -46,10 +53,12 @@ export const NavbarAdmin: React.FC<NavbarAdminProps> = ({
 
   const navItems = [
     { id: 'overview', label: 'Overview', icon: Activity },
-    { id: 'restaurants', label: 'Tenants & Cafés', icon: Store, count: restaurantsCount },
+    { id: 'businesses', label: 'Businesses & Finance', icon: Store, count: businessesCount },
+    { id: 'remittances', label: 'Remittances', icon: Wallet, count: pendingRemittancesCount || undefined },
+    { id: 'refunds', label: 'Refunds & Cancellations', icon: Undo2, count: refundsNeededCount || undefined },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'kitchen', label: 'Kitchen KDS', icon: Flame },
-    { id: 'plans', label: 'Plans & Subscriptions', icon: Layers },
+    { id: 'plans', label: 'Plans & Subscriptions', icon: Layers, count: pendingSubscriptionRequestsCount || undefined },
     { id: 'system', label: 'System Health', icon: Server },
   ];
 
@@ -65,7 +74,7 @@ export const NavbarAdmin: React.FC<NavbarAdminProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <span className="text-base font-black tracking-tight text-slate-900">
-                CaféFlow
+                {APP_NAME}
               </span>
               <span className="px-2 py-0.5 rounded-full bg-red-50 text-red-600 text-[10px] font-extrabold border border-red-200">
                 Super Admin
@@ -84,7 +93,7 @@ export const NavbarAdmin: React.FC<NavbarAdminProps> = ({
         >
           <span className="flex items-center gap-2">
             <Search className="w-3.5 h-3.5 text-slate-400" />
-            <span>Search orders, products, tenants...</span>
+            <span>Search orders, products, businesses...</span>
           </span>
           <kbd className="px-2 py-0.5 rounded-lg bg-white border border-slate-200 text-[10px] font-mono text-slate-500 font-bold shadow-sm">
             ⌘K
@@ -220,7 +229,7 @@ export const NavbarAdmin: React.FC<NavbarAdminProps> = ({
                       {user?.name || 'Aditya Sharma'}
                     </div>
                     <div className="text-[10px] text-slate-400 font-medium">
-                      admin@cafeos.com · Super Admin
+                      admin@{APP_SLUG}.com · Super Admin
                     </div>
                   </div>
 

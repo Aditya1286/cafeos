@@ -38,7 +38,7 @@ export const TopBar: React.FC<TopBarProps> = ({
 
   const notifications = [
     { id: '1', title: 'Mozzarella Stock Alert', time: '10m ago', text: 'Stock level down to 1.2 kg (threshold: 2 kg)', type: 'warning' },
-    { id: '2', title: 'New Tenant Signed Up', time: '1h ago', text: 'Urban Espresso Bistro subscribed to Pro Plan', type: 'success' },
+    { id: '2', title: 'New Business Signed Up', time: '1h ago', text: 'Urban Espresso Bistro subscribed to Pro Plan', type: 'success' },
     { id: '3', title: 'High Order Volume', time: '2h ago', text: 'Table ordering peak reached 42 orders/min', type: 'info' },
   ];
 
@@ -51,7 +51,7 @@ export const TopBar: React.FC<TopBarProps> = ({
       >
         <span className="flex items-center gap-2">
           <Search className="w-3.5 h-3.5" />
-          <span>Search orders, products, tenants...</span>
+          <span>Search orders, products, businesses...</span>
         </span>
         <kbd className="px-1.5 py-0.5 rounded bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-[10px] font-mono text-slate-500 dark:text-zinc-400 font-bold shadow-xs">
           ⌘K

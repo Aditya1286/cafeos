@@ -2,12 +2,13 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, ArrowRight, X, ExternalLink, MapPin, Star, Utensils, Zap, Sparkles, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { APP_NAME } from '../constants/app';
 
-export interface CafeCardData {
+export interface BusinessCardData {
   id: string;
   category: string;
   title: string;
-  cafeName: string;
+  businessName: string;
   location: string;
   rating: string;
   monthlyOrders: string;
@@ -18,26 +19,26 @@ export interface CafeCardData {
   popularDishes: string[];
 }
 
-const cafeCards: CafeCardData[] = [
+const businessCards: BusinessCardData[] = [
   {
     id: '1',
     category: 'SPECIALTY COFFEE & PIZZA',
     title: 'Automated 120ms KDS Kitchen Routing',
-    cafeName: 'The Artisan Roastery & Café',
+    businessName: 'The Artisan Roastery & Café',
     location: 'Bandra West, Mumbai',
     rating: '4.9 ★',
     monthlyOrders: '2,850+ orders/mo',
     imageUrl: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=1000&q=80',
     slug: 'artisan-cafe',
-    description: 'Premier specialty coffee roastery serving single-origin pour-overs and sourdough pizzas powered by CaféOS real-time kitchen displays.',
-    highlights: ['Instant Socket.IO Kitchen Dispatch', 'QR Code Table Ordering', 'Double-Entry Financial Ledger'],
+    description: `Premier specialty coffee roastery serving single-origin pour-overs and sourdough pizzas powered by ${APP_NAME} real-time kitchen displays.`,
+    highlights: ['Instant Real-Time Kitchen Dispatch', 'QR Code Table Ordering', 'Double-Entry Financial Ledger'],
     popularDishes: ['Paneer Tikka Passion Pizza', 'Signature Cold Coffee', 'Peri Peri Fries']
   },
   {
     id: '2',
     category: 'FRENCH BAKERY & MATCHA',
     title: 'Contactless Table QR Ordering',
-    cafeName: 'Bean & Butter Artisan Bakery',
+    businessName: 'Bean & Butter Artisan Bakery',
     location: 'Indiranagar, Bengaluru',
     rating: '4.8 ★',
     monthlyOrders: '2,140+ orders/mo',
@@ -51,13 +52,13 @@ const cafeCards: CafeCardData[] = [
     id: '3',
     category: 'ORGANIC BISTRO & BREW BAR',
     title: 'Automated Recipe BOM Inventory',
-    cafeName: 'Verde Organic Bistro',
+    businessName: 'Verde Organic Bistro',
     location: 'Connaught Place, New Delhi',
     rating: '4.9 ★',
     monthlyOrders: '3,420+ orders/mo',
     imageUrl: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=1000&q=80',
     slug: 'verde-bistro',
-    description: 'Sustainable plant-based bistro leveraging CaféOS recipe bill-of-materials tracking to eliminate food waste and auto-deduct raw ingredients.',
+    description: `Sustainable plant-based bistro leveraging ${APP_NAME} recipe bill-of-materials tracking to eliminate food waste and auto-deduct raw ingredients.`,
     highlights: ['Ingredient-Level Recipe BOM', 'Low-Stock Alerts', 'Financial Auditing'],
     popularDishes: ['Avocado Sourdough Toast', 'Cold Pressed Green Juice', 'Truffle Mushroom Pasta']
   },
@@ -65,7 +66,7 @@ const cafeCards: CafeCardData[] = [
     id: '4',
     category: 'HERITAGE TEA & DIM SUM',
     title: 'Multi-Tenant Multi-Table Management',
-    cafeName: 'Copper Kettle Tea House',
+    businessName: 'Copper Kettle Tea House',
     location: 'Park Street, Kolkata',
     rating: '4.7 ★',
     monthlyOrders: '1,980+ orders/mo',
@@ -79,20 +80,20 @@ const cafeCards: CafeCardData[] = [
     id: '5',
     category: 'ROOFTOP LOUNGE & TAPAS',
     title: 'High-Volume Multi-Staff Access Control',
-    cafeName: 'Aura Rooftop Lounge & Brews',
+    businessName: 'Aura Rooftop Lounge & Brews',
     location: 'Jubilee Hills, Hyderabad',
     rating: '4.9 ★',
     monthlyOrders: '4,500+ orders/mo',
     imageUrl: 'https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=1000&q=80',
     slug: 'aura-lounge',
-    description: 'High-volume nightlife lounge utilizing CaféOS multi-role access control for bartenders, floor waitstaff, and general managers.',
+    description: `High-volume nightlife lounge utilizing ${APP_NAME} multi-role access control for bartenders, floor waitstaff, and general managers.`,
     highlights: ['Role-Based RBAC Permissions', 'Real-Time Revenue Analytics', 'Automated E-Bills via SMS/WhatsApp'],
     popularDishes: ['Craft Smoked Cocktails', 'Woodfired Tapas Platter', 'Truffle Fries']
   }
 ];
 
 export const AppleCardsCarousel: React.FC = () => {
-  const [activeCard, setActiveCard] = useState<CafeCardData | null>(null);
+  const [activeCard, setActiveCard] = useState<BusinessCardData | null>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
@@ -108,7 +109,7 @@ export const AppleCardsCarousel: React.FC = () => {
       // Compute active slide index based on scroll position
       const cardWidth = 370; // approximate card width + gap
       const index = Math.round(scrollLeft / cardWidth);
-      setActiveIndex(Math.min(Math.max(index, 0), cafeCards.length - 1));
+      setActiveIndex(Math.min(Math.max(index, 0), businessCards.length - 1));
     }
   };
 
@@ -176,10 +177,10 @@ export const AppleCardsCarousel: React.FC = () => {
             <span>Featured Case Studies & Partners</span>
           </div>
           <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-            Powered by CaféOS.
+            Powered by {APP_NAME}.
           </h2>
           <p className="text-slate-600 text-xs sm:text-sm max-w-xl font-medium">
-            Discover real cafés, artisan bakeries, and rooftop lounges operating with zero kitchen delay on CaféOS.
+            Discover real businesses, artisan bakeries, and rooftop lounges operating with zero kitchen delay on {APP_NAME}.
           </p>
         </div>
 
@@ -210,7 +211,7 @@ export const AppleCardsCarousel: React.FC = () => {
         </div>
       </div>
 
-      {/* Horizontal Moving Carousel Track (Aligned with Powered by CaféOS header) */}
+      {/* Horizontal Moving Carousel Track (Aligned with Powered by header) */}
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div
           ref={carouselRef}
@@ -220,7 +221,7 @@ export const AppleCardsCarousel: React.FC = () => {
           className="flex gap-6 overflow-x-auto scrollbar-none pb-8 pt-2 snap-x snap-mandatory"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
-        {cafeCards.map((card, idx) => (
+        {businessCards.map((card, idx) => (
           <motion.div
             key={card.id}
             layoutId={`card-${card.id}`}
@@ -232,7 +233,7 @@ export const AppleCardsCarousel: React.FC = () => {
             {/* Crisp High-Res Image with Smooth Scale */}
             <img
               src={card.imageUrl}
-              alt={card.cafeName}
+              alt={card.businessName}
               className="w-full h-full object-cover object-center filter-none group-hover:scale-110 transition-transform duration-1000 ease-out"
             />
 
@@ -262,9 +263,9 @@ export const AppleCardsCarousel: React.FC = () => {
                 </span>
               </div>
 
-              {/* Cafe Name */}
+              {/* Business Name */}
               <h3 className="text-2xl font-black text-white leading-snug drop-shadow-md">
-                {card.cafeName}
+                {card.businessName}
               </h3>
 
               {/* Subtitle Feature */}
@@ -285,7 +286,7 @@ export const AppleCardsCarousel: React.FC = () => {
 
       {/* Slide Progress Indicator Dots */}
       <div className="flex items-center justify-center gap-2 pt-2">
-        {cafeCards.map((_, idx) => (
+        {businessCards.map((_, idx) => (
           <button
             key={idx}
             onClick={() => scrollToIndex(idx)}
@@ -334,7 +335,7 @@ export const AppleCardsCarousel: React.FC = () => {
               <div className="relative h-64 sm:h-72 w-full flex-shrink-0 bg-slate-950">
                 <img
                   src={activeCard.imageUrl}
-                  alt={activeCard.cafeName}
+                  alt={activeCard.businessName}
                   className="w-full h-full object-cover object-center filter-none"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/50 to-transparent" />
@@ -344,7 +345,7 @@ export const AppleCardsCarousel: React.FC = () => {
                     {activeCard.category}
                   </span>
                   <h3 className="text-2xl sm:text-3xl font-black text-white leading-tight">
-                    {activeCard.cafeName}
+                    {activeCard.businessName}
                   </h3>
                   <div className="flex items-center gap-3 text-xs font-semibold text-slate-300">
                     <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5 text-red-500" /> {activeCard.location}</span>
@@ -367,7 +368,7 @@ export const AppleCardsCarousel: React.FC = () => {
 
                 {/* Highlights */}
                 <div>
-                  <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-400 mb-3">CaféOS Features Utilized</h4>
+                  <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-400 mb-3">{APP_NAME} Features Utilized</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     {activeCard.highlights.map((feat, idx) => (
                       <div key={idx} className="p-3 rounded-2xl bg-red-50/80 border border-red-200/80 text-red-900 text-xs font-extrabold flex items-center gap-2">
@@ -393,7 +394,7 @@ export const AppleCardsCarousel: React.FC = () => {
                 {/* Direct Action Link */}
                 <div className="pt-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
                   <div className="text-xs text-slate-500 font-medium">
-                    Experience customer QR ordering for this café:
+                    Experience customer QR ordering for this business:
                   </div>
 
                   <Link

@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { 
-  Coffee, Shield, UtensilsCrossed, ArrowRight, Lock, Mail, 
-  User, Phone, Store, Globe, CheckCircle2, Sparkles, Zap, Layers, UserPlus, Eye, EyeOff
+import {
+  Coffee, Shield, UtensilsCrossed, ArrowRight, Lock, Mail,
+  User, Phone, Store, Globe, CheckCircle2, Sparkles, Zap, Layers, UserPlus, Eye, EyeOff, Clock
 } from 'lucide-react';
 import { apiRequest, setAuthToken } from '../services/api';
+import { APP_NAME, APP_SLUG } from '../constants/app';
+import { useOtpVerification } from '../hooks/useOtpVerification';
+import { formatTime } from '../utils/DateUtils';
 
 interface RegisterPageProps {
   onRegisterSuccess: (userData: any) => void;
@@ -15,7 +18,7 @@ const carouselSlides = [
     image: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=1400&q=80',
     tag: 'INTELLIGENT POS & KDS',
     title: "Automate Kitchen Operations.",
-    subtitle: 'Reduce order fulfillment time by 65% with real-time Socket.IO ticket routing across kitchens & baristas.'
+    subtitle: 'Reduce order fulfillment time by 65% with real-time ticket routing across kitchens & baristas.'
   },
   {
     image: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=1400&q=80',
@@ -41,11 +44,13 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
     email: '',
     password: '',
     phone: '',
-    restaurantName: '',
+    businessName: '',
     slug: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const otp = useOtpVerification(formData.phone);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -58,7 +63,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
     const { name, value } = e.target;
     setFormData((prev) => {
       const updated = { ...prev, [name]: value };
-      if (name === 'restaurantName' && (!prev.slug || prev.slug === prev.restaurantName.toLowerCase().replace(/[^a-z0-9]/g, '-'))) {
+      if (name === 'businessName' && (!prev.slug || prev.slug === prev.businessName.toLowerCase().replace(/[^a-z0-9]/g, '-'))) {
         updated.slug = value.toLowerCase().replace(/[^a-z0-9]/g, '-');
       }
       return updated;
@@ -67,6 +72,10 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!agreedToTerms) {
+      setError('Please agree to the Merchant Terms of Service to continue.');
+      return;
+    }
     setLoading(true);
     setError(null);
 
@@ -115,7 +124,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-2xl font-black tracking-tight text-white">CaféOS</span>
+                <span className="text-2xl font-black tracking-tight text-white">{APP_NAME}</span>
                 <span className="text-[10px] font-mono px-2 py-0.5 bg-red-600/30 text-red-300 rounded-full border border-red-500/30 font-bold">PROD</span>
               </div>
               <span className="text-xs text-slate-300 font-semibold block">Enterprise Multi-Tenant SaaS</span>
@@ -149,7 +158,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
               <div className="text-[10px] font-bold uppercase text-slate-400 tracking-wider flex items-center gap-1">
                 <Layers className="w-3 h-3 text-amber-400" /> Multi-Tenant
               </div>
-              <div className="text-base font-black text-white">500+ Cafés</div>
+              <div className="text-base font-black text-white">500+ Businesses</div>
             </div>
           </div>
 
@@ -196,7 +205,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
             <div className="w-10 h-10 rounded-xl bg-red-600 text-white flex items-center justify-center font-bold shadow-md shadow-red-600/30">
               <Coffee className="w-5 h-5" />
             </div>
-            <span className="text-xl font-black text-slate-900">CaféOS</span>
+            <span className="text-xl font-black text-slate-900">{APP_NAME}</span>
           </Link>
 
           <Link to="/login" className="text-xs font-bold text-red-600 hover:text-red-700">
@@ -213,9 +222,9 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
               <Sparkles className="w-3.5 h-3.5 text-red-600" />
               <span>14-Day Free Trial • Instant Setup</span>
             </div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Create Café Account</h1>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Create Business Account</h1>
             <p className="text-xs sm:text-sm text-slate-600 font-medium">
-              Launch your café digital menu, KDS kitchen display, and POS in under 2 minutes.
+              Launch your business's digital menu, KDS kitchen display, and POS in under 2 minutes.
             </p>
           </div>
 
@@ -245,7 +254,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
             <div className="w-12 h-0.5 bg-slate-200" />
             <div className={`flex items-center gap-2 ${step >= 2 ? 'text-red-600' : 'text-slate-400'}`}>
               <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-extrabold ${step >= 2 ? 'bg-red-600 text-white shadow-md shadow-red-600/30' : 'bg-slate-200 text-slate-500'}`}>2</span>
-              <span>Café Setup</span>
+              <span>Business Setup</span>
             </div>
           </div>
 
@@ -290,7 +299,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
                         name="email"
                         value={formData.email}
                         onChange={handleInputChange}
-                        placeholder="owner@yourcafe.com"
+                        placeholder="owner@yourbusiness.com"
                         className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 border border-slate-300 focus:border-red-600 focus:bg-white focus:ring-2 focus:ring-red-600/15 text-xs text-slate-900 placeholder-slate-400 font-semibold outline-none transition-all"
                       />
                     </div>
@@ -299,18 +308,83 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
                   {/* Mobile Phone */}
                   <div>
                     <label className="block text-xs font-extrabold text-slate-900 mb-1.5">Phone Number</label>
-                    <div className="relative">
-                      <Phone className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                      <input
-                        type="tel"
-                        required
-                        name="phone"
-                        value={formData.phone}
-                        onChange={handleInputChange}
-                        placeholder="+91 98765 43210"
-                        className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 border border-slate-300 focus:border-red-600 focus:bg-white focus:ring-2 focus:ring-red-600/15 text-xs text-slate-900 placeholder-slate-400 font-semibold outline-none transition-all"
-                      />
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <Phone className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <input
+                          type="tel"
+                          required
+                          disabled={otp.otpVerified}
+                          value={formData.phone}
+                          onChange={(e) => {
+                            const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
+                            setFormData((prev) => ({ ...prev, phone: digits }));
+                          }}
+                          placeholder="9876543210"
+                          className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 border border-slate-300 focus:border-red-600 focus:bg-white focus:ring-2 focus:ring-red-600/15 text-xs text-slate-900 placeholder-slate-400 font-semibold outline-none transition-all disabled:opacity-60"
+                        />
+                      </div>
+                      {!otp.otpVerified && (
+                        <button
+                          type="button"
+                          onClick={otp.sendOtp}
+                          disabled={otp.sending || !otp.canResend}
+                          className="px-3.5 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-extrabold whitespace-nowrap disabled:opacity-40 transition-all"
+                        >
+                          {otp.sending ? 'Sending...' : otp.otpSent ? 'Resend' : 'Send OTP'}
+                        </button>
+                      )}
                     </div>
+
+                    {otp.otpSent && !otp.canResend && !otp.otpVerified && (
+                      <span className="mt-1.5 flex items-center gap-1 text-[11px] font-bold text-slate-400 tabular-nums">
+                        <Clock className="w-3.5 h-3.5" /> Resend available in {formatTime(otp.resendSecondsLeft)}
+                      </span>
+                    )}
+
+                    {/* Staging-only: backend echoes the OTP back instead of sending a real
+                        SMS, so testers don't need a phone to complete the flow. Never
+                        appears against the production OTP provider. */}
+                    {otp.devOtp && (
+                      <div className="mt-2 flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-amber-50 border border-dashed border-amber-300">
+                        <span className="flex items-center gap-1.5 text-[10px] font-extrabold text-amber-700">
+                          <span className="px-1.5 py-0.5 rounded-md bg-amber-400/30 uppercase tracking-wider">Staging</span>
+                          Test OTP
+                        </span>
+                        <span className="text-sm font-black text-amber-800 tracking-[0.2em]">{otp.devOtp}</span>
+                      </div>
+                    )}
+
+                    {otp.otpVerified && (
+                      <p className="mt-1.5 text-[11px] font-bold text-emerald-600 flex items-center gap-1">
+                        <CheckCircle2 className="w-3.5 h-3.5" /> Phone verified
+                      </p>
+                    )}
+
+                    {otp.otpSent && !otp.otpVerified && (
+                      <div className="mt-2 flex gap-2">
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="Enter OTP"
+                          value={otp.otpCode}
+                          onChange={(e) => otp.setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                          className="flex-1 px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-xs text-slate-900 font-semibold outline-none focus:border-red-600 focus:bg-white focus:ring-2 focus:ring-red-600/15 transition-all"
+                        />
+                        <button
+                          type="button"
+                          onClick={otp.verifyOtp}
+                          disabled={otp.verifying}
+                          className="px-3.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-extrabold whitespace-nowrap disabled:opacity-40 transition-all"
+                        >
+                          {otp.verifying ? 'Verifying...' : 'Verify'}
+                        </button>
+                      </div>
+                    )}
+
+                    {otp.error && (
+                      <p className="mt-1.5 text-[11px] font-bold text-rose-600">{otp.error}</p>
+                    )}
                   </div>
 
                   {/* Password */}
@@ -344,26 +418,31 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
                         setError('Please fill in all fields before continuing.');
                         return;
                       }
+                      if (!otp.otpVerified) {
+                        setError('Please verify your phone number before continuing.');
+                        return;
+                      }
                       setError(null);
                       setStep(2);
                     }}
-                    className="w-full py-3.5 rounded-xl bg-red-600 hover:bg-red-700 active:scale-[0.99] text-white font-extrabold text-xs shadow-lg shadow-red-600/30 flex items-center justify-center gap-2 transition-all mt-2"
+                    disabled={!otp.otpVerified}
+                    className="w-full py-3.5 rounded-xl bg-red-600 hover:bg-red-700 active:scale-[0.99] text-white font-extrabold text-xs shadow-lg shadow-red-600/30 flex items-center justify-center gap-2 transition-all mt-2 disabled:opacity-50"
                   >
-                    Continue to Café Details <ArrowRight className="w-4 h-4" />
+                    Continue to Business Details <ArrowRight className="w-4 h-4" />
                   </button>
                 </>
               ) : (
                 <>
-                  {/* Café / Restaurant Name */}
+                  {/* Business Name */}
                   <div>
-                    <label className="block text-xs font-extrabold text-slate-900 mb-1.5">Café / Restaurant Name</label>
+                    <label className="block text-xs font-extrabold text-slate-900 mb-1.5">Business Name</label>
                     <div className="relative">
                       <Store className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                       <input
                         type="text"
                         required
-                        name="restaurantName"
-                        value={formData.restaurantName}
+                        name="businessName"
+                        value={formData.businessName}
                         onChange={handleInputChange}
                         placeholder="The Artisan Roastery & Bakery"
                         className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 border border-slate-300 focus:border-red-600 focus:bg-white focus:ring-2 focus:ring-red-600/15 text-xs text-slate-900 placeholder-slate-400 font-semibold outline-none transition-all"
@@ -371,7 +450,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
                     </div>
                   </div>
 
-                  {/* Café Subdomain / URL Slug */}
+                  {/* Business Subdomain / URL Slug */}
                   <div>
                     <label className="block text-xs font-extrabold text-slate-900 mb-1.5">Unique Customer Menu URL Slug</label>
                     <div className="relative flex items-center">
@@ -387,9 +466,25 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
                       />
                     </div>
                     <p className="text-[10px] text-slate-500 mt-1 font-mono">
-                      Your QR menu link: <span className="text-red-600 font-bold">cafeos.app/c/{formData.slug || 'your-slug'}</span>
+                      Your QR menu link: <span className="text-red-600 font-bold">{APP_SLUG}.app/c/{formData.slug || 'your-slug'}</span>
                     </p>
                   </div>
+
+                  <label className="flex items-start gap-2.5 cursor-pointer pt-1">
+                    <input
+                      type="checkbox"
+                      checked={agreedToTerms}
+                      onChange={(e) => setAgreedToTerms(e.target.checked)}
+                      className="w-4 h-4 mt-0.5 rounded text-red-600 border-slate-300 focus:ring-red-500 cursor-pointer accent-red-600 shrink-0"
+                    />
+                    <span className="text-[11px] text-slate-600 font-medium leading-relaxed">
+                      I agree to the{' '}
+                      <Link to="/terms" target="_blank" className="text-red-600 font-bold hover:underline">
+                        Merchant Terms of Service
+                      </Link>
+                      , including the commission and billing terms.
+                    </span>
+                  </label>
 
                   <div className="flex gap-3 pt-2">
                     <button
@@ -402,17 +497,17 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
 
                     <button
                       type="submit"
-                      disabled={loading}
+                      disabled={loading || !agreedToTerms}
                       className="w-2/3 py-3.5 rounded-xl bg-red-600 hover:bg-red-700 active:scale-[0.99] text-white font-extrabold text-xs shadow-lg shadow-red-600/30 flex items-center justify-center gap-2 transition-all disabled:opacity-50"
                     >
                       {loading ? (
                         <span className="flex items-center gap-2">
                           <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                          Creating Café...
+                          Creating Business...
                         </span>
                       ) : (
                         <>
-                          Complete & Launch Café <ArrowRight className="w-4 h-4" />
+                          Complete & Launch Business <ArrowRight className="w-4 h-4" />
                         </>
                       )}
                     </button>
@@ -429,7 +524,10 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
             </div>
 
             <p className="text-[10px] text-center text-slate-400">
-              By creating an account, you agree to CaféOS Service Terms and Privacy Policy.
+              By creating an account, you agree to {APP_NAME}'s{' '}
+              <Link to="/terms" target="_blank" className="text-slate-500 font-bold hover:underline">
+                Merchant Terms of Service
+              </Link>.
             </p>
           </div>
 
@@ -448,7 +546,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
 
         {/* Footer */}
         <div className="text-center text-[11px] text-slate-500 font-medium pt-6 border-t border-slate-200/80 mt-6">
-          © 2026 CaféOS SaaS Platform Inc. • Empowering 500+ Hospitality Businesses Globally
+          © 2026 {APP_NAME} SaaS Platform Inc. • Empowering 500+ Hospitality Businesses Globally
         </div>
       </div>
 

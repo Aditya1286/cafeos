@@ -16,7 +16,7 @@ export interface IUser extends Document {
   passwordHash: string;
   phone?: string;
   role: UserRole;
-  tenantId?: mongoose.Types.ObjectId;
+  businessId?: mongoose.Types.ObjectId;
   status: 'ACTIVE' | 'INACTIVE';
   comparePassword(candidatePassword: string): Promise<boolean>;
   createdAt: Date;
@@ -34,13 +34,13 @@ const UserSchema = new Schema<IUser>(
       enum: ['SUPER_ADMIN', 'OWNER', 'MANAGER', 'RECEPTIONIST', 'STAFF', 'INVENTORY_MANAGER'], 
       default: 'OWNER' 
     },
-    tenantId: { type: Schema.Types.ObjectId, ref: 'Restaurant', index: true },
+    businessId: { type: Schema.Types.ObjectId, ref: 'Business', index: true },
     status: { type: String, enum: ['ACTIVE', 'INACTIVE'], default: 'ACTIVE' }
   },
   { timestamps: true }
 );
 
-UserSchema.index({ tenantId: 1, role: 1 });
+UserSchema.index({ businessId: 1, role: 1 });
 
 UserSchema.methods.comparePassword = async function (candidatePassword: string): Promise<boolean> {
   return bcrypt.compare(candidatePassword, this.passwordHash);

@@ -1,15 +1,16 @@
 import { Router } from 'express';
 import {
   getCategories, createCategory, updateCategory, deleteCategory,
-  getProducts, createProduct, updateProduct, deleteProduct
+  getProducts, createProduct, updateProduct, deleteProduct, archiveProduct,
+  uploadMenuImage
 } from '../controllers/menuController';
 import { protect } from '../middleware/auth';
-import { enforceTenant } from '../middleware/tenant';
+import { enforceBusiness } from '../middleware/business';
 import { restrictTo } from '../middleware/rbac';
 
 const router = Router();
 
-router.use(protect, enforceTenant);
+router.use(protect, enforceBusiness);
 
 // Category Routes
 router.get('/categories', getCategories);
@@ -17,10 +18,14 @@ router.post('/categories', restrictTo('SUPER_ADMIN', 'OWNER', 'MANAGER'), create
 router.put('/categories/:id', restrictTo('SUPER_ADMIN', 'OWNER', 'MANAGER'), updateCategory);
 router.delete('/categories/:id', restrictTo('SUPER_ADMIN', 'OWNER', 'MANAGER'), deleteCategory);
 
+// Image upload (category or product photo)
+router.post('/upload-image', restrictTo('SUPER_ADMIN', 'OWNER', 'MANAGER'), uploadMenuImage);
+
 // Product Routes
 router.get('/products', getProducts);
 router.post('/products', restrictTo('SUPER_ADMIN', 'OWNER', 'MANAGER'), createProduct);
 router.put('/products/:id', restrictTo('SUPER_ADMIN', 'OWNER', 'MANAGER'), updateProduct);
 router.delete('/products/:id', restrictTo('SUPER_ADMIN', 'OWNER', 'MANAGER'), deleteProduct);
+router.put('/products/:id/archive', restrictTo('SUPER_ADMIN', 'OWNER', 'MANAGER'), archiveProduct);
 
 export default router;
