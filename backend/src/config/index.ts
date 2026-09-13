@@ -1,25 +1,21 @@
-import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
 import nconf from 'nconf';
 import { APP_NAME, APP_SLUG } from './constants';
 
-// dotenv still populates process.env from .env files — nconf's env() layer below just
-// reads whatever is already in process.env, it doesn't parse .env files itself.
-dotenv.config({ path: path.join(__dirname, '../../.env') });
-dotenv.config({ path: path.join(__dirname, '../../../.env') });
-dotenv.config();
-
+// NODE_ENV alone still comes from a real process env var (never a .env file) — it's the
+// bootstrap flag that picks which config.<env>.json to load below, so it can't itself
+// live inside one of those files without a chicken-and-egg problem.
 const env = process.env.NODE_ENV || 'development';
 
-// Precedence (highest first): CLI args > environment variables > this environment's
-// config.<env>.json (backend root) > hardcoded defaults below. Same precedence an env
-// var already had over a hardcoded default — just with a per-environment file layer
-// slotted in between the two, so config.production.json (say) can hold real values
-// without touching code, while still being overridable by an actual env var.
-nconf.argv().env();
+// Precedence (highest first): CLI args > this environment's config.<env>.json (lives
+// next to this file, in config/) > hardcoded defaults below. No .env file and no other
+// process-env values are read for config — every setting other than NODE_ENV comes from
+// config.<env>.json or the defaults() block, so the whole app's config lives in
+// checked-in/local files.
+nconf.argv();
 
-const envConfigPath = path.join(__dirname, '../../', `config.${env}.json`);
+const envConfigPath = path.join(__dirname, `config.${env}.json`);
 if (fs.existsSync(envConfigPath)) {
   nconf.file('environment', { file: envConfigPath });
 }
@@ -27,7 +23,19 @@ if (fs.existsSync(envConfigPath)) {
 nconf.defaults({
   PORT: 5000,
   NODE_ENV: 'development',
-  MONGO_URI: `mongodb://127.0.0.1:27017/${APP_SLUG}`,
+  // MONGO_URI, when set, is a full connection string (e.g. an Atlas mongodb+srv:// URI) and
+  // wins outright — see buildMongoUri() below. It has no default here (unlike every other
+  // key) specifically so its absence can be detected and the MONGO_HOST/PORT/DB_NAME/replica
+  // knobs below used to build one instead.
+  MONGO_HOST: '127.0.0.1',
+  MONGO_PORT: 27017,
+  MONGO_DB_NAME: APP_SLUG,
+  // Comma-separated "host:port,host:port" additional replica set members, appended to
+  // MONGO_HOST:MONGO_PORT when MONGO_REPLICA_SET_NAME is also set. Empty = single node.
+  MONGO_REPLICA_HOSTS: '',
+  // e.g. "rs0". Set this (plus MONGO_REPLICA_HOSTS) to pivot to a replica set later —
+  // no code change needed, see buildMongoUri() and database/index.ts's connect options.
+  MONGO_REPLICA_SET_NAME: '',
   JWT_SECRET: `${APP_SLUG}_super_secret_jwt_key_2026_production_ready`,
   JWT_EXPIRES_IN: '7d',
   FRONTEND_URL: 'http://localhost:5173',
@@ -44,11 +52,34 @@ nconf.defaults({
   PLATFORM_PAYEE_NAME: `${APP_NAME} Technologies`
 });
 
+// Builds a Mongo connection string from MONGO_HOST/PORT/DB_NAME (+ optional replica set
+// members) when MONGO_URI isn't explicitly set. An explicit MONGO_URI (e.g. an Atlas
+// mongodb+srv:// string, which encodes its own topology) always wins outright.
+const buildMongoUri = (): string => {
+  const explicitUri = nconf.get('MONGO_URI');
+  if (explicitUri) return explicitUri;
+
+  const primaryMember = `${nconf.get('MONGO_HOST')}:${nconf.get('MONGO_PORT')}`;
+  const replicaSetName = nconf.get('MONGO_REPLICA_SET_NAME');
+  const replicaHosts: string[] = replicaSetName
+    ? String(nconf.get('MONGO_REPLICA_HOSTS') || '')
+        .split(',')
+        .map((host) => host.trim())
+        .filter(Boolean)
+    : [];
+
+  const members = [primaryMember, ...replicaHosts].join(',');
+  return `mongodb://${members}/${nconf.get('MONGO_DB_NAME')}`;
+};
+
 // Same shape as before nconf — every call site elsewhere in the app is untouched.
 export const config = {
   port: nconf.get('PORT'),
-  nodeEnv: nconf.get('NODE_ENV'),
-  mongoUri: nconf.get('MONGO_URI'),
+  nodeEnv: env,
+  mongoUri: buildMongoUri(),
+  // Set only when MONGO_REPLICA_SET_NAME is configured — database/index.ts uses its
+  // presence to decide whether to pass replicaSet/readPreference connect options.
+  mongoReplicaSetName: (nconf.get('MONGO_REPLICA_SET_NAME') as string) || undefined,
   jwtSecret: nconf.get('JWT_SECRET'),
   jwtExpiresIn: nconf.get('JWT_EXPIRES_IN'),
   frontendUrl: nconf.get('FRONTEND_URL'),

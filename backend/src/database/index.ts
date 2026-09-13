@@ -1,11 +1,47 @@
 import mongoose from 'mongoose';
 import { config } from '../config';
 
+if (config.nodeEnv !== 'production') {
+  mongoose.set('debug', true);
+}
+
+// When a replica set is configured (MONGO_REPLICA_SET_NAME + MONGO_REPLICA_HOSTS in
+// config/index.ts), read from secondaries where possible instead of hammering the
+// primary. No-op for a single-node connection.
+const connectOptions: mongoose.ConnectOptions = {
+  serverSelectionTimeoutMS: 2000,
+  ...(config.mongoReplicaSetName
+    ? { replicaSet: config.mongoReplicaSetName, readPreference: 'secondaryPreferred' }
+    : {})
+};
+
+// A freshly started container's outbound DNS (and the mongodb+srv:// lookup it depends
+// on) can briefly ECONNREFUSED in the first instant after boot, before Docker's network
+// namespace is fully wired up — a handful of short retries rides that out in-process
+// instead of exiting and making `restart: always` recreate the whole container (which
+// just re-triggers the same cold-start race every time).
+const CONNECT_RETRIES = 5;
+const CONNECT_RETRY_DELAY_MS = 1500;
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export const connectDB = async (): Promise<typeof mongoose> => {
   try {
-    const conn = await mongoose.connect(config.mongoUri, { serverSelectionTimeoutMS: 2000 });
-    console.log(`[Database] MongoDB Connected: ${conn.connection.host}`);
-    return conn;
+    let lastError: unknown;
+    for (let attempt = 1; attempt <= CONNECT_RETRIES; attempt++) {
+      try {
+        const conn = await mongoose.connect(config.mongoUri, connectOptions);
+        console.log(`[Database] MongoDB Connected: ${conn.connection.host}`);
+        return conn;
+      } catch (error) {
+        lastError = error;
+        if (attempt < CONNECT_RETRIES) {
+          console.warn(`[Database] Connection attempt ${attempt}/${CONNECT_RETRIES} failed, retrying in ${CONNECT_RETRY_DELAY_MS}ms...`, error);
+          await sleep(CONNECT_RETRY_DELAY_MS);
+        }
+      }
+    }
+    throw lastError;
   } catch (error) {
     if (config.nodeEnv === 'production') {
       // Never fail open into fake storage in production — an unreachable

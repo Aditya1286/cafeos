@@ -2,7 +2,7 @@
 # output through Nginx. Nginx also reverse-proxies /api/v1 and /socket.io to the
 # backend container, so the frontend's relative `/api/v1` fetch calls (see
 # src/services/api.ts) keep working same-origin — no CORS config needed.
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 

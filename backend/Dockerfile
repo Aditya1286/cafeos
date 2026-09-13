@@ -1,5 +1,5 @@
 # Backend Dockerfile for CaféOS
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
@@ -11,7 +11,7 @@ COPY src ./src
 
 RUN npm run build
 
-FROM node:20-alpine AS runner
+FROM node:22-alpine AS runner
 
 WORKDIR /app
 
@@ -21,6 +21,10 @@ COPY package*.json ./
 RUN npm ci --omit=dev
 
 COPY --from=builder /app/dist ./dist
+# Config lives entirely in checked-in JSON (see src/config/index.ts, src/config/config.*.json)
+# — no .env file is read at all. config.production.json is baked into dist/config/ by the
+# build script above. config.development.json is deliberately NOT copied into the image:
+# it's gitignored and holds real local-dev credentials.
 
 # Runs as root by default otherwise — drop to the unprivileged user the base
 # image already ships with once every file the process needs is in place.
