@@ -22,6 +22,14 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      # Vite bakes VITE_* vars into the JS bundle at build time, not read at container
+      # runtime — build args are the only way to get them in, since .dockerignore
+      # deliberately keeps frontend/.env out of the build context. Compose reads these
+      # ${...} values from the repo-root .env (gitignored, not frontend/.env — that one's
+      # only for local `npm run dev`/`npm run build` outside Docker).
+      args:
+        VITE_MSG91_WIDGET_ID: ${VITE_MSG91_WIDGET_ID}
+        VITE_MSG91_WIDGET_TOKEN: ${VITE_MSG91_WIDGET_TOKEN}
     container_name: cafeos_frontend
     restart: always
     ports:
