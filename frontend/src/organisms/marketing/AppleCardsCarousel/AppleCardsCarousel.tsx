@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, ArrowRight, X, ExternalLink, MapPin, Star, Utensils, Zap, Sparkles, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { APP_NAME } from '../constants/app';
+import { APP_NAME } from '@/constants/app';
 
 export interface BusinessCardData {
   id: string;

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Coffee, Heart } from 'lucide-react';
-import { APP_NAME } from '../constants/app';
+import { APP_NAME } from '@/constants/app';
 
 export const Footer: React.FC = () => {
   return (

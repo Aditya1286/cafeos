@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { apiRequest } from '../services/api';
+import otpService from '../services/otp';
 import { loadMsg91Widget, widgetSendOtp, widgetVerifyOtp } from '../services/msg91Widget';
 
 interface UseOtpVerificationResult {
@@ -89,7 +89,7 @@ export function useOtpVerification(phone: string, captchaContainerId?: string): 
     try {
       // Skip sending anything entirely if this phone already has a live order-verification
       // window from a recent order — and learn which mode the backend wants us to use.
-      const status = await apiRequest(`/public/otp/status?phone=${encodeURIComponent(trimmed)}`, 'GET');
+      const status = await otpService.getStatus(trimmed);
       modeRef.current = status.mode === 'mock' ? 'mock' : 'live';
       if (status.verified) {
         setOtpVerified(true);
@@ -98,7 +98,7 @@ export function useOtpVerification(phone: string, captchaContainerId?: string): 
       }
 
       if (modeRef.current === 'mock') {
-        const res = await apiRequest('/public/otp/request', 'POST', { phone: trimmed });
+        const res = await otpService.request(trimmed);
         if (res.success) {
           setOtpSent(true);
           setOtpCode('');
@@ -131,7 +131,7 @@ export function useOtpVerification(phone: string, captchaContainerId?: string): 
     setVerifying(true);
     try {
       if (modeRef.current === 'mock') {
-        const res = await apiRequest('/public/otp/verify', 'POST', { phone, otp: otpCode.trim() });
+        const res = await otpService.verify(phone, otpCode.trim());
         if (res.success) {
           setOtpVerified(true);
           setDevOtp(null);
@@ -147,7 +147,7 @@ export function useOtpVerification(phone: string, captchaContainerId?: string): 
         throw new Error('Verification failed. Please try again.');
       }
 
-      const res = await apiRequest('/public/otp/confirm-token', 'POST', { phone, accessToken });
+      const res = await otpService.confirmToken(phone, accessToken);
       if (res.success) {
         setOtpVerified(true);
       } else {

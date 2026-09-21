@@ -1,8 +1,8 @@
 import React from 'react';
 import { Coffee } from 'lucide-react';
-import EmptyState from '../../ui/EmptyState';
-import { formatCurrency } from '../../../utils/money';
-import { TopProduct } from '../../../types';
+import EmptyState from '@/atoms/EmptyState';
+import { formatCurrency } from '@/utils/money';
+import { TopProduct } from '@/types';
 
 interface BestSellersPanelProps {
   bestSellers: TopProduct[];

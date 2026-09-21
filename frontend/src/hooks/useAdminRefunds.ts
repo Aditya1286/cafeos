@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { apiRequest } from '../services/api';
+import adminRefundsService from '../services/superAdmin/refunds';
 import { AdminRefundInsights } from '../types';
 
 /** Admin-scoped mirror of useRefundsAndCancellations — adds a businessId filter so a super
@@ -23,11 +23,13 @@ export const useAdminRefunds = (enabled: boolean) => {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      let url = `/admin/refunds?page=${pagination.page}&limit=${pagination.limit}`;
-      if (debouncedQuery) url += `&q=${encodeURIComponent(debouncedQuery)}`;
-      if (businessId) url += `&businessId=${businessId}`;
-      if (paymentStatusFilter !== 'ALL') url += `&paymentStatus=${paymentStatusFilter}`;
-      const res = await apiRequest(url);
+      const res = await adminRefundsService.list({
+        page: pagination.page,
+        limit: pagination.limit,
+        q: debouncedQuery || undefined,
+        businessId: businessId || undefined,
+        paymentStatus: paymentStatusFilter !== 'ALL' ? paymentStatusFilter : undefined
+      });
       if (res.success) {
         setOrders(res.data || []);
         if (res.pagination) setPagination(res.pagination);
@@ -42,9 +44,7 @@ export const useAdminRefunds = (enabled: boolean) => {
   const fetchInsights = async () => {
     try {
       setLoadingInsights(true);
-      let url = '/admin/refunds/insights';
-      if (businessId) url += `?businessId=${businessId}`;
-      const res = await apiRequest(url);
+      const res = await adminRefundsService.insights(businessId || undefined);
       setInsights(res.data || null);
     } catch (err) {
       console.error('Failed to fetch admin refund insights:', err);

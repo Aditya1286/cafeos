@@ -2,9 +2,9 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { QRCodeSVG } from 'qrcode.react';
 import { X, ShieldCheck, ShieldAlert, Wallet, TrendingUp, AlertTriangle, Settings2 } from 'lucide-react';
-import NumberTicker from '../../ui/NumberTicker';
-import { AdminBusinessSummary } from '../../../types';
-import { paiseToRupees, formatCurrency } from '../../../utils/money';
+import NumberTicker from '@/atoms/NumberTicker';
+import { AdminBusinessSummary } from '@/types';
+import { paiseToRupees, formatCurrency } from '@/utils/money';
 
 interface BusinessSpotlightModalProps {
   business: AdminBusinessSummary | null;

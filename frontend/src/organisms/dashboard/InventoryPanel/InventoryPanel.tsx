@@ -1,6 +1,6 @@
 import React from 'react';
 import { Plus } from 'lucide-react';
-import { formatCurrencyPrecise } from '../../../utils/money';
+import { formatCurrencyPrecise } from '@/utils/money';
 
 interface InventoryPanelProps {
   inventoryItems: any[];

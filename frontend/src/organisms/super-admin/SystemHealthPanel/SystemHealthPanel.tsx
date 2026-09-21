@@ -1,8 +1,8 @@
 import React from 'react';
 import { ResponsiveContainer, AreaChart, Area, LineChart, Line, XAxis, YAxis, Tooltip, BarChart, Bar, CartesianGrid } from 'recharts';
 import { Cpu, MemoryStick, Timer, Database, Server } from 'lucide-react';
-import { adminTooltipStyle } from '../../../constants/chartTheme';
-import { SystemHealth } from '../../../types';
+import { adminTooltipStyle } from '@/constants/chartTheme';
+import { SystemHealth } from '@/types';
 
 interface SystemHealthPanelProps {
   systemHealth: SystemHealth | null;

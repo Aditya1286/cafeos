@@ -1,7 +1,7 @@
 import React from 'react';
-import { ItemMarginsData } from '../../types';
-import { formatCurrency } from '../../utils/money';
-import { NoDataAvailable } from './NoDataAvailable';
+import { ItemMarginsData } from '@/types';
+import { formatCurrency } from '@/utils/money';
+import { NoDataAvailable } from '@/molecules/NoDataAvailable';
 import { PieChart, AlertTriangle } from 'lucide-react';
 
 interface ItemMarginTableProps {

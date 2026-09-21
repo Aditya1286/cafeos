@@ -2,9 +2,9 @@
 import React, { useState } from 'react';
 import { CheckCircle2, ShieldCheck, XCircle, HelpCircle, Undo2 } from 'lucide-react';
 import { isMobileDevice } from '@/utils/device';
-import { apiRequest } from '../../services/api';
-import { UpiAppButtons } from './UpiAppButtons';
-import { UpiQrFallback } from './UpiQrFallback';
+import publicOrdersService from '@/services/public/orders';
+import { UpiAppButtons } from '@/molecules/Payments/UpiAppButtons';
+import { UpiQrFallback } from '@/molecules/Payments/UpiQrFallback';
 
 interface PaymentPanelProps {
   orderId: string;
@@ -52,7 +52,7 @@ export const PaymentPanel: React.FC<PaymentPanelProps> = ({
     setSubmittingRefund(true);
     setActionError(null);
     try {
-      await apiRequest(`/public/orders/${orderId}/request-refund`, 'PUT', { reason: refundReason });
+      await publicOrdersService.requestRefund(orderId, refundReason);
       setRefundJustRequested(true);
       onOrderChanged();
     } catch (err: any) {
@@ -161,7 +161,7 @@ export const PaymentPanel: React.FC<PaymentPanelProps> = ({
     setSubmitting(true);
     setActionError(null);
     try {
-      await apiRequest(`/public/orders/${orderId}/mark-paid`, 'PUT');
+      await publicOrdersService.markPaid(orderId);
       setOutcome('placed');
       setShowConfirmModal(false);
       onOrderChanged();
@@ -176,7 +176,7 @@ export const PaymentPanel: React.FC<PaymentPanelProps> = ({
     setSubmitting(true);
     setActionError(null);
     try {
-      await apiRequest(`/public/orders/${orderId}/cancel`, 'PUT');
+      await publicOrdersService.cancel(orderId);
       setOutcome('cancelled');
       setShowConfirmModal(false);
       onOrderChanged();

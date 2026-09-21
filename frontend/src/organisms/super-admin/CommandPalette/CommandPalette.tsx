@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, X, Coffee, ShoppingBag, Users, Store, ArrowRight, Shield } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { APP_NAME } from '../../constants/app';
+import { APP_NAME } from '@/constants/app';
 
 interface CommandPaletteProps {
   isOpen: boolean;

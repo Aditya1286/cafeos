@@ -1,8 +1,8 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, User, FileText, Undo2, Wallet } from 'lucide-react';
-import { STATUS_CONFIG, isOrderCancellable } from '../../../constants/orderStatus';
-import { formatCurrency } from '../../../utils/money';
+import { STATUS_CONFIG, isOrderCancellable } from '@/constants/orderStatus';
+import { formatCurrency } from '@/utils/money';
 
 interface OrderDetailsDrawerProps {
   order: any | null;

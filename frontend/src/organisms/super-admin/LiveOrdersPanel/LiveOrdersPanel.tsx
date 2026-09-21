@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import EmptyState from '../../ui/EmptyState';
+import EmptyState from '@/atoms/EmptyState';
 
 interface LiveOrdersPanelProps {
   liveOrders: any[];

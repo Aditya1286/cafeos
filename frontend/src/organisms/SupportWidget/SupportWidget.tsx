@@ -1,20 +1,21 @@
 import React from 'react';
 import { LifeBuoy, X, PhoneCall, MessageCircleQuestion, Search, ChevronLeft, CheckCircle2, Loader2 } from 'lucide-react';
-import { useSupportWidget, SupportWidgetMode } from '../../hooks/useSupportWidget';
-import { getSupportCategories } from '../../constants/supportCategories';
+import { useSupportWidget } from '@/hooks/useSupportWidget';
+import { getSupportCategories } from '@/constants/supportCategories';
 
-interface SupportWidgetProps {
-  mode: SupportWidgetMode;
-  businessId?: string;
-  orderId?: string;
-  prefill?: { name?: string; phone?: string };
-}
+// businessId is required in CUSTOMER mode — mirrors useSupportWidget.ts's discriminated
+// union, so a call site that forgets it (e.g. <SupportWidget mode="CUSTOMER" />) is a
+// compile error rather than a 400 the customer only sees after filling out the whole flow.
+type SupportWidgetProps =
+  | { mode: 'CUSTOMER'; businessId: string; orderId?: string; prefill?: { name?: string; phone?: string } }
+  | { mode: 'BUSINESS_OWNER'; businessId?: string; orderId?: string; prefill?: { name?: string; phone?: string } };
 
 // Floating support entry point used on both customer-facing pages (mode="CUSTOMER") and the
 // owner dashboard (mode="BUSINESS_OWNER"). One component, two contact-collection paths — the
 // sequential category → subcategory → details flow is identical either way.
-export const SupportWidget: React.FC<SupportWidgetProps> = ({ mode, businessId, orderId, prefill }) => {
-  const w = useSupportWidget({ mode, businessId, orderId, prefill });
+export const SupportWidget: React.FC<SupportWidgetProps> = (props) => {
+  const { mode } = props;
+  const w = useSupportWidget(props);
   const categories = getSupportCategories(mode);
   const activeCategoryDef = categories.find((c) => c.value === w.category);
 

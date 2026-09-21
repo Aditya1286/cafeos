@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { apiRequest } from '../services/api';
+import ordersService from '../services/dashboard/orders';
+import menuService from '../services/dashboard/menu';
+import tablesService from '../services/dashboard/tables';
+import inventoryService from '../services/dashboard/inventory';
 import { toast } from '../utils/toast';
 
 import { useOwnerDashboardData } from '../hooks/useOwnerDashboardData';
@@ -8,26 +11,26 @@ import { useRemittance } from '../hooks/useRemittance';
 import { useSubscription } from '../hooks/useSubscription';
 import { useRefundsAndCancellations } from '../hooks/useRefundsAndCancellations';
 
-import { DashboardHeader, DashboardTab } from '../components/organisms/dashboard/DashboardHeader';
-import { KpiStatsGrid } from '../components/organisms/dashboard/KpiStatsGrid';
-import { KitchenKdsBoard } from '../components/organisms/dashboard/KitchenKdsBoard';
-import { OrderHistoryPanel } from '../components/organisms/dashboard/OrderHistoryPanel';
-import { DigitalMenuPanel } from '../components/organisms/dashboard/DigitalMenuPanel';
-import { TablesQrPanel } from '../components/organisms/dashboard/TablesQrPanel';
-import { InventoryPanel } from '../components/organisms/dashboard/InventoryPanel';
-import { AnalyticsPanel } from '../components/organisms/dashboard/AnalyticsPanel';
-import { FinancialLedgerPanel } from '../components/organisms/dashboard/FinancialLedgerPanel';
-import { SettingsPanel } from '../components/organisms/dashboard/SettingsPanel';
-import { OrderDetailsDrawer } from '../components/organisms/dashboard/OrderDetailsDrawer';
-import { CancelOrderModal } from '../components/organisms/dashboard/CancelOrderModal';
-import { SupportWidget } from '../components/support/SupportWidget';
-import { DeleteProductModal } from '../components/organisms/dashboard/DeleteProductModal';
-import { EBillModal } from '../components/organisms/dashboard/EBillModal';
-import { AddProductModal } from '../components/organisms/dashboard/AddProductModal';
-import { AddTableModal } from '../components/organisms/dashboard/AddTableModal';
-import { AddInventoryModal } from '../components/organisms/dashboard/AddInventoryModal';
-import { RefundsPanel } from '../components/organisms/dashboard/RefundsPanel';
-import { RefundHistoryModal } from '../components/molecules/RefundHistoryModal';
+import { DashboardHeader, DashboardTab } from '@/organisms/dashboard/DashboardHeader';
+import { KpiStatsGrid } from '@/organisms/dashboard/KpiStatsGrid';
+import { KitchenKdsBoard } from '@/organisms/dashboard/KitchenKdsBoard';
+import { OrderHistoryPanel } from '@/organisms/dashboard/OrderHistoryPanel';
+import { DigitalMenuPanel } from '@/organisms/dashboard/DigitalMenuPanel';
+import { TablesQrPanel } from '@/organisms/dashboard/TablesQrPanel';
+import { InventoryPanel } from '@/organisms/dashboard/InventoryPanel';
+import { AnalyticsPanel } from '@/organisms/dashboard/AnalyticsPanel';
+import { FinancialLedgerPanel } from '@/organisms/dashboard/FinancialLedgerPanel';
+import { SettingsPanel } from '@/organisms/dashboard/SettingsPanel';
+import { OrderDetailsDrawer } from '@/organisms/dashboard/OrderDetailsDrawer';
+import { CancelOrderModal } from '@/organisms/dashboard/CancelOrderModal';
+import { SupportWidget } from '@/organisms/SupportWidget';
+import { DeleteProductModal } from '@/organisms/dashboard/DeleteProductModal';
+import { EBillModal } from '@/organisms/dashboard/EBillModal';
+import { AddProductModal } from '@/organisms/dashboard/AddProductModal';
+import { AddTableModal } from '@/organisms/dashboard/AddTableModal';
+import { AddInventoryModal } from '@/organisms/dashboard/AddInventoryModal';
+import { RefundsPanel } from '@/organisms/dashboard/RefundsPanel';
+import { RefundHistoryModal } from '@/molecules/RefundHistoryModal';
 
 export const OwnerDashboard = ({ user }: { user: any }) => {
   const [activeTab, setActiveTab] = useState<DashboardTab>('kds');
@@ -121,7 +124,7 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
   const handleOpenOrderDrawer = async (order: any) => {
     setSelectedOrderForDrawer(order);
     try {
-      const res = await apiRequest(`/orders/${order.orderId || order._id}`);
+      const res = await ordersService.get(order.orderId || order._id);
       if (res.success) setSelectedOrderDetails(res.data);
     } catch (err) {
       console.error('Failed to load order details:', err);
@@ -130,7 +133,7 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
 
   const handleOpenEBillModal = async (orderId: string) => {
     try {
-      const res = await apiRequest(`/orders/${orderId}/bill`);
+      const res = await ordersService.getBill(orderId);
       if (res.success) setSelectedOrderForBill(res.data);
     } catch (err) {
       console.error('Failed to load bill data:', err);
@@ -202,7 +205,7 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
         reader.onerror = () => reject(new Error('Could not read that file.'));
         reader.readAsDataURL(file);
       });
-      const res = await apiRequest('/menu/upload-image', 'POST', { image: dataUrl });
+      const res = await menuService.uploadImage(dataUrl);
       setNewProductImageUrl(res.data.imageUrl);
     } catch (err: any) {
       toast.error(err.message || 'Could not upload image');
@@ -217,7 +220,7 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
     if (!newCategoryName.trim()) return;
     setCreatingCategory(true);
     try {
-      const res = await apiRequest('/menu/categories', 'POST', { name: newCategoryName.trim() });
+      const res = await menuService.createCategory(newCategoryName.trim());
       setNewProductCategoryId(res.data._id);
       setNewCategoryName('');
       setShowAddCategory(false);
@@ -270,10 +273,10 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
     };
     try {
       if (editingProductId) {
-        await apiRequest(`/menu/products/${editingProductId}`, 'PUT', payload);
+        await menuService.updateProduct(editingProductId, payload);
         toast.success('Item updated!');
       } else {
-        await apiRequest('/menu/products', 'POST', payload);
+        await menuService.createProduct(payload);
         toast.success('Product added to menu!');
       }
       setShowAddProductModal(false);
@@ -285,7 +288,7 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
   const handleCreateTable = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await apiRequest('/tables', 'POST', { tableNumber: newTableNumber, capacity: Number(newTableCapacity) });
+      await tablesService.create(newTableNumber, Number(newTableCapacity));
       setShowAddTableModal(false);
       setNewTableNumber('');
       fetchDashboardData();
@@ -296,7 +299,7 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
   const handleCreateInventory = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await apiRequest('/inventory/items', 'POST', {
+      await inventoryService.create({
         name: newInvName, unit: newInvUnit,
         currentStock: Number(newInvStock),
         minimumStockLevel: Number(newInvMinStock),

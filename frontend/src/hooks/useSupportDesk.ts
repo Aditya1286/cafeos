@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { apiRequest } from '../services/api';
+import superAdminSupportService from '../services/superAdmin/support';
 import { getSocket } from '../services/socket';
 import { toast } from '../utils/toast';
 
@@ -27,10 +27,12 @@ export const useSupportDesk = (enabled: boolean) => {
   const fetchTickets = async () => {
     try {
       setLoading(true);
-      let url = `/admin/support/tickets?page=${pagination.page}&limit=${pagination.limit}`;
-      if (debouncedQuery) url += `&q=${encodeURIComponent(debouncedQuery)}`;
-      if (statusFilter !== 'ALL') url += `&status=${statusFilter}`;
-      const res = await apiRequest(url);
+      const res = await superAdminSupportService.listTickets({
+        page: pagination.page,
+        limit: pagination.limit,
+        q: debouncedQuery || undefined,
+        status: statusFilter !== 'ALL' ? statusFilter : undefined
+      });
       if (res.success) {
         setTickets(res.data || []);
         if (res.pagination) setPagination(res.pagination);
@@ -46,7 +48,7 @@ export const useSupportDesk = (enabled: boolean) => {
   const fetchAgents = async () => {
     try {
       setLoadingAgents(true);
-      const res = await apiRequest('/admin/support/agents');
+      const res = await superAdminSupportService.listAgents();
       setAgents(res.data || []);
     } catch (err) {
       console.error('Failed to fetch call agents:', err);
@@ -86,7 +88,7 @@ export const useSupportDesk = (enabled: boolean) => {
 
   const assignToSelf = async (ticketId: string) => {
     try {
-      const res = await apiRequest(`/admin/support/tickets/${ticketId}/assign`, 'PUT');
+      const res = await superAdminSupportService.assignToSelf(ticketId);
       patchTicket(ticketId, res.data);
       toast.success(res.message || 'Assigned to you');
     } catch (err: any) {
@@ -96,7 +98,7 @@ export const useSupportDesk = (enabled: boolean) => {
 
   const escalate = async (ticketId: string) => {
     try {
-      const res = await apiRequest(`/admin/support/tickets/${ticketId}/escalate`, 'PUT');
+      const res = await superAdminSupportService.escalate(ticketId);
       patchTicket(ticketId, res.data);
       toast.success(res.message || 'Ticket escalated');
     } catch (err: any) {
@@ -106,7 +108,7 @@ export const useSupportDesk = (enabled: boolean) => {
 
   const resolve = async (ticketId: string, resolutionNote: string) => {
     try {
-      const res = await apiRequest(`/admin/support/tickets/${ticketId}/resolve`, 'PUT', { resolutionNote });
+      const res = await superAdminSupportService.resolve(ticketId, resolutionNote);
       patchTicket(ticketId, res.data);
       toast.success(res.message || 'Ticket resolved');
       return true;
@@ -119,7 +121,7 @@ export const useSupportDesk = (enabled: boolean) => {
   const toggleMyAvailability = async () => {
     try {
       setTogglingAvailability(true);
-      const res = await apiRequest('/admin/support/agents/me/toggle-call-availability', 'PUT');
+      const res = await superAdminSupportService.toggleMyAvailability();
       await fetchAgents();
       toast.success(res.message);
     } catch (err: any) {

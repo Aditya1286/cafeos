@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { apiRequest } from '../services/api';
+import superAdminAnalyticsService from '../services/superAdmin/analytics';
 import { TopBusinessByRevenue } from '../types';
 
 /** Businesses ranked by actual paid-order revenue in the last 90 days — NOT
@@ -11,7 +11,7 @@ export const useTopBusinessesByRevenue = (limit = 8) => {
 
   useEffect(() => {
     setLoading(true);
-    apiRequest(`/admin/analytics/top-businesses?limit=${limit}`)
+    superAdminAnalyticsService.getTopBusinesses(limit)
       .then((res) => setBusinesses(res?.data?.businesses || []))
       .catch(() => setBusinesses([]))
       .finally(() => setLoading(false));

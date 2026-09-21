@@ -1,8 +1,8 @@
 import React from 'react';
 import { DollarSign, ShoppingBag, TrendingUp, Activity, Zap } from 'lucide-react';
-import BentoGrid, { BentoGridItem } from '../../ui/BentoGrid';
-import NumberTicker from '../../ui/NumberTicker';
-import { SuperAdminMetrics } from '../../../types';
+import BentoGrid, { BentoGridItem } from '@/atoms/BentoGrid';
+import NumberTicker from '@/atoms/NumberTicker';
+import { SuperAdminMetrics } from '@/types';
 
 interface KpiOverviewBentoProps {
   metrics: SuperAdminMetrics | null;

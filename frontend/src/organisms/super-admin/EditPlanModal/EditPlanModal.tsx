@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
-import { apiRequest } from '../../../services/api';
-import { toast } from '../../../utils/toast';
-import { SubscriptionPlan } from '../../../types';
+import plansService from '@/services/superAdmin/plans';
+import { toast } from '@/utils/toast';
+import { SubscriptionPlan } from '@/types';
 
 interface EditPlanModalProps {
   // Pass a plan to edit it, `null` to create a new one, `undefined` (closed) to hide the modal.
@@ -84,10 +84,10 @@ export const EditPlanModal = ({ plan, onClose, onSaved }: EditPlanModalProps) =>
       };
 
       if (isEditing) {
-        await apiRequest(`/admin/plans/${plan!._id}`, 'PUT', body);
+        await plansService.update(plan!._id, body);
         toast.success('Plan updated');
       } else {
-        await apiRequest('/admin/plans', 'POST', body);
+        await plansService.create(body);
         toast.success('Plan created');
       }
       onSaved();

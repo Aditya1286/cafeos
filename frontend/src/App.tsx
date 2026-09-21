@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { Toaster } from 'sonner';
-import { apiRequest, getAuthToken, removeAuthToken } from './services/api';
+import { getAuthToken, removeAuthToken } from './services/api';
+import authService from './services/auth';
 import { routes } from './routes';
-import { RequireAuth } from './components/RequireAuth';
+import { RequireAuth } from '@/hoc/RequireAuth';
 
 export const App: React.FC = () => {
   const [user, setUser] = useState<any>(null);
@@ -14,7 +15,7 @@ export const App: React.FC = () => {
       const token = getAuthToken();
       if (token) {
         try {
-          const res = await apiRequest('/auth/me');
+          const res = await authService.getMe();
           setUser(res.data.user);
         } catch (err) {
           // Token is stale/invalid (e.g. user no longer exists) - drop it so

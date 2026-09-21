@@ -1,7 +1,7 @@
 import React from 'react';
-import { RepeatCustomerStats } from '../../types';
-import { formatCurrency } from '../../utils/money';
-import { NoDataAvailable } from './NoDataAvailable';
+import { RepeatCustomerStats } from '@/types';
+import { formatCurrency } from '@/utils/money';
+import { NoDataAvailable } from '@/molecules/NoDataAvailable';
 import { Users } from 'lucide-react';
 
 interface RepeatCustomerBarProps {

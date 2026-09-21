@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Coffee, Copy, Check, Wifi, Plus, RefreshCw, LogOut, FileText, UtensilsCrossed, QrCode,
-  Package, BarChart3, Wallet, Settings, Flame, Undo2
+  Package, BarChart3, Wallet, Settings, Flame, Undo2, ChevronDown, X
 } from 'lucide-react';
-import { APP_SLUG } from '../../../constants/app';
+import { APP_SLUG } from '@/constants/app';
 
 export type DashboardTab = 'kds' | 'orders' | 'menu' | 'tables' | 'inventory' | 'analytics' | 'ledger' | 'refunds' | 'settings';
 
@@ -38,12 +38,21 @@ export const DashboardHeader = ({
   user, business, activeOrdersCount, lowStockCount, refundsNeededCount, activeTab, onChangeTab,
   copiedUrl, onCopyMenuUrl, loading, onRefresh, onAddItem
 }: DashboardHeaderProps) => {
+  const [showNavSheet, setShowNavSheet] = useState(false);
+
   const badgeFor = (tabId: DashboardTab): number | null => {
     if (tabId === 'kds') return activeOrdersCount || null;
     if (tabId === 'inventory') return lowStockCount || null;
     if (tabId === 'refunds') return refundsNeededCount || null;
     return null;
   };
+
+  const activeTabDef = TABS.find((t) => t.id === activeTab) || TABS[0];
+  const ActiveIcon = activeTabDef.icon;
+  const activeBadge = badgeFor(activeTab);
+  // A quiet signal that something elsewhere needs a look, without spelling out which tab —
+  // keeps the collapsed mobile trigger honest about state it isn't currently showing.
+  const hasBadgesElsewhere = TABS.some((t) => t.id !== activeTab && (badgeFor(t.id) || 0) > 0);
 
   return (
     <header className="bg-slate-950 text-white border-b border-slate-800 sticky top-0 z-40 shadow-xl">
@@ -114,7 +123,9 @@ export const DashboardHeader = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-2 overflow-x-auto py-2.5 scrollbar-none">
+        {/* Desktop: the full tab row — 9 compact pills fit a dashboard-width viewport
+            without wrapping, so this stays a single row and every tab is one click away. */}
+        <div className="hidden md:flex items-center gap-2 py-2.5">
           {TABS.map(tab => {
             const Icon = tab.icon;
             const active = activeTab === tab.id;
@@ -142,7 +153,88 @@ export const DashboardHeader = ({
             );
           })}
         </div>
+
+        {/* Mobile: a compact "current section" trigger instead of a cramped/wrapping tab
+            strip — tap it to open a full picker sheet with every section as a proper tap
+            target, not a squeezed pill. */}
+        <div className="md:hidden py-2.5">
+          <button
+            onClick={() => setShowNavSheet(true)}
+            className="w-full flex items-center justify-between gap-2 pl-3 pr-4 py-2.5 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-500/25"
+          >
+            <span className="flex items-center gap-2.5 min-w-0">
+              <span className="w-7 h-7 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+                <ActiveIcon className="w-4 h-4" />
+              </span>
+              <span className="text-xs font-extrabold truncate">{activeTabDef.label}</span>
+              {activeBadge !== null && activeBadge > 0 && (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-white/30 shrink-0">{activeBadge}</span>
+              )}
+            </span>
+            <span className="flex items-center gap-1.5 shrink-0">
+              {hasBadgesElsewhere && <span className="w-2 h-2 rounded-full bg-white animate-pulse" />}
+              <ChevronDown className="w-4 h-4" />
+            </span>
+          </button>
+        </div>
       </div>
+
+      {/* Mobile section picker — every tab as a full-size tap target in a 2-column grid,
+          instead of a horizontal scroll or a pile of wrapped pills. */}
+      {showNavSheet && (
+        <div
+          className="md:hidden fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-end justify-center"
+          onClick={() => setShowNavSheet(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-md bg-slate-950 border-t border-slate-800 rounded-t-3xl shadow-2xl p-5 space-y-4 max-h-[75vh] overflow-y-auto animate-in slide-in-from-bottom duration-300"
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <h3 className="text-sm font-black text-white">Go to Section</h3>
+              <button
+                onClick={() => setShowNavSheet(false)}
+                className="p-1.5 rounded-lg hover:bg-slate-900 text-slate-400 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2.5">
+              {TABS.map(tab => {
+                const Icon = tab.icon;
+                const active = activeTab === tab.id;
+                const badge = badgeFor(tab.id);
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => { onChangeTab(tab.id); setShowNavSheet(false); }}
+                    className={`flex items-center gap-2.5 px-3.5 py-3 rounded-2xl text-left transition-all ${
+                      active
+                        ? 'bg-gradient-to-r from-orange-500 to-amber-500 shadow-md shadow-orange-500/25'
+                        : 'bg-slate-900 border border-slate-800 hover:bg-slate-800'
+                    }`}
+                  >
+                    <span className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${active ? 'bg-white/20' : 'bg-slate-800'}`}>
+                      <Icon className={`w-4 h-4 ${active ? 'text-white' : 'text-slate-400'}`} />
+                    </span>
+                    <span className="min-w-0">
+                      <span className={`block text-[11px] font-extrabold truncate ${active ? 'text-white' : 'text-slate-300'}`}>
+                        {tab.label}
+                      </span>
+                      {badge !== null && badge > 0 && (
+                        <span className={`text-[10px] font-mono ${active ? 'text-white/80' : 'text-orange-400'}`}>
+                          {badge} {badge === 1 ? 'item' : 'items'}
+                        </span>
+                      )}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 };

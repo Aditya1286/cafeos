@@ -5,11 +5,11 @@ import {
   UtensilsCrossed, ArrowRight, CheckCircle2, DollarSign, Activity,
   ChevronDown, Check, Star, Play, Sparkles, X, ShieldAlert
 } from 'lucide-react';
-import { Navbar } from '../components/Navbar';
-import { Footer } from '../components/Footer';
+import { Navbar } from '@/organisms/marketing/Navbar';
+import { Footer } from '@/organisms/marketing/Footer';
 import { APP_NAME, APP_SLUG } from '../constants/app';
-import { AppleCardsCarousel } from '../components/AppleCardsCarousel';
-import { WhyChooseUs } from '../components/WhyChooseUs';
+import { AppleCardsCarousel } from '@/organisms/marketing/AppleCardsCarousel';
+import { WhyChooseUs } from '@/organisms/marketing/WhyChooseUs';
 
 export const LandingPage: React.FC = () => {
   const [isYearly, setIsYearly] = useState(false);

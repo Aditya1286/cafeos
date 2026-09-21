@@ -1,16 +1,18 @@
 import { useState } from 'react';
-import { apiRequest } from '../services/api';
+import supportService from '../services/support';
 
 export type SupportWidgetMode = 'CUSTOMER' | 'BUSINESS_OWNER';
 type WidgetView = 'MENU' | 'TICKET_FLOW' | 'CALL' | 'TRACK';
 type TicketStep = 'CATEGORY' | 'SUBCATEGORY' | 'DETAILS' | 'CONTACT' | 'SUBMITTING' | 'CONFIRMATION';
 
-interface UseSupportWidgetArgs {
-  mode: SupportWidgetMode;
-  businessId?: string;
-  orderId?: string;
-  prefill?: { name?: string; phone?: string };
-}
+// businessId is required in CUSTOMER mode (createPublicTicket has no other way to identify
+// the business — see support.service.ts's raiseTicket) but is derived server-side from the
+// session for BUSINESS_OWNER mode. A discriminated union — not an optional field on a flat
+// interface — is what makes a missing businessId a compile error at every call site instead
+// of a 400 "A valid business is required" surfacing only at submit time.
+type UseSupportWidgetArgs =
+  | { mode: 'CUSTOMER'; businessId: string; orderId?: string; prefill?: { name?: string; phone?: string } }
+  | { mode: 'BUSINESS_OWNER'; businessId?: string; orderId?: string; prefill?: { name?: string; phone?: string } };
 
 /** Drives the floating support widget's sequential flow (category → subcategory → details →
  * contact → submit) plus the standalone "call us" and "track a ticket" side-flows. */
@@ -77,14 +79,24 @@ export const useSupportWidget = ({ mode, businessId, orderId, prefill }: UseSupp
   };
 
   const submitTicket = async () => {
+    // Belt-and-suspenders: the discriminated UseSupportWidgetArgs type makes this
+    // unreachable from a well-typed call site, but a loosely-typed caller (e.g. plain JS,
+    // or a stale prop passed from a wider `any`) could still get here — fail with a clear
+    // message instead of letting the request go out and surface the backend's generic 400.
+    if (mode === 'CUSTOMER' && !businessId) {
+      setSubmitError("We couldn't tell which business this is for — please refresh the page and try again.");
+      setStep('CONTACT');
+      return;
+    }
+
     setStep('SUBMITTING');
     setSubmitError(null);
     try {
       const payload = { category, subCategory, description: description.trim() };
       const res =
         mode === 'BUSINESS_OWNER'
-          ? await apiRequest('/support/tickets', 'POST', payload)
-          : await apiRequest('/public/support/tickets', 'POST', {
+          ? await supportService.createTicket(payload)
+          : await supportService.createPublicTicket({
               ...payload,
               businessId,
               orderId,
@@ -108,7 +120,7 @@ export const useSupportWidget = ({ mode, businessId, orderId, prefill }: UseSupp
     setView('CALL');
     setCallState('LOADING');
     try {
-      const res = await apiRequest('/public/support/call-agent');
+      const res = await supportService.callAgent();
       setCallAgent(res.data);
       setCallState('FOUND');
     } catch {
@@ -128,9 +140,7 @@ export const useSupportWidget = ({ mode, businessId, orderId, prefill }: UseSupp
     setTrackLoading(true);
     setTrackError(null);
     try {
-      const res = await apiRequest(
-        `/public/support/tickets/${encodeURIComponent(trackTicketNumber.trim())}/status?phone=${encodeURIComponent(trackPhone.trim())}`
-      );
+      const res = await supportService.trackTicket(trackTicketNumber.trim(), trackPhone.trim());
       setTrackResult(res.data);
     } catch (err: any) {
       setTrackResult(null);

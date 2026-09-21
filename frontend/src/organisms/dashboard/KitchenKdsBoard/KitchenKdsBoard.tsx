@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChefHat, FileText, Sparkles, X, CheckCircle2, Clock, ArrowRight, Wallet, CheckSquare } from 'lucide-react';
-import { STATUS_CONFIG, NEXT_STATUS, KDS_COLUMN_STATUSES } from '../../../constants/orderStatus';
-import { formatCurrency } from '../../../utils/money';
-import { BulkAcceptOrdersModal } from './BulkAcceptOrdersModal';
+import { STATUS_CONFIG, NEXT_STATUS, KDS_COLUMN_STATUSES } from '@/constants/orderStatus';
+import { formatCurrency } from '@/utils/money';
+import { BulkAcceptOrdersModal } from '@/organisms/dashboard/BulkAcceptOrdersModal';
 
 interface KitchenKdsBoardProps {
   orders: any[];

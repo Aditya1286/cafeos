@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { X, Wallet, AlertTriangle, Save } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { apiRequest } from '../../services/api';
-import { toast } from '../../utils/toast';
-import RemittanceHistoryTable, { RemittancePeriod } from './RemittanceHistoryTable';
+import businessesService from '@/services/superAdmin/businesses';
+import remittancesService from '@/services/superAdmin/remittances';
+import { toast } from '@/utils/toast';
+import RemittanceHistoryTable, { RemittancePeriod } from '@/molecules/RemittanceHistoryTable';
 
 interface BusinessFinanceDrawerProps {
   businessId: string | null;
@@ -40,7 +41,7 @@ export const BusinessFinanceDrawer: React.FC<BusinessFinanceDrawerProps> = ({ bu
     if (!businessId) return;
     setLoading(true);
     try {
-      const res = await apiRequest(`/admin/businesses/${businessId}/remittances`);
+      const res = await businessesService.getRemittanceSummary(businessId);
       setSummary(res.data);
       setCommissionInput(String(res.data.business.commissionRatePercentage ?? 3));
       setCycleInput(String(res.data.business.remittanceCycleDays ?? 7));
@@ -60,7 +61,7 @@ export const BusinessFinanceDrawer: React.FC<BusinessFinanceDrawerProps> = ({ bu
     if (!businessId) return;
     setSavingSettings(true);
     try {
-      await apiRequest(`/admin/businesses/${businessId}/finance-settings`, 'PUT', {
+      await businessesService.updateFinanceSettings(businessId, {
         commissionRatePercentage: parseFloat(commissionInput),
         remittanceCycleDays: parseInt(cycleInput, 10)
       });
@@ -76,7 +77,7 @@ export const BusinessFinanceDrawer: React.FC<BusinessFinanceDrawerProps> = ({ bu
 
   const handleMarkPaid = async (period: RemittancePeriod) => {
     try {
-      await apiRequest(`/admin/remittances/${period._id}/pay`, 'PUT', {});
+      await remittancesService.pay(period._id);
       toast.success('Remittance marked as paid');
       await fetchSummary();
       onChanged?.();
@@ -87,7 +88,7 @@ export const BusinessFinanceDrawer: React.FC<BusinessFinanceDrawerProps> = ({ bu
 
   const handleUnmarkPaid = async (period: RemittancePeriod) => {
     try {
-      await apiRequest(`/admin/remittances/${period._id}/unpay`, 'PUT', {});
+      await remittancesService.unpay(period._id);
       toast.success('Reverted to unpaid');
       await fetchSummary();
       onChanged?.();

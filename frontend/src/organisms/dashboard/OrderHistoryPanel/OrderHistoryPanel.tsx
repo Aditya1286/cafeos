@@ -1,9 +1,9 @@
 import React from 'react';
 import { RefreshCw, X, FileText, Undo2, Wallet } from 'lucide-react';
-import ResponsiveDataView, { ResponsiveColumn } from '../../ui/ResponsiveDataView';
-import { STATUS_CONFIG, isOrderCancellable } from '../../../constants/orderStatus';
-import { formatCurrency } from '../../../utils/money';
-import { OrderHistoryFilters } from '../../../hooks/useOrderHistory';
+import ResponsiveDataView, { ResponsiveColumn } from '@/molecules/ResponsiveDataView';
+import { STATUS_CONFIG, isOrderCancellable } from '@/constants/orderStatus';
+import { formatCurrency } from '@/utils/money';
+import { OrderHistoryFilters } from '@/hooks/useOrderHistory';
 
 interface OrderHistoryPanelProps {
   business: any;

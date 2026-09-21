@@ -1,7 +1,7 @@
 import React from 'react';
 import { Wallet, AlertTriangle, CheckCircle2, RotateCcw } from 'lucide-react';
-import { formatCurrency } from '../../../utils/money';
-import { AdminRemittanceRequest } from '../../../types';
+import { formatCurrency } from '@/utils/money';
+import { AdminRemittanceRequest } from '@/types';
 
 interface RemittanceQueueTableProps {
   remittanceView: 'UNPAID' | 'PAID';

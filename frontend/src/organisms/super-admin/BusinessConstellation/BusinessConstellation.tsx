@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, X, ShieldAlert, AlertTriangle, CheckCircle2, Radar } from 'lucide-react';
-import { AdminBusinessSummary } from '../../../types';
-import { formatCurrency } from '../../../utils/money';
+import { AdminBusinessSummary } from '@/types';
+import { formatCurrency } from '@/utils/money';
 
 const SEARCH_RESULTS_LIMIT = 8;
 

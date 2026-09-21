@@ -1,8 +1,8 @@
 import React from 'react';
-import CardSpotlight from '../../ui/CardSpotlight';
-import { SuperAdminMetrics, AdminBusinessSummary } from '../../../types';
-import { formatCurrency } from '../../../utils/money';
-import { computeBusiestHour, computeTopBusinessByGMV } from '../../../utils/adminInsights';
+import CardSpotlight from '@/atoms/CardSpotlight';
+import { SuperAdminMetrics, AdminBusinessSummary } from '@/types';
+import { formatCurrency } from '@/utils/money';
+import { computeBusiestHour, computeTopBusinessByGMV } from '@/utils/adminInsights';
 
 interface PlatformInsightsPanelProps {
   metrics: SuperAdminMetrics | null;

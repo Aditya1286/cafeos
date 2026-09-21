@@ -1,6 +1,6 @@
 import React from 'react';
-import { KitchenSpeedStats } from '../../types';
-import { NoDataAvailable } from './NoDataAvailable';
+import { KitchenSpeedStats } from '@/types';
+import { NoDataAvailable } from '@/molecules/NoDataAvailable';
 import { Timer, ChefHat, Flag } from 'lucide-react';
 
 interface KitchenSpeedPanelProps {

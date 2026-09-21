@@ -1,7 +1,7 @@
 import React from 'react';
 import { CheckCircle2, XCircle, Undo2, MessageSquareQuote, Clock } from 'lucide-react';
-import { Modal } from './Modal';
-import { formatCurrency } from '../../utils/money';
+import { Modal } from '@/molecules/Modal';
+import { formatCurrency } from '@/utils/money';
 
 interface RefundHistoryModalProps {
   order: any | null;

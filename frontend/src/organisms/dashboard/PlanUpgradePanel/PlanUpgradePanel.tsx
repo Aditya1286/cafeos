@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Check, Sparkles, Wallet, CheckCircle2, HelpCircle, X } from 'lucide-react';
-import { UpiAppButtons } from '../../payments/UpiAppButtons';
-import { UpiQrFallback } from '../../payments/UpiQrFallback';
-import { isMobileDevice } from '../../../utils/device';
-import { formatCurrency } from '../../../utils/money';
-import { MySubscriptionStatus, SubscriptionPlan } from '../../../types';
+import { UpiAppButtons } from '@/molecules/Payments/UpiAppButtons';
+import { UpiQrFallback } from '@/molecules/Payments/UpiQrFallback';
+import { isMobileDevice } from '@/utils/device';
+import { formatCurrency } from '@/utils/money';
+import { MySubscriptionStatus, SubscriptionPlan } from '@/types';
 
 interface PlanUpgradePanelProps {
   business: any;

@@ -4,7 +4,8 @@ import {
   Coffee, Shield, UtensilsCrossed, ArrowRight, Lock, Mail,
   User, Phone, Store, Globe, CheckCircle2, Sparkles, Zap, Layers, UserPlus, Eye, EyeOff, Clock
 } from 'lucide-react';
-import { apiRequest, setAuthToken } from '../services/api';
+import { setAuthToken } from '../services/api';
+import authService from '../services/auth';
 import { APP_NAME, APP_SLUG } from '../constants/app';
 import { useOtpVerification } from '../hooks/useOtpVerification';
 import { formatTime } from '../utils/DateUtils';
@@ -80,7 +81,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
     setError(null);
 
     try {
-      const res = await apiRequest('/auth/register', 'POST', formData);
+      const res = await authService.register(formData);
       setAuthToken(res.data.token);
       onRegisterSuccess(res.data);
       navigate('/dashboard');

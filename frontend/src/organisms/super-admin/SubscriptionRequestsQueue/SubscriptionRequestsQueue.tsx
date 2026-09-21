@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { CreditCard, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react';
-import { formatCurrency } from '../../../utils/money';
-import { AdminSubscriptionRequest, SubscriptionRequestStatus } from '../../../types';
+import { formatCurrency } from '@/utils/money';
+import { AdminSubscriptionRequest, SubscriptionRequestStatus } from '@/types';
 
 interface SubscriptionRequestsQueueProps {
   requestsView: SubscriptionRequestStatus;

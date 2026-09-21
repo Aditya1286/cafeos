@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, QrCode, Power, Trash2, AlertTriangle, CircleSlash } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
-import { Modal } from '../../molecules/Modal';
+import { Modal } from '@/molecules/Modal';
 
 interface TablesQrPanelProps {
   tables: any[];

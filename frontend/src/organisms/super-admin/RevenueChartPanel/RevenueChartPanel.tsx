@@ -1,7 +1,7 @@
 import React from 'react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from 'recharts';
-import { adminTooltipStyle } from '../../../constants/chartTheme';
-import { RevenueTimeseriesPoint } from '../../../types';
+import { adminTooltipStyle } from '@/constants/chartTheme';
+import { RevenueTimeseriesPoint } from '@/types';
 
 interface RevenueChartPanelProps {
   chartData: RevenueTimeseriesPoint[];

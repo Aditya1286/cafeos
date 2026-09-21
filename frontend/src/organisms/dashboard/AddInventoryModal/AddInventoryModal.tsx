@@ -1,6 +1,6 @@
 import React from 'react';
-import { Modal } from '../../molecules/Modal';
-import { FormField, inputCls } from '../../molecules/FormField';
+import { Modal } from '@/molecules/Modal';
+import { FormField, inputCls } from '@/molecules/FormField';
 
 interface AddInventoryModalProps {
   open: boolean;

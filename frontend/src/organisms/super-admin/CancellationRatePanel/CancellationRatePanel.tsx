@@ -1,8 +1,8 @@
 import React from 'react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts';
 import { AlertTriangle, Ban } from 'lucide-react';
-import { adminTooltipStyle } from '../../../constants/chartTheme';
-import { CancellationStats, CancellationTimeseriesPoint, WorstBusinessByCancellation } from '../../../types';
+import { adminTooltipStyle } from '@/constants/chartTheme';
+import { CancellationStats, CancellationTimeseriesPoint, WorstBusinessByCancellation } from '@/types';
 
 interface CancellationRatePanelProps {
   stats: CancellationStats | null;

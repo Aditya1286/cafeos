@@ -1,7 +1,7 @@
 import React from 'react';
-import EmptyState from '../../ui/EmptyState';
-import { toast } from '../../../utils/toast';
-import { formatCurrency } from '../../../utils/money';
+import EmptyState from '@/atoms/EmptyState';
+import { toast } from '@/utils/toast';
+import { formatCurrency } from '@/utils/money';
 
 interface GlobalKitchenMonitorProps {
   liveOrders: any[];

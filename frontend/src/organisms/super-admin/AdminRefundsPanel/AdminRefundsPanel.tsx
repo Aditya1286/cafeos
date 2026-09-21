@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { RefreshCw, FileText, Ban, AlertTriangle, IndianRupee, Clock, Search, X } from 'lucide-react';
-import ResponsiveDataView, { ResponsiveColumn } from '../../ui/ResponsiveDataView';
-import { STATUS_CONFIG } from '../../../constants/orderStatus';
-import { formatCurrency } from '../../../utils/money';
-import { AdminBusinessSummary, AdminRefundInsights } from '../../../types';
+import ResponsiveDataView, { ResponsiveColumn } from '@/molecules/ResponsiveDataView';
+import { STATUS_CONFIG } from '@/constants/orderStatus';
+import { formatCurrency } from '@/utils/money';
+import { AdminBusinessSummary, AdminRefundInsights } from '@/types';
 
 const SEARCH_RESULTS_LIMIT = 8;
 

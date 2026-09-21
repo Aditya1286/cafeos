@@ -1,10 +1,10 @@
 import React from 'react';
 import { Copy, Check, ShieldCheck, QrCode, ExternalLink } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
-import { APP_NAME } from '../../../constants/app';
-import { inputCls } from '../../molecules/FormField';
-import { DashboardSubscriptionInfo, MySubscriptionStatus, SubscriptionPlan } from '../../../types';
-import { PlanUpgradePanel } from './PlanUpgradePanel';
+import { APP_NAME } from '@/constants/app';
+import { inputCls } from '@/molecules/FormField';
+import { DashboardSubscriptionInfo, MySubscriptionStatus, SubscriptionPlan } from '@/types';
+import { PlanUpgradePanel } from '@/organisms/dashboard/PlanUpgradePanel';
 
 interface SettingsPanelProps {
   business: any;

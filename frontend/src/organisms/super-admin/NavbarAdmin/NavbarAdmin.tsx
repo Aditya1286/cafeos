@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { 
-  Search, Calendar, Download, Sun, Moon, Check, 
-  ChevronDown, FileSpreadsheet, FileText,
+import {
+  Search, Calendar, Download, Sun, Moon, Check,
+  ChevronDown, FileSpreadsheet, FileText, X,
   Activity, Store, Layers, Server, BarChart3, Flame, LogOut, Wallet, Undo2, LifeBuoy,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { APP_NAME, APP_SLUG } from '../../constants/app';
+import { APP_NAME, APP_SLUG } from '@/constants/app';
 
 interface NavbarAdminProps {
   activeTab: string;
@@ -45,6 +45,7 @@ export const NavbarAdmin: React.FC<NavbarAdminProps> = ({
   const [isDateOpen, setIsDateOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isUserOpen, setIsUserOpen] = useState(false);
+  const [showNavSheet, setShowNavSheet] = useState(false);
 
   const datePresets = [
     { id: 'today', label: 'Today' },
@@ -64,6 +65,10 @@ export const NavbarAdmin: React.FC<NavbarAdminProps> = ({
     { id: 'plans', label: 'Plans & Subscriptions', icon: Layers, count: pendingSubscriptionRequestsCount || undefined },
     { id: 'system', label: 'System Health', icon: Server },
   ];
+
+  const activeNavItem = navItems.find((item) => item.id === activeTab) || navItems[0];
+  const ActiveNavIcon = activeNavItem.icon;
+  const hasCountsElsewhere = navItems.some((item) => item.id !== activeTab && (item.count || 0) > 0);
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-slate-200 bg-white/95 backdrop-blur-xl shadow-sm">
@@ -257,7 +262,8 @@ export const NavbarAdmin: React.FC<NavbarAdminProps> = ({
 
       {/* Navigation Sub-header Tabs */}
       <div className="border-t border-slate-100 bg-slate-50/70">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-1.5 overflow-x-auto py-2 scrollbar-none">
+        {/* Desktop: the full tab row — fits a dashboard-width viewport in one line. */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 hidden md:flex items-center gap-1.5 py-2">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -284,7 +290,84 @@ export const NavbarAdmin: React.FC<NavbarAdminProps> = ({
             );
           })}
         </div>
+
+        {/* Mobile: a compact "current section" trigger instead of a cramped/wrapping strip. */}
+        <div className="md:hidden px-4 py-2">
+          <button
+            onClick={() => setShowNavSheet(true)}
+            className="w-full flex items-center justify-between gap-2 pl-3 pr-4 py-2.5 rounded-2xl bg-red-600 text-white shadow-md shadow-red-600/25"
+          >
+            <span className="flex items-center gap-2.5 min-w-0">
+              <span className="w-7 h-7 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+                <ActiveNavIcon className="w-4 h-4" />
+              </span>
+              <span className="text-xs font-extrabold truncate">{activeNavItem.label}</span>
+              {activeNavItem.count !== undefined && (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-white/20 shrink-0">{activeNavItem.count}</span>
+              )}
+            </span>
+            <span className="flex items-center gap-1.5 shrink-0">
+              {hasCountsElsewhere && <span className="w-2 h-2 rounded-full bg-white animate-pulse" />}
+              <ChevronDown className="w-4 h-4" />
+            </span>
+          </button>
+        </div>
       </div>
+
+      {/* Mobile section picker — every tab as a full-size tap target in a 2-column grid. */}
+      {showNavSheet && (
+        <div
+          className="md:hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-end justify-center"
+          onClick={() => setShowNavSheet(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-md bg-white rounded-t-3xl shadow-2xl border-t border-slate-200 p-5 space-y-4 max-h-[75vh] overflow-y-auto animate-in slide-in-from-bottom duration-300"
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 className="text-sm font-black text-slate-900">Go to Section</h3>
+              <button
+                onClick={() => setShowNavSheet(false)}
+                className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2.5">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = activeTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => { onTabChange(item.id); setShowNavSheet(false); }}
+                    className={`flex items-center gap-2.5 px-3.5 py-3 rounded-2xl text-left transition-all ${
+                      isActive
+                        ? 'bg-red-600 shadow-md shadow-red-600/25'
+                        : 'bg-slate-50 border border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    <span className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${isActive ? 'bg-white/20' : 'bg-white border border-slate-200'}`}>
+                      <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-500'}`} />
+                    </span>
+                    <span className="min-w-0">
+                      <span className={`block text-[11px] font-extrabold truncate ${isActive ? 'text-white' : 'text-slate-700'}`}>
+                        {item.label}
+                      </span>
+                      {item.count !== undefined && (
+                        <span className={`text-[10px] font-mono ${isActive ? 'text-white/80' : 'text-red-600'}`}>
+                          {item.count} {item.count === 1 ? 'item' : 'items'}
+                        </span>
+                      )}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 };

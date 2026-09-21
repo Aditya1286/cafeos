@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Info, AlertTriangle, Wallet, CheckCircle2, HelpCircle } from 'lucide-react';
-import RemittanceHistoryTable, { RemittancePeriod } from '../../ui/RemittanceHistoryTable';
-import { UpiAppButtons } from '../../payments/UpiAppButtons';
-import { UpiQrFallback } from '../../payments/UpiQrFallback';
-import { isMobileDevice } from '../../../utils/device';
-import { formatCurrency } from '../../../utils/money';
+import RemittanceHistoryTable, { RemittancePeriod } from '@/molecules/RemittanceHistoryTable';
+import { UpiAppButtons } from '@/molecules/Payments/UpiAppButtons';
+import { UpiQrFallback } from '@/molecules/Payments/UpiQrFallback';
+import { isMobileDevice } from '@/utils/device';
+import { formatCurrency } from '@/utils/money';
 
 interface FinancialLedgerPanelProps {
   business: any;

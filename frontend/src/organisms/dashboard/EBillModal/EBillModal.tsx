@@ -1,9 +1,9 @@
 import React from 'react';
 import { Printer, Share2, Coffee } from 'lucide-react';
-import { Modal } from '../../molecules/Modal';
-import { APP_NAME } from '../../../constants/app';
-import { toast } from '../../../utils/toast';
-import { formatCurrency } from '../../../utils/money';
+import { Modal } from '@/molecules/Modal';
+import { APP_NAME } from '@/constants/app';
+import { toast } from '@/utils/toast';
+import { formatCurrency } from '@/utils/money';
 
 interface EBillModalProps {
   bill: any | null;

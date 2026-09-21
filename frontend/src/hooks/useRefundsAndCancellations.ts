@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { apiRequest } from '../services/api';
+import ordersService from '../services/dashboard/orders';
 import { RefundInsights } from '../types';
 
 /** Search, filter, and paginate the "Refunds & Cancellations" tab, plus its precomputed insight cards — search box debounced 300ms, same pattern as useOrderHistory. */
@@ -21,10 +21,12 @@ export const useRefundsAndCancellations = (enabled: boolean) => {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      let url = `/orders/refunds?page=${pagination.page}&limit=${pagination.limit}`;
-      if (debouncedQuery) url += `&q=${encodeURIComponent(debouncedQuery)}`;
-      if (paymentStatusFilter !== 'ALL') url += `&paymentStatus=${paymentStatusFilter}`;
-      const res = await apiRequest(url);
+      const res = await ordersService.listRefunds({
+        page: pagination.page,
+        limit: pagination.limit,
+        q: debouncedQuery || undefined,
+        paymentStatus: paymentStatusFilter !== 'ALL' ? paymentStatusFilter : undefined
+      });
       if (res.success) {
         setOrders(res.data || []);
         if (res.pagination) setPagination(res.pagination);
@@ -39,7 +41,7 @@ export const useRefundsAndCancellations = (enabled: boolean) => {
   const fetchInsights = async () => {
     try {
       setLoadingInsights(true);
-      const res = await apiRequest('/orders/refunds/insights');
+      const res = await ordersService.refundInsights();
       setInsights(res.data || null);
     } catch (err) {
       console.error('Failed to fetch refund insights:', err);

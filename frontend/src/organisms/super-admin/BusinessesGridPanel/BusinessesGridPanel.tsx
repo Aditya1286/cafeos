@@ -1,7 +1,7 @@
 import React from 'react';
 import { Search, AlertTriangle, Wallet } from 'lucide-react';
-import { formatCurrency } from '../../../utils/money';
-import { AdminBusinessSummary } from '../../../types';
+import { formatCurrency } from '@/utils/money';
+import { AdminBusinessSummary } from '@/types';
 
 interface BusinessesGridPanelProps {
   businesses: AdminBusinessSummary[];

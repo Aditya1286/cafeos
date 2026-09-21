@@ -1,7 +1,7 @@
 import React from 'react';
 import { CheckCircle2, Loader2 } from 'lucide-react';
-import { Modal } from '../../molecules/Modal';
-import { formatCurrency } from '../../../utils/money';
+import { Modal } from '@/molecules/Modal';
+import { formatCurrency } from '@/utils/money';
 
 interface BulkAcceptOrdersModalProps {
   orders: any[];

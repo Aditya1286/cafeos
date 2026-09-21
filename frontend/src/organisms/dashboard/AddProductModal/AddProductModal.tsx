@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import { ImagePlus, Loader2, Plus, X } from 'lucide-react';
-import { Modal } from '../../molecules/Modal';
-import { FormField, inputCls } from '../../molecules/FormField';
+import { Modal } from '@/molecules/Modal';
+import { FormField, inputCls } from '@/molecules/FormField';
 
 interface AddProductModalProps {
   open: boolean;

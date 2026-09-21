@@ -1,10 +1,10 @@
 import React from 'react';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
 import { Download } from 'lucide-react';
-import EmptyState from '../../ui/EmptyState';
-import { adminTooltipStyle, paymentMethodColors } from '../../../constants/chartTheme';
-import { formatCurrency } from '../../../utils/money';
-import { SuperAdminMetrics, PaymentMethodBreakdownPoint } from '../../../types';
+import EmptyState from '@/atoms/EmptyState';
+import { adminTooltipStyle, paymentMethodColors } from '@/constants/chartTheme';
+import { formatCurrency } from '@/utils/money';
+import { SuperAdminMetrics, PaymentMethodBreakdownPoint } from '@/types';
 
 interface PlatformAnalyticsPanelProps {
   metrics: SuperAdminMetrics | null;

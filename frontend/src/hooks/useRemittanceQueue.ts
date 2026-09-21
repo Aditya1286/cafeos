@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { apiRequest } from '../services/api';
+import remittancesService from '../services/superAdmin/remittances';
 import { toast } from '../utils/toast';
 import { AdminRemittanceRequest } from '../types';
 
@@ -18,7 +18,7 @@ export const useRemittanceQueue = (activeTab: string) => {
   const fetchRemittanceRequests = async (status: 'UNPAID' | 'PAID') => {
     setLoadingRemittances(true);
     try {
-      const res = await apiRequest(`/admin/remittances?status=${status}`);
+      const res = await remittancesService.list(status);
       setRemittanceRequests(res.data || []);
       if (status === 'UNPAID') setPendingRemittancesCount((res.data || []).length);
     } catch (err) {
@@ -41,7 +41,7 @@ export const useRemittanceQueue = (activeTab: string) => {
 
   const handleMarkRequestPaid = async (id: string) => {
     try {
-      await apiRequest(`/admin/remittances/${id}/pay`, 'PUT', {});
+      await remittancesService.pay(id);
       toast.success('Marked as paid — moved to the paid log');
       fetchRemittanceRequests(remittanceView);
     } catch (err: any) {
@@ -51,7 +51,7 @@ export const useRemittanceQueue = (activeTab: string) => {
 
   const handleUnmarkRequestPaid = async (id: string) => {
     try {
-      await apiRequest(`/admin/remittances/${id}/unpay`, 'PUT', {});
+      await remittancesService.unpay(id);
       toast.success('Reverted to unpaid');
       fetchRemittanceRequests(remittanceView);
     } catch (err: any) {

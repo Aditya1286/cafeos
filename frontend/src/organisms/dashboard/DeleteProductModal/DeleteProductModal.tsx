@@ -1,6 +1,6 @@
 import React from 'react';
 import { Trash2 } from 'lucide-react';
-import { Modal } from '../../molecules/Modal';
+import { Modal } from '@/molecules/Modal';
 
 interface DeleteProductModalProps {
   product: any | null;

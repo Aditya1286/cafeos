@@ -1,6 +1,6 @@
 import React from 'react';
 import { X } from 'lucide-react';
-import { Modal } from '../../molecules/Modal';
+import { Modal } from '@/molecules/Modal';
 
 interface CancelOrderModalProps {
   order: any | null;

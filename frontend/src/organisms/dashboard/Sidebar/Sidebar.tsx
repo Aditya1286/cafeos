@@ -5,7 +5,7 @@ import {
   ChevronLeft, ChevronRight, ShieldCheck, Sparkles, LogOut, CheckCircle2
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { APP_NAME } from '../../constants/app';
+import { APP_NAME } from '@/constants/app';
 
 interface SidebarProps {
   activeTab: string;

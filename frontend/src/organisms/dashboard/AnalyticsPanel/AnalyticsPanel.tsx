@@ -1,11 +1,11 @@
 import React from 'react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from 'recharts';
 import { BarChart3 } from 'lucide-react';
-import { DashboardAnalytics } from '../../../types';
-import { paiseToRupees } from '../../../utils/money';
-import { RepeatCustomerBar } from '../../molecules/RepeatCustomerBar';
-import { ItemMarginTable } from '../../molecules/ItemMarginTable';
-import { KitchenSpeedPanel } from '../../molecules/KitchenSpeedPanel';
+import { DashboardAnalytics } from '@/types';
+import { paiseToRupees } from '@/utils/money';
+import { RepeatCustomerBar } from '@/molecules/RepeatCustomerBar';
+import { ItemMarginTable } from '@/molecules/ItemMarginTable';
+import { KitchenSpeedPanel } from '@/molecules/KitchenSpeedPanel';
 
 interface AnalyticsPanelProps {
   analytics: DashboardAnalytics | null;

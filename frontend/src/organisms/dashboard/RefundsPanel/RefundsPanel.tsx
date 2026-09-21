@@ -1,9 +1,9 @@
 import React from 'react';
 import { RefreshCw, FileText, Undo2, AlertTriangle, Clock, Ban, IndianRupee } from 'lucide-react';
-import ResponsiveDataView, { ResponsiveColumn } from '../../ui/ResponsiveDataView';
-import { STATUS_CONFIG } from '../../../constants/orderStatus';
-import { formatCurrency } from '../../../utils/money';
-import { RefundInsights } from '../../../types';
+import ResponsiveDataView, { ResponsiveColumn } from '@/molecules/ResponsiveDataView';
+import { STATUS_CONFIG } from '@/constants/orderStatus';
+import { formatCurrency } from '@/utils/money';
+import { RefundInsights } from '@/types';
 
 interface RefundsPanelProps {
   orders: any[];

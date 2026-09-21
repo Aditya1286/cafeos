@@ -1,13 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Flame, Search, X } from 'lucide-react';
-import { AdminBusinessSummary, BusinessHeatmapCell } from '../../../types';
-import { useBusinessHourlyHeatmap } from '../../../hooks/useBusinessHourlyHeatmap';
-import { useTopBusinessesByRevenue } from '../../../hooks/useTopBusinessesByRevenue';
-import { useBusinessInsights } from '../../../hooks/useBusinessInsights';
-import { formatHeatmapHour } from '../../../utils/adminInsights';
-import { RepeatCustomerBar } from '../../molecules/RepeatCustomerBar';
-import { ItemMarginTable } from '../../molecules/ItemMarginTable';
-import { KitchenSpeedPanel } from '../../molecules/KitchenSpeedPanel';
+import { AdminBusinessSummary, BusinessHeatmapCell } from '@/types';
+import { useBusinessHourlyHeatmap } from '@/hooks/useBusinessHourlyHeatmap';
+import { useTopBusinessesByRevenue } from '@/hooks/useTopBusinessesByRevenue';
+import { useBusinessInsights } from '@/hooks/useBusinessInsights';
+import { formatHeatmapHour } from '@/utils/adminInsights';
+import { RepeatCustomerBar } from '@/molecules/RepeatCustomerBar';
+import { ItemMarginTable } from '@/molecules/ItemMarginTable';
+import { KitchenSpeedPanel } from '@/molecules/KitchenSpeedPanel';
 
 const SEARCH_RESULTS_LIMIT = 8;
 

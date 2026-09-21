@@ -1,6 +1,6 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import type { AccessLevel } from '../routes';
+import type { AccessLevel } from '@/routes';
 
 interface RequireAuthProps {
   access: Exclude<AccessLevel, 'public'>;

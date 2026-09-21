@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Plus, EyeOff, RotateCcw, Pencil, Trash2 } from 'lucide-react';
-import { formatCurrency } from '../../../utils/money';
+import { formatCurrency } from '@/utils/money';
 
 interface DigitalMenuPanelProps {
   products: any[];

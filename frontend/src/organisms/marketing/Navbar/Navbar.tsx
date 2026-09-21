@@ -1,8 +1,8 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Coffee, Shield, LayoutDashboard, QrCode, LogOut } from 'lucide-react';
-import { getAuthToken, removeAuthToken } from '../services/api';
-import { APP_NAME } from '../constants/app';
+import { getAuthToken, removeAuthToken } from '@/services/api';
+import { APP_NAME } from '@/constants/app';
 
 interface NavbarProps {
   user?: any;

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { apiRequest } from '../services/api';
+import subscriptionRequestsService from '../services/superAdmin/subscriptionRequests';
 import { toast } from '../utils/toast';
 import { AdminSubscriptionRequest, SubscriptionRequestStatus } from '../types';
 
@@ -16,7 +16,7 @@ export const useSubscriptionRequests = (activeTab: string) => {
   const fetchSubscriptionRequests = async (status: SubscriptionRequestStatus) => {
     setLoadingSubscriptionRequests(true);
     try {
-      const res = await apiRequest(`/admin/subscription-requests?status=${status}`);
+      const res = await subscriptionRequestsService.list(status);
       setSubscriptionRequests(res.data || []);
       if (status === 'PENDING') setPendingSubscriptionRequestsCount((res.data || []).length);
     } catch (err) {
@@ -39,7 +39,7 @@ export const useSubscriptionRequests = (activeTab: string) => {
 
   const handleApproveRequest = async (id: string) => {
     try {
-      const res = await apiRequest(`/admin/subscription-requests/${id}/approve`, 'PUT', {});
+      const res = await subscriptionRequestsService.approve(id);
       toast.success(res.message || 'Request approved');
       fetchSubscriptionRequests(requestsView);
     } catch (err: any) {
@@ -49,7 +49,7 @@ export const useSubscriptionRequests = (activeTab: string) => {
 
   const handleRejectRequest = async (id: string, reason?: string) => {
     try {
-      await apiRequest(`/admin/subscription-requests/${id}/reject`, 'PUT', { reason });
+      await subscriptionRequestsService.reject(id, reason);
       toast.success('Request rejected');
       fetchSubscriptionRequests(requestsView);
     } catch (err: any) {

@@ -1,9 +1,9 @@
 import React from 'react';
 import { Search, AlertTriangle } from 'lucide-react';
-import ResponsiveDataView from '../../ui/ResponsiveDataView';
-import EmptyState from '../../ui/EmptyState';
-import { formatCurrency } from '../../../utils/money';
-import { AdminBusinessSummary, SubscriptionPlan } from '../../../types';
+import ResponsiveDataView from '@/molecules/ResponsiveDataView';
+import EmptyState from '@/atoms/EmptyState';
+import { formatCurrency } from '@/utils/money';
+import { AdminBusinessSummary, SubscriptionPlan } from '@/types';
 
 interface BusinessesManagementTableProps {
   businesses: AdminBusinessSummary[];

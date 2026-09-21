@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { RefreshCw, LifeBuoy, UserCheck, TriangleAlert, CheckCircle2, PhoneCall, PhoneOff } from 'lucide-react';
-import ResponsiveDataView, { ResponsiveColumn } from '../../ui/ResponsiveDataView';
-import { Modal } from '../../molecules/Modal';
+import ResponsiveDataView, { ResponsiveColumn } from '@/molecules/ResponsiveDataView';
+import { Modal } from '@/molecules/Modal';
 
 interface SupportTicketsPanelProps {
   currentUserId: string;

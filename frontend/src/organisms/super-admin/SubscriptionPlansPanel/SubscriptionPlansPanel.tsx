@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Plus, Users } from 'lucide-react';
-import EmptyState from '../../ui/EmptyState';
-import { SubscriptionPlan } from '../../../types';
-import { EditPlanModal } from './EditPlanModal';
+import EmptyState from '@/atoms/EmptyState';
+import { SubscriptionPlan } from '@/types';
+import { EditPlanModal } from '@/organisms/super-admin/EditPlanModal';
 
 interface SubscriptionPlansPanelProps {
   plans: SubscriptionPlan[];

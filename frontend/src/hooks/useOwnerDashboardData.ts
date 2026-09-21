@@ -1,5 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { apiRequest } from '../services/api';
+import authService from '../services/auth';
+import ordersService from '../services/dashboard/orders';
+import menuService from '../services/dashboard/menu';
+import tablesService from '../services/dashboard/tables';
+import inventoryService from '../services/dashboard/inventory';
+import businessService from '../services/dashboard/business';
+import analyticsService from '../services/dashboard/analytics';
 import { toast } from '../utils/toast';
 import { getSocket } from '../services/socket';
 import { DashboardAnalytics } from '../types';
@@ -32,16 +38,16 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const profileRes = await apiRequest('/auth/me');
+      const profileRes = await authService.getMe();
       setBusiness(profileRes.data.business);
 
       const [ordersRes, catRes, prodRes, tblRes, invRes, analRes] = await Promise.all([
-        apiRequest('/orders'),
-        apiRequest('/menu/categories'),
-        apiRequest('/menu/products'),
-        apiRequest('/tables'),
-        apiRequest('/inventory/items'),
-        apiRequest('/analytics/dashboard')
+        ordersService.list(),
+        menuService.listCategories(),
+        menuService.listProducts(),
+        tablesService.list(),
+        inventoryService.list(),
+        analyticsService.getDashboard()
       ]);
 
       setOrders(ordersRes.data || []);
@@ -122,7 +128,7 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
       return;
     }
     try {
-      await apiRequest(`/orders/${orderId}/status`, 'PUT', { status });
+      await ordersService.updateStatus(orderId, status);
       setOrders(prev => prev.map(o => ((o._id === orderId || o.orderId === orderId)
         ? { ...o, orderStatus: status, ...(status === 'REFUNDED' ? { paymentStatus: 'REFUNDED' } : {}) }
         : o)));
@@ -142,7 +148,7 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
       return;
     }
     try {
-      const res = await apiRequest(`/orders/${orderId}/confirm-payment`, 'PUT');
+      const res = await ordersService.confirmPayment(orderId);
       setOrders(prev => prev.map(o => ((o._id === orderId || o.orderId === orderId) ? { ...o, paymentStatus: 'PAID' } : o)));
       toast.success(res.message || 'Payment confirmed');
     } catch (err: any) {
@@ -155,7 +161,7 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
   // confirm" flow. Keeps going past individual order failures on the backend, so this reports
   // back exactly which orders updated and which didn't rather than an all-or-nothing result.
   const handleBulkUpdateOrderStatus = async (orderIds: string[], status: string): Promise<{ updatedIds: string[]; failed: { orderId: string; message: string }[] }> => {
-    const res = await apiRequest('/orders/bulk-status', 'PUT', { orderIds, status });
+    const res = await ordersService.bulkUpdateStatus(orderIds, status);
     const updated: any[] = res.data?.updated || [];
     const failed: { orderId: string; message: string }[] = res.data?.failed || [];
 
@@ -175,7 +181,7 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
   const handleSaveUpiVpa = async (upiVpa: string) => {
     setSavingUpiVpa(true);
     try {
-      await apiRequest('/business/settings', 'PUT', { upiVpa });
+      await businessService.updateSettings({ upiVpa });
       setBusiness((prev: any) => (prev ? { ...prev, upiVpa } : prev));
       toast.success('UPI ID saved');
     } catch (err: any) {
@@ -190,7 +196,7 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
     const next = !(business?.tablesEnabled ?? true);
     setSavingTablesEnabled(true);
     try {
-      await apiRequest('/business/settings', 'PUT', { tablesEnabled: next });
+      await businessService.updateSettings({ tablesEnabled: next });
       setBusiness((prev: any) => (prev ? { ...prev, tablesEnabled: next } : prev));
       toast.success(next ? 'Tables enabled' : 'Tables disabled — orders no longer need a table');
     } catch (err: any) {
@@ -203,7 +209,7 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
   // Disables/re-enables one table's QR without deleting it (table row + its order history stay).
   const handleToggleTableActive = async (tableId: string) => {
     try {
-      const res = await apiRequest(`/tables/${tableId}/toggle`, 'PUT');
+      const res = await tablesService.toggleActive(tableId);
       setTables(prev => prev.map(t => (t._id === tableId ? { ...t, isActive: res.data.isActive } : t)));
       toast.success(res.message || 'Table updated');
     } catch (err: any) {
@@ -215,7 +221,7 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
   // without touching whatever order (if any) still points at it.
   const handleMarkTableEmpty = async (tableId: string) => {
     try {
-      const res = await apiRequest(`/tables/${tableId}/mark-empty`, 'PUT');
+      const res = await tablesService.markEmpty(tableId);
       setTables(prev => prev.map(t => (t._id === tableId ? { ...t, status: res.data.status } : t)));
       toast.success(res.message || 'Table marked as empty');
     } catch (err: any) {
@@ -225,7 +231,7 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
 
   const handleDeleteTable = async (tableId: string) => {
     try {
-      await apiRequest(`/tables/${tableId}`, 'DELETE');
+      await tablesService.remove(tableId);
       setTables(prev => prev.filter(t => t._id !== tableId));
       toast.success('Table deleted');
     } catch (err: any) {
@@ -238,7 +244,7 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
   // but stays in this list for the owner to restore later.
   const handleRemoveProduct = async (productId: string) => {
     try {
-      await apiRequest(`/menu/products/${productId}`, 'DELETE');
+      await menuService.removeProduct(productId);
       setProducts(prev => prev.map(p => (p._id === productId ? { ...p, isAvailable: false } : p)));
       toast.success('Item removed from menu');
     } catch (err: any) {
@@ -248,7 +254,7 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
 
   const handleRestoreProduct = async (productId: string) => {
     try {
-      await apiRequest(`/menu/products/${productId}`, 'PUT', { isAvailable: true });
+      await menuService.restoreProduct(productId);
       setProducts(prev => prev.map(p => (p._id === productId ? { ...p, isAvailable: true } : p)));
       toast.success('Item restored to menu');
     } catch (err: any) {
@@ -262,7 +268,7 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
   // document itself is still kept server-side.
   const handleDeleteProduct = async (productId: string) => {
     try {
-      await apiRequest(`/menu/products/${productId}/archive`, 'PUT');
+      await menuService.archiveProduct(productId);
       setProducts(prev => prev.filter(p => p._id !== productId));
       toast.success('Item deleted');
     } catch (err: any) {

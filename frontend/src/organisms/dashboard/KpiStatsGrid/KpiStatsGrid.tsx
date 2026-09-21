@@ -1,8 +1,8 @@
 import React from 'react';
 import { Flame, DollarSign, Users, AlertTriangle } from 'lucide-react';
-import { StatCard } from '../../molecules/StatCard';
-import { DashboardMetrics } from '../../../types';
-import { formatCurrency, formatPercentage } from '../../../utils/money';
+import { StatCard } from '@/molecules/StatCard';
+import { DashboardMetrics } from '@/types';
+import { formatCurrency, formatPercentage } from '@/utils/money';
 
 interface KpiStatsGridProps {
   activeOrdersCount: number;

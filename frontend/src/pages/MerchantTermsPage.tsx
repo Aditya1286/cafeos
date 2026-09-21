@@ -1,8 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { AlertTriangle, ArrowLeft } from 'lucide-react';
-import { Navbar } from '../components/Navbar';
-import { Footer } from '../components/Footer';
+import { Navbar } from '@/organisms/marketing/Navbar';
+import { Footer } from '@/organisms/marketing/Footer';
 import { APP_NAME } from '../constants/app';
 
 const Section: React.FC<{ n: number; title: string; children: React.ReactNode }> = ({ n, title, children }) => (

@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { ShieldAlert, Zap, Check, X } from 'lucide-react';
-import { APP_NAME } from '../constants/app';
+import { APP_NAME } from '@/constants/app';
 
 export interface ComparisonFeature {
   oldWay: string;
