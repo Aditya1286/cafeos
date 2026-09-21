@@ -155,6 +155,27 @@ export const toggleTableActive = async (req: AuthRequest, res: Response) => {
   }
 };
 
+// Owner/Staff: Manually force a table back to AVAILABLE — an escape hatch for when the
+// occupied indicator gets stuck (e.g. stale seed/import data) and doesn't reflect reality.
+// Unlike deleteTable, this deliberately does not block on an active order: staff reaching
+// for this button are correcting what they can see on the floor, not managing the order.
+export const markTableEmpty = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const table = await Table.findOne({ _id: id, businessId: req.businessId });
+    if (!table) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Table not found' } });
+    }
+
+    table.status = 'AVAILABLE';
+    await table.save();
+
+    return res.json({ success: true, data: table, message: 'Table marked as empty' });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
+  }
+};
+
 export const deleteTable = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;

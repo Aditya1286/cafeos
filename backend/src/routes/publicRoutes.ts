@@ -1,13 +1,25 @@
 import { Router } from 'express';
+import rateLimit from 'express-rate-limit';
 import { getTableByToken } from '../controllers/tableController';
 import { getPublicMenu, getMenuImage } from '../controllers/menuController';
 import { createOrder, getOrderById, markOrderPaidByCustomer, cancelOrderByCustomer, requestOrderRefund } from '../controllers/orderController';
 import { SubscriptionPlan } from '../models/SubscriptionPlan';
 import { Business } from '../models/Business';
-import { confirmOtp, requestOtp } from '../controllers/otp.controller';
-import { verifyOtp } from '../services/otp.service';
+import { getOtpStatus, confirmWidgetToken, requestOtp, confirmOtp, resendOtpRequest } from '../controllers/otp.controller';
+import { createTicketPublic, getTicketStatusPublic, getCallAgentPublic } from '../controllers/supportController';
 
 const router = Router();
+
+// In live mode the MSG91 widget itself owns send/verify rate-limiting (that's what the widget
+// token buys us) — this just guards our lightweight endpoints (status, token-confirm, and the
+// mock-mode request/verify/resend used for local dev) from being hammered directly.
+const otpRouteLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many requests from this device. Please try again later.' } }
+});
 
 // Public: Resolve QR code token to Business & Table info
 router.get('/t/:token', getTableByToken);
@@ -57,7 +69,26 @@ router.get('/plans', async (req, res) => {
   }
 });
 
-router.post('/otp/request', requestOtp);
-router.post('/otp/verify', confirmOtp);
+router.get('/otp/status', otpRouteLimiter, getOtpStatus);
+router.post('/otp/confirm-token', otpRouteLimiter, confirmWidgetToken);
+
+// Mock-mode only (see otp.controller.ts) — the widget replaces these in live mode.
+router.post('/otp/request', otpRouteLimiter, requestOtp);
+router.post('/otp/verify', otpRouteLimiter, confirmOtp);
+router.post('/otp/resend', otpRouteLimiter, resendOtpRequest);
+
+// Public: Support widget (consumer-facing floating chat button) — no auth, kept away from
+// the free-for-all default limiter so a bad actor can't spam the ticket queue.
+const supportRouteLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many requests. Please try again later.' } }
+});
+
+router.post('/support/tickets', supportRouteLimiter, createTicketPublic);
+router.get('/support/tickets/:ticketNumber/status', supportRouteLimiter, getTicketStatusPublic);
+router.get('/support/call-agent', supportRouteLimiter, getCallAgentPublic);
 
 export default router;

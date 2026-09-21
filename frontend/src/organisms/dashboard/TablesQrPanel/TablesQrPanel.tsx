@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, QrCode, Power, Trash2, AlertTriangle } from 'lucide-react';
+import { Plus, QrCode, Power, Trash2, AlertTriangle, CircleSlash } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Modal } from '../../molecules/Modal';
 
@@ -12,18 +12,26 @@ interface TablesQrPanelProps {
   onAddTable: () => void;
   onToggleTableActive: (tableId: string) => void;
   onDeleteTable: (tableId: string) => void;
+  onMarkTableEmpty: (tableId: string) => void;
 }
 
 export const TablesQrPanel = ({
   tables, business, tablesEnabled, savingTablesEnabled, onToggleTablesEnabled, onAddTable,
-  onToggleTableActive, onDeleteTable
+  onToggleTableActive, onDeleteTable, onMarkTableEmpty
 }: TablesQrPanelProps) => {
   const [tableToDelete, setTableToDelete] = useState<any | null>(null);
+  const [tableToEmpty, setTableToEmpty] = useState<any | null>(null);
 
   const handleConfirmDelete = () => {
     if (!tableToDelete) return;
     onDeleteTable(tableToDelete._id);
     setTableToDelete(null);
+  };
+
+  const handleConfirmMarkEmpty = () => {
+    if (!tableToEmpty) return;
+    onMarkTableEmpty(tableToEmpty._id);
+    setTableToEmpty(null);
   };
 
   return (
@@ -121,6 +129,15 @@ export const TablesQrPanel = ({
                   Test QR Scan Page →
                 </a>
 
+                {isOccupied && (
+                  <button
+                    onClick={() => setTableToEmpty(t)}
+                    className="w-full py-2 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-700 text-[11px] font-extrabold transition-all flex items-center justify-center gap-1.5"
+                  >
+                    <CircleSlash className="w-3.5 h-3.5" /> Mark Empty
+                  </button>
+                )}
+
                 <div className="flex gap-2">
                   <button
                     onClick={() => onToggleTableActive(t._id)}
@@ -172,6 +189,39 @@ export const TablesQrPanel = ({
                 className="flex-1 py-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs shadow-md shadow-rose-600/20 transition-all"
               >
                 Yes, Delete
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {tableToEmpty && (
+        <Modal title="Mark this table as empty?" onClose={() => setTableToEmpty(null)} maxWidth="max-w-sm">
+          <div className="space-y-5 text-center">
+            <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center mx-auto">
+              <CircleSlash className="w-6 h-6" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-bold text-slate-800">
+                Clear the "Occupied" status on <span className="font-mono text-amber-700">{tableToEmpty.tableNumber}</span>?
+              </p>
+              <p className="text-xs text-slate-500 font-medium">
+                Use this if the table is showing occupied by mistake. This only clears the indicator — it won't
+                cancel or change any order still linked to this table.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setTableToEmpty(null)}
+                className="flex-1 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmMarkEmpty}
+                className="flex-1 py-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-black text-xs shadow-md shadow-amber-500/20 transition-all"
+              >
+                Yes, Mark Empty
               </button>
             </div>
           </div>

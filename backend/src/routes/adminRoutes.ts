@@ -8,6 +8,10 @@ import {
   getSubscriptionRequests, approveSubscriptionRequest, rejectSubscriptionRequest,
   getAdminRefundOrders, getAdminRefundInsights
 } from '../controllers/superAdminController';
+import {
+  listTicketsAdmin, getTicketAdmin, escalateTicketAdmin, assignTicketAdmin, resolveTicketAdmin,
+  listCallAgentsAdmin, toggleMyCallAvailability
+} from '../controllers/supportController';
 import { protect } from '../middleware/auth';
 import { restrictTo } from '../middleware/rbac';
 
@@ -39,5 +43,14 @@ router.put('/subscription-requests/:id/approve', approveSubscriptionRequest);
 router.put('/subscription-requests/:id/reject', rejectSubscriptionRequest);
 
 router.get('/system/health', getSystemHealth);
+
+router.get('/support/tickets', listTicketsAdmin);
+router.get('/support/tickets/:id', getTicketAdmin);
+router.put('/support/tickets/:id/escalate', escalateTicketAdmin);
+router.put('/support/tickets/:id/assign', assignTicketAdmin);
+router.put('/support/tickets/:id/resolve', resolveTicketAdmin);
+
+router.get('/support/agents', listCallAgentsAdmin);
+router.put('/support/agents/me/toggle-call-availability', toggleMyCallAvailability);
 
 export default router;

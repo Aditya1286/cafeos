@@ -31,6 +31,12 @@ export const initSocketServer = (httpServer: HttpServer, frontendUrl: string): S
       }
     });
 
+    // Join the platform-wide support-ticket room (Super Admin dashboard)
+    socket.on('join_admin_support_room', () => {
+      socket.join('admin:support');
+      console.log(`[Socket.IO] Socket ${socket.id} joined room admin:support`);
+    });
+
     socket.on('disconnect', () => {
       console.log(`[Socket.IO] Client disconnected: ${socket.id}`);
     });
@@ -55,5 +61,11 @@ export const emitToBusiness = (businessId: string, event: string, data: any) => 
 export const emitToOrder = (orderId: string, event: string, data: any) => {
   if (io) {
     io.to(`order:${orderId}`).emit(event, data);
+  }
+};
+
+export const emitToAdminSupport = (event: string, data: any) => {
+  if (io) {
+    io.to('admin:support').emit(event, data);
   }
 };

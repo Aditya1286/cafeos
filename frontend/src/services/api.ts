@@ -41,7 +41,10 @@ export const apiRequest = async (
   console.log("data",data)
 
   if (!response.ok) {
-    throw new Error(data.error?.message || 'An error occurred during request execution.');
+    // Most endpoints return {error: {message}}, but a few (e.g. otp.controller) return a
+    // flat {message} — fall back to that so callers still see the real reason (e.g. a
+    // rate-limit message) instead of the generic default.
+    throw new Error(data.error?.message || data.message || 'An error occurred during request execution.');
   }
 
   return data;

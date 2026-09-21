@@ -22,6 +22,7 @@ import confetti from 'canvas-confetti';
 import { useOtpVerification } from '@/hooks/useOtpVerification';
 import { formatTime } from '@/utils/DateUtils';
 import { toast } from '@/utils/toast';
+import { SupportWidget } from '@/components/support/SupportWidget';
 
 export const CustomerMenuPage: React.FC = () => {
   const { slug, qrToken } = useParams<{ slug: string; qrToken?: string }>();
@@ -47,7 +48,7 @@ export const CustomerMenuPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   //Adding custom otp handler
-  const otp = useOtpVerification(customerPhone);
+  const otp = useOtpVerification(customerPhone, 'otp-captcha-container');
 
   useEffect(() => {
     const fetchBusinessAndMenu = async () => {
@@ -517,9 +518,11 @@ export const CustomerMenuPage: React.FC = () => {
                   )}
                 </div>
 
+                <div id="otp-captcha-container" className="mt-2" />
+
                 {/* Staging-only: backend echoes the OTP back instead of sending a
                     real SMS, so testers don't need a phone to complete the flow.
-                    This never appears against the production OTP provider. */}
+                    This never appears against the live MSG91 widget. */}
                 {otp.devOtp && (
                   <div className="mt-2 flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-amber-50 border border-dashed border-amber-300 animate-in fade-in slide-in-from-top-1 duration-200">
                     <span className="flex items-center gap-1.5 text-[10px] font-extrabold text-amber-700">
@@ -613,6 +616,8 @@ export const CustomerMenuPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {business && <SupportWidget mode="CUSTOMER" businessId={business.id || business._id} />}
     </div>
   );
 };

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   Search, Calendar, Download, Sun, Moon, Check, 
   ChevronDown, FileSpreadsheet, FileText,
-  Activity, Store, Layers, Server, BarChart3, Flame, LogOut, Wallet, Undo2,
+  Activity, Store, Layers, Server, BarChart3, Flame, LogOut, Wallet, Undo2, LifeBuoy,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { APP_NAME, APP_SLUG } from '../../constants/app';
@@ -22,6 +22,7 @@ interface NavbarAdminProps {
   pendingRemittancesCount?: number;
   pendingSubscriptionRequestsCount?: number;
   refundsNeededCount?: number;
+  openTicketsCount?: number;
 }
 
 export const NavbarAdmin: React.FC<NavbarAdminProps> = ({
@@ -39,6 +40,7 @@ export const NavbarAdmin: React.FC<NavbarAdminProps> = ({
   pendingRemittancesCount = 0,
   pendingSubscriptionRequestsCount = 0,
   refundsNeededCount = 0,
+  openTicketsCount = 0,
 }) => {
   const [isDateOpen, setIsDateOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
@@ -56,6 +58,7 @@ export const NavbarAdmin: React.FC<NavbarAdminProps> = ({
     { id: 'businesses', label: 'Businesses & Finance', icon: Store, count: businessesCount },
     { id: 'remittances', label: 'Remittances', icon: Wallet, count: pendingRemittancesCount || undefined },
     { id: 'refunds', label: 'Refunds & Cancellations', icon: Undo2, count: refundsNeededCount || undefined },
+    { id: 'support', label: 'Support Tickets', icon: LifeBuoy, count: openTicketsCount || undefined },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'kitchen', label: 'Kitchen KDS', icon: Flame },
     { id: 'plans', label: 'Plans & Subscriptions', icon: Layers, count: pendingSubscriptionRequestsCount || undefined },

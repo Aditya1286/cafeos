@@ -6,6 +6,7 @@ import {
 import { apiRequest } from '../services/api';
 import { getSocket } from '../services/socket';
 import { PaymentPanel } from '../components/payments/PaymentPanel';
+import { SupportWidget } from '../components/support/SupportWidget';
 
 export const CustomerOrderTrackingPage: React.FC = () => {
   const { orderId } = useParams<{ orderId: string }>();
@@ -215,6 +216,15 @@ export const CustomerOrderTrackingPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {business && (
+        <SupportWidget
+          mode="CUSTOMER"
+          businessId={business.id || business._id}
+          orderId={order?._id}
+          prefill={{ name: order?.customerName, phone: order?.customerPhone }}
+        />
+      )}
     </div>
   );
 };

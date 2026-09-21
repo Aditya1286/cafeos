@@ -20,6 +20,7 @@ import { FinancialLedgerPanel } from '../components/organisms/dashboard/Financia
 import { SettingsPanel } from '../components/organisms/dashboard/SettingsPanel';
 import { OrderDetailsDrawer } from '../components/organisms/dashboard/OrderDetailsDrawer';
 import { CancelOrderModal } from '../components/organisms/dashboard/CancelOrderModal';
+import { SupportWidget } from '../components/support/SupportWidget';
 import { DeleteProductModal } from '../components/organisms/dashboard/DeleteProductModal';
 import { EBillModal } from '../components/organisms/dashboard/EBillModal';
 import { AddProductModal } from '../components/organisms/dashboard/AddProductModal';
@@ -45,7 +46,7 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
     newlyArrivedOrderId, fetchDashboardData,
     handleUpdateOrderStatus, handleBulkUpdateOrderStatus, handleConfirmPayment,
     savingUpiVpa, handleSaveUpiVpa,
-    savingTablesEnabled, handleToggleTablesEnabled, handleToggleTableActive, handleDeleteTable,
+    savingTablesEnabled, handleToggleTablesEnabled, handleToggleTableActive, handleDeleteTable, handleMarkTableEmpty,
     handleRemoveProduct, handleRestoreProduct, handleDeleteProduct,
   } = dashboard;
   const { remittanceSummary, loadingRemittance, markingPaid, handleMarkRemittancePaid } = useRemittance(activeTab);
@@ -399,6 +400,7 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
             onAddTable={() => setShowAddTableModal(true)}
             onToggleTableActive={handleToggleTableActive}
             onDeleteTable={handleDeleteTable}
+            onMarkTableEmpty={handleMarkTableEmpty}
           />
         )}
 
@@ -528,6 +530,8 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
         costPaise={newInvCostPaise} setCostPaise={setNewInvCostPaise}
         onSubmit={handleCreateInventory}
       />
+
+      <SupportWidget mode="BUSINESS_OWNER" />
     </div>
   );
 };

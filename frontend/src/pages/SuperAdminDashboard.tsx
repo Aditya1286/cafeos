@@ -35,8 +35,10 @@ import { SubscriptionPlansPanel } from '../components/organisms/super-admin/Subs
 import { SubscriptionRequestsQueue } from '../components/organisms/super-admin/SubscriptionRequestsQueue';
 import { SystemHealthPanel } from '../components/organisms/super-admin/SystemHealthPanel';
 import { AdminRefundsPanel } from '../components/organisms/super-admin/AdminRefundsPanel';
+import { SupportTicketsPanel } from '../components/organisms/super-admin/SupportTicketsPanel';
 import { RefundHistoryModal } from '../components/molecules/RefundHistoryModal';
 import { useAdminRefunds } from '../hooks/useAdminRefunds';
+import { useSupportDesk } from '../hooks/useSupportDesk';
 
 export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -60,6 +62,7 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
   const remittanceQueue = useRemittanceQueue(activeTab);
   const subscriptionRequestsQueue = useSubscriptionRequests(activeTab);
   const adminRefunds = useAdminRefunds(activeTab === 'refunds');
+  const supportDesk = useSupportDesk(activeTab === 'support');
   const [refundHistoryOrder, setRefundHistoryOrder] = useState<any | null>(null);
 
   const handleExport = (format: 'csv' | 'pdf') => {
@@ -137,6 +140,7 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
         pendingRemittancesCount={remittanceQueue.pendingRemittancesCount}
         pendingSubscriptionRequestsCount={subscriptionRequestsQueue.pendingSubscriptionRequestsCount}
         refundsNeededCount={adminRefunds.insights?.needsRefundCount}
+        openTicketsCount={supportDesk.needsAttentionCount}
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
@@ -249,6 +253,29 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
             onSelectBusiness={adminRefunds.setBusinessId}
             onRefresh={adminRefunds.refresh}
             onViewHistory={setRefundHistoryOrder}
+          />
+        )}
+
+        {activeTab === 'support' && (
+          <SupportTicketsPanel
+            currentUserId={user?.id}
+            tickets={supportDesk.tickets}
+            loading={supportDesk.loading}
+            pagination={supportDesk.pagination}
+            onPageChange={(page) => supportDesk.setPagination(prev => ({ ...prev, page }))}
+            onPageSizeChange={(limit) => supportDesk.setPagination(prev => ({ ...prev, limit, page: 1 }))}
+            searchQuery={supportDesk.searchQuery}
+            onSearchChange={supportDesk.setSearchQuery}
+            statusFilter={supportDesk.statusFilter}
+            onStatusFilterChange={supportDesk.setStatusFilter}
+            onRefresh={supportDesk.refresh}
+            onAssignToSelf={supportDesk.assignToSelf}
+            onEscalate={supportDesk.escalate}
+            onResolve={supportDesk.resolve}
+            agents={supportDesk.agents}
+            loadingAgents={supportDesk.loadingAgents}
+            togglingAvailability={supportDesk.togglingAvailability}
+            onToggleMyAvailability={supportDesk.toggleMyAvailability}
           />
         )}
 

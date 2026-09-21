@@ -71,7 +71,7 @@ export const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
               <Link to="/login" className="px-4 py-2 text-xs font-bold text-slate-700 hover:text-red-600 transition-colors">
                 Sign In
               </Link>
-              <Link to="/register" className="px-4.5 py-2 text-xs font-bold rounded-xl bg-red-600 hover:bg-red-700 text-white shadow-md shadow-red-600/20 transition-all">
+              <Link to="/register" className="px-5 py-2 text-xs font-bold rounded-xl bg-red-600 hover:bg-red-700 text-white shadow-md shadow-red-600/20 transition-all">
                 Start Free Trial
               </Link>
             </div>

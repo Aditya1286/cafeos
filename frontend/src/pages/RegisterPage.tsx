@@ -50,7 +50,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
-  const otp = useOtpVerification(formData.phone);
+  const otp = useOtpVerification(formData.phone, 'register-otp-captcha-container');
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -342,9 +342,11 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
                       </span>
                     )}
 
+                    <div id="register-otp-captcha-container" className="mt-2" />
+
                     {/* Staging-only: backend echoes the OTP back instead of sending a real
                         SMS, so testers don't need a phone to complete the flow. Never
-                        appears against the production OTP provider. */}
+                        appears against the live MSG91 widget. */}
                     {otp.devOtp && (
                       <div className="mt-2 flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-amber-50 border border-dashed border-amber-300">
                         <span className="flex items-center gap-1.5 text-[10px] font-extrabold text-amber-700">

@@ -211,6 +211,18 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
     }
   };
 
+  // Manual override for a stuck "Occupied" indicator — force-clears the table's status
+  // without touching whatever order (if any) still points at it.
+  const handleMarkTableEmpty = async (tableId: string) => {
+    try {
+      const res = await apiRequest(`/tables/${tableId}/mark-empty`, 'PUT');
+      setTables(prev => prev.map(t => (t._id === tableId ? { ...t, status: res.data.status } : t)));
+      toast.success(res.message || 'Table marked as empty');
+    } catch (err: any) {
+      toast.error(err.message || 'Could not update table');
+    }
+  };
+
   const handleDeleteTable = async (tableId: string) => {
     try {
       await apiRequest(`/tables/${tableId}`, 'DELETE');
@@ -274,7 +286,7 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
     handleConfirmPayment,
     savingUpiVpa, handleSaveUpiVpa,
     savingTablesEnabled, handleToggleTablesEnabled,
-    handleToggleTableActive, handleDeleteTable,
+    handleToggleTableActive, handleDeleteTable, handleMarkTableEmpty,
     handleRemoveProduct, handleRestoreProduct, handleDeleteProduct,
   };
 };
