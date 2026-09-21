@@ -10,6 +10,15 @@ COPY package*.json ./
 RUN npm ci
 
 COPY . .
+
+# .dockerignore deliberately excludes .env from this build context, so these two MSG91
+# widget values (see src/services/msg91Widget.ts) have to come in as build args instead —
+# passed from docker-compose.yml's frontend.build.args, sourced from the repo-root .env.
+ARG VITE_MSG91_WIDGET_ID
+ARG VITE_MSG91_WIDGET_TOKEN
+ENV VITE_MSG91_WIDGET_ID=$VITE_MSG91_WIDGET_ID
+ENV VITE_MSG91_WIDGET_TOKEN=$VITE_MSG91_WIDGET_TOKEN
+
 RUN npm run build
 
 FROM nginx:alpine AS runner

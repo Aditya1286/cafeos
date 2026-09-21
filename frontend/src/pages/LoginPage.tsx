@@ -4,7 +4,8 @@ import {
   Coffee, Shield, UtensilsCrossed, ArrowRight, Lock, Mail, 
   Eye, EyeOff, CheckCircle2, Sparkles, Zap, Layers, UserCheck
 } from 'lucide-react';
-import { apiRequest, setAuthToken } from '../services/api';
+import { setAuthToken } from '../services/api';
+import authService from '../services/auth';
 import { toast } from '../utils/toast';
 import { APP_NAME, APP_SLUG } from '../constants/app';
 
@@ -57,7 +58,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
     setError(null);
 
     try {
-      const res = await apiRequest('/auth/login', 'POST', { email, password });
+      const res = await authService.login(email, password);
       setAuthToken(res.data.token);
       onLoginSuccess(res.data);
       if (res.data.user.role === 'SUPER_ADMIN') {
@@ -79,7 +80,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
     setError(null);
 
     try {
-      const res = await apiRequest('/auth/login', 'POST', { email: demoEmail, password: 'password123' });
+      const res = await authService.login(demoEmail, 'password123');
       setAuthToken(res.data.token);
       onLoginSuccess(res.data);
       if (res.data.user.role === 'SUPER_ADMIN') {

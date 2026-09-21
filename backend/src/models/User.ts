@@ -18,6 +18,7 @@ export interface IUser extends Document {
   role: UserRole;
   businessId?: mongoose.Types.ObjectId;
   status: 'ACTIVE' | 'INACTIVE';
+  isAvailableForCalls: boolean; // SUPER_ADMIN only — self-toggled support-call availability
   comparePassword(candidatePassword: string): Promise<boolean>;
   createdAt: Date;
   updatedAt: Date;
@@ -35,12 +36,15 @@ const UserSchema = new Schema<IUser>(
       default: 'OWNER' 
     },
     businessId: { type: Schema.Types.ObjectId, ref: 'Business', index: true },
-    status: { type: String, enum: ['ACTIVE', 'INACTIVE'], default: 'ACTIVE' }
+    status: { type: String, enum: ['ACTIVE', 'INACTIVE'], default: 'ACTIVE' },
+    isAvailableForCalls: { type: Boolean, default: true }
   },
   { timestamps: true }
 );
 
 UserSchema.index({ businessId: 1, role: 1 });
+// Support call-routing's lookup for a free SUPER_ADMIN agent.
+UserSchema.index({ role: 1, isAvailableForCalls: 1 });
 
 UserSchema.methods.comparePassword = async function (candidatePassword: string): Promise<boolean> {
   return bcrypt.compare(candidatePassword, this.passwordHash);

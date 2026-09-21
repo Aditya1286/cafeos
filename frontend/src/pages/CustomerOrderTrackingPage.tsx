@@ -3,9 +3,10 @@ import { useParams, Link } from 'react-router-dom';
 import { 
   Coffee, CheckCircle2, Clock, Utensils, Sparkles, Printer, ArrowLeft, ShieldCheck, Check
 } from 'lucide-react';
-import { apiRequest } from '../services/api';
+import publicOrdersService from '../services/public/orders';
 import { getSocket } from '../services/socket';
-import { PaymentPanel } from '../components/payments/PaymentPanel';
+import { PaymentPanel } from '@/organisms/Payments/PaymentPanel';
+import { SupportWidget } from '@/organisms/SupportWidget';
 
 export const CustomerOrderTrackingPage: React.FC = () => {
   const { orderId } = useParams<{ orderId: string }>();
@@ -16,7 +17,7 @@ export const CustomerOrderTrackingPage: React.FC = () => {
   const fetchOrderDetails = async () => {
     try {
       if (!orderId) return;
-      const res = await apiRequest(`/public/orders/${orderId}`);
+      const res = await publicOrdersService.get(orderId);
       setOrder(res.data.order);
       setBusiness(res.data.business);
     } catch (err) {
@@ -215,6 +216,18 @@ export const CustomerOrderTrackingPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {business && order?.businessId && (
+        <SupportWidget
+          mode="CUSTOMER"
+          // orderController.getOrderById returns a hand-curated `business` object with no
+          // _id/id field (it predates this widget) — order.businessId is the one reliable
+          // source for this on this page.
+          businessId={order.businessId}
+          orderId={order?._id}
+          prefill={{ name: order?.customerName, phone: order?.customerPhone }}
+        />
+      )}
     </div>
   );
 };

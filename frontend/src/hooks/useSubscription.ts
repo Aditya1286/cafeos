@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { apiRequest } from '../services/api';
+import subscriptionsService from '../services/dashboard/subscriptions';
 import { toast } from '../utils/toast';
 import { MySubscriptionStatus, SubscriptionPlan } from '../types';
 
@@ -16,8 +16,8 @@ export const useSubscription = (activeTab: string) => {
     try {
       setLoadingSubscription(true);
       const [statusRes, plansRes] = await Promise.all([
-        apiRequest('/subscriptions/status'),
-        apiRequest('/public/plans'),
+        subscriptionsService.getStatus(),
+        subscriptionsService.listPlans(),
       ]);
       setSubscriptionStatus(statusRes.data || null);
       setSubscriptionPlans(plansRes.data || []);
@@ -40,7 +40,7 @@ export const useSubscription = (activeTab: string) => {
   const handleRequestUpgrade = async (planId: string, billingCycle: 'MONTHLY' | 'ANNUAL' = 'MONTHLY') => {
     setRequestingPlanId(planId);
     try {
-      const res = await apiRequest('/subscriptions/upgrade-request', 'POST', { planId, billingCycle });
+      const res = await subscriptionsService.requestUpgrade(planId, billingCycle);
       toast.success(res.message || 'Upgrade requested');
       await fetchSubscriptionStatus();
     } catch (err: any) {
@@ -55,7 +55,7 @@ export const useSubscription = (activeTab: string) => {
   const handleMarkUpgradePaid = async (utr?: string) => {
     setMarkingUpgradePaid(true);
     try {
-      await apiRequest('/subscriptions/upgrade-request/mark-paid', 'PUT', { utr });
+      await subscriptionsService.markUpgradePaid(utr);
       await fetchSubscriptionStatus();
       toast.success("Thanks — we'll confirm receipt and activate your plan shortly.");
     } catch (err: any) {
@@ -68,7 +68,7 @@ export const useSubscription = (activeTab: string) => {
   const handleCancelUpgrade = async () => {
     setCancellingUpgrade(true);
     try {
-      await apiRequest('/subscriptions/upgrade-request', 'DELETE');
+      await subscriptionsService.cancelUpgrade();
       await fetchSubscriptionStatus();
       toast.success('Upgrade request cancelled');
     } catch (err: any) {

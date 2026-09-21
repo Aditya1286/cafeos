@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { apiRequest } from '../services/api';
+import superAdminAnalyticsService from '../services/superAdmin/analytics';
 import { AdminBusinessInsights } from '../types';
 
 /** Repeat-customer rate, true item margins, and real kitchen speed for one business,
@@ -14,7 +14,7 @@ export const useBusinessInsights = (businessId: string | null) => {
       return;
     }
     setLoading(true);
-    apiRequest(`/admin/analytics/business-insights?businessId=${businessId}`)
+    superAdminAnalyticsService.getBusinessInsights(businessId)
       .then((res) => setInsights(res?.data || null))
       .catch(() => setInsights(null))
       .finally(() => setLoading(false));

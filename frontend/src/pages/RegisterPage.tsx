@@ -4,7 +4,8 @@ import {
   Coffee, Shield, UtensilsCrossed, ArrowRight, Lock, Mail,
   User, Phone, Store, Globe, CheckCircle2, Sparkles, Zap, Layers, UserPlus, Eye, EyeOff, Clock
 } from 'lucide-react';
-import { apiRequest, setAuthToken } from '../services/api';
+import { setAuthToken } from '../services/api';
+import authService from '../services/auth';
 import { APP_NAME, APP_SLUG } from '../constants/app';
 import { useOtpVerification } from '../hooks/useOtpVerification';
 import { formatTime } from '../utils/DateUtils';
@@ -50,7 +51,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
-  const otp = useOtpVerification(formData.phone);
+  const otp = useOtpVerification(formData.phone, 'register-otp-captcha-container');
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -80,7 +81,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
     setError(null);
 
     try {
-      const res = await apiRequest('/auth/register', 'POST', formData);
+      const res = await authService.register(formData);
       setAuthToken(res.data.token);
       onRegisterSuccess(res.data);
       navigate('/dashboard');
@@ -342,9 +343,11 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
                       </span>
                     )}
 
+                    <div id="register-otp-captcha-container" className="mt-2" />
+
                     {/* Staging-only: backend echoes the OTP back instead of sending a real
                         SMS, so testers don't need a phone to complete the flow. Never
-                        appears against the production OTP provider. */}
+                        appears against the live MSG91 widget. */}
                     {otp.devOtp && (
                       <div className="mt-2 flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-amber-50 border border-dashed border-amber-300">
                         <span className="flex items-center gap-1.5 text-[10px] font-extrabold text-amber-700">

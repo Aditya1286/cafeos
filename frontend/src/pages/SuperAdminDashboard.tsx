@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { ShieldCheck, RefreshCw } from 'lucide-react';
-import MovingBorderButton from '../components/ui/MovingBorderButton';
-import NavbarAdmin from '../components/ui/NavbarAdmin';
-import CommandPalette from '../components/ui/CommandPalette';
-import ProductDetailSheet from '../components/ui/ProductDetailSheet';
-import BusinessManagementModal from '../components/ui/BusinessManagementModal';
-import BusinessFinanceDrawer from '../components/ui/BusinessFinanceDrawer';
+import MovingBorderButton from '@/atoms/MovingBorderButton';
+import NavbarAdmin from '@/organisms/super-admin/NavbarAdmin';
+import CommandPalette from '@/organisms/super-admin/CommandPalette';
+import ProductDetailSheet from '@/organisms/super-admin/ProductDetailSheet';
+import BusinessManagementModal from '@/organisms/super-admin/BusinessManagementModal';
+import BusinessFinanceDrawer from '@/organisms/super-admin/BusinessFinanceDrawer';
 import { APP_SLUG } from '../constants/app';
 import { toast } from '../utils/toast';
 import { downloadCsv } from '../utils/exportCsv';
@@ -17,26 +17,28 @@ import { useSuperAdminAnalytics } from '../hooks/useSuperAdminAnalytics';
 import { useRemittanceQueue } from '../hooks/useRemittanceQueue';
 import { useSubscriptionRequests } from '../hooks/useSubscriptionRequests';
 
-import { KpiOverviewBento } from '../components/organisms/super-admin/KpiOverviewBento';
-import { RevenueChartPanel } from '../components/organisms/super-admin/RevenueChartPanel';
-import { LiveOrdersPanel } from '../components/organisms/super-admin/LiveOrdersPanel';
-import { BusinessConstellation } from '../components/organisms/super-admin/BusinessConstellation';
-import { BusinessSpotlightModal } from '../components/organisms/super-admin/BusinessSpotlightModal';
-import { CancellationRatePanel } from '../components/organisms/super-admin/CancellationRatePanel';
-import { BestSellersPanel } from '../components/organisms/super-admin/BestSellersPanel';
-import { PlatformInsightsPanel } from '../components/organisms/super-admin/PlatformInsightsPanel';
-import { BusinessHourlyHeatmapPanel } from '../components/organisms/super-admin/BusinessHourlyHeatmapPanel';
-import { BusinessesManagementTable } from '../components/organisms/super-admin/BusinessesManagementTable';
-import { BusinessesGridPanel } from '../components/organisms/super-admin/BusinessesGridPanel';
-import { RemittanceQueueTable } from '../components/organisms/super-admin/RemittanceQueueTable';
-import { PlatformAnalyticsPanel } from '../components/organisms/super-admin/PlatformAnalyticsPanel';
-import { GlobalKitchenMonitor } from '../components/organisms/super-admin/GlobalKitchenMonitor';
-import { SubscriptionPlansPanel } from '../components/organisms/super-admin/SubscriptionPlansPanel';
-import { SubscriptionRequestsQueue } from '../components/organisms/super-admin/SubscriptionRequestsQueue';
-import { SystemHealthPanel } from '../components/organisms/super-admin/SystemHealthPanel';
-import { AdminRefundsPanel } from '../components/organisms/super-admin/AdminRefundsPanel';
-import { RefundHistoryModal } from '../components/molecules/RefundHistoryModal';
+import { KpiOverviewBento } from '@/organisms/super-admin/KpiOverviewBento';
+import { RevenueChartPanel } from '@/organisms/super-admin/RevenueChartPanel';
+import { LiveOrdersPanel } from '@/organisms/super-admin/LiveOrdersPanel';
+import { BusinessConstellation } from '@/organisms/super-admin/BusinessConstellation';
+import { BusinessSpotlightModal } from '@/organisms/super-admin/BusinessSpotlightModal';
+import { CancellationRatePanel } from '@/organisms/super-admin/CancellationRatePanel';
+import { BestSellersPanel } from '@/organisms/super-admin/BestSellersPanel';
+import { PlatformInsightsPanel } from '@/organisms/super-admin/PlatformInsightsPanel';
+import { BusinessHourlyHeatmapPanel } from '@/organisms/super-admin/BusinessHourlyHeatmapPanel';
+import { BusinessesManagementTable } from '@/organisms/super-admin/BusinessesManagementTable';
+import { BusinessesGridPanel } from '@/organisms/super-admin/BusinessesGridPanel';
+import { RemittanceQueueTable } from '@/organisms/super-admin/RemittanceQueueTable';
+import { PlatformAnalyticsPanel } from '@/organisms/super-admin/PlatformAnalyticsPanel';
+import { GlobalKitchenMonitor } from '@/organisms/super-admin/GlobalKitchenMonitor';
+import { SubscriptionPlansPanel } from '@/organisms/super-admin/SubscriptionPlansPanel';
+import { SubscriptionRequestsQueue } from '@/organisms/super-admin/SubscriptionRequestsQueue';
+import { SystemHealthPanel } from '@/organisms/super-admin/SystemHealthPanel';
+import { AdminRefundsPanel } from '@/organisms/super-admin/AdminRefundsPanel';
+import { SupportTicketsPanel } from '@/organisms/super-admin/SupportTicketsPanel';
+import { RefundHistoryModal } from '@/molecules/RefundHistoryModal';
 import { useAdminRefunds } from '../hooks/useAdminRefunds';
+import { useSupportDesk } from '../hooks/useSupportDesk';
 
 export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -60,6 +62,7 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
   const remittanceQueue = useRemittanceQueue(activeTab);
   const subscriptionRequestsQueue = useSubscriptionRequests(activeTab);
   const adminRefunds = useAdminRefunds(activeTab === 'refunds');
+  const supportDesk = useSupportDesk(activeTab === 'support');
   const [refundHistoryOrder, setRefundHistoryOrder] = useState<any | null>(null);
 
   const handleExport = (format: 'csv' | 'pdf') => {
@@ -137,6 +140,7 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
         pendingRemittancesCount={remittanceQueue.pendingRemittancesCount}
         pendingSubscriptionRequestsCount={subscriptionRequestsQueue.pendingSubscriptionRequestsCount}
         refundsNeededCount={adminRefunds.insights?.needsRefundCount}
+        openTicketsCount={supportDesk.needsAttentionCount}
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
@@ -249,6 +253,29 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
             onSelectBusiness={adminRefunds.setBusinessId}
             onRefresh={adminRefunds.refresh}
             onViewHistory={setRefundHistoryOrder}
+          />
+        )}
+
+        {activeTab === 'support' && (
+          <SupportTicketsPanel
+            currentUserId={user?.id}
+            tickets={supportDesk.tickets}
+            loading={supportDesk.loading}
+            pagination={supportDesk.pagination}
+            onPageChange={(page) => supportDesk.setPagination(prev => ({ ...prev, page }))}
+            onPageSizeChange={(limit) => supportDesk.setPagination(prev => ({ ...prev, limit, page: 1 }))}
+            searchQuery={supportDesk.searchQuery}
+            onSearchChange={supportDesk.setSearchQuery}
+            statusFilter={supportDesk.statusFilter}
+            onStatusFilterChange={supportDesk.setStatusFilter}
+            onRefresh={supportDesk.refresh}
+            onAssignToSelf={supportDesk.assignToSelf}
+            onEscalate={supportDesk.escalate}
+            onResolve={supportDesk.resolve}
+            agents={supportDesk.agents}
+            loadingAgents={supportDesk.loadingAgents}
+            togglingAvailability={supportDesk.togglingAvailability}
+            onToggleMyAvailability={supportDesk.toggleMyAvailability}
           />
         )}
 

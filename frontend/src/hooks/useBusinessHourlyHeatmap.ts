@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { apiRequest } from '../services/api';
+import superAdminAnalyticsService from '../services/superAdmin/analytics';
 import { BusinessHourlyHeatmap } from '../types';
 
 /** Day-of-week x hour-of-day revenue heatmap for a single business (last 90 days). */
@@ -13,7 +13,7 @@ export const useBusinessHourlyHeatmap = (businessId: string | null) => {
       return;
     }
     setLoading(true);
-    apiRequest(`/admin/analytics/business-heatmap?businessId=${businessId}`)
+    superAdminAnalyticsService.getBusinessHeatmap(businessId)
       .then((res) => setHeatmap(res?.data || null))
       .catch(() => setHeatmap(null))
       .finally(() => setLoading(false));

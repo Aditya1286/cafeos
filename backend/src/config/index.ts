@@ -40,11 +40,15 @@ nconf.defaults({
   JWT_EXPIRES_IN: '7d',
   FRONTEND_URL: 'http://localhost:5173',
   PAYMENT_WEBHOOK_SECRET: `whsec_${APP_SLUG}_mock_secret`,
+  // Server-side only — used solely to validate the MSG91 OTP Widget's access token
+  // (see otp.service.ts). The widget itself is configured client-side with a separate,
+  // restricted widget token (VITE_MSG91_WIDGET_TOKEN), never this key.
   AUTH_KEY: '570575TJIuw946StnY6aa5763eP1',
-  // 'mock' skips the real SMS provider and returns the OTP in the API response so
-  // staging/QA can self-serve without burning SMS credits. Defaults to mock everywhere
-  // except production; set OTP_MODE=live (env, or in a config.<env>.json) to force real
-  // MSG91 sends (e.g. for a pre-prod staging env that wants to test the real integration).
+  // 'mock' bypasses the MSG91 widget entirely and echoes the OTP back in the API response,
+  // so local dev/debugging works without widget credentials or spending SMS credits.
+  // Defaults to mock everywhere except production; set OTP_MODE=live (env, or in a
+  // config.<env>.json) to force the real widget on somewhere other than prod (e.g. a
+  // pre-prod staging env that wants to test the real integration).
   OTP_MODE: env === 'production' ? 'live' : 'mock',
   // Platform's own UPI ID — where businesses pay their commission dues. Distinct from any
   // business's own upiVpa (that one collects customer payments, this one collects ours).
@@ -85,7 +89,6 @@ export const config = {
   frontendUrl: nconf.get('FRONTEND_URL'),
   paymentWebhookSecret: nconf.get('PAYMENT_WEBHOOK_SECRET'),
   msg91AuthKey: nconf.get('AUTH_KEY'),
-  msg91TemplateId: nconf.get('TEMPLATE_ID'),
   otpMode: nconf.get('OTP_MODE') as 'mock' | 'live',
   platformUpiVpa: nconf.get('PLATFORM_UPI_VPA'),
   platformPayeeName: nconf.get('PLATFORM_PAYEE_NAME')

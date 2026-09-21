@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { apiRequest } from '../services/api';
+import systemHealthService from '../services/superAdmin/systemHealth';
 import { SystemHealth } from '../types';
 
 const POLL_INTERVAL_MS = 10_000;
@@ -16,7 +16,7 @@ export const useSystemHealth = (enabled: boolean) => {
     let cancelled = false;
     const fetchHealth = async () => {
       try {
-        const res = await apiRequest('/admin/system/health');
+        const res = await systemHealthService.get();
         if (!cancelled && res?.data) setSystemHealth(res.data);
       } catch (err) {
         console.error('Failed to fetch system health:', err);

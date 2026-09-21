@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { apiRequest } from '../services/api';
+import superAdminAnalyticsService from '../services/superAdmin/analytics';
+import businessesService from '../services/superAdmin/businesses';
 import { getSocket } from '../services/socket';
 import { toast } from '../utils/toast';
 import { SuperAdminOverview, AdminBusinessSummary } from '../types';
@@ -21,14 +22,14 @@ export const useSuperAdminDashboardData = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const overviewRes = await apiRequest('/admin/overview').catch(() => null);
+      const overviewRes = await superAdminAnalyticsService.getOverview().catch(() => null);
       if (overviewRes?.data) {
         setOverview(overviewRes.data);
         if (overviewRes.data.recentOrders?.length > 0) {
           setLiveOrders(overviewRes.data.recentOrders);
         }
       }
-      const businessesRes = await apiRequest('/admin/businesses').catch(() => null);
+      const businessesRes = await businessesService.list().catch(() => null);
       if (businessesRes?.data) setBusinesses(businessesRes.data);
     } catch (err) {
       console.error('Error fetching admin data:', err);
@@ -57,7 +58,7 @@ export const useSuperAdminDashboardData = () => {
 
   const handleToggleBusinessStatus = async (businessId: string, targetStatus: string) => {
     try {
-      await apiRequest(`/admin/businesses/${businessId}/status`, 'PUT', { status: targetStatus });
+      await businessesService.updateStatus(businessId, targetStatus);
       toast.success(`Business status updated to ${targetStatus}`);
       fetchDashboardData();
     } catch (err: any) {
@@ -67,7 +68,7 @@ export const useSuperAdminDashboardData = () => {
 
   const handleChangeBusinessPlan = async (businessId: string, planId: string) => {
     try {
-      const res = await apiRequest(`/admin/businesses/${businessId}/plan`, 'PUT', { planId });
+      const res = await businessesService.updatePlan(businessId, planId);
       toast.success(res.message || 'Plan updated');
       fetchDashboardData();
     } catch (err: any) {

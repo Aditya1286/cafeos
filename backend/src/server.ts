@@ -27,6 +27,7 @@ import adminRoutes from './routes/adminRoutes';
 import publicRoutes from './routes/publicRoutes';
 import businessRoutes from './routes/businessRoutes';
 import subscriptionRoutes from './routes/subscriptionRoutes';
+import supportRoutes from './routes/supportRoutes';
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -74,6 +75,7 @@ app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/public', publicRoutes);
 app.use('/api/v1/business', businessRoutes);
 app.use('/api/v1/subscriptions', subscriptionRoutes);
+app.use('/api/v1/support', supportRoutes);
 
 // Health Check
 app.get('/health', (req, res) => {

@@ -11,6 +11,7 @@ import { FinancialLedger } from '../models/FinancialLedger';
 import { emitToBusiness, emitToOrder } from '../websocket/socketManager';
 import { generateDailyOrderId } from '../utils/orderSequence';
 import { computeRefundInsights } from '../services/refundInsights.service';
+import { isPhoneOrderVerified, touchPhoneOrderVerification } from '../services/otp.service';
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -69,6 +70,19 @@ export const createOrder = async (req: Request, res: Response) => {
           data: existingOrder
         });
       }
+    }
+
+    // The frontend gates order submission on completing phone OTP verification, but that's
+    // only a UI convenience — without this, anyone could POST here directly and place orders
+    // under any phone number without ever verifying it. isPhoneOrderVerified checks the
+    // long-lived, reusable record otp.service sets on a successful /otp/verify call for this
+    // exact phone (see touchPhoneOrderVerification below, which slides that window forward on
+    // every order so a repeat customer doesn't need to re-verify).
+    if (!isPhoneOrderVerified(customerPhone)) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'PHONE_NOT_VERIFIED', message: 'Please verify your phone number with the OTP sent to it before placing an order.' }
+      });
     }
 
     // 2. Resolve Table (if provided) & Business
@@ -254,6 +268,8 @@ export const createOrder = async (req: Request, res: Response) => {
       paymentMethod: order.paymentMethod,
       createdAt: order.createdAt
     });
+
+    touchPhoneOrderVerification(customerPhone);
 
     return res.status(201).json({
       success: true,

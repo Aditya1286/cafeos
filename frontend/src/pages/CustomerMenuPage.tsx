@@ -16,12 +16,16 @@ import {
   Star,
   MapPin,
   ShieldCheck,
+  LayoutGrid,
+  ChevronDown,
 } from 'lucide-react';
-import { apiRequest } from '../services/api';
+import publicMenuService from '../services/public/menu';
+import publicOrdersService from '../services/public/orders';
 import confetti from 'canvas-confetti';
 import { useOtpVerification } from '@/hooks/useOtpVerification';
 import { formatTime } from '@/utils/DateUtils';
 import { toast } from '@/utils/toast';
+import { SupportWidget } from '@/organisms/SupportWidget';
 
 export const CustomerMenuPage: React.FC = () => {
   const { slug, qrToken } = useParams<{ slug: string; qrToken?: string }>();
@@ -32,6 +36,7 @@ export const CustomerMenuPage: React.FC = () => {
   const [categories, setCategories] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
+  const [showCategorySheet, setShowCategorySheet] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isVegOnly, setIsVegOnly] = useState(false);
 
@@ -47,26 +52,25 @@ export const CustomerMenuPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   //Adding custom otp handler
-  const otp = useOtpVerification(customerPhone);
+  const otp = useOtpVerification(customerPhone, 'otp-captcha-container');
 
   useEffect(() => {
     const fetchBusinessAndMenu = async () => {
       try {
         if (qrToken) {
-          const tblRes = await apiRequest(`/public/t/${qrToken}`);
+          const tblRes = await publicMenuService.getTableByToken(qrToken);
           setTable(tblRes.data.table);
           setBusiness(tblRes.data.business);
 
-          const menuRes = await apiRequest(
-            `/public/c/${tblRes.data.business.id || tblRes.data.business._id}/menu`,
-          );
+          const businessData: any = tblRes.data.business;
+          const menuRes = await publicMenuService.getMenu(businessData.id || businessData._id);
           setCategories(menuRes.data.categories || []);
           setProducts(menuRes.data.products || []);
         } else if (slug) {
-          const businessRes = await apiRequest(`/public/c/${slug}`);
+          const businessRes = await publicMenuService.getBusinessBySlug(slug);
           setBusiness(businessRes.data);
 
-          const menuRes = await apiRequest(`/public/c/${businessRes.data._id}/menu`);
+          const menuRes = await publicMenuService.getMenu((businessRes.data as any)._id || businessRes.data.id);
           setCategories(menuRes.data.categories || []);
           setProducts(menuRes.data.products || []);
         }
@@ -145,7 +149,7 @@ export const CustomerMenuPage: React.FC = () => {
         payload.businessSlug = business?.slug;
       }
 
-      const res = await apiRequest('/public/orders', 'POST', payload);
+      const res = await publicOrdersService.create(payload as any);
 
       try {
         confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
@@ -255,32 +259,23 @@ export const CustomerMenuPage: React.FC = () => {
           </button>
         </div>
 
-        {/* Categories Horizontal Capsule Scroll Bar */}
-        <div className="flex items-center gap-2 overflow-x-auto scrollbar-none pb-0.5">
-          <button
-            onClick={() => setSelectedCategory('ALL')}
-            className={`px-4 py-2 rounded-2xl text-xs font-extrabold whitespace-nowrap transition-all ${
-              selectedCategory === 'ALL'
-                ? 'bg-slate-900 text-white shadow-md'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-            }`}
-          >
-            All Items ({products.length})
-          </button>
-          {categories.map((cat) => (
-            <button
-              key={cat._id}
-              onClick={() => setSelectedCategory(cat._id)}
-              className={`px-4 py-2 rounded-2xl text-xs font-extrabold whitespace-nowrap transition-all ${
-                selectedCategory === cat._id
-                  ? 'bg-orange-500 text-white shadow-md shadow-orange-500/25'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
-            >
-              {cat.name}
-            </button>
-          ))}
-        </div>
+        {/* Category filter — a single trigger opens a full picker sheet instead of a
+            horizontal scroll list, so this sticky header never has to grow or hide
+            categories off-screen no matter how many a business has. */}
+        <button
+          onClick={() => setShowCategorySheet(true)}
+          className="w-full flex items-center justify-between gap-2 px-4 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-xs font-extrabold text-slate-700 transition-all"
+        >
+          <span className="flex items-center gap-2 truncate">
+            <LayoutGrid className="w-3.5 h-3.5 text-orange-500 shrink-0" />
+            <span className="truncate">
+              {selectedCategory === 'ALL'
+                ? `All Items (${products.length})`
+                : categories.find((c) => c._id === selectedCategory)?.name || 'All Items'}
+            </span>
+          </span>
+          <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+        </button>
       </div>
 
       {/* ── Product List (Swiggy / Zomato Style) ────────────────────────── */}
@@ -404,6 +399,64 @@ export const CustomerMenuPage: React.FC = () => {
         </div>
       )}
 
+      {/* ── Category Picker Sheet ────────────────────────────────────────── */}
+      {showCategorySheet && (
+        <div
+          className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-end justify-center"
+          onClick={() => setShowCategorySheet(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-md bg-white rounded-t-3xl shadow-2xl border-t border-slate-200 p-6 space-y-4 max-h-[75vh] overflow-y-auto animate-in slide-in-from-bottom duration-300"
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 className="text-base font-black text-slate-900">Choose a Category</h3>
+              <button
+                onClick={() => setShowCategorySheet(false)}
+                className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2.5">
+              <button
+                onClick={() => { setSelectedCategory('ALL'); setShowCategorySheet(false); }}
+                className={`px-4 py-3.5 rounded-2xl text-xs font-extrabold text-left transition-all ${
+                  selectedCategory === 'ALL'
+                    ? 'bg-slate-900 text-white shadow-md'
+                    : 'bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                All Items
+                <div className={`text-[10px] font-semibold mt-0.5 ${selectedCategory === 'ALL' ? 'text-slate-300' : 'text-slate-400'}`}>
+                  {products.length} items
+                </div>
+              </button>
+              {categories.map((cat) => {
+                const count = products.filter((p) => p.categoryId === cat._id).length;
+                return (
+                  <button
+                    key={cat._id}
+                    onClick={() => { setSelectedCategory(cat._id); setShowCategorySheet(false); }}
+                    className={`px-4 py-3.5 rounded-2xl text-xs font-extrabold text-left transition-all ${
+                      selectedCategory === cat._id
+                        ? 'bg-orange-500 text-white shadow-md shadow-orange-500/25'
+                        : 'bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100'
+                    }`}
+                  >
+                    {cat.name}
+                    <div className={`text-[10px] font-semibold mt-0.5 ${selectedCategory === cat._id ? 'text-orange-100' : 'text-slate-400'}`}>
+                      {count} items
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Checkout Drawer Sheet ────────────────────────────────────────── */}
       {showCheckoutDrawer && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-end justify-center">
@@ -517,9 +570,11 @@ export const CustomerMenuPage: React.FC = () => {
                   )}
                 </div>
 
+                <div id="otp-captcha-container" className="mt-2" />
+
                 {/* Staging-only: backend echoes the OTP back instead of sending a
                     real SMS, so testers don't need a phone to complete the flow.
-                    This never appears against the production OTP provider. */}
+                    This never appears against the live MSG91 widget. */}
                 {otp.devOtp && (
                   <div className="mt-2 flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-amber-50 border border-dashed border-amber-300 animate-in fade-in slide-in-from-top-1 duration-200">
                     <span className="flex items-center gap-1.5 text-[10px] font-extrabold text-amber-700">
@@ -613,6 +668,8 @@ export const CustomerMenuPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {business && <SupportWidget mode="CUSTOMER" businessId={business.id || business._id} />}
     </div>
   );
 };

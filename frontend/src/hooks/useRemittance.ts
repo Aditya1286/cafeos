@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { apiRequest } from '../services/api';
+import remittanceService from '../services/dashboard/remittance';
 import { toast } from '../utils/toast';
 
 /** Fetches the financial ledger / remittance summary once, the first time the ledger tab becomes active. */
@@ -11,7 +11,7 @@ export const useRemittance = (activeTab: string) => {
   const fetchRemittanceSummary = async () => {
     try {
       setLoadingRemittance(true);
-      const res = await apiRequest('/payments/remittances');
+      const res = await remittanceService.getSummary();
       setRemittanceSummary(res.data || null);
     } catch (err) {
       console.error('Failed to fetch remittance summary:', err);
@@ -33,7 +33,7 @@ export const useRemittance = (activeTab: string) => {
   const handleMarkRemittancePaid = async (utr?: string) => {
     setMarkingPaid(true);
     try {
-      await apiRequest('/payments/remittances/mark-paid', 'PUT', { utr });
+      await remittanceService.markPaid(utr);
       await fetchRemittanceSummary();
       toast.success('Thanks — we\'ll confirm receipt and update your ledger shortly.');
     } catch (err: any) {

@@ -361,7 +361,7 @@ export const seedDatabase = async (forceClean: boolean = false) => {
     // Business 2 Tables
     const tbls2 = await Table.create([
       { businessId: business2._id, tableNumber: 'Table 01', capacity: 2, qrToken: 'tok_bean_tbl_01', status: 'AVAILABLE' },
-      { businessId: business2._id, tableNumber: 'Table 02', capacity: 4, qrToken: 'tok_bean_tbl_02', status: 'OCCUPIED' }
+      { businessId: business2._id, tableNumber: 'Table 02', capacity: 4, qrToken: 'tok_bean_tbl_02', status: 'AVAILABLE' }
     ]);
 
     // Business 2 Orders
@@ -489,7 +489,7 @@ export const seedDatabase = async (forceClean: boolean = false) => {
     // Business 3 Tables & Orders
     const tbls3 = await Table.create([
       { businessId: business3._id, tableNumber: 'Table 01', capacity: 4, qrToken: 'tok_verde_tbl_01', status: 'AVAILABLE' },
-      { businessId: business3._id, tableNumber: 'Table 02', capacity: 6, qrToken: 'tok_verde_tbl_02', status: 'OCCUPIED' }
+      { businessId: business3._id, tableNumber: 'Table 02', capacity: 6, qrToken: 'tok_verde_tbl_02', status: 'AVAILABLE' }
     ]);
 
     const order3_1 = await Order.create({

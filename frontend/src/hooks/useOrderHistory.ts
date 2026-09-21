@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { apiRequest } from '../services/api';
+import ordersService from '../services/dashboard/orders';
 
 export interface OrderHistoryFilters {
   query: string;
@@ -9,25 +9,20 @@ export interface OrderHistoryFilters {
   dateFilter: 'ALL' | 'TODAY' | 'YESTERDAY' | '7DAYS';
 }
 
-const buildHistoryUrl = (filters: OrderHistoryFilters, page: number, limit: number) => {
-  let url = `/orders?page=${page}&limit=${limit}`;
-  if (filters.query) url += `&q=${encodeURIComponent(filters.query)}`;
-  if (filters.status !== 'ALL') url += `&status=${filters.status}`;
-  if (filters.paymentStatus !== 'ALL') url += `&paymentStatus=${filters.paymentStatus}`;
-  if (filters.paymentMethod !== 'ALL') url += `&paymentMethod=${filters.paymentMethod}`;
-
-  if (filters.dateFilter === 'TODAY') {
+/** Turns the dropdown's date-filter enum into the concrete startDate/endDate the API expects. */
+const dateRangeFor = (dateFilter: OrderHistoryFilters['dateFilter']): { startDate?: string; endDate?: string } => {
+  if (dateFilter === 'TODAY') {
     const todayStr = new Date().toISOString().split('T')[0];
-    url += `&startDate=${todayStr}T00:00:00.000Z`;
-  } else if (filters.dateFilter === 'YESTERDAY') {
-    const yest = new Date(Date.now() - 86400000);
-    const yestStr = yest.toISOString().split('T')[0];
-    url += `&startDate=${yestStr}T00:00:00.000Z&endDate=${yestStr}T23:59:59.999Z`;
-  } else if (filters.dateFilter === '7DAYS') {
-    const d = new Date(Date.now() - 7 * 86400000);
-    url += `&startDate=${d.toISOString()}`;
+    return { startDate: `${todayStr}T00:00:00.000Z` };
   }
-  return url;
+  if (dateFilter === 'YESTERDAY') {
+    const yestStr = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    return { startDate: `${yestStr}T00:00:00.000Z`, endDate: `${yestStr}T23:59:59.999Z` };
+  }
+  if (dateFilter === '7DAYS') {
+    return { startDate: new Date(Date.now() - 7 * 86400000).toISOString() };
+  }
+  return {};
 };
 
 /** Search, filter, and paginate the order history table — the search box is debounced 300ms. */
@@ -50,12 +45,15 @@ export const useOrderHistory = (enabled: boolean) => {
   const fetchOrderHistory = async () => {
     try {
       setLoadingHistory(true);
-      const url = buildHistoryUrl(
-        { query: debouncedQuery, status: selectedStatusFilter, paymentStatus: selectedPaymentFilter, paymentMethod: selectedMethodFilter, dateFilter: selectedDateFilter },
-        pagination.page,
-        pagination.limit
-      );
-      const res = await apiRequest(url);
+      const res = await ordersService.search({
+        page: pagination.page,
+        limit: pagination.limit,
+        q: debouncedQuery || undefined,
+        status: selectedStatusFilter !== 'ALL' ? selectedStatusFilter : undefined,
+        paymentStatus: selectedPaymentFilter !== 'ALL' ? selectedPaymentFilter : undefined,
+        paymentMethod: selectedMethodFilter !== 'ALL' ? selectedMethodFilter : undefined,
+        ...dateRangeFor(selectedDateFilter)
+      });
       if (res.success) {
         setOrderHistory(res.data || []);
         if (res.pagination) setPagination(res.pagination);
