@@ -11,7 +11,7 @@ export interface IBusiness extends Document {
   address: string;
   currency: string;
   currencySymbol: string;
-  taxRatePercentage: number; // e.g., 5 for 5% GST
+  taxRatePercentage: number; // 0 = GST disabled (current default); e.g., 5 for 5% GST when re-enabled
   perOrderFeePaise: number; // Legacy flat per-order fee (in paise) — superseded by commissionRatePercentage, kept for historical orders
   commissionRatePercentage: number; // e.g., 3 for 3% platform commission on the pre-tax order value
   remittanceCycleDays: number; // How often the business must remit accrued commission to the platform
@@ -38,7 +38,7 @@ const BusinessSchema = new Schema<IBusiness>(
     address: { type: String, required: true, trim: true },
     currency: { type: String, default: 'INR' },
     currencySymbol: { type: String, default: '₹' },
-    taxRatePercentage: { type: Number, default: 5 },
+    taxRatePercentage: { type: Number, default: 0 },
     perOrderFeePaise: { type: Number, default: 200 }, // ₹2 (legacy, no longer used for new orders)
     commissionRatePercentage: { type: Number, default: 3 },
     remittanceCycleDays: { type: Number, default: 7 },

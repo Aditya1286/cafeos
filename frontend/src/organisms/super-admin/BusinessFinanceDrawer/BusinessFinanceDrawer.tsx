@@ -13,7 +13,7 @@ interface BusinessFinanceDrawerProps {
 }
 
 interface RemittanceSummary {
-  business: { _id: string; name: string; slug: string; commissionRatePercentage: number; remittanceCycleDays: number };
+  business: { _id: string; name: string; slug: string; commissionRatePercentage: number; remittanceCycleDays: number; taxRatePercentage: number };
   cycleDays: number;
   periods: RemittancePeriod[];
   currentPeriod: {
@@ -35,6 +35,7 @@ export const BusinessFinanceDrawer: React.FC<BusinessFinanceDrawerProps> = ({ bu
   const [summary, setSummary] = useState<RemittanceSummary | null>(null);
   const [commissionInput, setCommissionInput] = useState('3');
   const [cycleInput, setCycleInput] = useState('7');
+  const [taxInput, setTaxInput] = useState('0');
   const [savingSettings, setSavingSettings] = useState(false);
 
   const fetchSummary = async () => {
@@ -45,6 +46,7 @@ export const BusinessFinanceDrawer: React.FC<BusinessFinanceDrawerProps> = ({ bu
       setSummary(res.data);
       setCommissionInput(String(res.data.business.commissionRatePercentage ?? 3));
       setCycleInput(String(res.data.business.remittanceCycleDays ?? 7));
+      setTaxInput(String(res.data.business.taxRatePercentage ?? 0));
     } catch (err: any) {
       toast.error(err.message || 'Failed to load business finances');
     } finally {
@@ -63,7 +65,8 @@ export const BusinessFinanceDrawer: React.FC<BusinessFinanceDrawerProps> = ({ bu
     try {
       await businessesService.updateFinanceSettings(businessId, {
         commissionRatePercentage: parseFloat(commissionInput),
-        remittanceCycleDays: parseInt(cycleInput, 10)
+        remittanceCycleDays: parseInt(cycleInput, 10),
+        taxRatePercentage: parseFloat(taxInput)
       });
       toast.success('Finance settings updated');
       await fetchSummary();
@@ -185,6 +188,19 @@ export const BusinessFinanceDrawer: React.FC<BusinessFinanceDrawerProps> = ({ bu
                         min={1}
                         value={cycleInput}
                         onChange={(e) => setCycleInput(e.target.value)}
+                        className="w-28 px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs font-semibold outline-none focus:border-slate-400"
+                      />
+                    </label>
+                    <label className="flex flex-col gap-1">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase">GST / Tax Rate (%)</span>
+                      <input
+                        id="tax-rate-input"
+                        type="number"
+                        min={0}
+                        max={100}
+                        step={0.1}
+                        value={taxInput}
+                        onChange={(e) => setTaxInput(e.target.value)}
                         className="w-28 px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs font-semibold outline-none focus:border-slate-400"
                       />
                     </label>

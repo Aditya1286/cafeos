@@ -65,7 +65,7 @@ export const register = async (req: Request, res: Response) => {
       address: 'Default Business Address, City',
       currency: 'INR',
       currencySymbol: '₹',
-      taxRatePercentage: 5,
+      taxRatePercentage: 0, // GST disabled platform-wide for now; super admin can re-enable per business
       perOrderFeePaise: 200, // ₹2
       status: 'ACTIVE'
     });

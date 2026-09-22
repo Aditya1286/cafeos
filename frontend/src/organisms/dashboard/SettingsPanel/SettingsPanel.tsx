@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Copy, Check, ShieldCheck, QrCode, ExternalLink } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { APP_NAME } from '@/constants/app';
@@ -13,6 +13,8 @@ interface SettingsPanelProps {
   setUpiVpaInput: (v: string) => void;
   savingUpiVpa: boolean;
   onSaveUpiVpa: () => void;
+  savingTaxRate: boolean;
+  onSaveTaxRate: (rate: number) => void;
   publicMenuUrl: string;
   copiedUrl: boolean;
   onCopyMenuUrl: () => void;
@@ -28,10 +30,30 @@ interface SettingsPanelProps {
 }
 
 export const SettingsPanel = ({
-  business, subscription, upiVpaInput, setUpiVpaInput, savingUpiVpa, onSaveUpiVpa, publicMenuUrl, copiedUrl, onCopyMenuUrl,
+  business, subscription, upiVpaInput, setUpiVpaInput, savingUpiVpa, onSaveUpiVpa, savingTaxRate, onSaveTaxRate, publicMenuUrl, copiedUrl, onCopyMenuUrl,
   subscriptionStatus, subscriptionPlans, loadingSubscription, requestingPlanId, markingUpgradePaid, cancellingUpgrade,
   onRequestUpgrade, onMarkUpgradePaid, onCancelUpgrade,
-}: SettingsPanelProps) => (
+}: SettingsPanelProps) => {
+  const taxEnabled = (business?.taxRatePercentage ?? 0) > 0;
+  const [taxRateInput, setTaxRateInput] = useState(String(business?.taxRatePercentage || 5));
+
+  // Keep the input in sync if the business record refreshes (e.g. after a save elsewhere),
+  // but don't fight the user mid-edit — only when it's not the field they're actively saving.
+  useEffect(() => {
+    if (!savingTaxRate) setTaxRateInput(String(business?.taxRatePercentage || 5));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [business?.taxRatePercentage]);
+
+  const handleToggleTax = () => {
+    if (taxEnabled) {
+      onSaveTaxRate(0);
+    } else {
+      const rate = parseFloat(taxRateInput);
+      onSaveTaxRate(Number.isFinite(rate) && rate > 0 ? rate : 5);
+    }
+  };
+
+  return (
   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
     <div className="lg:col-span-2 space-y-6">
@@ -79,9 +101,63 @@ export const SettingsPanel = ({
           </div>
 
           <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
-            <span className="text-[10px] font-extrabold uppercase text-slate-400">GST Tax & Currency</span>
-            <div className="text-xs font-extrabold text-slate-800">{business?.taxRatePercentage ?? 5}% GST · {business?.currency || 'INR'} (₹)</div>
+            <span className="text-[10px] font-extrabold uppercase text-slate-400">Currency</span>
+            <div className="text-xs font-extrabold text-slate-800">{business?.currency || 'INR'} (₹)</div>
           </div>
+        </div>
+
+        <div className="pt-4 border-t border-slate-100 space-y-2">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <label className="text-[10px] font-extrabold uppercase text-slate-400">GST / Tax on Orders</label>
+              <p className="text-[11px] text-slate-400 font-medium mt-0.5">
+                {taxEnabled
+                  ? 'New orders are taxed at the rate below, on top of the item total.'
+                  : 'Currently off — new orders are charged item total only, no tax added.'}
+              </p>
+            </div>
+            <button
+              onClick={handleToggleTax}
+              disabled={savingTaxRate}
+              className={`shrink-0 relative w-14 h-8 rounded-full transition-colors disabled:opacity-50 ${
+                taxEnabled ? 'bg-emerald-500' : 'bg-slate-300'
+              }`}
+              title={taxEnabled ? 'GST enabled — click to disable' : 'GST disabled — click to enable'}
+            >
+              <span
+                className={`absolute top-1 left-1 w-6 h-6 rounded-full bg-white shadow-md transition-transform ${
+                  taxEnabled ? 'translate-x-6' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+
+          {taxEnabled && (
+            <div className="flex gap-2 items-center pt-1">
+              <div className="relative flex-1 max-w-[140px]">
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  step={0.1}
+                  value={taxRateInput}
+                  onChange={(e) => setTaxRateInput(e.target.value)}
+                  className={inputCls}
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">%</span>
+              </div>
+              <button
+                onClick={() => {
+                  const rate = parseFloat(taxRateInput);
+                  if (Number.isFinite(rate) && rate >= 0 && rate <= 100) onSaveTaxRate(rate);
+                }}
+                disabled={savingTaxRate || parseFloat(taxRateInput) === (business?.taxRatePercentage ?? 0)}
+                className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs disabled:opacity-40 transition-all shrink-0"
+              >
+                {savingTaxRate ? 'Saving...' : 'Save Rate'}
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="pt-4 border-t border-slate-100 space-y-2">
@@ -195,6 +271,7 @@ export const SettingsPanel = ({
     </div>
 
   </div>
-);
+  );
+};
 
 export default SettingsPanel;

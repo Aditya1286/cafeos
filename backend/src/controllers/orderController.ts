@@ -195,9 +195,9 @@ export const createOrder = async (req: Request, res: Response) => {
     }
 
     // Calculate Tax & Platform Commission
-    // `?? 5` not `|| 5` — a business legitimately set to 0% GST (exempt / below threshold)
-    // must not get silently taxed at the 5% default just because 0 is falsy.
-    const taxPaise = Math.round((subtotalPaise * (business.taxRatePercentage ?? 5)) / 100);
+    // `?? 0` not `|| 0` — kept nullish-coalescing (not that it matters at 0) so re-enabling
+    // GST for a business is just setting taxRatePercentage back to a nonzero value later.
+    const taxPaise = Math.round((subtotalPaise * (business.taxRatePercentage ?? 0)) / 100);
     // Commission is charged on the pre-tax order value (discountPaise reserved for a future
     // discount feature — always 0 today, included so commission stays correct once one ships).
     const discountPaise = 0;
@@ -940,7 +940,7 @@ export const getOrderBill = async (req: Request, res: Response) => {
           address: business?.address || 'Mumbai, India',
           phone: business?.phone || '+91 9876543210',
           currencySymbol: business?.currencySymbol || '₹',
-          taxRatePercentage: business?.taxRatePercentage ?? 5
+          taxRatePercentage: business?.taxRatePercentage ?? 0
         },
         customer: {
           name: order.customerName,

@@ -68,7 +68,7 @@ export const useOrderHistory = (enabled: boolean) => {
   useEffect(() => {
     if (enabled) fetchOrderHistory();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, debouncedQuery, selectedStatusFilter, selectedPaymentFilter, selectedMethodFilter, selectedDateFilter, pagination.page]);
+  }, [enabled, debouncedQuery, selectedStatusFilter, selectedPaymentFilter, selectedMethodFilter, selectedDateFilter, pagination.page, pagination.limit]);
 
   const patchOrder = (orderId: string, patch: Record<string, any>) => {
     setOrderHistory(prev => prev.map(o => ((o._id === orderId || o.orderId === orderId) ? { ...o, ...patch } : o)));

@@ -215,7 +215,8 @@ export const getBusinessRemittances = async (req: AuthRequest, res: Response) =>
           name: business.name,
           slug: business.slug,
           commissionRatePercentage: business.commissionRatePercentage,
-          remittanceCycleDays: business.remittanceCycleDays
+          remittanceCycleDays: business.remittanceCycleDays,
+          taxRatePercentage: business.taxRatePercentage
         },
         ...summary
       }
@@ -325,7 +326,7 @@ export const getAllRemittanceRequests = async (req: AuthRequest, res: Response) 
 export const updateBusinessFinanceSettings = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const { commissionRatePercentage, remittanceCycleDays } = req.body;
+    const { commissionRatePercentage, remittanceCycleDays, taxRatePercentage } = req.body;
 
     const business = await Business.findById(id);
     if (!business) {
@@ -337,6 +338,14 @@ export const updateBusinessFinanceSettings = async (req: AuthRequest, res: Respo
         return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'commissionRatePercentage must be a number between 0 and 100.' } });
       }
       business.commissionRatePercentage = commissionRatePercentage;
+    }
+    // 0 = GST disabled for this business (the current platform-wide default) — any nonzero
+    // value re-enables it, applied to every new order placed from that point on.
+    if (taxRatePercentage !== undefined) {
+      if (typeof taxRatePercentage !== 'number' || taxRatePercentage < 0 || taxRatePercentage > 100) {
+        return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'taxRatePercentage must be a number between 0 and 100.' } });
+      }
+      business.taxRatePercentage = taxRatePercentage;
     }
     if (remittanceCycleDays !== undefined) {
       if (typeof remittanceCycleDays !== 'number' || remittanceCycleDays < 1) {

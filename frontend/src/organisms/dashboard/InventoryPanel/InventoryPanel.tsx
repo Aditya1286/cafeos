@@ -1,60 +1,86 @@
 import React from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Package } from 'lucide-react';
 import { formatCurrencyPrecise } from '@/utils/money';
+import { PanelHeader } from '@/molecules/PanelHeader';
+import ResponsiveDataView, { ResponsiveColumn } from '@/molecules/ResponsiveDataView';
+import { NoDataAvailable } from '@/molecules/NoDataAvailable';
+import { StatusBadge } from '@/atoms/StatusBadge';
 
 interface InventoryPanelProps {
   inventoryItems: any[];
   onAddIngredient: () => void;
 }
 
-export const InventoryPanel = ({ inventoryItems, onAddIngredient }: InventoryPanelProps) => (
-  <div className="space-y-6">
-    <div className="flex items-center justify-between">
-      <div>
-        <h2 className="text-lg font-black text-slate-900">Inventory Stock & Automatic BOM</h2>
-        <p className="text-xs text-slate-500 font-medium">Ingredients automatically deduct when kitchen accepts orders</p>
-      </div>
-      <button
-        onClick={onAddIngredient}
-        className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-extrabold text-xs shadow-md shadow-orange-500/20 transition-all"
-      >
-        <Plus className="w-4 h-4" /> Add Ingredient
-      </button>
-    </div>
-
-    <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-      <table className="w-full text-left text-xs">
-        <thead className="bg-slate-50 border-b border-slate-200 text-slate-400 font-black uppercase text-[10px] tracking-wider">
-          <tr>
-            <th className="px-5 py-3.5">Ingredient Name</th>
-            <th className="px-5 py-3.5">Stock</th>
-            <th className="px-5 py-3.5">Unit</th>
-            <th className="px-5 py-3.5">Min Stock Level</th>
-            <th className="px-5 py-3.5">Cost/Unit</th>
-            <th className="px-5 py-3.5">Stock Status</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-100 font-semibold text-slate-700">
-          {inventoryItems.map(item => (
-            <tr key={item._id} className="hover:bg-slate-50/80 transition-colors">
-              <td className="px-5 py-4 font-black text-slate-900">{item.name}</td>
-              <td className="px-5 py-4 text-slate-900 font-bold">{item.currentStock}</td>
-              <td className="px-5 py-4 text-slate-500">{item.unit}</td>
-              <td className="px-5 py-4 text-slate-500">{item.minimumStockLevel}</td>
-              <td className="px-5 py-4">{formatCurrencyPrecise(item.costPerUnitPaise)}</td>
-              <td className="px-5 py-4">
-                <span className={`px-2.5 py-1 rounded-full text-[10px] font-black border ${
-                  item.status === 'IN_STOCK' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'
-                }`}>
-                  {item.status === 'IN_STOCK' ? 'In Stock' : 'Low Stock'}
-                </span>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  </div>
+const StockStatusBadge = ({ item }: { item: any }) => (
+  <StatusBadge tone={item.status === 'IN_STOCK' ? 'success' : 'danger'}>
+    {item.status === 'IN_STOCK' ? 'In Stock' : 'Low Stock'}
+  </StatusBadge>
 );
+
+export const InventoryPanel = ({ inventoryItems, onAddIngredient }: InventoryPanelProps) => {
+  const columns: ResponsiveColumn<any>[] = [
+    { header: 'Ingredient Name', render: (item) => <span className="font-black text-slate-900">{item.name}</span> },
+    { header: 'Stock', render: (item) => <span className="text-slate-900 font-bold">{item.currentStock}</span> },
+    { header: 'Unit', render: (item) => <span className="text-slate-500">{item.unit}</span> },
+    { header: 'Min Stock Level', render: (item) => <span className="text-slate-500">{item.minimumStockLevel}</span> },
+    { header: 'Cost/Unit', render: (item) => formatCurrencyPrecise(item.costPerUnitPaise) },
+    { header: 'Stock Status', render: (item) => <StockStatusBadge item={item} /> },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <PanelHeader
+        icon={Package}
+        title="Inventory Stock & Automatic BOM"
+        subtitle="Ingredients automatically deduct when kitchen accepts orders"
+        actions={
+          <button
+            onClick={onAddIngredient}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-extrabold text-xs shadow-md shadow-orange-500/20 transition-all whitespace-nowrap"
+          >
+            <Plus className="w-4 h-4" /> Add Ingredient
+          </button>
+        }
+      />
+
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+        <ResponsiveDataView
+          data={inventoryItems}
+          keyExtractor={(item) => item._id}
+          columns={columns}
+          emptyState={
+            <NoDataAvailable
+              icon={Package}
+              title="No ingredients tracked yet"
+              message="Add your first ingredient to start tracking stock and automatic BOM deduction."
+            />
+          }
+          renderCard={(item) => (
+            <div className="p-4 space-y-2.5">
+              <div className="flex items-start justify-between gap-3">
+                <span className="font-black text-slate-900 text-sm min-w-0 truncate">{item.name}</span>
+                <StockStatusBadge item={item} />
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-xs">
+                <div>
+                  <div className="text-[10px] font-extrabold uppercase text-slate-400">Stock</div>
+                  <div className="font-bold text-slate-900">{item.currentStock} {item.unit}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] font-extrabold uppercase text-slate-400">Min Level</div>
+                  <div className="font-bold text-slate-700">{item.minimumStockLevel} {item.unit}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] font-extrabold uppercase text-slate-400">Cost/Unit</div>
+                  <div className="font-bold text-slate-700">{formatCurrencyPrecise(item.costPerUnitPaise)}</div>
+                </div>
+              </div>
+            </div>
+          )}
+        />
+      </div>
+    </div>
+  );
+};
 
 export default InventoryPanel;

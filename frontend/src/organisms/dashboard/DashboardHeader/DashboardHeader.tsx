@@ -123,9 +123,11 @@ export const DashboardHeader = ({
           </div>
         </div>
 
-        {/* Desktop: the full tab row — 9 compact pills fit a dashboard-width viewport
-            without wrapping, so this stays a single row and every tab is one click away. */}
-        <div className="hidden md:flex items-center gap-2 py-2.5">
+        {/* Desktop: the full tab row — 9 pills need roughly 1000px to fit without crowding,
+            so this only takes over at `lg`; the 768–1024px band (tablets, split-screen,
+            small laptop windows) still gets the mobile picker below. overflow-x-auto is a
+            safety net in case a longer label set or larger badge count outgrows the row. */}
+        <div className="hidden lg:flex items-center gap-2 py-2.5 overflow-x-auto">
           {TABS.map(tab => {
             const Icon = tab.icon;
             const active = activeTab === tab.id;
@@ -154,10 +156,10 @@ export const DashboardHeader = ({
           })}
         </div>
 
-        {/* Mobile: a compact "current section" trigger instead of a cramped/wrapping tab
-            strip — tap it to open a full picker sheet with every section as a proper tap
-            target, not a squeezed pill. */}
-        <div className="md:hidden py-2.5">
+        {/* Mobile & tablet (below `lg`): a compact "current section" trigger instead of a
+            cramped/wrapping tab strip — tap it to open a full picker sheet with every
+            section as a proper tap target, not a squeezed pill. */}
+        <div className="lg:hidden py-2.5">
           <button
             onClick={() => setShowNavSheet(true)}
             className="w-full flex items-center justify-between gap-2 pl-3 pr-4 py-2.5 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-500/25"
@@ -183,7 +185,7 @@ export const DashboardHeader = ({
           instead of a horizontal scroll or a pile of wrapped pills. */}
       {showNavSheet && (
         <div
-          className="md:hidden fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-end justify-center"
+          className="lg:hidden fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-end justify-center"
           onClick={() => setShowNavSheet(false)}
         >
           <div

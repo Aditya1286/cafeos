@@ -7,7 +7,7 @@ export type UpdateStatusResponse = ApiMessageResponse;
 export type UpdatePlanResponse = ApiMessageResponse;
 
 export interface BusinessRemittanceSummary {
-  business: { _id: string; name: string; slug: string; commissionRatePercentage: number; remittanceCycleDays: number };
+  business: { _id: string; name: string; slug: string; commissionRatePercentage: number; remittanceCycleDays: number; taxRatePercentage: number };
   cycleDays: number;
   periods: RemittancePeriod[];
   currentPeriod: {
@@ -29,6 +29,7 @@ export type GetBusinessRemittancesResponse = ApiResponse<BusinessRemittanceSumma
 export interface FinanceSettingsPayload {
   commissionRatePercentage: number;
   remittanceCycleDays: number;
+  taxRatePercentage: number;
 }
 
 export type UpdateFinanceSettingsResponse = ApiMessageResponse;

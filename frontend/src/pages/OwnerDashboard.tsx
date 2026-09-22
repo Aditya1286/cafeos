@@ -49,6 +49,7 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
     newlyArrivedOrderId, fetchDashboardData,
     handleUpdateOrderStatus, handleBulkUpdateOrderStatus, handleConfirmPayment,
     savingUpiVpa, handleSaveUpiVpa,
+    savingTaxRate, handleSaveTaxRate,
     savingTablesEnabled, handleToggleTablesEnabled, handleToggleTableActive, handleDeleteTable, handleMarkTableEmpty,
     handleRemoveProduct, handleRestoreProduct, handleDeleteProduct,
   } = dashboard;
@@ -341,7 +342,7 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
         onAddItem={handleOpenAddProduct}
       />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-7 space-y-7">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-7 sm:py-7 space-y-7">
         <KpiStatsGrid
           activeOrdersCount={activeOrders.length}
           occupiedTables={occupiedTables}
@@ -451,6 +452,8 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
             setUpiVpaInput={setUpiVpaInput}
             savingUpiVpa={savingUpiVpa}
             onSaveUpiVpa={() => handleSaveUpiVpa(upiVpaInput.trim())}
+            savingTaxRate={savingTaxRate}
+            onSaveTaxRate={handleSaveTaxRate}
             publicMenuUrl={publicMenuUrl}
             copiedUrl={copiedUrl}
             onCopyMenuUrl={copyMenuUrl}

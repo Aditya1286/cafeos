@@ -191,6 +191,20 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
     }
   };
 
+  const [savingTaxRate, setSavingTaxRate] = useState(false);
+  const handleSaveTaxRate = async (taxRatePercentage: number) => {
+    setSavingTaxRate(true);
+    try {
+      await businessService.updateSettings({ taxRatePercentage });
+      setBusiness((prev: any) => (prev ? { ...prev, taxRatePercentage } : prev));
+      toast.success(taxRatePercentage > 0 ? `GST enabled at ${taxRatePercentage}%` : 'GST disabled — new orders won\'t be taxed');
+    } catch (err: any) {
+      toast.error(err.message || 'Could not update GST setting');
+    } finally {
+      setSavingTaxRate(false);
+    }
+  };
+
   const [savingTablesEnabled, setSavingTablesEnabled] = useState(false);
   const handleToggleTablesEnabled = async () => {
     const next = !(business?.tablesEnabled ?? true);
@@ -291,6 +305,7 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
     handleBulkUpdateOrderStatus,
     handleConfirmPayment,
     savingUpiVpa, handleSaveUpiVpa,
+    savingTaxRate, handleSaveTaxRate,
     savingTablesEnabled, handleToggleTablesEnabled,
     handleToggleTableActive, handleDeleteTable, handleMarkTableEmpty,
     handleRemoveProduct, handleRestoreProduct, handleDeleteProduct,

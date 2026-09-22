@@ -109,7 +109,7 @@ export const seedDatabase = async (forceClean: boolean = false) => {
       address: 'Plot 42, Bandra West, Mumbai, Maharashtra 400050',
       currency: 'INR',
       currencySymbol: '₹',
-      taxRatePercentage: 5,
+      taxRatePercentage: 0, // GST disabled platform-wide for now
       perOrderFeePaise: 200,
       openingTime: '08:00',
       closingTime: '23:00',
@@ -286,7 +286,7 @@ export const seedDatabase = async (forceClean: boolean = false) => {
       address: 'Shop 12, Indiranagar 100ft Road, Bengaluru, Karnataka 560038',
       currency: 'INR',
       currencySymbol: '₹',
-      taxRatePercentage: 5,
+      taxRatePercentage: 0, // GST disabled platform-wide for now
       perOrderFeePaise: 200,
       openingTime: '07:30',
       closingTime: '22:00',
@@ -425,7 +425,7 @@ export const seedDatabase = async (forceClean: boolean = false) => {
       address: 'Block C, Connaught Place, New Delhi, Delhi 110001',
       currency: 'INR',
       currencySymbol: '₹',
-      taxRatePercentage: 5,
+      taxRatePercentage: 0, // GST disabled platform-wide for now
       perOrderFeePaise: 200,
       openingTime: '08:30',
       closingTime: '23:30',

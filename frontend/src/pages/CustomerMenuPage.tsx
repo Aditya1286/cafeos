@@ -116,7 +116,7 @@ export const CustomerMenuPage: React.FC = () => {
       ? 'Counter Order'
       : 'Scan Table QR';
 
-  const taxRate = business?.taxRatePercentage ?? 5;
+  const taxRate = business?.taxRatePercentage ?? 0;
   const taxPaise = Math.round((cartSubtotalPaise * taxRate) / 100);
   const totalAmountPaise = cartSubtotalPaise + taxPaise;
 
@@ -507,10 +507,12 @@ export const CustomerMenuPage: React.FC = () => {
                 <span>Item Total</span>
                 <span>₹{(cartSubtotalPaise / 100).toFixed(0)}</span>
               </div>
-              <div className="flex justify-between text-slate-500 font-medium">
-                <span>GST Tax ({taxRate}%)</span>
-                <span>₹{(taxPaise / 100).toFixed(0)}</span>
-              </div>
+              {taxRate > 0 && (
+                <div className="flex justify-between text-slate-500 font-medium">
+                  <span>GST Tax ({taxRate}%)</span>
+                  <span>₹{(taxPaise / 100).toFixed(0)}</span>
+                </div>
+              )}
               <div className="flex justify-between text-sm font-black text-slate-900 pt-2 border-t border-slate-200">
                 <span>To Pay</span>
                 <span className="text-emerald-600">₹{(totalAmountPaise / 100).toFixed(0)}</span>
@@ -669,7 +671,13 @@ export const CustomerMenuPage: React.FC = () => {
         </div>
       )}
 
-      {business && <SupportWidget mode="CUSTOMER" businessId={business.id || business._id} />}
+      {business && (
+        <SupportWidget
+          mode="CUSTOMER"
+          businessId={business.id || business._id}
+          raised={cartItemsList.length > 0}
+        />
+      )}
     </div>
   );
 };

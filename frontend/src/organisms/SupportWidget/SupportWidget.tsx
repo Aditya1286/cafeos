@@ -7,14 +7,14 @@ import { getSupportCategories } from '@/constants/supportCategories';
 // union, so a call site that forgets it (e.g. <SupportWidget mode="CUSTOMER" />) is a
 // compile error rather than a 400 the customer only sees after filling out the whole flow.
 type SupportWidgetProps =
-  | { mode: 'CUSTOMER'; businessId: string; orderId?: string; prefill?: { name?: string; phone?: string } }
-  | { mode: 'BUSINESS_OWNER'; businessId?: string; orderId?: string; prefill?: { name?: string; phone?: string } };
+  | { mode: 'CUSTOMER'; businessId: string; orderId?: string; prefill?: { name?: string; phone?: string }; raised?: boolean }
+  | { mode: 'BUSINESS_OWNER'; businessId?: string; orderId?: string; prefill?: { name?: string; phone?: string }; raised?: boolean };
 
 // Floating support entry point used on both customer-facing pages (mode="CUSTOMER") and the
 // owner dashboard (mode="BUSINESS_OWNER"). One component, two contact-collection paths — the
 // sequential category → subcategory → details flow is identical either way.
 export const SupportWidget: React.FC<SupportWidgetProps> = (props) => {
-  const { mode } = props;
+  const { mode, raised } = props;
   const w = useSupportWidget(props);
   const categories = getSupportCategories(mode);
   const activeCategoryDef = categories.find((c) => c.value === w.category);
@@ -275,14 +275,18 @@ export const SupportWidget: React.FC<SupportWidgetProps> = (props) => {
     <>
       <button
         onClick={w.isOpen ? w.closeWidget : w.openWidget}
-        className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-orange-500 hover:bg-orange-600 text-white shadow-2xl shadow-orange-500/40 flex items-center justify-center transition-all active:scale-95"
+        className={`fixed right-4 sm:right-6 z-40 w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-orange-500 hover:bg-orange-600 text-white shadow-2xl shadow-orange-500/40 flex items-center justify-center transition-all active:scale-95 ${
+          raised ? 'bottom-24 sm:bottom-6' : 'bottom-4 sm:bottom-6'
+        }`}
         aria-label="Support"
       >
         {w.isOpen ? <X className="w-5 h-5" /> : <LifeBuoy className="w-5 h-5" />}
       </button>
 
       {w.isOpen && (
-        <div className="fixed bottom-24 right-6 z-40 w-[calc(100%-3rem)] max-w-sm max-h-[70vh] bg-slate-50 rounded-3xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden">
+        <div className={`fixed right-4 sm:right-6 z-40 w-[calc(100%-2rem)] sm:w-[calc(100%-3rem)] max-w-sm max-h-[70vh] bg-slate-50 rounded-3xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden ${
+          raised ? 'bottom-40 sm:bottom-24' : 'bottom-20 sm:bottom-24'
+        }`}>
           <div className="px-4 py-3.5 bg-white border-b border-slate-200 flex items-center gap-2">
             <LifeBuoy className="w-4 h-4 text-orange-500" />
             <span className="text-sm font-black text-slate-900">Support</span>

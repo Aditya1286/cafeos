@@ -1,9 +1,11 @@
-import React from 'react';
-import { RefreshCw, X, FileText, Undo2, Wallet } from 'lucide-react';
+import React, { useState } from 'react';
+import { RefreshCw, FileText, X, Undo2, Wallet, MoreHorizontal } from 'lucide-react';
 import ResponsiveDataView, { ResponsiveColumn } from '@/molecules/ResponsiveDataView';
 import { STATUS_CONFIG, isOrderCancellable } from '@/constants/orderStatus';
 import { formatCurrency } from '@/utils/money';
 import { OrderHistoryFilters } from '@/hooks/useOrderHistory';
+import { StatusBadge, StatusBadgeTone } from '@/atoms/StatusBadge';
+import { Modal } from '@/molecules/Modal';
 
 interface OrderHistoryPanelProps {
   business: any;
@@ -28,11 +30,17 @@ interface OrderHistoryPanelProps {
   onConfirmPayment: (order: any) => void;
 }
 
-const PAYMENT_BADGE_CLASS: Record<string, string> = {
-  PAID: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  REFUNDED: 'bg-violet-50 text-violet-700 border-violet-200',
-  FAILED: 'bg-rose-50 text-rose-700 border-rose-200',
-  UNPAID: 'bg-amber-50 text-amber-700 border-amber-200',
+const PAYMENT_BADGE_TONE: Record<string, StatusBadgeTone> = {
+  PAID: 'success',
+  REFUNDED: 'violet',
+  FAILED: 'danger',
+  UNPAID: 'warning',
+};
+
+const ACTION_BUTTON_CLASS: Record<'amber' | 'violet' | 'rose', string> = {
+  amber: 'bg-amber-50 hover:bg-amber-100 border-amber-200 text-amber-700',
+  violet: 'bg-violet-50 hover:bg-violet-100 border-violet-200 text-violet-700',
+  rose: 'bg-rose-50 hover:bg-rose-100 border-rose-200 text-rose-700',
 };
 
 /** A paid order that's been cancelled but not yet refunded needs the owner's attention. */
@@ -41,6 +49,30 @@ const needsRefund = (o: any) => o.orderStatus === 'CANCELLED' && o.paymentStatus
 export const OrderHistoryPanel = ({
   business, orderHistory, todaySalesPaise, loadingHistory, pagination, onPageChange, onPageSizeChange, filters, onRefresh, onOpenDrawer, onOpenBill, onCancel, onMarkRefunded, onConfirmPayment
 }: OrderHistoryPanelProps) => {
+  // Which order's "Actions" picker is open, if any — Confirm Payment / Mark Refunded / Cancel
+  // used to be up to 3 separate buttons on every row; now they're one "Actions" button (shown
+  // only when at least one applies) that opens this picker instead of crowding the row.
+  const [actionsTarget, setActionsTarget] = useState<any | null>(null);
+
+  const getAvailableActions = (o: any) => {
+    const actions: { key: string; label: string; icon: typeof Wallet; tone: 'amber' | 'violet' | 'rose'; onClick: () => void }[] = [];
+    if (o.paymentStatus === 'UNPAID' && o.orderStatus !== 'CANCELLED') {
+      actions.push({
+        key: 'confirm',
+        label: o.customerMarkedPaidAt ? 'Confirm Payment (Customer says paid)' : 'Confirm Payment',
+        icon: Wallet,
+        tone: 'amber',
+        onClick: () => onConfirmPayment(o),
+      });
+    }
+    if (needsRefund(o)) {
+      actions.push({ key: 'refund', label: 'Mark Refunded', icon: Undo2, tone: 'violet', onClick: () => onMarkRefunded(o) });
+    }
+    if (isOrderCancellable(o.orderStatus)) {
+      actions.push({ key: 'cancel', label: 'Cancel Order', icon: X, tone: 'rose', onClick: () => onCancel(o) });
+    }
+    return actions;
+  };
   const rows = orderHistory.map(o => ({
     ...o,
     _sc: STATUS_CONFIG[o.orderStatus] || STATUS_CONFIG.COMPLETED,
@@ -103,9 +135,9 @@ export const OrderHistoryPanel = ({
       render: (o) => (
         <>
           <div className="flex flex-col items-start gap-1">
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black border ${PAYMENT_BADGE_CLASS[o.paymentStatus] || PAYMENT_BADGE_CLASS.PAID}`}>
+            <StatusBadge tone={PAYMENT_BADGE_TONE[o.paymentStatus] || 'success'}>
               {o.paymentStatus || 'PAID'}
-            </span>
+            </StatusBadge>
             <span className="text-[10px] font-bold text-slate-400 uppercase">{o.paymentMethod || 'ONLINE'}</span>
           </div>
           {o.transactionId && (
@@ -152,22 +184,10 @@ export const OrderHistoryPanel = ({
             <FileText className="w-3.5 h-3.5" />
             <span>E-Bill</span>
           </button>
-          {o.paymentStatus === 'UNPAID' && o.orderStatus !== 'CANCELLED' && (
-            <button onClick={() => onConfirmPayment(o)} className="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-700 text-xs font-black transition-colors flex items-center gap-1">
-              <Wallet className="w-3.5 h-3.5" />
-              <span>Confirm Payment</span>
-            </button>
-          )}
-          {needsRefund(o) && (
-            <button onClick={() => onMarkRefunded(o)} className="px-3 py-1.5 rounded-xl bg-violet-50 hover:bg-violet-100 border border-violet-200 text-violet-700 text-xs font-black transition-colors flex items-center gap-1">
-              <Undo2 className="w-3.5 h-3.5" />
-              <span>Mark Refunded</span>
-            </button>
-          )}
-          {isOrderCancellable(o.orderStatus) && (
-            <button onClick={() => onCancel(o)} className="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 text-xs font-black transition-colors flex items-center gap-1">
-              <X className="w-3.5 h-3.5" />
-              <span>Cancel</span>
+          {getAvailableActions(o).length > 0 && (
+            <button onClick={() => setActionsTarget(o)} className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 text-xs font-black transition-colors flex items-center gap-1">
+              <MoreHorizontal className="w-3.5 h-3.5" />
+              <span>Actions</span>
             </button>
           )}
         </div>
@@ -178,84 +198,77 @@ export const OrderHistoryPanel = ({
   ];
 
   const renderCard = (o: typeof rows[number]) => (
-    <div className="p-4 space-y-3">
+    <div className="p-3.5 space-y-2.5">
       <div className="flex items-center justify-between gap-2">
-        <div className="font-mono text-xs font-black text-orange-600 bg-orange-50 border border-orange-200 px-2.5 py-1 rounded-xl whitespace-nowrap">
-          {o.orderId || o.orderNumber}
+        <div className="min-w-0">
+          <div className="font-mono text-xs font-black text-orange-600 bg-orange-50 border border-orange-200 px-2 py-1 rounded-lg inline-block whitespace-nowrap">
+            {o.orderId || o.orderNumber}
+          </div>
+          <div className="text-[10px] text-slate-400 font-medium mt-1">{o._dateFormatted} · {o._timeFormatted}</div>
         </div>
-        <span className={`px-2.5 py-1 rounded-full text-[10px] font-black border whitespace-nowrap shrink-0 ${o._sc.badgeBg} ${o._sc.badgeText}`}>
+        <span className={`px-2 py-1 rounded-full text-[9px] font-black border whitespace-nowrap shrink-0 ${o._sc.badgeBg} ${o._sc.badgeText}`}>
           ● {o._sc.label}
         </span>
       </div>
 
-      <div className="text-[11px] text-slate-400 font-medium">{o._dateFormatted} · {o._timeFormatted}</div>
-
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex items-center justify-between gap-3 pt-2 border-t border-slate-100">
         <div className="min-w-0">
-          <div className="font-black text-slate-900 truncate">{o.customerName}</div>
+          <div className="font-black text-slate-900 text-sm truncate">{o.customerName}</div>
           <div className="text-[11px] text-slate-400 font-semibold">{o.customerPhone}</div>
         </div>
-        <span className="px-2.5 py-1 rounded-xl bg-slate-100 border border-slate-200 text-slate-800 text-xs font-extrabold whitespace-nowrap shrink-0">
+        <span className="px-2 py-1 rounded-lg bg-slate-100 border border-slate-200 text-slate-800 text-[11px] font-extrabold whitespace-nowrap shrink-0">
           {o.tableName || 'Takeaway'}
         </span>
       </div>
 
       <div>
-        <div className="text-slate-900 font-bold text-xs">
+        <div className="text-slate-900 font-bold text-xs truncate">
           {o.items?.map((it: any) => `${it.quantity}× ${it.name}`).join(', ')}
         </div>
         <span className="text-[10px] text-slate-400 font-medium">{o.items?.length || 0} items</span>
       </div>
 
-      <div className="flex items-end justify-between gap-3 pt-1 border-t border-slate-100">
-        <div className="flex flex-wrap items-center gap-1.5 pt-2">
-          <span className={`px-2 py-0.5 rounded-full text-[10px] font-black border whitespace-nowrap ${PAYMENT_BADGE_CLASS[o.paymentStatus] || PAYMENT_BADGE_CLASS.PAID}`}>
+      <div className="flex items-center justify-between gap-3 pt-2 border-t border-slate-100">
+        <div className="flex items-center gap-1.5">
+          <StatusBadge tone={PAYMENT_BADGE_TONE[o.paymentStatus] || 'success'}>
             {o.paymentStatus || 'PAID'}
-          </span>
+          </StatusBadge>
           <span className="text-[10px] font-bold text-slate-400 uppercase whitespace-nowrap">{o.paymentMethod || 'ONLINE'}</span>
         </div>
-        <div className="font-black text-slate-900 text-sm pt-2 whitespace-nowrap">
+        <div className="font-black text-slate-900 text-sm whitespace-nowrap">
           {formatCurrency(o.totalAmountPaise)}
         </div>
       </div>
 
-      {needsRefund(o) && (
-        <div className={`text-[10px] font-black uppercase px-2 py-1 rounded-full inline-block ${
-          o.refundRequestedAt ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-slate-100 text-slate-500 border border-slate-200'
-        }`}>
-          {o.refundRequestedAt ? 'Refund requested' : 'Refund pending'}
-        </div>
-      )}
-      {o.paymentStatus === 'UNPAID' && o.customerMarkedPaidAt && (
-        <div className="text-[10px] font-black uppercase px-2 py-1 rounded-full inline-block bg-amber-50 text-amber-700 border border-amber-200">
-          Customer says paid
+      {(needsRefund(o) || (o.paymentStatus === 'UNPAID' && o.customerMarkedPaidAt)) && (
+        <div className="flex flex-wrap gap-1.5">
+          {needsRefund(o) && (
+            <span className={`text-[9px] font-black uppercase px-2 py-1 rounded-full ${
+              o.refundRequestedAt ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-slate-100 text-slate-500 border border-slate-200'
+            }`}>
+              {o.refundRequestedAt ? 'Refund requested' : 'Refund pending'}
+            </span>
+          )}
+          {o.paymentStatus === 'UNPAID' && o.customerMarkedPaidAt && (
+            <span className="text-[9px] font-black uppercase px-2 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+              Customer says paid
+            </span>
+          )}
         </div>
       )}
 
-      <div className="flex flex-wrap items-center gap-2 pt-1">
-        <button onClick={() => onOpenDrawer(o)} className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-black transition-colors shadow-xs whitespace-nowrap">
+      <div className="grid grid-cols-2 gap-2 pt-1">
+        <button onClick={() => onOpenDrawer(o)} className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-black transition-colors shadow-xs">
           Details
         </button>
-        <button onClick={() => onOpenBill(o.orderId || o._id)} className="px-3 py-1.5 rounded-xl bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-700 text-xs font-black transition-colors flex items-center gap-1 whitespace-nowrap">
+        <button onClick={() => onOpenBill(o.orderId || o._id)} className="px-3 py-1.5 rounded-xl bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-700 text-xs font-black transition-colors flex items-center justify-center gap-1">
           <FileText className="w-3.5 h-3.5" />
           <span>E-Bill</span>
         </button>
-        {o.paymentStatus === 'UNPAID' && o.orderStatus !== 'CANCELLED' && (
-          <button onClick={() => onConfirmPayment(o)} className="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-700 text-xs font-black transition-colors flex items-center gap-1 whitespace-nowrap">
-            <Wallet className="w-3.5 h-3.5" />
-            <span>Confirm Payment</span>
-          </button>
-        )}
-        {needsRefund(o) && (
-          <button onClick={() => onMarkRefunded(o)} className="px-3 py-1.5 rounded-xl bg-violet-50 hover:bg-violet-100 border border-violet-200 text-violet-700 text-xs font-black transition-colors flex items-center gap-1 whitespace-nowrap">
-            <Undo2 className="w-3.5 h-3.5" />
-            <span>Mark Refunded</span>
-          </button>
-        )}
-        {isOrderCancellable(o.orderStatus) && (
-          <button onClick={() => onCancel(o)} className="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 text-xs font-black transition-colors flex items-center gap-1 whitespace-nowrap">
-            <X className="w-3.5 h-3.5" />
-            <span>Cancel</span>
+        {getAvailableActions(o).length > 0 && (
+          <button onClick={() => setActionsTarget(o)} className="col-span-2 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 text-xs font-black transition-colors flex items-center justify-center gap-1">
+            <MoreHorizontal className="w-3.5 h-3.5" />
+            <span>Actions</span>
           </button>
         )}
       </div>
@@ -264,11 +277,11 @@ export const OrderHistoryPanel = ({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
-        <div>
-          <div className="flex items-center gap-2">
-            <h2 className="text-xl font-black text-slate-900">Order Intelligence & History</h2>
-            <span className="px-2.5 py-0.5 rounded-full bg-orange-50 text-orange-600 border border-orange-200 text-[10px] font-black">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-sm">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h2 className="text-base sm:text-xl font-black text-slate-900">Order Intelligence & History</h2>
+            <span className="px-2.5 py-0.5 rounded-full bg-orange-50 text-orange-600 border border-orange-200 text-[10px] font-black whitespace-nowrap">
               E-BILL READY
             </span>
           </div>
@@ -277,14 +290,14 @@ export const OrderHistoryPanel = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <span className="px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-200 text-slate-500 text-xs font-mono font-bold hidden md:inline-block">
             Shortcut: <kbd className="px-1.5 py-0.5 bg-white rounded border border-slate-300 shadow-2xs text-slate-700 font-black">⌘K</kbd> / <kbd className="px-1.5 py-0.5 bg-white rounded border border-slate-300 shadow-2xs text-slate-700 font-black">Ctrl+K</kbd>
           </span>
 
           <button
             onClick={onRefresh}
-            className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-black transition-all flex items-center gap-1.5 shadow-sm"
+            className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-black transition-all flex items-center gap-1.5 shadow-sm whitespace-nowrap"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loadingHistory ? 'animate-spin text-orange-400' : ''}`} />
             <span>Refresh</span>
@@ -292,38 +305,38 @@ export const OrderHistoryPanel = ({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
-          <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Total Orders</span>
-          <div className="text-2xl font-black text-slate-900">{pagination.total || orderHistory.length}</div>
-          <span className="text-[10px] font-semibold text-slate-400">Total recorded transactions</span>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-4">
+        <div className="bg-white p-2.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-0.5 sm:space-y-1">
+          <span className="text-[9px] sm:text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Total Orders</span>
+          <div className="text-base sm:text-2xl font-black text-slate-900">{pagination.total || orderHistory.length}</div>
+          <span className="text-[9px] sm:text-[10px] font-semibold text-slate-400 hidden sm:block">Total recorded transactions</span>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
-          <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Today's Revenue</span>
-          <div className="text-2xl font-black text-emerald-600">{formatCurrency(todaySalesPaise)}</div>
-          <span className="text-[10px] font-semibold text-emerald-600">Business day total, all filters</span>
+        <div className="bg-white p-2.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-0.5 sm:space-y-1">
+          <span className="text-[9px] sm:text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Today's Revenue</span>
+          <div className="text-base sm:text-2xl font-black text-emerald-600 truncate">{formatCurrency(todaySalesPaise)}</div>
+          <span className="text-[9px] sm:text-[10px] font-semibold text-emerald-600 hidden sm:block">Business day total, all filters</span>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
-          <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Daily Sequence Prefix</span>
-          <div className="text-2xl font-black text-orange-600 font-mono">
+        <div className="bg-white p-2.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-0.5 sm:space-y-1">
+          <span className="text-[9px] sm:text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Daily Sequence</span>
+          <div className="text-base sm:text-2xl font-black text-orange-600 font-mono truncate">
             {business?.shortCode || 'ART'}-DDMMYY
           </div>
-          <span className="text-[10px] font-semibold text-slate-400">Auto-resets every midnight</span>
+          <span className="text-[9px] sm:text-[10px] font-semibold text-slate-400 hidden sm:block">Auto-resets every midnight</span>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-1">
-          <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Timezone Scope</span>
-          <div className="text-2xl font-black text-indigo-600 truncate">
+        <div className="bg-white p-2.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-0.5 sm:space-y-1">
+          <span className="text-[9px] sm:text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Timezone</span>
+          <div className="text-base sm:text-2xl font-black text-indigo-600 truncate">
             {business?.timezone || 'Asia/Kolkata'}
           </div>
-          <span className="text-[10px] font-semibold text-slate-400">Concurrency-safe MongoDB sequence</span>
+          <span className="text-[9px] sm:text-[10px] font-semibold text-slate-400 hidden sm:block">Concurrency-safe MongoDB sequence</span>
         </div>
       </div>
 
-      <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-4">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
+      <div className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 pt-1">
           <div>
             <label className="text-[10px] font-extrabold uppercase text-slate-400 mb-1 block">Order Status</label>
             <select
@@ -422,6 +435,26 @@ export const OrderHistoryPanel = ({
           />
         )}
       </div>
+
+      {actionsTarget && (
+        <Modal
+          title={`Choose an action — ${actionsTarget.orderId || actionsTarget.orderNumber}`}
+          onClose={() => setActionsTarget(null)}
+        >
+          <div className="space-y-2">
+            {getAvailableActions(actionsTarget).map(action => (
+              <button
+                key={action.key}
+                onClick={() => { action.onClick(); setActionsTarget(null); }}
+                className={`w-full flex items-center gap-2.5 px-4 py-3 rounded-xl border text-sm font-black transition-colors ${ACTION_BUTTON_CLASS[action.tone]}`}
+              >
+                <action.icon className="w-4 h-4 shrink-0" />
+                <span>{action.label}</span>
+              </button>
+            ))}
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };

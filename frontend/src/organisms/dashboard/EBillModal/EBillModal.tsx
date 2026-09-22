@@ -15,7 +15,7 @@ export const EBillModal = ({ bill, onClose }: EBillModalProps) => {
 
   const effectiveTaxPercentage = bill.subtotalPaise
     ? Math.round((bill.taxPaise / bill.subtotalPaise) * 1000) / 10
-    : (bill.business?.taxRatePercentage ?? 5);
+    : (bill.business?.taxRatePercentage ?? 0);
 
   return (
     <Modal title={`E-Bill Tax Invoice · ${bill.orderId || bill.billNumber}`} onClose={onClose} maxWidth="max-w-lg">
