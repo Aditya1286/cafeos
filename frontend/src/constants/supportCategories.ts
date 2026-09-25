@@ -41,12 +41,12 @@ export const BUSINESS_OWNER_SUPPORT_CATEGORIES: SupportCategoryDef[] = [
   {
     value: 'BILLING_SUBSCRIPTION',
     label: 'Billing & Subscription',
-    subCategories: ['Plan upgrade/downgrade', 'Invoice issue', 'Payment failed']
+    subCategories: ['Plan upgrade/downgrade', 'Bill / receipt issue', 'Payment failed']
   },
   {
     value: 'PAYOUTS_REMITTANCE',
-    label: 'Payouts & Remittance',
-    subCategories: ['Remittance not received', 'Incorrect payout amount', 'Bank details update']
+    label: 'Fees & Payments',
+    subCategories: ['Fee payment not marked as paid', 'Wrong fee amount', 'Bank details update']
   },
   {
     value: 'ACCOUNT_ACCESS',
@@ -55,8 +55,8 @@ export const BUSINESS_OWNER_SUPPORT_CATEGORIES: SupportCategoryDef[] = [
   },
   {
     value: 'TECHNICAL_BUG',
-    label: 'Technical / Bug',
-    subCategories: ['Dashboard error', 'QR/menu not working', 'Order sync issue']
+    label: 'Something not working',
+    subCategories: ['Dashboard error', 'QR/menu not working', 'Orders not updating']
   },
   { value: 'FEATURE_REQUEST', label: 'Feature Request', subCategories: [] },
   { value: 'OTHER', label: 'Something else', subCategories: [] }

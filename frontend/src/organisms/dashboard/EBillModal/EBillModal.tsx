@@ -18,7 +18,7 @@ export const EBillModal = ({ bill, onClose }: EBillModalProps) => {
     : (bill.business?.taxRatePercentage ?? 0);
 
   return (
-    <Modal title={`E-Bill Tax Invoice · ${bill.orderId || bill.billNumber}`} onClose={onClose} maxWidth="max-w-lg">
+    <Modal title={`Bill · ${bill.orderId || bill.billNumber}`} onClose={onClose} maxWidth="max-w-lg">
       <div className="space-y-6" id="printable-ebill">
 
         <div className="p-6 bg-white border border-slate-300 rounded-2xl shadow-inner font-mono text-xs text-slate-800 space-y-4">
@@ -119,15 +119,15 @@ export const EBillModal = ({ bill, onClose }: EBillModalProps) => {
             className="py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-black text-xs transition-all shadow-md flex items-center justify-center gap-2"
           >
             <Printer className="w-4 h-4" />
-            <span>Print Thermal Receipt</span>
+            <span>Print Bill</span>
           </button>
 
           <button
-            onClick={() => toast.success('E-Bill digital receipt copied!')}
+            onClick={() => toast.success('Bill copied!')}
             className="py-3 rounded-xl bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-700 font-black text-xs transition-all flex items-center justify-center gap-2"
           >
             <Share2 className="w-4 h-4" />
-            <span>Share Digital Bill</span>
+            <span>Share Bill</span>
           </button>
         </div>
 

@@ -5,3 +5,7 @@ npm-debug.log
 .env.*
 *.log
 .git
+
+# Test-only code — never part of an image
+tests
+vitest.config.ts

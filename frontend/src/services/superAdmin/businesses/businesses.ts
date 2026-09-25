@@ -4,6 +4,7 @@ import {
   GetBusinessRemittancesResponse,
   ListBusinessesResponse,
   UpdateFinanceSettingsResponse,
+  UpdateDemoResponse,
   UpdatePlanResponse,
   UpdateStatusResponse
 } from './types';
@@ -15,6 +16,9 @@ export const updateStatus = (businessId: string, status: string): Promise<Update
 
 export const updatePlan = (businessId: string, planId: string): Promise<UpdatePlanResponse> =>
   apiRequest(`/admin/businesses/${businessId}/plan`, 'PUT', { planId });
+
+export const setDemo = (businessId: string, isDemo: boolean): Promise<UpdateDemoResponse> =>
+  apiRequest(`/admin/businesses/${businessId}/demo`, 'PUT', { isDemo });
 
 export const getRemittanceSummary = (businessId: string): Promise<GetBusinessRemittancesResponse> =>
   apiRequest(`/admin/businesses/${businessId}/remittances`);

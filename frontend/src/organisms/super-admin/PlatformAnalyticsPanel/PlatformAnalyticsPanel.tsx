@@ -23,22 +23,22 @@ export const PlatformAnalyticsPanel = ({ metrics, activeBusinessesCount, totalBu
 
   const cards = [
     {
-      label: 'Total Platform GMV',
+      label: 'Total Sales',
       value: formatCurrency(totalGMVPaise),
       sub: `${metrics?.paidOrders ?? 0} paid orders`,
       subColor: 'text-slate-400',
       valueColor: 'text-slate-900',
     },
     {
-      label: 'Platform Fee Revenue',
+      label: 'Fees Earned',
       value: formatCurrency(totalPlatformFeesPaise),
-      sub: effectiveFeePercentage !== null ? `${effectiveFeePercentage}% of GMV` : 'No GMV yet',
+      sub: effectiveFeePercentage !== null ? `${effectiveFeePercentage}% of sales` : 'No sales yet',
       subColor: 'text-slate-400',
       valueColor: 'text-emerald-600',
     },
     {
-      label: 'Registered Outlets',
-      value: `${totalBusinessesCount} Outlets`,
+      label: 'Businesses',
+      value: `${totalBusinessesCount} Businesses`,
       sub: `${activeBusinessesCount} active`,
       subColor: 'text-slate-400',
       valueColor: 'text-red-600',
@@ -47,37 +47,37 @@ export const PlatformAnalyticsPanel = ({ metrics, activeBusinessesCount, totalBu
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {cards.map((card) => (
-          <div key={card.label} className="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-2">
-            <div className="text-xs text-slate-400 font-bold uppercase">{card.label}</div>
-            <div className={`text-3xl font-black ${card.valueColor}`}>{card.value}</div>
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5 sm:gap-6">
+        {cards.map((card, i) => (
+          <div key={card.label} className={`p-4 sm:p-6 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-1 sm:space-y-2 min-w-0 ${i === cards.length - 1 ? 'col-span-2 md:col-span-1' : ''}`}>
+            <div className="text-[10px] sm:text-xs text-slate-400 font-bold uppercase">{card.label}</div>
+            <div className={`text-xl sm:text-3xl font-black truncate ${card.valueColor}`}>{card.value}</div>
             <div className={`text-xs font-bold ${card.subColor}`}>{card.sub}</div>
           </div>
         ))}
       </div>
 
-      <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-extrabold text-slate-900">
-            Payment Method Breakdown Analytics
+      <div className="bg-white p-4 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <h3 className="text-base sm:text-lg font-extrabold text-slate-900">
+            How Customers Paid
           </h3>
           <button
             onClick={onExportCsv}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-200 transition-colors"
+            className="self-start sm:self-auto flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-200 transition-colors"
           >
-            <Download className="w-4 h-4" /> Download Raw Data
+            <Download className="w-4 h-4" /> Download (CSV)
           </button>
         </div>
 
         {paymentMethodBreakdown.length === 0 ? (
           <EmptyState
             title="No paid orders yet"
-            description="Payment method breakdown will appear once orders are completed."
+            description="This fills in once customers start paying."
           />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="h-64">
+            <div className="h-56 sm:h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie data={paymentMethodBreakdown} cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={4} dataKey="amountPaise" nameKey="_id">

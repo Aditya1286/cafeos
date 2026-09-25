@@ -31,6 +31,10 @@ import { AddTableModal } from '@/organisms/dashboard/AddTableModal';
 import { AddInventoryModal } from '@/organisms/dashboard/AddInventoryModal';
 import { RefundsPanel } from '@/organisms/dashboard/RefundsPanel';
 import { RefundHistoryModal } from '@/molecules/RefundHistoryModal';
+import { INVENTORY_ENABLED } from '@/constants/features';
+
+// Owner-side support widget is switched off for now — flip back to true to re-enable.
+const SHOW_OWNER_SUPPORT_WIDGET = false;
 
 export const OwnerDashboard = ({ user }: { user: any }) => {
   const [activeTab, setActiveTab] = useState<DashboardTab>('kds');
@@ -43,6 +47,8 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
     onOrderUpdated: (updated) => orderHistoryState.patchOrder(updated.orderId, { orderStatus: updated.orderStatus }),
     onCustomerMarkedPaid: (updated) => orderHistoryState.patchOrder(updated.orderId, { customerMarkedPaidAt: updated.customerMarkedPaidAt }),
     onRefundRequested: (updated) => orderHistoryState.patchOrder(updated.orderId, { refundRequestedAt: updated.refundRequestedAt }),
+    // The history table only holds data while its tab is open; otherwise it loads fresh on open.
+    onResync: () => { if (activeTab === 'orders') orderHistoryState.fetchOrderHistory(); },
   });
   const {
     orders, categories, products, tables, inventoryItems, analytics, business, loading,
@@ -270,7 +276,8 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
       pricePaise: Number(newProductPricePaise),
       description: newProductDescription,
       isVeg: newProductIsVeg,
-      imageUrl: newProductImageUrl || 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=500&q=80'
+      // No photo stays no photo — the customer menu shows a neutral tile, never another dish's picture.
+      imageUrl: newProductImageUrl || ''
     };
     try {
       if (editingProductId) {
@@ -322,11 +329,11 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
     navigator.clipboard.writeText(publicMenuUrl);
     setCopiedUrl(true);
     setTimeout(() => setCopiedUrl(false), 2000);
-    toast.success('Public QR menu URL copied to clipboard!');
+    toast.success('Menu link copied!');
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] font-sans text-slate-900 selection:bg-orange-500 selection:text-white pb-12">
+    <div className="dashboard-compact-type min-h-screen bg-[#F8FAFC] font-sans text-slate-900 selection:bg-orange-500 selection:text-white pb-12">
       <DashboardHeader
         user={user}
         business={business}
@@ -386,6 +393,7 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
         {activeTab === 'menu' && (
           <DigitalMenuPanel
             products={products}
+            categories={categories}
             onAddItem={handleOpenAddProduct}
             onEditItem={handleOpenEditProduct}
             onRemoveItem={handleRemoveProduct}
@@ -408,7 +416,7 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
           />
         )}
 
-        {activeTab === 'inventory' && (
+        {INVENTORY_ENABLED && activeTab === 'inventory' && (
           <InventoryPanel inventoryItems={inventoryItems} onAddIngredient={() => setShowAddInventoryModal(true)} />
         )}
 
@@ -537,7 +545,7 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
         onSubmit={handleCreateInventory}
       />
 
-      <SupportWidget mode="BUSINESS_OWNER" />
+      {SHOW_OWNER_SUPPORT_WIDGET && <SupportWidget mode="BUSINESS_OWNER" />}
     </div>
   );
 };

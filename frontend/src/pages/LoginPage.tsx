@@ -16,21 +16,21 @@ interface LoginPageProps {
 const carouselSlides = [
   {
     image: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=1400&q=80',
-    tag: 'INTELLIGENT POS & KDS',
-    title: "Automate Kitchen Operations.",
-    subtitle: 'Reduce order fulfillment time by 65% with real-time ticket routing across kitchens & baristas.'
+    tag: 'KITCHEN',
+    title: "Orders Go Straight to the Kitchen.",
+    subtitle: 'Every order shows up on your kitchen screen the moment it’s placed — no paper slips, no shouting.'
   },
   {
     image: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=1400&q=80',
-    tag: 'CONTACTLESS DINING',
-    title: 'Instant QR Table Ordering.',
-    subtitle: 'Customers scan, customize dishes, and pay seamlessly right from their phone browser — zero app download required.'
+    tag: 'QR ORDERING',
+    title: 'Customers Order From Their Phone.',
+    subtitle: 'They scan the QR code on the table, pick their food, and pay — no app to download.'
   },
   {
     image: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=1400&q=80',
-    tag: 'AUDITABLE FINANCIALS',
-    title: 'Double-Entry Financial Ledger.',
-    subtitle: 'Integer paise currency precision, inventory BOM auto-deduction, and automated platform fee settlements.'
+    tag: 'MONEY',
+    title: 'Know Where Your Money Goes.',
+    subtitle: 'See your sales, our fees and your stock in one place — all worked out for you.'
   }
 ];
 
@@ -130,15 +130,15 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-2xl font-black tracking-tight text-white">{APP_NAME}</span>
-                <span className="text-[10px] font-mono px-2 py-0.5 bg-red-600/30 text-red-300 rounded-full border border-red-500/30 font-bold">PROD</span>
+                <span className="text-[10px] font-mono px-2 py-0.5 bg-red-600/30 text-red-300 rounded-full border border-red-500/30 font-bold">LIVE</span>
               </div>
-              <span className="text-xs text-slate-300 font-semibold block">Enterprise Multi-Tenant SaaS</span>
+              <span className="text-xs text-slate-300 font-semibold block">Ordering & billing for cafés</span>
             </div>
           </Link>
 
           <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900/80 backdrop-blur-md border border-white/10 text-white text-xs font-semibold">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>Systems Operational</span>
+            <span>All systems working</span>
           </div>
         </div>
 
@@ -149,19 +149,19 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
           <div className="grid grid-cols-3 gap-3 p-4 rounded-2xl bg-slate-900/80 backdrop-blur-md border border-white/10 text-white">
             <div className="text-left space-y-0.5">
               <div className="text-[10px] font-bold uppercase text-slate-400 tracking-wider flex items-center gap-1">
-                <Zap className="w-3 h-3 text-red-500" /> KDS Speed
+                <Zap className="w-3 h-3 text-red-500" /> Orders reach kitchen
               </div>
-              <div className="text-base font-black text-white">&lt; 120ms</div>
+              <div className="text-base font-black text-white">Instantly</div>
             </div>
             <div className="text-left space-y-0.5 border-x border-white/10 px-3">
               <div className="text-[10px] font-bold uppercase text-slate-400 tracking-wider flex items-center gap-1">
-                <Shield className="w-3 h-3 text-emerald-400" /> Accuracy
+                <Shield className="w-3 h-3 text-emerald-400" /> Works on
               </div>
-              <div className="text-base font-black text-white">99.99%</div>
+              <div className="text-base font-black text-white">Any phone</div>
             </div>
             <div className="text-left space-y-0.5 pl-1">
               <div className="text-[10px] font-bold uppercase text-slate-400 tracking-wider flex items-center gap-1">
-                <Layers className="w-3 h-3 text-amber-400" /> Multi-Tenant
+                <Layers className="w-3 h-3 text-amber-400" /> Used by
               </div>
               <div className="text-base font-black text-white">500+ Businesses</div>
             </div>
@@ -225,11 +225,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
           <div className="text-left space-y-2">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-50 border border-red-200/80 text-red-700 text-[11px] font-bold">
               <Sparkles className="w-3.5 h-3.5 text-red-600" />
-              <span>Enterprise Business Management Portal</span>
+              <span>Business Owner Login</span>
             </div>
             <h1 className="text-3xl font-black text-slate-900 tracking-tight">Sign In to {APP_NAME}</h1>
             <p className="text-xs sm:text-sm text-slate-600 font-medium">
-              Enter your registered credentials or select an instant demo profile below.
+              Sign in with your email and password, or try a demo account below.
             </p>
           </div>
 
@@ -399,7 +399,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                 {loading ? (
                   <span className="flex items-center gap-2">
                     <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Authenticating Session...
+                    Signing you in…
                   </span>
                 ) : (
                   <>
@@ -420,12 +420,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
           {/* Security & Compliance Badges Footer */}
           <div className="flex items-center justify-center gap-4 text-[10px] text-slate-500 font-semibold pt-2">
             <span className="flex items-center gap-1">
-              <CheckCircle2 className="w-3 h-3 text-emerald-600" /> 256-bit TLS Encrypted
+              <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Secure connection
             </span>
             <span>•</span>
-            <span>Multi-Tenant Isolated</span>
-            <span>•</span>
-            <span>SOC2 Type II</span>
+            <span>Your data is kept private</span>
           </div>
 
         </div>

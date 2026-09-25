@@ -9,23 +9,12 @@ import { RepeatCustomerBar } from '@/molecules/RepeatCustomerBar';
 import { ItemMarginTable } from '@/molecules/ItemMarginTable';
 import { KitchenSpeedPanel } from '@/molecules/KitchenSpeedPanel';
 
+import { DAY_LABELS } from './heatmapShared';
+import { HeatmapGridDesktop } from './HeatmapGridDesktop';
+import { HeatmapGridMobile } from './HeatmapGridMobile';
+
 const SEARCH_RESULTS_LIMIT = 8;
-
-// $dayOfWeek convention: 1 = Sunday ... 7 = Saturday.
-const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const HOURS = Array.from({ length: 24 }, (_, h) => h);
 const TOP_N = 8;
-
-const intensityClass = (intensity: number) =>
-  intensity >= 9
-    ? 'bg-red-500'
-    : intensity >= 7
-    ? 'bg-red-400'
-    : intensity >= 5
-    ? 'bg-red-200'
-    : intensity >= 2
-    ? 'bg-red-100'
-    : 'bg-slate-100';
 
 interface BusinessHourlyHeatmapPanelProps {
   /** Every registered business (already loaded by the dashboard) — searched by name or email so
@@ -99,14 +88,14 @@ export const BusinessHourlyHeatmapPanel = ({ businesses }: BusinessHourlyHeatmap
   const selectedInTopBusinesses = topBusinesses.some((b) => b._id === selectedBusinessId);
 
   return (
-    <div className="lg:col-span-12 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-5">
+    <div className="lg:col-span-12 bg-white p-4 sm:p-6 rounded-3xl border border-slate-200 shadow-sm space-y-5 min-w-0">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 className="text-base font-extrabold text-slate-900">
-            Business Peak Hours — Day × Hour Revenue
+            Busiest Hours for a Business
           </h3>
           <p className="text-xs text-slate-500 font-medium">
-            Revenue-weighted, last 90 days · one business at a time so its own rhythm isn't averaged away by the rest of the platform
+            Sales by day and hour over the last 90 days. Pick a business to see its busy times.
           </p>
           {selectedBusinessName && (
             <p className="text-xs font-bold text-red-600 mt-1">
@@ -115,7 +104,7 @@ export const BusinessHourlyHeatmapPanel = ({ businesses }: BusinessHourlyHeatmap
           )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 w-full sm:w-auto">
           {/* Search by name or email — not limited to the top-N-by-revenue dropdown */}
           <div ref={searchBoxRef} className="relative">
             <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -125,7 +114,7 @@ export const BusinessHourlyHeatmapPanel = ({ businesses }: BusinessHourlyHeatmap
               onChange={(e) => { setSearchQuery(e.target.value); setShowResults(true); }}
               onFocus={() => setShowResults(true)}
               placeholder="Search business by name or email…"
-              className="pl-8 pr-7 py-2 w-64 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 placeholder:text-slate-400 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 transition-all"
+              className="pl-8 pr-7 py-2 w-full sm:w-64 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 placeholder:text-slate-400 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 transition-all"
             />
             {searchQuery && (
               <button
@@ -164,10 +153,10 @@ export const BusinessHourlyHeatmapPanel = ({ businesses }: BusinessHourlyHeatmap
                 setSelectedBusinessId(e.target.value);
                 setSelectedBusinessName(business?.name || '');
               }}
-              className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100"
+              className="w-full sm:w-auto sm:max-w-xs px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100"
             >
               {!selectedInTopBusinesses && (
-                <option value="" disabled>Top businesses by revenue…</option>
+                <option value="" disabled>Top businesses by sales…</option>
               )}
               {topBusinesses.map((b) => (
                 <option key={b._id} value={b._id}>
@@ -184,46 +173,17 @@ export const BusinessHourlyHeatmapPanel = ({ businesses }: BusinessHourlyHeatmap
       ) : topBusinesses.length === 0 ? (
         <p className="text-xs text-slate-400 font-medium py-6 text-center">No paid orders in the last 90 days for any business.</p>
       ) : loading ? (
-        <p className="text-xs text-slate-400 font-medium py-6 text-center">Loading heatmap…</p>
+        <p className="text-xs text-slate-400 font-medium py-6 text-center">Loading…</p>
       ) : (
         <>
-          <div className="overflow-x-auto">
-            <div className="min-w-[720px]">
-              {/* Hour axis — labelled every 3 hours to stay legible across 24 columns */}
-              <div className="grid grid-cols-[3rem_repeat(24,minmax(0,1fr))] gap-1 mb-1">
-                <div />
-                {HOURS.map((h) => (
-                  <div key={h} className="text-center text-[9px] font-bold text-slate-400">
-                    {h % 3 === 0 ? formatHeatmapHour(h) : ''}
-                  </div>
-                ))}
-              </div>
-
-              {DAY_LABELS.map((dayLabel, idx) => {
-                const day = idx + 1; // 1 = Sunday
-                return (
-                  <div key={day} className="grid grid-cols-[3rem_repeat(24,minmax(0,1fr))] gap-1 mb-1">
-                    <div className="text-[10px] font-bold text-slate-500 flex items-center">{dayLabel}</div>
-                    {HOURS.map((h) => {
-                      const cell = cellByKey.get(`${day}-${h}`);
-                      const revenuePaise = cell?.revenuePaise || 0;
-                      const orders = cell?.orders || 0;
-                      const intensity = Math.round((revenuePaise / maxRevenuePaise) * 10);
-                      return (
-                        <div
-                          key={h}
-                          title={`${dayLabel} ${formatHeatmapHour(h)}: ₹${Math.round(revenuePaise / 100).toLocaleString('en-IN')} (${orders} order${orders === 1 ? '' : 's'})`}
-                          className={`aspect-square rounded-md ${intensityClass(intensity)}`}
-                        />
-                      );
-                    })}
-                  </div>
-                );
-              })}
-            </div>
+          <div className="md:hidden">
+            <HeatmapGridMobile cellByKey={cellByKey} maxRevenuePaise={maxRevenuePaise} />
+          </div>
+          <div className="hidden md:block">
+            <HeatmapGridDesktop cellByKey={cellByKey} maxRevenuePaise={maxRevenuePaise} />
           </div>
 
-          <div className="p-3 rounded-2xl bg-red-50 border border-red-200 text-xs font-bold text-red-800 flex items-center gap-2">
+          <div className="p-3 rounded-2xl bg-red-50 border border-red-200 text-[11px] sm:text-xs font-bold text-red-800 flex items-start sm:items-center gap-2">
             <Flame className="w-4 h-4 text-red-600 flex-shrink-0" />
             <span>
               {busiestCell
@@ -236,7 +196,7 @@ export const BusinessHourlyHeatmapPanel = ({ businesses }: BusinessHourlyHeatmap
               business is currently selected via the search box above. */}
           <div className="pt-2 border-t border-slate-100 space-y-5">
             <h4 className="text-xs font-extrabold text-slate-700 uppercase tracking-wider">
-              Business Insights — {selectedBusinessName}
+              Details — {selectedBusinessName}
             </h4>
 
             {loadingInsights || !insights ? (
@@ -246,15 +206,15 @@ export const BusinessHourlyHeatmapPanel = ({ businesses }: BusinessHourlyHeatmap
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                 <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
-                  <h5 className="text-xs font-black text-slate-900">Repeat Customer Rate</h5>
+                  <h5 className="text-xs font-black text-slate-900">Returning Customers</h5>
                   <RepeatCustomerBar stats={insights.repeatCustomers} />
                 </div>
                 <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
-                  <h5 className="text-xs font-black text-slate-900">Real Kitchen Speed</h5>
+                  <h5 className="text-xs font-black text-slate-900">How Fast Orders Are Ready</h5>
                   <KitchenSpeedPanel stats={insights.kitchenSpeed} />
                 </div>
                 <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3 lg:col-span-2">
-                  <h5 className="text-xs font-black text-slate-900">True Item Margin</h5>
+                  <h5 className="text-xs font-black text-slate-900">Profit per Item</h5>
                   <ItemMarginTable data={insights.itemMargins} />
                 </div>
               </div>

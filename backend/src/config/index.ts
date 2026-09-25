@@ -53,7 +53,12 @@ nconf.defaults({
   // Platform's own UPI ID — where businesses pay their commission dues. Distinct from any
   // business's own upiVpa (that one collects customer payments, this one collects ours).
   PLATFORM_UPI_VPA: `${APP_SLUG}@okhdfcbank`,
-  PLATFORM_PAYEE_NAME: `${APP_NAME} Technologies`
+  PLATFORM_PAYEE_NAME: `${APP_NAME} Technologies`,
+  // Leave businesses a super admin has marked as demo (Business.isDemo) out of every
+  // platform-wide super admin analytic. On in production so internal test accounts don't
+  // inflate real GMV/orders/customers; off elsewhere so local dev still sees the seeded data.
+  // Set to false (config.<env>.json or --EXCLUDE_DEMO_BUSINESSES_FROM_ANALYTICS=false) to disable.
+  EXCLUDE_DEMO_BUSINESSES_FROM_ANALYTICS: env === 'production'
 });
 
 // Builds a Mongo connection string from MONGO_HOST/PORT/DB_NAME (+ optional replica set
@@ -91,5 +96,7 @@ export const config = {
   msg91AuthKey: nconf.get('AUTH_KEY'),
   otpMode: nconf.get('OTP_MODE') as 'mock' | 'live',
   platformUpiVpa: nconf.get('PLATFORM_UPI_VPA'),
-  platformPayeeName: nconf.get('PLATFORM_PAYEE_NAME')
+  platformPayeeName: nconf.get('PLATFORM_PAYEE_NAME'),
+  // String() because a CLI override arrives as the string "false", not a boolean.
+  excludeDemoBusinessesFromAnalytics: String(nconf.get('EXCLUDE_DEMO_BUSINESSES_FROM_ANALYTICS')) === 'true'
 };

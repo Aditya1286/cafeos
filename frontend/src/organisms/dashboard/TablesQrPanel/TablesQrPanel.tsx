@@ -67,8 +67,8 @@ export const TablesQrPanel = ({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-black text-slate-900">Dining Tables & QR Codes</h2>
-          <p className="text-xs text-slate-500 font-medium">Customer scans QR to open instant table ordering webpage</p>
+          <h2 className="text-lg font-black text-slate-900">Tables & QR Codes</h2>
+          <p className="text-xs text-slate-500 font-medium">Customers scan a table's QR code to see the menu and order</p>
         </div>
         {tablesEnabled && (
           <button
@@ -108,7 +108,7 @@ export const TablesQrPanel = ({
           <QrCode className="w-10 h-10 text-slate-300 mx-auto" />
           <h3 className="text-sm font-black text-slate-700">Tables are disabled for this business</h3>
           <p className="text-xs text-slate-400 max-w-md mx-auto">
-            Customers ordering via your public menu link don't need to select a table, and there's no limit on concurrent orders. Turn tables back on above if you add seating later.
+            Customers ordering via your public menu link don't need to select a table, and there's no limit on how many orders can come in at once. Turn tables back on above if you add seating later.
           </p>
         </div>
       ) : (
@@ -153,7 +153,7 @@ export const TablesQrPanel = ({
                       if (svg) downloadQrPng(svg as SVGSVGElement, t.tableNumber);
                     }}
                     className="absolute top-2 left-2 z-10 p-1.5 rounded-lg bg-white hover:bg-slate-100 border border-slate-200 text-slate-600 shadow-xs transition-all"
-                    title="Download QR as PNG"
+                    title="Download QR image"
                     aria-label={`Download QR for ${t.tableNumber}`}
                   >
                     <Download className="w-3.5 h-3.5" />
@@ -166,7 +166,7 @@ export const TablesQrPanel = ({
                   rel="noreferrer"
                   className="block w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold text-center transition-all shadow-xs"
                 >
-                  Test QR Scan Page →
+                  Open this table's menu →
                 </a>
 
                 {isOccupied && (

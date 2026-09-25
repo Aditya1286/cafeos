@@ -2,7 +2,7 @@ import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
 import { getTableByToken } from '../controllers/tableController';
 import { getPublicMenu, getMenuImage } from '../controllers/menuController';
-import { createOrder, getOrderById, markOrderPaidByCustomer, cancelOrderByCustomer, requestOrderRefund } from '../controllers/orderController';
+import { createOrder, getPublicOrderById, markOrderPaidByCustomer, cancelOrderByCustomer, requestOrderRefund } from '../controllers/orderController';
 import { SubscriptionPlan } from '../models/SubscriptionPlan';
 import { Business } from '../models/Business';
 import { getOtpStatus, confirmWidgetToken, requestOtp, confirmOtp, resendOtpRequest } from '../controllers/otp.controller';
@@ -52,7 +52,7 @@ router.get('/images/:id', getMenuImage);
 
 // Public: Order endpoints
 router.post('/orders', createOrder);
-router.get('/orders/:id', getOrderById);
+router.get('/orders/:id', getPublicOrderById);
 router.put('/orders/:id/mark-paid', markOrderPaidByCustomer);
 router.put('/orders/:id/cancel', cancelOrderByCustomer);
 router.put('/orders/:id/request-refund', requestOrderRefund);

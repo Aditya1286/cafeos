@@ -7,7 +7,7 @@ import inventoryService from '../services/dashboard/inventory';
 import businessService from '../services/dashboard/business';
 import analyticsService from '../services/dashboard/analytics';
 import { toast } from '../utils/toast';
-import { getSocket } from '../services/socket';
+import { getSocket, joinBusinessRoom, onReconnect } from '../services/socket';
 import { DashboardAnalytics } from '../types';
 
 interface UseOwnerDashboardDataOptions {
@@ -16,7 +16,14 @@ interface UseOwnerDashboardDataOptions {
   onOrderUpdated?: (patch: { orderId: string; orderStatus: string }) => void;
   onCustomerMarkedPaid?: (patch: { orderId: string; customerMarkedPaidAt: string }) => void;
   onRefundRequested?: (patch: { orderId: string; refundRequestedAt: string }) => void;
+  /** Fired after a reconnect re-sync, so any other order list a caller keeps can re-fetch too. */
+  onResync?: () => void;
 }
+
+const NEW_ORDER_SOUND_URL = 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3';
+const playNewOrderSound = () => {
+  try { new Audio(NEW_ORDER_SOUND_URL).play().catch(() => {}); } catch {}
+};
 
 /**
  * Loads every dataset the owner dashboard renders (business profile, live
@@ -34,6 +41,9 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
   const [business, setBusiness] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [newlyArrivedOrderId, setNewlyArrivedOrderId] = useState<string | null>(null);
+  // Latest orders for the reconnect re-sync below, which runs from a long-lived listener.
+  const ordersRef = useRef<any[]>([]);
+  ordersRef.current = orders;
 
   const fetchDashboardData = async () => {
     try {
@@ -58,8 +68,7 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
       setAnalytics(analRes.data || null);
 
       if (profileRes.data.business?._id) {
-        const socket = getSocket();
-        socket.emit('join_business_room', profileRes.data.business._id);
+        joinBusinessRoom(profileRes.data.business._id);
       }
     } catch (err) {
       console.error('Failed to load dashboard data:', err);
@@ -91,7 +100,7 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
     socket.on('order:new', (newOrder: any) => {
       setOrders(prev => [newOrder, ...prev]);
       toast(`🔔 New order ${newOrder.orderNumber || newOrder.orderId} arrived!`);
-      try { new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3').play().catch(() => {}); } catch {}
+      playNewOrderSound();
       const arrivedId = newOrder._id || newOrder.orderId;
       setNewlyArrivedOrderId(arrivedId);
       setTimeout(() => setNewlyArrivedOrderId(prev => (prev === arrivedId ? null : prev)), 5000);
@@ -116,9 +125,42 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
       callbacksRef.current.onRefundRequested?.(updated);
     });
 
+    // Anything that happened while the socket was down (Wi-Fi drop, laptop asleep, deploy) never
+    // arrives as an event, so re-read the live data once the business room is re-joined — and
+    // ring for any new order that came in meanwhile, since the kitchen never heard it.
+    const resyncAfterReconnect = async () => {
+      try {
+        const [ordersRes, tblRes, analRes] = await Promise.all([
+          ordersService.list(),
+          tablesService.list(),
+          analyticsService.getDashboard()
+        ]);
+        const fresh: any[] = ordersRes.data || [];
+        const known = new Set(ordersRef.current.map((o) => o._id));
+        const missed = fresh.filter((o) => !known.has(o._id) && o.orderStatus === 'PLACED');
+
+        setOrders(fresh);
+        setTables(tblRes.data || []);
+        setAnalytics(analRes.data || null);
+
+        if (missed.length > 0) {
+          toast(`🔔 ${missed.length} new order${missed.length === 1 ? '' : 's'} arrived while you were offline`);
+          playNewOrderSound();
+          const arrivedId = missed[0]._id;
+          setNewlyArrivedOrderId(arrivedId);
+          setTimeout(() => setNewlyArrivedOrderId(prev => (prev === arrivedId ? null : prev)), 5000);
+        }
+        callbacksRef.current.onResync?.();
+      } catch (err) {
+        console.error('Failed to re-sync dashboard after reconnect:', err);
+      }
+    };
+    const stopResync = onReconnect(resyncAfterReconnect);
+
     return () => {
       socket.off('order:new'); socket.off('order:updated'); socket.off('order:customer_marked_paid');
       socket.off('order:refund_requested');
+      stopResync();
     };
   }, []);
 

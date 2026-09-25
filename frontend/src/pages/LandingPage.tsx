@@ -31,14 +31,14 @@ export const LandingPage: React.FC = () => {
       role: 'Owner & Head Barista',
       business: 'The Artisan Roastery, Mumbai',
       avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&q=80',
-      quote: `${APP_NAME} completely eliminated printed paper tickets. Our kitchen staff receives orders instantly, and our table turnover increased by 30% in the first month.`
+      quote: `${APP_NAME} completely eliminated printed paper tickets. Our kitchen staff receives orders instantly, and we served 30% more tables in the first month.`
     },
     {
       name: 'Elena Rostova',
       role: 'Founder & Manager',
       business: 'Velvet Espresso & Bakery, Delhi',
       avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&q=80',
-      quote: 'The financial ledger is a game changer. I used to spend 2 hours every Sunday matching payments and fees. Now it is double-entry reconciled automatically.'
+      quote: 'The payments page is a game changer. I used to spend 2 hours every Sunday matching payments and fees. Now it’s all worked out for me.'
     },
     {
       name: 'Rohan Deshmukh',
@@ -51,20 +51,20 @@ export const LandingPage: React.FC = () => {
 
   const faqs = [
     {
-      q: 'Do I need special hardware to run the KDS (Kitchen Display System)?',
-      a: `No special hardware is required! ${APP_NAME} works on any web-enabled browser, including standard iPads, Android tablets, laptops, or smartphones already in your kitchen.`
+      q: 'Do I need special equipment for the kitchen screen?',
+      a: `No special hardware is required! ${APP_NAME} works in any web browser — on iPads, Android tablets, laptops, or smartphones already in your kitchen.`
     },
     {
-      q: 'How does the platform commission work?',
-      a: 'We take a 3% commission on every completed order, excluding GST (configurable from the Super Admin dashboard). Since payments go straight to your own UPI or counter, commission accrues into a running ledger that you settle with us on a fixed cycle — never deducted from a customer\'s payment.'
+      q: 'How much do you charge per order?',
+      a: 'We charge 3% of each completed order (before GST). Customers pay you directly by UPI or cash, so we never take money from their payment — instead, our fee adds up and you pay it to us every billing period.'
     },
     {
       q: 'Can customers order directly without downloading an app?',
-      a: 'Yes! Customers scan the unique table QR code, which opens the business’s digital menu directly in their mobile browser. They can browse, select variants, and order as a guest in under 45 seconds.'
+      a: 'Yes! Customers scan the unique table QR code, which opens your menu right in their phone’s browser. They can look through it, pick options, and order without signing up.'
     },
     {
       q: 'Can I manage multiple business locations under one account?',
-      a: 'Absolutely. Multi-tenant architecture allows business owners to manage multiple branch locations, menus, tables, and staff permissions from a single unified owner dashboard.'
+      a: 'Yes. You can run several branches — each with its own menu, tables and staff — from one owner dashboard.'
     }
   ];
 
@@ -101,7 +101,7 @@ export const LandingPage: React.FC = () => {
           {/* Trust Pill Badge */}
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-50 border border-red-200 text-red-700 text-xs font-bold mb-8 shadow-sm">
             <span className="flex h-2 w-2 rounded-full bg-red-600 animate-ping" />
-            <span>Trusted by 500+ independent businesses & QSRs</span>
+            <span>Trusted by 500+ cafés, restaurants & food stalls</span>
           </div>
 
           {/* Animated Hero Headline */}
@@ -115,7 +115,7 @@ export const LandingPage: React.FC = () => {
 
           {/* Subheadline */}
           <p className="text-base sm:text-lg md:text-xl text-slate-600 max-w-3xl mx-auto mb-10 leading-relaxed font-medium">
-            Contactless ordering, real-time kitchen displays, and a financial ledger that actually makes sense — all in one place.
+            Customers order from their phone, orders go straight to your kitchen, and your money is easy to track — all in one place.
           </p>
 
           {/* Hero CTAs */}
@@ -148,27 +148,27 @@ export const LandingPage: React.FC = () => {
                   https://app.{APP_SLUG}.com/dashboard
                 </div>
                 <div className="text-[11px] font-bold text-emerald-700 flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse" /> Live KDS Sync
+                  <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse" /> Live
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-left p-2">
                 <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                  <span className="text-[10px] text-slate-500 font-bold uppercase">Today's Revenue</span>
+                  <span className="text-[10px] text-slate-500 font-bold uppercase">Today's Sales</span>
                   <div className="text-2xl font-black text-emerald-700 mt-1">₹42,850</div>
                   <span className="text-[10px] text-emerald-700 font-bold">↑ 18% vs yesterday</span>
                 </div>
 
                 <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                  <span className="text-[10px] text-slate-500 font-bold uppercase">Active Orders (KDS)</span>
-                  <div className="text-2xl font-black text-red-600 mt-1">8 Active</div>
-                  <span className="text-[10px] text-slate-500 font-semibold">Avg prep time: 8 mins</span>
+                  <span className="text-[10px] text-slate-500 font-bold uppercase">Orders in Kitchen</span>
+                  <div className="text-2xl font-black text-red-600 mt-1">8 Cooking</div>
+                  <span className="text-[10px] text-slate-500 font-semibold">Ready in about 8 mins</span>
                 </div>
 
                 <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                  <span className="text-[10px] text-slate-500 font-bold uppercase">Commission Accrued</span>
+                  <span className="text-[10px] text-slate-500 font-bold uppercase">Our Fee</span>
                   <div className="text-2xl font-black text-slate-900 mt-1">3% / order</div>
-                  <span className="text-[10px] text-slate-500 font-semibold">Double-entry ledger</span>
+                  <span className="text-[10px] text-slate-500 font-semibold">Shown clearly for every order</span>
                 </div>
               </div>
             </div>
@@ -211,7 +211,7 @@ export const LandingPage: React.FC = () => {
             </h2>
 
             <p className="text-slate-600 text-sm leading-relaxed font-medium">
-              Guests scan, order, and pay — no app download, no waiting for a server. Table QR codes automatically route orders to the kitchen instantly.
+              Guests scan, order, and pay — no app download, no waiting for a server. Orders from a table's QR code go straight to the kitchen.
             </p>
 
             <ul className="space-y-3 text-xs text-slate-700 font-semibold">
@@ -274,8 +274,8 @@ export const LandingPage: React.FC = () => {
           <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-xl order-2 md:order-1">
             <div className="space-y-3">
               <div className="flex items-center justify-between pb-2 border-b border-slate-200 text-xs font-bold text-slate-800">
-                <span>Kitchen Ticket Stream</span>
-                <span className="text-red-600 font-mono font-bold">3 Active Tickets</span>
+                <span>Kitchen Orders</span>
+                <span className="text-red-600 font-mono font-bold">3 In Progress</span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -316,7 +316,7 @@ export const LandingPage: React.FC = () => {
             </div>
 
             <h2 className="text-3xl sm:text-4xl font-black text-slate-900 leading-tight">
-              Kitchen Display System That Ends Order Confusion
+              A Kitchen Screen That Ends Order Mix-Ups
             </h2>
 
             <p className="text-slate-600 text-sm leading-relaxed font-medium">
@@ -325,13 +325,13 @@ export const LandingPage: React.FC = () => {
 
             <ul className="space-y-3 text-xs text-slate-700 font-semibold">
               <li className="flex items-center gap-2.5">
-                <CheckCircle2 className="w-4 h-4 text-red-600 flex-shrink-0" /> Live real-time push notifications
+                <CheckCircle2 className="w-4 h-4 text-red-600 flex-shrink-0" /> New orders pop up instantly
               </li>
               <li className="flex items-center gap-2.5">
-                <CheckCircle2 className="w-4 h-4 text-red-600 flex-shrink-0" /> Color-coded preparation timers & audio alert chimes
+                <CheckCircle2 className="w-4 h-4 text-red-600 flex-shrink-0" /> Colour-coded timers and a sound for each new order
               </li>
               <li className="flex items-center gap-2.5">
-                <CheckCircle2 className="w-4 h-4 text-red-600 flex-shrink-0" /> Automatic ingredient BOM stock deduction on order completion
+                <CheckCircle2 className="w-4 h-4 text-red-600 flex-shrink-0" /> Stock goes down on its own as orders are completed
               </li>
             </ul>
           </div>
@@ -345,26 +345,26 @@ export const LandingPage: React.FC = () => {
             </div>
 
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200">
-              ₹0 reconciliation errors
+              No more mismatched totals
             </div>
 
             <h2 className="text-3xl sm:text-4xl font-black text-slate-900 leading-tight">
-              Double-Entry Ledger Built for Monetary Precision
+              Know Where Every Rupee Goes
             </h2>
 
             <p className="text-slate-600 text-sm leading-relaxed font-medium">
-              Know exactly what you made, spent, and owe — without spreadsheets or a bookkeeper on standby. A 3% commission accrues per order, excluding GST, and settles with us on your own cycle.
+              Know exactly what you made, spent, and owe — without spreadsheets or a bookkeeper on standby. Our 3% fee per order (before GST) adds up, and you pay it to us every billing period.
             </p>
 
             <ul className="space-y-3 text-xs text-slate-700 font-semibold">
               <li className="flex items-center gap-2.5">
-                <CheckCircle2 className="w-4 h-4 text-red-600 flex-shrink-0" /> All monetary values stored in integer paise for 100% precision
+                <CheckCircle2 className="w-4 h-4 text-red-600 flex-shrink-0" /> Every amount is exact, down to the paisa
               </li>
               <li className="flex items-center gap-2.5">
-                <CheckCircle2 className="w-4 h-4 text-red-600 flex-shrink-0" /> Immutable ledger records for gross payments, platform fees, and net payouts
+                <CheckCircle2 className="w-4 h-4 text-red-600 flex-shrink-0" /> A permanent record of your sales, our fees, and what you keep
               </li>
               <li className="flex items-center gap-2.5">
-                <CheckCircle2 className="w-4 h-4 text-red-600 flex-shrink-0" /> Idempotent webhook verification protects against double charges
+                <CheckCircle2 className="w-4 h-4 text-red-600 flex-shrink-0" /> Built-in checks stop anyone being charged twice
               </li>
             </ul>
           </div>
@@ -373,8 +373,8 @@ export const LandingPage: React.FC = () => {
             <div className="flex items-center gap-2 border-b border-slate-200 pb-3 mb-4">
               {[
                 { id: 'sales', label: 'Daily Sales' },
-                { id: 'expenses', label: 'Platform Fees' },
-                { id: 'reports', label: 'Settlements' }
+                { id: 'expenses', label: 'Our Fees' },
+                { id: 'reports', label: 'What You Owe' }
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -393,7 +393,7 @@ export const LandingPage: React.FC = () => {
             {activeLedgerTab === 'sales' && (
               <div className="space-y-3 text-xs">
                 <div className="flex justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">
-                  <span className="font-semibold text-slate-700">Gross Sales Today (48 Orders)</span>
+                  <span className="font-semibold text-slate-700">Total Sales Today (48 Orders)</span>
                   <span className="font-extrabold text-emerald-700">₹42,850.00</span>
                 </div>
                 <div className="flex justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">
@@ -406,11 +406,11 @@ export const LandingPage: React.FC = () => {
             {activeLedgerTab === 'expenses' && (
               <div className="space-y-3 text-xs">
                 <div className="flex justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">
-                  <span className="font-semibold text-slate-700">Platform Commission Rate</span>
+                  <span className="font-semibold text-slate-700">Our Fee</span>
                   <span className="font-extrabold text-red-600">3% (excl. GST)</span>
                 </div>
                 <div className="flex justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">
-                  <span className="font-semibold text-slate-700">Commission Accrued (48 orders)</span>
+                  <span className="font-semibold text-slate-700">Fee So Far (48 orders)</span>
                   <span className="font-bold text-red-600">₹1,285.50</span>
                 </div>
               </div>
@@ -423,7 +423,7 @@ export const LandingPage: React.FC = () => {
                   <span className="font-extrabold text-slate-900">₹44,992.50</span>
                 </div>
                 <div className="flex justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">
-                  <span className="font-semibold text-slate-700">Commission Due This Cycle</span>
+                  <span className="font-semibold text-slate-700">Fee Due This Period</span>
                   <span className="font-extrabold text-emerald-700">₹1,285.50</span>
                 </div>
               </div>
@@ -437,7 +437,7 @@ export const LandingPage: React.FC = () => {
         <div className="max-w-6xl mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
           <div>
             <div className="text-4xl md:text-5xl font-black text-slate-900 mb-2">500+</div>
-            <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Independent Businesses</p>
+            <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Businesses</p>
           </div>
 
           <div>
@@ -447,12 +447,12 @@ export const LandingPage: React.FC = () => {
 
           <div>
             <div className="text-4xl md:text-5xl font-black text-slate-900 mb-2">30%</div>
-            <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Faster Table Turnover</p>
+            <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Faster Table Turnaround</p>
           </div>
 
           <div>
             <div className="text-4xl md:text-5xl font-black text-emerald-700 mb-2">99.9%</div>
-            <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">System Uptime</p>
+            <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Time Online</p>
           </div>
         </div>
       </section>
@@ -597,7 +597,7 @@ export const LandingPage: React.FC = () => {
                     <div className="w-4 h-4 rounded-full bg-[#2d2d30] flex items-center justify-center shrink-0">
                       <Check className="w-2.5 h-2.5 text-zinc-400 stroke-[3]" />
                     </div>
-                    <span><strong className="font-bold text-white">3%</strong> Order Commission</span>
+                    <span><strong className="font-bold text-white">3%</strong> Fee per Order</span>
                   </li>
                   <li className="flex items-center gap-3">
                     <div className="w-4 h-4 rounded-full bg-[#2d2d30] flex items-center justify-center shrink-0">
@@ -626,7 +626,7 @@ export const LandingPage: React.FC = () => {
                 <div className="bg-white rounded-2xl p-6 mb-8 border border-zinc-200/60 shadow-sm">
                   <h3 className="text-2xl font-bold text-zinc-900 mb-2">Basic Pro</h3>
                   <p className="text-xs text-zinc-600 leading-relaxed font-normal">
-                    Full digital menu, live KDS & inventory BOM.
+                    Full menu, live kitchen screen & stock tracking.
                   </p>
                 </div>
 
@@ -666,19 +666,19 @@ export const LandingPage: React.FC = () => {
                     <div className="w-4 h-4 rounded-full bg-[#e4e4e7] flex items-center justify-center shrink-0">
                       <Check className="w-2.5 h-2.5 text-zinc-600 stroke-[3]" />
                     </div>
-                    <span><strong className="font-bold text-zinc-900">Live Kitchen KDS</strong> Display</span>
+                    <span><strong className="font-bold text-zinc-900">Live Kitchen</strong> Screen</span>
                   </li>
                   <li className="flex items-center gap-3">
                     <div className="w-4 h-4 rounded-full bg-[#e4e4e7] flex items-center justify-center shrink-0">
                       <Check className="w-2.5 h-2.5 text-zinc-600 stroke-[3]" />
                     </div>
-                    <span><strong className="font-bold text-zinc-900">Recipe BOM</strong> Inventory Deduction</span>
+                    <span><strong className="font-bold text-zinc-900">Automatic</strong> Stock Tracking</span>
                   </li>
                   <li className="flex items-center gap-3">
                     <div className="w-4 h-4 rounded-full bg-[#e4e4e7] flex items-center justify-center shrink-0">
                       <Check className="w-2.5 h-2.5 text-zinc-600 stroke-[3]" />
                     </div>
-                    <span>Staff RBAC Roles</span>
+                    <span>Staff Roles & Permissions</span>
                   </li>
                   <li className="flex items-center gap-3">
                     <div className="w-4 h-4 rounded-full bg-[#e4e4e7] flex items-center justify-center shrink-0">
@@ -743,7 +743,7 @@ export const LandingPage: React.FC = () => {
                     <div className="w-4 h-4 rounded-full bg-[#2d2d30] flex items-center justify-center shrink-0">
                       <Check className="w-2.5 h-2.5 text-zinc-400 stroke-[3]" />
                     </div>
-                    <span><strong className="font-bold text-white">Advanced Financial</strong> Reports</span>
+                    <span><strong className="font-bold text-white">Detailed Money</strong> Reports</span>
                   </li>
                   <li className="flex items-center gap-3">
                     <div className="w-4 h-4 rounded-full bg-[#2d2d30] flex items-center justify-center shrink-0">
@@ -755,7 +755,7 @@ export const LandingPage: React.FC = () => {
                     <div className="w-4 h-4 rounded-full bg-[#2d2d30] flex items-center justify-center shrink-0">
                       <Check className="w-2.5 h-2.5 text-zinc-400 stroke-[3]" />
                     </div>
-                    <span>SSO & Staff Controls</span>
+                    <span>One-Click Staff Login & Controls</span>
                   </li>
                   <li className="flex items-center gap-3">
                     <div className="w-4 h-4 rounded-full bg-[#2d2d30] flex items-center justify-center shrink-0">
@@ -815,7 +815,7 @@ export const LandingPage: React.FC = () => {
           </h2>
 
           <p className="text-sm md:text-base text-slate-300 max-w-2xl mx-auto font-medium">
-            Join 500+ independent businesses streamlining QR ordering, kitchen display systems, and financial ledgers today.
+            Join 500+ businesses using QR ordering, a live kitchen screen and simple money tracking today.
           </p>
 
           <div>

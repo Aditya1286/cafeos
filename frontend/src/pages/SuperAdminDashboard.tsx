@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ShieldCheck, RefreshCw } from 'lucide-react';
+import { ShieldCheck, RefreshCw, FlaskConical } from 'lucide-react';
 import MovingBorderButton from '@/atoms/MovingBorderButton';
 import NavbarAdmin from '@/organisms/super-admin/NavbarAdmin';
 import CommandPalette from '@/organisms/super-admin/CommandPalette';
@@ -27,7 +27,8 @@ import { BestSellersPanel } from '@/organisms/super-admin/BestSellersPanel';
 import { PlatformInsightsPanel } from '@/organisms/super-admin/PlatformInsightsPanel';
 import { BusinessHourlyHeatmapPanel } from '@/organisms/super-admin/BusinessHourlyHeatmapPanel';
 import { BusinessesManagementTable } from '@/organisms/super-admin/BusinessesManagementTable';
-import { BusinessesGridPanel } from '@/organisms/super-admin/BusinessesGridPanel';
+import { BusinessesGridPanel, BusinessFilter } from '@/organisms/super-admin/BusinessesGridPanel';
+import { matchesBusinessFilter } from '@/organisms/super-admin/BusinessesGridPanel/businessNetwork';
 import { RemittanceQueueTable } from '@/organisms/super-admin/RemittanceQueueTable';
 import { PlatformAnalyticsPanel } from '@/organisms/super-admin/PlatformAnalyticsPanel';
 import { GlobalKitchenMonitor } from '@/organisms/super-admin/GlobalKitchenMonitor';
@@ -37,8 +38,8 @@ import { SystemHealthPanel } from '@/organisms/super-admin/SystemHealthPanel';
 import { AdminRefundsPanel } from '@/organisms/super-admin/AdminRefundsPanel';
 import { SupportTicketsPanel } from '@/organisms/super-admin/SupportTicketsPanel';
 import { RefundHistoryModal } from '@/molecules/RefundHistoryModal';
-import { useAdminRefunds } from '../hooks/useAdminRefunds';
 import { useSupportDesk } from '../hooks/useSupportDesk';
+import { useAdminRefunds } from '../hooks/useAdminRefunds';
 
 export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -50,15 +51,18 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
   const [selectedBusinessForFinance, setSelectedBusinessForFinance] = useState<string | null>(null);
   const [spotlightBusiness, setSpotlightBusiness] = useState<AdminBusinessSummary | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'SUSPENDED'>('ALL');
+  const [statusFilter, setStatusFilter] = useState<BusinessFilter>('ALL');
 
   useEffect(() => {
     document.documentElement.classList.remove('dark');
   }, []);
 
-  const { overview, businesses, liveOrders, loading, fetchDashboardData, handleToggleBusinessStatus, handleChangeBusinessPlan } = useSuperAdminDashboardData();
+  const {
+    overview, businesses, liveOrders, loading, fetchDashboardData, handleToggleBusinessStatus, handleChangeBusinessPlan,
+    updatingDemoId, handleSetBusinessDemo,
+  } = useSuperAdminDashboardData();
   const { systemHealth } = useSystemHealth(activeTab === 'system');
-  const { analyticsData } = useSuperAdminAnalytics(dateRange);
+  const { analyticsData, refresh: refreshAnalytics } = useSuperAdminAnalytics(dateRange);
   const remittanceQueue = useRemittanceQueue(activeTab);
   const subscriptionRequestsQueue = useSubscriptionRequests(activeTab);
   const adminRefunds = useAdminRefunds(activeTab === 'refunds');
@@ -67,16 +71,35 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
 
   const handleExport = (format: 'csv' | 'pdf') => {
     if (format === 'csv') {
-      const header = 'Business Name,Slug,Email,Status,Commission Rate (%),Commission Owed (₹),Overdue (₹)\n';
+      const header = 'Business Name,Menu Link,Email,Status,Fee per Order (%),Fees Owed (₹),Late (₹)\n';
       const rows = businesses
         .map((r) => `"${r.name}","${r.slug}","${r.email}","${r.status}",${r.commissionRatePercentage ?? 3},${(r.totalCommissionOwedPaise || 0) / 100},${(r.overdueAmountPaise || 0) / 100}`)
         .join('\n');
       downloadCsv(`${APP_SLUG}_businesses_export_${Date.now()}.csv`, header, rows);
-      toast.success('CSV Report downloaded successfully!');
+      toast.success('Report downloaded!');
     } else {
       window.print();
-      toast('PDF Print Preview initiated');
+      toast('Opening print view…');
     }
+  };
+
+  // The API already leaves demo businesses out of its aggregates; panels that derive analytics
+  // client-side from the businesses list (constellation, insights, heatmap picker, counts) get
+  // this pre-filtered list so they apply the same exclusion. Management views keep every business.
+  const demoFilterEnabled = overview?.demoFilter?.enabled ?? false;
+  const hiddenDemoCount = overview?.demoFilter?.excludedCount ?? 0;
+  const analyticsBusinesses = demoFilterEnabled ? businesses.filter((b) => !b.isDemo) : businesses;
+
+  // Overview metrics and the date-ranged analytics are separate requests — refresh both, or the
+  // charts (payment methods, revenue, best sellers, ...) keep showing numbers from the last load.
+  const refreshAll = () => {
+    fetchDashboardData();
+    refreshAnalytics();
+  };
+
+  const setBusinessDemo = async (businessId: string, isDemo: boolean) => {
+    await handleSetBusinessDemo(businessId, isDemo);
+    refreshAnalytics();
   };
 
   const filteredBusinesses = businesses.filter((r) => {
@@ -84,12 +107,11 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
       r.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       r.slug.toLowerCase().includes(searchQuery.toLowerCase()) ||
       r.email.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'ALL' || r.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    return matchesSearch && matchesBusinessFilter(r, statusFilter);
   });
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F8FAFC] text-slate-900 font-sans selection:bg-red-600 selection:text-white">
+    <div className="dashboard-compact-type min-h-screen flex flex-col bg-[#F8FAFC] text-slate-900 font-sans selection:bg-red-600 selection:text-white">
       <CommandPalette
         isOpen={isCommandOpen}
         onClose={() => setIsCommandOpen(false)}
@@ -143,8 +165,8 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
         openTicketsCount={supportDesk.needsAttentionCount}
       />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-8 space-y-5 sm:space-y-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 pb-4 border-b border-slate-200">
           <div>
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-50 text-red-600 text-xs font-extrabold border border-red-200 mb-2">
               <ShieldCheck className="w-4 h-4" /> Global Platform Management
@@ -153,17 +175,27 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
               Good evening, {user?.name?.split(' ')[0] || 'Admin'} 👋
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 font-semibold mt-1">
-              Real-time multi-tenant business metrics, commission accrual, & remittance tracking.
+              See how every business is doing, what fees they owe, and what's been paid.
             </p>
           </div>
 
           <div className="flex items-center gap-3">
-            <MovingBorderButton onClick={fetchDashboardData}>
+            <MovingBorderButton onClick={refreshAll}>
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-              <span>Refresh Live Data</span>
+              <span>Refresh</span>
             </MovingBorderButton>
           </div>
         </div>
+
+        {demoFilterEnabled && hiddenDemoCount > 0 && (activeTab === 'overview' || activeTab === 'analytics') && (
+          <div className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold">
+            <FlaskConical className="w-4 h-4 shrink-0" />
+            <span>
+              {hiddenDemoCount} demo account{hiddenDemoCount === 1 ? ' is' : 's are'} not counted in these numbers.
+              Manage them from the Businesses tab.
+            </span>
+          </div>
+        )}
 
         {activeTab === 'overview' && (
           <>
@@ -178,7 +210,7 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
               <LiveOrdersPanel liveOrders={liveOrders} />
             </div>
 
-            <BusinessConstellation businesses={businesses} onSelectBusiness={setSpotlightBusiness} />
+            <BusinessConstellation businesses={analyticsBusinesses} onSelectBusiness={setSpotlightBusiness} />
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
               <CancellationRatePanel
@@ -191,12 +223,12 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
 
             <PlatformInsightsPanel
               metrics={overview?.metrics ?? null}
-              businesses={businesses}
+              businesses={analyticsBusinesses}
               peakHeatmap={analyticsData?.peakHeatmap ?? []}
             />
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              <BusinessHourlyHeatmapPanel businesses={businesses} />
+              <BusinessHourlyHeatmapPanel businesses={analyticsBusinesses} />
             </div>
 
             <BusinessesManagementTable
@@ -213,14 +245,16 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
 
         {activeTab === 'businesses' && (
           <BusinessesGridPanel
+            allBusinesses={businesses}
             businesses={filteredBusinesses}
-            totalCount={businesses.length}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             statusFilter={statusFilter}
             onStatusFilterChange={setStatusFilter}
             onOpenFinance={setSelectedBusinessForFinance}
             onOpenStatusModal={setSelectedBusinessForModal}
+            updatingDemoId={updatingDemoId}
+            onSetDemo={setBusinessDemo}
           />
         )}
 
@@ -282,8 +316,8 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
         {activeTab === 'analytics' && (
           <PlatformAnalyticsPanel
             metrics={overview?.metrics ?? null}
-            activeBusinessesCount={overview?.metrics?.activeBusinesses ?? businesses.filter((b) => b.status === 'ACTIVE').length}
-            totalBusinessesCount={businesses.length}
+            activeBusinessesCount={overview?.metrics?.activeBusinesses ?? analyticsBusinesses.filter((b) => b.status === 'ACTIVE').length}
+            totalBusinessesCount={analyticsBusinesses.length}
             paymentMethodBreakdown={analyticsData?.paymentMethodBreakdown ?? []}
             onExportCsv={() => handleExport('csv')}
           />

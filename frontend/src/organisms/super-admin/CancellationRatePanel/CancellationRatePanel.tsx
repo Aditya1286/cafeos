@@ -27,14 +27,14 @@ export const CancellationRatePanel = ({ stats, timeseries, worstBusinesses }: Ca
   const chartData = timeseries.map((t) => ({ time: t.time, rate: t.rate ?? 0, hasData: t.total > 0 }));
 
   return (
-    <div className="lg:col-span-6 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-5">
+    <div className="lg:col-span-6 bg-white p-4 sm:p-6 rounded-3xl border border-slate-200 shadow-sm space-y-5 min-w-0">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h3 className="text-base font-extrabold text-slate-900">
             Cancellation & Refund Rate
           </h3>
           <p className="text-xs text-slate-500 font-medium">
-            Share of completed orders that were cancelled or refunded instead
+            Out of finished orders, how many were cancelled or refunded
           </p>
         </div>
         <Ban className="w-5 h-5 text-slate-300 shrink-0" />
@@ -74,11 +74,11 @@ export const CancellationRatePanel = ({ stats, timeseries, worstBusinesses }: Ca
               Highest rate this period (min. 3 orders)
             </span>
             {worstBusinesses.length === 0 ? (
-              <p className="text-xs text-slate-400 font-medium py-2">Not enough order volume yet to rank businesses.</p>
+              <p className="text-xs text-slate-400 font-medium py-2">Not enough orders yet to compare businesses.</p>
             ) : (
               <div className="space-y-2">
                 {worstBusinesses.map((b) => (
-                  <div key={b.businessId} className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+                  <div key={b.businessId} className="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-slate-50 border border-slate-200">
                     <div className="min-w-0">
                       <div className="text-xs font-extrabold text-slate-900 truncate">{b.name}</div>
                       <div className="text-[10px] text-slate-400 font-medium">

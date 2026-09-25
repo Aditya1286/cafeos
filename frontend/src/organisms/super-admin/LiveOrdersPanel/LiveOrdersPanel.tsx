@@ -7,7 +7,7 @@ interface LiveOrdersPanelProps {
 }
 
 export const LiveOrdersPanel = ({ liveOrders }: LiveOrdersPanelProps) => (
-  <div className="lg:col-span-4 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+  <div className="lg:col-span-4 bg-white p-4 sm:p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4 min-w-0">
     <div className="flex items-center justify-between pb-3 border-b border-slate-100">
       <div className="flex items-center gap-2">
         <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
@@ -15,8 +15,8 @@ export const LiveOrdersPanel = ({ liveOrders }: LiveOrdersPanelProps) => (
           Live Orders
         </h3>
       </div>
-      <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
-        Real-Time Updates Active
+      <span className="hidden min-[380px]:inline text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+        Updating live
       </span>
     </div>
 
@@ -24,7 +24,7 @@ export const LiveOrdersPanel = ({ liveOrders }: LiveOrdersPanelProps) => (
       {liveOrders.length === 0 ? (
         <EmptyState
           title="No live orders yet"
-          description="New orders will stream in here in real time as customers check out."
+          description="New orders show up here the moment customers place them."
         />
       ) : (
         <AnimatePresence initial={false}>
@@ -35,19 +35,19 @@ export const LiveOrdersPanel = ({ liveOrders }: LiveOrdersPanelProps) => (
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs hover:border-slate-300 transition-colors"
+              className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3 text-xs hover:border-slate-300 transition-colors"
             >
-              <div>
+              <div className="min-w-0">
                 <div className="font-extrabold text-slate-900 flex items-center gap-1.5">
                   <span>Order #{order.orderNumber || order._id?.toString().slice(-6)}</span>
                   <span className="text-[10px] text-slate-400 font-normal">· {order.time || 'Just now'}</span>
                 </div>
-                <div className="text-[11px] font-medium text-slate-500 mt-0.5">
+                <div className="text-[11px] font-medium text-slate-500 mt-0.5 truncate">
                   {order.businessName || 'Unknown business'} · {order.itemsCount ?? 0} items
                 </div>
               </div>
 
-              <div className="text-right space-y-1">
+              <div className="text-right space-y-1 shrink-0">
                 <div className="font-black text-slate-900">
                   ₹{order.total ?? 0}
                 </div>

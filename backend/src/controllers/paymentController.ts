@@ -184,7 +184,7 @@ export const markRemittanceClaimedPaid = async (req: AuthRequest, res: Response)
 
     return res.json({
       success: true,
-      message: 'Thanks — we\'ll confirm receipt and update your ledger shortly.',
+      message: 'Thanks — we\'ll check the payment and update your account soon.',
       data: { periodsMarked: result.matchedCount, merchantMarkedPaidAt: now }
     });
   } catch (error: any) {

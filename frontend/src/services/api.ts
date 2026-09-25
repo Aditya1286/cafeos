@@ -38,7 +38,6 @@ export const apiRequest = async (
   });
 
   const data = await response.json();
-  console.log("data",data)
 
   if (!response.ok) {
     // Most endpoints return {error: {message}}, but a few (e.g. otp.controller) return a

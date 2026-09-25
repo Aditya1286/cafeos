@@ -86,7 +86,7 @@ export const SettingsPanel = ({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
-            <span className="text-[10px] font-extrabold uppercase text-slate-400">Address Location</span>
+            <span className="text-[10px] font-extrabold uppercase text-slate-400">Address</span>
             <div className="text-xs font-extrabold text-slate-800">{business?.address || 'Bandra West, Mumbai'}</div>
           </div>
 
@@ -96,7 +96,7 @@ export const SettingsPanel = ({
           </div>
 
           <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
-            <span className="text-[10px] font-extrabold uppercase text-slate-400">Operating Hours</span>
+            <span className="text-[10px] font-extrabold uppercase text-slate-400">Opening Hours</span>
             <div className="text-xs font-extrabold text-slate-800">{business?.openingTime || '08:00'} – {business?.closingTime || '23:00'}</div>
           </div>
 
@@ -213,7 +213,7 @@ export const SettingsPanel = ({
           </div>
 
           <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-center space-y-1">
-            <span className="text-[10px] font-bold text-slate-400 uppercase">Platform Commission</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase">Our Fee per Order</span>
             <div className="text-lg font-black text-orange-600">{business?.commissionRatePercentage ?? 3}%</div>
           </div>
         </div>
@@ -240,8 +240,8 @@ export const SettingsPanel = ({
         </div>
 
         <div>
-          <h3 className="text-base font-black text-slate-900">Public Contactless QR</h3>
-          <p className="text-xs text-slate-500 font-medium mt-0.5">Scan to open digital menu & place orders</p>
+          <h3 className="text-base font-black text-slate-900">Your Menu QR Code</h3>
+          <p className="text-xs text-slate-500 font-medium mt-0.5">Customers scan this to see your menu and order</p>
         </div>
 
         <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 inline-block my-2 shadow-inner">
@@ -255,7 +255,7 @@ export const SettingsPanel = ({
             rel="noreferrer"
             className="block w-full py-3 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs text-center transition-all shadow-md flex items-center justify-center gap-1.5"
           >
-            <span>Test Customer View</span>
+            <span>See What Customers See</span>
             <ExternalLink className="w-3.5 h-3.5" />
           </a>
 

@@ -167,7 +167,7 @@ export const RefundsPanel = ({
         <div>
           <h2 className="text-xl font-black text-slate-900">Refunds & Cancellations</h2>
           <p className="text-xs text-slate-500 font-medium mt-0.5">
-            Every cancelled order, what the customer said, and who processed the refund.
+            Every cancelled order, what the customer said, and who gave the refund.
           </p>
         </div>
         <button
@@ -208,7 +208,7 @@ export const RefundsPanel = ({
             />
             <InsightCard
               icon={Clock}
-              label="Avg. Refund Turnaround"
+              label="Avg. Time to Refund"
               value={insights.avgRefundTurnaroundHours !== null ? `${insights.avgRefundTurnaroundHours}h` : '—'}
               subtext="Request → confirmed"
               color="text-slate-900"

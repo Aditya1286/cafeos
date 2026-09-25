@@ -1,11 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Coffee,
   ShoppingBag,
   Search,
-  Plus,
-  Minus,
   CheckCircle2,
   ArrowRight,
   CreditCard,
@@ -16,8 +14,6 @@ import {
   Star,
   MapPin,
   ShieldCheck,
-  LayoutGrid,
-  ChevronDown,
 } from 'lucide-react';
 import publicMenuService from '../services/public/menu';
 import publicOrdersService from '../services/public/orders';
@@ -26,6 +22,19 @@ import { useOtpVerification } from '@/hooks/useOtpVerification';
 import { formatTime } from '@/utils/DateUtils';
 import { toast } from '@/utils/toast';
 import { SupportWidget } from '@/organisms/SupportWidget';
+import VegMark from '@/atoms/VegMark';
+import MenuItemCard from '@/organisms/customer-menu/MenuItemCard';
+import MenuSection from '@/organisms/customer-menu/MenuSection';
+import MenuJumpSheet from '@/organisms/customer-menu/MenuJumpSheet';
+
+type DietFilter = 'ALL' | 'VEG' | 'NON_VEG';
+
+interface MenuSectionData {
+  id: string;
+  title: string;
+  subtitle?: string;
+  products: any[];
+}
 
 export const CustomerMenuPage: React.FC = () => {
   const { slug, qrToken } = useParams<{ slug: string; qrToken?: string }>();
@@ -35,10 +44,12 @@ export const CustomerMenuPage: React.FC = () => {
   const [table, setTable] = useState<any>(null);
   const [categories, setCategories] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
-  const [showCategorySheet, setShowCategorySheet] = useState(false);
+  const [popularProductIds, setPopularProductIds] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [isVegOnly, setIsVegOnly] = useState(false);
+  const [dietFilter, setDietFilter] = useState<DietFilter>('ALL');
+  // Sections start expanded; a customer collapses what they're not interested in.
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
+  const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
 
   // Cart State: { [productId]: { product, quantity } }
   const [cart, setCart] = useState<Record<string, any>>({});
@@ -66,6 +77,7 @@ export const CustomerMenuPage: React.FC = () => {
           const menuRes = await publicMenuService.getMenu(businessData.id || businessData._id);
           setCategories(menuRes.data.categories || []);
           setProducts(menuRes.data.products || []);
+          setPopularProductIds(menuRes.data.popularProductIds || []);
         } else if (slug) {
           const businessRes = await publicMenuService.getBusinessBySlug(slug);
           setBusiness(businessRes.data);
@@ -73,6 +85,7 @@ export const CustomerMenuPage: React.FC = () => {
           const menuRes = await publicMenuService.getMenu((businessRes.data as any)._id || businessRes.data.id);
           setCategories(menuRes.data.categories || []);
           setProducts(menuRes.data.products || []);
+          setPopularProductIds(menuRes.data.popularProductIds || []);
         }
       } catch (err: any) {
         setError(err.message || 'Unable to load menu.');
@@ -163,12 +176,54 @@ export const CustomerMenuPage: React.FC = () => {
     }
   };
 
-  const filteredProducts = products.filter((p) => {
-    const matchesCategory = selectedCategory === 'ALL' || p.categoryId === selectedCategory;
-    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesVeg = !isVegOnly || p.isVeg;
-    return matchesCategory && matchesSearch && matchesVeg;
-  });
+  // The whole menu is one scroll of sections (toing/Swiggy style) instead of one category at a
+  // time: best sellers first, then every category in the café's own order. Search collapses it
+  // into a single results section.
+  const popularSet = useMemo(() => new Set(popularProductIds), [popularProductIds]);
+  const sections = useMemo<MenuSectionData[]>(() => {
+    const matchesDiet = (p: any) =>
+      dietFilter === 'ALL' || (dietFilter === 'VEG' ? p.isVeg : !p.isVeg);
+    const visible = products.filter(matchesDiet);
+
+    const query = searchQuery.trim().toLowerCase();
+    if (query) {
+      const results = visible.filter(
+        (p) => p.name.toLowerCase().includes(query) || p.description?.toLowerCase().includes(query),
+      );
+      return results.length ? [{ id: 'search', title: `Results for "${searchQuery.trim()}"`, products: results }] : [];
+    }
+
+    const result: MenuSectionData[] = [];
+    const byId = new Map(visible.map((p) => [p._id, p]));
+    const popular = popularProductIds.map((id) => byId.get(id)).filter(Boolean);
+    // A lone best seller reads as an empty shelf; it still gets its "Popular" tag in its category.
+    if (popular.length >= 2) {
+      result.push({ id: 'popular', title: 'Popular here', subtitle: 'Most ordered here in the last 30 days', products: popular });
+    }
+
+    const categoryIdOf = (p: any) => (typeof p.categoryId === 'string' ? p.categoryId : p.categoryId?._id);
+    for (const cat of categories) {
+      const items = visible.filter((p) => categoryIdOf(p) === cat._id);
+      if (items.length) result.push({ id: cat._id, title: cat.name, subtitle: cat.description || undefined, products: items });
+    }
+    // Items whose category is hidden or missing must still be orderable.
+    const known = new Set(categories.map((c) => c._id));
+    const orphans = visible.filter((p) => !known.has(categoryIdOf(p)));
+    if (orphans.length) result.push({ id: 'more', title: 'More items', products: orphans });
+    return result;
+  }, [products, categories, popularProductIds, dietFilter, searchQuery]);
+
+  const toggleSection = (id: string) =>
+    setCollapsedSections((prev) => ({ ...prev, [id]: !prev[id] }));
+
+  const jumpToSection = (id: string) => {
+    setCollapsedSections((prev) => ({ ...prev, [id]: false }));
+    // Wait a frame so a just-expanded section has its height before scrolling to it.
+    requestAnimationFrame(() => sectionRefs.current[id]?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  };
+
+  const toggleDiet = (diet: Exclude<DietFilter, 'ALL'>) =>
+    setDietFilter((prev) => (prev === diet ? 'ALL' : diet));
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 pb-28 selection:bg-orange-500 selection:text-white max-w-md mx-auto relative shadow-xl border-x border-slate-200 font-sans">
@@ -218,163 +273,95 @@ export const CustomerMenuPage: React.FC = () => {
                 15-20 min prep time
               </span>
               <span className="px-2.5 py-0.5 rounded-full bg-orange-50 text-orange-600 text-[10px] font-extrabold uppercase">
-                Contactless QR Order
+                Order From Your Table
               </span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── Search & Filter Controls ────────────────────────────────────── */}
-      <div className="sticky top-0 bg-white z-20 px-4 py-3 border-b border-slate-200 shadow-sm space-y-3">
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search for coffee, pizza, desserts..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 outline-none focus:border-orange-500 focus:bg-white focus:ring-2 focus:ring-orange-100 transition-all font-medium"
-            />
-          </div>
-
-          {/* Veg Only Toggle Button */}
-          <button
-            onClick={() => setIsVegOnly(!isVegOnly)}
-            className={`px-3 py-2 rounded-2xl text-xs font-bold border transition-all flex items-center gap-1.5 shrink-0 ${
-              isVegOnly
-                ? 'bg-emerald-50 border-emerald-400 text-emerald-700 shadow-sm'
-                : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
-            }`}
-          >
-            <span
-              className={`w-3 h-3 rounded-sm border flex items-center justify-center ${isVegOnly ? 'border-emerald-600 bg-white' : 'border-slate-400'}`}
-            >
-              <span
-                className={`w-1.5 h-1.5 rounded-full ${isVegOnly ? 'bg-emerald-600' : 'bg-slate-400'}`}
-              />
-            </span>
-            Veg Only
-          </button>
+      {/* ── Search & Diet Filters (sticky) ─────────────────────────────── */}
+      <div className="sticky top-0 bg-white/95 backdrop-blur z-20 px-4 pt-3 pb-3 border-b border-slate-200 shadow-sm space-y-3">
+        <div className="relative">
+          <input
+            type="search"
+            placeholder={`Search in ${business?.name || 'menu'}`}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-5 pr-11 py-3 rounded-full bg-slate-100 border border-transparent text-sm text-slate-900 placeholder:text-slate-500 outline-none focus:border-orange-400 focus:bg-white focus:ring-2 focus:ring-orange-100 transition-all font-medium"
+          />
+          <Search className="w-5 h-5 absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
         </div>
 
-        {/* Category filter — a single trigger opens a full picker sheet instead of a
-            horizontal scroll list, so this sticky header never has to grow or hide
-            categories off-screen no matter how many a business has. */}
-        <button
-          onClick={() => setShowCategorySheet(true)}
-          className="w-full flex items-center justify-between gap-2 px-4 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-xs font-extrabold text-slate-700 transition-all"
-        >
-          <span className="flex items-center gap-2 truncate">
-            <LayoutGrid className="w-3.5 h-3.5 text-orange-500 shrink-0" />
-            <span className="truncate">
-              {selectedCategory === 'ALL'
-                ? `All Items (${products.length})`
-                : categories.find((c) => c._id === selectedCategory)?.name || 'All Items'}
-            </span>
-          </span>
-          <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-        </button>
+        <div className="flex items-center gap-2">
+          {(['VEG', 'NON_VEG'] as const).map((diet) => {
+            const on = dietFilter === diet;
+            const isVeg = diet === 'VEG';
+            return (
+              <button
+                key={diet}
+                type="button"
+                role="switch"
+                aria-checked={on}
+                aria-label={isVeg ? 'Veg only' : 'Non-veg only'}
+                onClick={() => toggleDiet(diet)}
+                className={`flex items-center gap-2 pl-3 pr-2.5 h-10 rounded-full border transition-all ${
+                  on ? (isVeg ? 'border-emerald-500 bg-emerald-50' : 'border-rose-500 bg-rose-50') : 'border-slate-200 bg-white'
+                }`}
+              >
+                <VegMark isVeg={isVeg} />
+                <span
+                  className={`relative w-8 h-4 rounded-full transition-colors ${
+                    on ? (isVeg ? 'bg-emerald-500' : 'bg-rose-500') : 'bg-slate-200'
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 w-3 h-3 rounded-full bg-white shadow transition-all ${on ? 'left-[18px]' : 'left-0.5'}`}
+                  />
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      {/* ── Product List (Swiggy / Zomato Style) ────────────────────────── */}
-      <div className="p-4 space-y-4">
-        {filteredProducts.length === 0 ? (
-          <div className="py-16 text-center space-y-3 bg-white rounded-3xl border border-slate-200 p-8">
+      {/* ── Menu: one scroll of collapsible, photo-first sections ─────────── */}
+      <div className="px-4">
+        {sections.length === 0 ? (
+          <div className="my-6 py-14 text-center space-y-3 bg-white rounded-3xl border border-slate-200 p-8">
             <ShoppingBag className="w-12 h-12 text-slate-300 mx-auto" />
             <h3 className="text-sm font-bold text-slate-700">No menu items found</h3>
-            <p className="text-xs text-slate-400">Try adjusting your search or veg filter</p>
+            <p className="text-xs text-slate-400">Try a different search or turn off the veg filter</p>
           </div>
         ) : (
-          filteredProducts.map((product) => {
-            const inCart = cart[product._id];
-            return (
-              <div
-                key={product._id}
-                className="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition-all flex justify-between gap-4 items-start relative overflow-hidden"
-              >
-                {/* Left side details */}
-                <div className="flex-1 min-w-0 pr-2">
-                  <div className="flex items-center gap-2 mb-1">
-                    {/* Veg/Non-Veg icon badge */}
-                    <span
-                      className={`w-4 h-4 rounded-sm border-2 flex items-center justify-center shrink-0 ${
-                        product.isVeg ? 'border-emerald-600' : 'border-rose-600'
-                      }`}
-                    >
-                      <span
-                        className={`w-2 h-2 rounded-full ${product.isVeg ? 'bg-emerald-600' : 'bg-rose-600'}`}
-                      />
-                    </span>
-                    {product.preparationTimeMinutes && (
-                      <span className="text-[10px] font-bold text-slate-400">
-                        {product.preparationTimeMinutes} mins
-                      </span>
-                    )}
-                  </div>
-
-                  <h3 className="text-sm font-black text-slate-900 mb-1 leading-snug">
-                    {product.name}
-                  </h3>
-
-                  <div className="text-sm font-black text-slate-900 mb-1.5">
-                    ₹{(product.pricePaise / 100).toFixed(0)}
-                  </div>
-
-                  {product.description && (
-                    <p className="text-xs text-slate-500 line-clamp-2 font-medium leading-relaxed">
-                      {product.description}
-                    </p>
-                  )}
-                </div>
-
-                {/* Right side image & ADD button */}
-                <div className="relative shrink-0 flex flex-col items-center">
-                  <img
-                    src={
-                      product.imageUrl ||
-                      'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=500&q=80'
-                    }
-                    alt={product.name}
-                    className="w-28 h-28 rounded-2xl object-cover shadow-sm bg-slate-100"
-                  />
-
-                  {/* Swiggy Style ADD Floating Button */}
-                  <div className="mt-[-16px] z-10">
-                    {inCart ? (
-                      <div className="flex items-center gap-3 bg-emerald-600 text-white rounded-xl px-3 py-1.5 shadow-lg font-black text-xs">
-                        <button
-                          onClick={() => handleRemoveFromCart(product._id)}
-                          className="hover:scale-125 transition-transform"
-                        >
-                          <Minus className="w-3.5 h-3.5" />
-                        </button>
-                        <span>{inCart.quantity}</span>
-                        <button
-                          onClick={() => handleAddToCart(product)}
-                          className="hover:scale-125 transition-transform"
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => handleAddToCart(product)}
-                        className="px-6 py-2 rounded-xl bg-white border border-emerald-500 text-emerald-600 font-extrabold text-xs shadow-md hover:bg-emerald-50 transition-all uppercase tracking-wider"
-                      >
-                        ADD
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })
+          sections.map((section) => (
+            <MenuSection
+              key={section.id}
+              ref={(el) => {
+                sectionRefs.current[section.id] = el;
+              }}
+              title={section.title}
+              count={section.products.length}
+              subtitle={section.subtitle}
+              collapsed={!!collapsedSections[section.id]}
+              onToggle={() => toggleSection(section.id)}
+            >
+              {section.products.map((product) => (
+                <MenuItemCard
+                  key={product._id}
+                  product={product}
+                  quantity={cart[product._id]?.quantity || 0}
+                  isPopular={section.id !== 'popular' && popularSet.has(product._id)}
+                  onAdd={() => handleAddToCart(product)}
+                  onRemove={() => handleRemoveFromCart(product._id)}
+                />
+              ))}
+            </MenuSection>
+          ))
         )}
       </div>
 
-      {/* ── Sticky Bottom Floating Cart Bar (Swiggy/Zomato Aesthetic) ───── */}
+      {/* ── Sticky Bottom Floating Cart Bar ─────────────────────────────── */}
       {cartItemsList.length > 0 && (
         <div className="fixed bottom-3 left-1/2 -translate-x-1/2 w-[92%] max-w-md z-30">
           <button
@@ -399,62 +386,13 @@ export const CustomerMenuPage: React.FC = () => {
         </div>
       )}
 
-      {/* ── Category Picker Sheet ────────────────────────────────────────── */}
-      {showCategorySheet && (
-        <div
-          className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-end justify-center"
-          onClick={() => setShowCategorySheet(false)}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-md bg-white rounded-t-3xl shadow-2xl border-t border-slate-200 p-6 space-y-4 max-h-[75vh] overflow-y-auto animate-in slide-in-from-bottom duration-300"
-          >
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="text-base font-black text-slate-900">Choose a Category</h3>
-              <button
-                onClick={() => setShowCategorySheet(false)}
-                className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2.5">
-              <button
-                onClick={() => { setSelectedCategory('ALL'); setShowCategorySheet(false); }}
-                className={`px-4 py-3.5 rounded-2xl text-xs font-extrabold text-left transition-all ${
-                  selectedCategory === 'ALL'
-                    ? 'bg-slate-900 text-white shadow-md'
-                    : 'bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100'
-                }`}
-              >
-                All Items
-                <div className={`text-[10px] font-semibold mt-0.5 ${selectedCategory === 'ALL' ? 'text-slate-300' : 'text-slate-400'}`}>
-                  {products.length} items
-                </div>
-              </button>
-              {categories.map((cat) => {
-                const count = products.filter((p) => p.categoryId === cat._id).length;
-                return (
-                  <button
-                    key={cat._id}
-                    onClick={() => { setSelectedCategory(cat._id); setShowCategorySheet(false); }}
-                    className={`px-4 py-3.5 rounded-2xl text-xs font-extrabold text-left transition-all ${
-                      selectedCategory === cat._id
-                        ? 'bg-orange-500 text-white shadow-md shadow-orange-500/25'
-                        : 'bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100'
-                    }`}
-                  >
-                    {cat.name}
-                    <div className={`text-[10px] font-semibold mt-0.5 ${selectedCategory === cat._id ? 'text-orange-100' : 'text-slate-400'}`}>
-                      {count} items
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
+      {/* ── Floating "MENU" jump button (hidden while searching) ─────────── */}
+      {!searchQuery.trim() && (
+        <MenuJumpSheet
+          targets={sections.map((sec) => ({ id: sec.id, title: sec.title, count: sec.products.length }))}
+          onJump={jumpToSection}
+          raised={cartItemsList.length > 0}
+        />
       )}
 
       {/* ── Checkout Drawer Sheet ────────────────────────────────────────── */}
@@ -484,13 +422,7 @@ export const CustomerMenuPage: React.FC = () => {
               {cartItemsList.map((item) => (
                 <div key={item.product._id} className="flex justify-between items-center text-xs">
                   <div className="flex items-center gap-2">
-                    <span
-                      className={`w-2.5 h-2.5 rounded-sm border flex items-center justify-center ${item.product.isVeg ? 'border-emerald-600' : 'border-rose-600'}`}
-                    >
-                      <span
-                        className={`w-1 h-1 rounded-full ${item.product.isVeg ? 'bg-emerald-600' : 'bg-rose-600'}`}
-                      />
-                    </span>
+                    <VegMark isVeg={item.product.isVeg} size="sm" />
                     <span className="font-bold text-slate-800">{item.product.name}</span>
                     <span className="text-slate-400 font-medium">× {item.quantity}</span>
                   </div>

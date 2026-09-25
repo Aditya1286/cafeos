@@ -68,7 +68,7 @@ export const BusinessFinanceDrawer: React.FC<BusinessFinanceDrawerProps> = ({ bu
         remittanceCycleDays: parseInt(cycleInput, 10),
         taxRatePercentage: parseFloat(taxInput)
       });
-      toast.success('Finance settings updated');
+      toast.success('Fee settings saved');
       await fetchSummary();
       onChanged?.();
     } catch (err: any) {
@@ -81,11 +81,11 @@ export const BusinessFinanceDrawer: React.FC<BusinessFinanceDrawerProps> = ({ bu
   const handleMarkPaid = async (period: RemittancePeriod) => {
     try {
       await remittancesService.pay(period._id);
-      toast.success('Remittance marked as paid');
+      toast.success('Fee payment marked as paid');
       await fetchSummary();
       onChanged?.();
     } catch (err: any) {
-      toast.error(err.message || 'Failed to mark remittance as paid');
+      toast.error(err.message || 'Could not mark as paid');
     }
   };
 
@@ -96,7 +96,7 @@ export const BusinessFinanceDrawer: React.FC<BusinessFinanceDrawerProps> = ({ bu
       await fetchSummary();
       onChanged?.();
     } catch (err: any) {
-      toast.error(err.message || 'Failed to revert remittance');
+      toast.error(err.message || 'Could not undo');
     }
   };
 
@@ -142,7 +142,7 @@ export const BusinessFinanceDrawer: React.FC<BusinessFinanceDrawerProps> = ({ bu
                 {/* Summary tiles */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200">
-                    <div className="text-[10px] text-slate-400 font-bold uppercase">Owed (Unpaid)</div>
+                    <div className="text-[10px] text-slate-400 font-bold uppercase">Owed</div>
                     <div className="text-lg font-black text-slate-900">₹{Math.round(summary.totalUnpaidOwedPaise / 100).toLocaleString('en-IN')}</div>
                   </div>
                   <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200">
@@ -158,17 +158,17 @@ export const BusinessFinanceDrawer: React.FC<BusinessFinanceDrawerProps> = ({ bu
                     </div>
                   </div>
                   <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200">
-                    <div className="text-[10px] text-slate-400 font-bold uppercase">This Period So Far</div>
+                    <div className="text-[10px] text-slate-400 font-bold uppercase">This Billing Period</div>
                     <div className="text-sm font-extrabold text-emerald-600">₹{Math.round(summary.currentPeriod.commissionOwedPaise / 100).toLocaleString('en-IN')}</div>
                   </div>
                 </div>
 
                 {/* Finance settings */}
                 <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
-                  <h4 className="text-xs font-extrabold text-slate-700 uppercase">Finance Settings</h4>
+                  <h4 className="text-xs font-extrabold text-slate-700 uppercase">Fee Settings</h4>
                   <div className="flex flex-wrap items-end gap-3">
                     <label className="flex flex-col gap-1">
-                      <span className="text-[10px] font-bold text-slate-500 uppercase">Commission Rate (%)</span>
+                      <span className="text-[10px] font-bold text-slate-500 uppercase">Fee per Order (%)</span>
                       <input
                         id="commission-rate-input"
                         type="number"
@@ -181,7 +181,7 @@ export const BusinessFinanceDrawer: React.FC<BusinessFinanceDrawerProps> = ({ bu
                       />
                     </label>
                     <label className="flex flex-col gap-1">
-                      <span className="text-[10px] font-bold text-slate-500 uppercase">Remittance Cycle (days)</span>
+                      <span className="text-[10px] font-bold text-slate-500 uppercase">Pay Fees Every (days)</span>
                       <input
                         id="remittance-cycle-input"
                         type="number"
@@ -213,13 +213,13 @@ export const BusinessFinanceDrawer: React.FC<BusinessFinanceDrawerProps> = ({ bu
                     </button>
                   </div>
                   <p className="text-[11px] text-slate-400">
-                    Changes apply going forward — closed periods keep the rate they were billed at.
+                    Changes apply to new orders only — past bills keep their old rate.
                   </p>
                 </div>
 
                 {/* Remittance history */}
                 <div>
-                  <h4 className="text-xs font-extrabold text-slate-700 uppercase mb-3">Remittance History</h4>
+                  <h4 className="text-xs font-extrabold text-slate-700 uppercase mb-3">Past Fee Payments</h4>
                   <RemittanceHistoryTable periods={summary.periods} onMarkPaid={handleMarkPaid} onUnmarkPaid={handleUnmarkPaid} />
                 </div>
               </>

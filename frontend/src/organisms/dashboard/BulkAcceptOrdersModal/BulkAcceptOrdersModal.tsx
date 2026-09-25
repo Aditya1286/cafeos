@@ -2,6 +2,7 @@ import React from 'react';
 import { CheckCircle2, Loader2 } from 'lucide-react';
 import { Modal } from '@/molecules/Modal';
 import { formatCurrency } from '@/utils/money';
+import { INVENTORY_ENABLED } from '@/constants/features';
 
 interface BulkAcceptOrdersModalProps {
   orders: any[];
@@ -25,7 +26,8 @@ export const BulkAcceptOrdersModal = ({ orders, submitting, onClose, onConfirm }
     <Modal title={`Accept ${orders.length} Order${orders.length === 1 ? '' : 's'}?`} onClose={() => !submitting && onClose()} maxWidth="max-w-lg">
       <div className="space-y-4">
         <p className="text-xs text-slate-500 font-medium">
-          Review the orders below, then confirm to accept all of them at once. This starts ingredient stock deduction for every item in each order.
+          Review the orders below, then confirm to accept all of them at once.
+          {INVENTORY_ENABLED && ' Stock for each item will go down automatically.'}
         </p>
 
         <div className="max-h-80 overflow-y-auto divide-y divide-slate-100 border border-slate-200 rounded-2xl">

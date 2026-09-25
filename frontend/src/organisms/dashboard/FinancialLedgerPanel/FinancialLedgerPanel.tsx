@@ -49,7 +49,7 @@ const ProfitShareBar: React.FC<{ periods: RemittancePeriod[]; currentPeriod: any
         <div
           className="bg-slate-800 flex items-center justify-center"
           style={{ width: `${commissionWidthPct}%` }}
-          title={`CafeOS takes ${commissionPct.toFixed(1)}%`}
+          title={`We take ${commissionPct.toFixed(1)}%`}
         />
       </div>
       <div className="grid grid-cols-2 gap-3 text-xs">
@@ -64,7 +64,7 @@ const ProfitShareBar: React.FC<{ periods: RemittancePeriod[]; currentPeriod: any
           <span className="w-2.5 h-2.5 rounded-sm bg-slate-800 shrink-0" />
           <div>
             <div className="font-black text-slate-900">{commissionPct.toFixed(1)}% · {formatCurrency(totalCommissionPaise)}</div>
-            <div className="text-[10px] text-slate-400 font-semibold uppercase">CafeOS takes</div>
+            <div className="text-[10px] text-slate-400 font-semibold uppercase">We take</div>
           </div>
         </div>
       </div>
@@ -100,7 +100,7 @@ const PayCommissionCard: React.FC<{
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-center space-y-1">
           <CheckCircle2 className="w-6 h-6 text-emerald-600 mx-auto" />
           <p className="text-xs font-black text-emerald-700">Thanks — noted</p>
-          <p className="text-[11px] text-emerald-600">We'll confirm receipt and update your ledger shortly.</p>
+          <p className="text-[11px] text-emerald-600">We'll check the payment and update this page soon.</p>
         </div>
       </div>
     );
@@ -113,7 +113,7 @@ const PayCommissionCard: React.FC<{
           <Wallet className="w-4 h-4" />
         </div>
         <div>
-          <h3 className="text-sm font-black text-slate-900">Pay your commission</h3>
+          <h3 className="text-sm font-black text-slate-900">Pay your fee</h3>
           <p className="text-[11px] text-slate-500 font-medium">{formatCurrency(remittanceSummary.totalUnpaidOwedPaise)} outstanding</p>
         </div>
       </div>
@@ -147,7 +147,7 @@ const PayCommissionCard: React.FC<{
             <div className="space-y-1">
               <h3 className="text-sm font-black text-slate-900">Confirm your payment</h3>
               <p className="text-[11px] text-slate-400 font-medium">
-                We don't get an automatic signal from UPI — this just flags it for our team to verify against the bank statement.
+                UPI doesn't tell us automatically — this lets our team know to check for your payment.
               </p>
             </div>
 
@@ -155,7 +155,7 @@ const PayCommissionCard: React.FC<{
               type="text"
               value={utr}
               onChange={(e) => setUtr(e.target.value)}
-              placeholder="UTR / transaction ref (optional, speeds up verification)"
+              placeholder="UPI reference number (optional — helps us find it faster)"
               className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 font-medium outline-none focus:border-orange-500 focus:bg-white focus:ring-2 focus:ring-orange-100 transition-all"
             />
 
@@ -187,22 +187,22 @@ const PayCommissionCard: React.FC<{
 export const FinancialLedgerPanel = ({ business, remittanceSummary, loadingRemittance, markingPaid, onMarkPaid }: FinancialLedgerPanelProps) => (
   <div className="space-y-6">
     <div>
-      <h2 className="text-lg font-black text-slate-900">Financial Ledger</h2>
+      <h2 className="text-lg font-black text-slate-900">Fees & Payments</h2>
       <p className="text-xs text-slate-500 font-medium">
-        What you owe the platform in commission, and when it's due
+        The fee you owe us for your orders, and when to pay it
       </p>
     </div>
 
     {loadingRemittance || !remittanceSummary ? (
       <div className="py-16 text-center text-xs text-slate-400 font-semibold bg-white rounded-3xl border border-slate-200">
-        {loadingRemittance ? 'Loading ledger…' : 'No data yet.'}
+        {loadingRemittance ? 'Loading…' : 'No data yet.'}
       </div>
     ) : (
       <>
         <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4 text-xs font-medium text-orange-800 flex items-start gap-2.5">
           <Info className="w-4 h-4 shrink-0 mt-0.5" />
           <span>
-            You pay a {remittanceSummary.commissionRatePercentage}% commission on completed
+            You pay a {remittanceSummary.commissionRatePercentage}% fee on completed
             orders, excluding GST. Commission accrues into {remittanceSummary.cycleDays}-day
             billing periods — settle each period with us by its due date. Full terms in the{' '}
             <Link to="/terms" target="_blank" className="font-bold underline hover:text-orange-900">
@@ -213,7 +213,7 @@ export const FinancialLedgerPanel = ({ business, remittanceSummary, loadingRemit
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm">
-            <div className="text-[10px] text-slate-400 font-bold uppercase">Owed (Unpaid)</div>
+            <div className="text-[10px] text-slate-400 font-bold uppercase">You Owe</div>
             <div className="text-lg font-black text-slate-900">
               {formatCurrency(remittanceSummary.totalUnpaidOwedPaise)}
             </div>
@@ -235,7 +235,7 @@ export const FinancialLedgerPanel = ({ business, remittanceSummary, loadingRemit
             </div>
           </div>
           <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm">
-            <div className="text-[10px] text-slate-400 font-bold uppercase">This Period So Far</div>
+            <div className="text-[10px] text-slate-400 font-bold uppercase">This Billing Period</div>
             <div className="text-sm font-extrabold text-emerald-600">
               {formatCurrency(remittanceSummary.currentPeriod.commissionOwedPaise)}
             </div>
@@ -259,7 +259,7 @@ export const FinancialLedgerPanel = ({ business, remittanceSummary, loadingRemit
               Nothing to pay yet — {formatCurrency(remittanceSummary.currentPeriod.commissionOwedPaise)} is
               accruing this billing period. It becomes payable once the period closes on{' '}
               {new Date(remittanceSummary.currentPeriod.periodEnd).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-              , and a "Pay your commission" option will appear here.
+              , and a "Pay your fee" option will appear here.
             </p>
           </div>
         ) : null}
@@ -267,13 +267,13 @@ export const FinancialLedgerPanel = ({ business, remittanceSummary, loadingRemit
         <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
           <div>
             <h3 className="text-sm font-black text-slate-900">Where your money goes</h3>
-            <p className="text-[11px] text-slate-500 font-medium">Across every order you've been paid for, lifetime</p>
+            <p className="text-[11px] text-slate-500 font-medium">From every paid order, since you started</p>
           </div>
           <ProfitShareBar periods={remittanceSummary.periods as RemittancePeriod[]} currentPeriod={remittanceSummary.currentPeriod} />
         </div>
 
         <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-          <h3 className="text-sm font-black text-slate-900 mb-4">Remittance History</h3>
+          <h3 className="text-sm font-black text-slate-900 mb-4">Past Fee Payments</h3>
           <RemittanceHistoryTable periods={remittanceSummary.periods as RemittancePeriod[]} />
         </div>
       </>

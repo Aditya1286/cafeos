@@ -37,8 +37,8 @@ export const PlatformInsightsPanel = ({ metrics, businesses, peakHeatmap }: Plat
   if (topBusiness && topBusiness.lifetimeGMVPaise > 0) {
     insights.push({
       emoji: '🏆',
-      title: 'Top Performing Business',
-      body: `${topBusiness.name} leads the platform with ${formatCurrency(topBusiness.lifetimeGMVPaise)} in lifetime GMV.`,
+      title: 'Top Business',
+      body: `${topBusiness.name} leads the platform with ${formatCurrency(topBusiness.lifetimeGMVPaise)} in total sales.`,
     });
   }
 
@@ -53,7 +53,7 @@ export const PlatformInsightsPanel = ({ metrics, businesses, peakHeatmap }: Plat
   if (metrics && metrics.lowStockItemsCount > 0) {
     insights.push({
       emoji: '⚠️',
-      title: 'Low Stock Alerts',
+      title: 'Running Low on Stock',
       body: `${metrics.lowStockItemsCount} ingredient${metrics.lowStockItemsCount === 1 ? '' : 's'} across the platform ${metrics.lowStockItemsCount === 1 ? 'is' : 'are'} at or below its minimum stock level.`,
     });
   }
@@ -62,25 +62,25 @@ export const PlatformInsightsPanel = ({ metrics, businesses, peakHeatmap }: Plat
     const effectivePct = Math.round((metrics.totalPlatformFeesPaise / metrics.totalGMVPaise) * 1000) / 10;
     insights.push({
       emoji: '📊',
-      title: 'Platform Take Rate',
-      body: `Platform fees are running at ${effectivePct}% of gross order value across all businesses.`,
+      title: 'Our Fee Share',
+      body: `Our fees are ${effectivePct}% of all sales across every business.`,
     });
   }
 
   return (
-    <CardSpotlight className="my-8">
+    <CardSpotlight className="sm:my-8">
       <div className="space-y-6">
-        <div className="flex items-center justify-between pb-4 border-b border-slate-200">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-red-600 text-white flex items-center justify-center font-bold shadow-md shadow-red-600/30">
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-200">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 shrink-0 rounded-xl bg-red-600 text-white flex items-center justify-center font-bold shadow-md shadow-red-600/30">
               ✨
             </div>
             <div>
               <h3 className="text-base font-extrabold text-slate-900 tracking-tight">
-                Smart Operational Insights
+                Quick Insights
               </h3>
               <p className="text-xs text-slate-500 font-medium">
-                Computed live from platform data — updates as orders and businesses do
+                Worked out from your latest orders and businesses
               </p>
             </div>
           </div>
@@ -91,7 +91,7 @@ export const PlatformInsightsPanel = ({ metrics, businesses, peakHeatmap }: Plat
 
         {insights.length === 0 ? (
           <div className="p-6 text-center text-xs text-slate-400 font-medium border border-dashed border-slate-200 rounded-2xl">
-            Not enough activity yet to compute insights — check back once orders start coming in.
+            Not enough orders yet — check back once orders start coming in.
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-xs font-semibold text-slate-700">

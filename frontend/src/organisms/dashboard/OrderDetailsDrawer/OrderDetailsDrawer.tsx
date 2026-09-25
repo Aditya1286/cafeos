@@ -63,7 +63,7 @@ export const OrderDetailsDrawer = ({ order, orderDetails, onClose, onViewBill, o
 
               <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
                 <div className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider flex items-center justify-between">
-                  <span>Customer Profile</span>
+                  <span>Customer</span>
                   <User className="w-3.5 h-3.5 text-slate-400" />
                 </div>
                 <div className="text-sm font-black text-slate-900">{order.customerName}</div>
@@ -86,7 +86,7 @@ export const OrderDetailsDrawer = ({ order, orderDetails, onClose, onViewBill, o
                 </div>
 
                 <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
-                  <span className="text-[10px] font-extrabold uppercase text-slate-400 block">Order Source</span>
+                  <span className="text-[10px] font-extrabold uppercase text-slate-400 block">Ordered From</span>
                   <div className="text-xs font-black text-slate-800">{order.source || 'QR_TABLE'}</div>
                 </div>
               </div>
@@ -136,7 +136,7 @@ export const OrderDetailsDrawer = ({ order, orderDetails, onClose, onViewBill, o
 
               <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5 text-xs">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-extrabold uppercase text-slate-400">Payment Information</span>
+                  <span className="text-[10px] font-extrabold uppercase text-slate-400">Payment</span>
                   <span className={`px-2 py-0.5 rounded-full border text-[10px] font-black ${PAYMENT_BADGE_CLASS[order.paymentStatus] || PAYMENT_BADGE_CLASS.PAID}`}>
                     {order.paymentStatus || 'PAID'}
                   </span>
@@ -182,7 +182,7 @@ export const OrderDetailsDrawer = ({ order, orderDetails, onClose, onViewBill, o
                 className="w-full py-3 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-black text-xs transition-all shadow-md shadow-orange-500/20 flex items-center justify-center gap-2"
               >
                 <FileText className="w-4 h-4" />
-                <span>View & Print E-Bill</span>
+                <span>View & Print Bill</span>
               </button>
 
               {order.paymentStatus === 'UNPAID' && order.orderStatus !== 'CANCELLED' && (

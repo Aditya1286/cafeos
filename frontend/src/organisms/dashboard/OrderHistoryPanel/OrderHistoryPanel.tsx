@@ -182,7 +182,7 @@ export const OrderHistoryPanel = ({
           </button>
           <button onClick={() => onOpenBill(o.orderId || o._id)} className="px-3 py-1.5 rounded-xl bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-700 text-xs font-black transition-colors flex items-center gap-1">
             <FileText className="w-3.5 h-3.5" />
-            <span>E-Bill</span>
+            <span>Bill</span>
           </button>
           {getAvailableActions(o).length > 0 && (
             <button onClick={() => setActionsTarget(o)} className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 text-xs font-black transition-colors flex items-center gap-1">
@@ -263,7 +263,7 @@ export const OrderHistoryPanel = ({
         </button>
         <button onClick={() => onOpenBill(o.orderId || o._id)} className="px-3 py-1.5 rounded-xl bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-700 text-xs font-black transition-colors flex items-center justify-center gap-1">
           <FileText className="w-3.5 h-3.5" />
-          <span>E-Bill</span>
+          <span>Bill</span>
         </button>
         {getAvailableActions(o).length > 0 && (
           <button onClick={() => setActionsTarget(o)} className="col-span-2 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 text-xs font-black transition-colors flex items-center justify-center gap-1">
@@ -280,13 +280,13 @@ export const OrderHistoryPanel = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-sm">
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <h2 className="text-base sm:text-xl font-black text-slate-900">Order Intelligence & History</h2>
+            <h2 className="text-base sm:text-xl font-black text-slate-900">All Orders</h2>
             <span className="px-2.5 py-0.5 rounded-full bg-orange-50 text-orange-600 border border-orange-200 text-[10px] font-black whitespace-nowrap">
               E-BILL READY
             </span>
           </div>
           <p className="text-xs text-slate-500 font-medium mt-0.5">
-            Search, review, inspect bills, and audit every business transaction by unique daily order sequence.
+            Find any order, check its bill, and see what was paid.
           </p>
         </div>
 
@@ -309,29 +309,29 @@ export const OrderHistoryPanel = ({
         <div className="bg-white p-2.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-0.5 sm:space-y-1">
           <span className="text-[9px] sm:text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Total Orders</span>
           <div className="text-base sm:text-2xl font-black text-slate-900">{pagination.total || orderHistory.length}</div>
-          <span className="text-[9px] sm:text-[10px] font-semibold text-slate-400 hidden sm:block">Total recorded transactions</span>
+          <span className="text-[9px] sm:text-[10px] font-semibold text-slate-400 hidden sm:block">All orders so far</span>
         </div>
 
         <div className="bg-white p-2.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-0.5 sm:space-y-1">
-          <span className="text-[9px] sm:text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Today's Revenue</span>
+          <span className="text-[9px] sm:text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Today's Sales</span>
           <div className="text-base sm:text-2xl font-black text-emerald-600 truncate">{formatCurrency(todaySalesPaise)}</div>
-          <span className="text-[9px] sm:text-[10px] font-semibold text-emerald-600 hidden sm:block">Business day total, all filters</span>
+          <span className="text-[9px] sm:text-[10px] font-semibold text-emerald-600 hidden sm:block">Money from today's orders</span>
         </div>
 
         <div className="bg-white p-2.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-0.5 sm:space-y-1">
-          <span className="text-[9px] sm:text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Daily Sequence</span>
+          <span className="text-[9px] sm:text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Order Numbers</span>
           <div className="text-base sm:text-2xl font-black text-orange-600 font-mono truncate">
-            {business?.shortCode || 'ART'}-DDMMYY
+            {business?.shortCode || 'ART'}-{new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' }).replace(/\//g, '')}-01
           </div>
-          <span className="text-[9px] sm:text-[10px] font-semibold text-slate-400 hidden sm:block">Auto-resets every midnight</span>
+          <span className="text-[9px] sm:text-[10px] font-semibold text-slate-400 hidden sm:block">Starts again from 01 each day</span>
         </div>
 
         <div className="bg-white p-2.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-0.5 sm:space-y-1">
-          <span className="text-[9px] sm:text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Timezone</span>
+          <span className="text-[9px] sm:text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Time Zone</span>
           <div className="text-base sm:text-2xl font-black text-indigo-600 truncate">
-            {business?.timezone || 'Asia/Kolkata'}
+            {(business?.timezone || 'Asia/Kolkata') === 'Asia/Kolkata' ? 'India (IST)' : business?.timezone}
           </div>
-          <span className="text-[9px] sm:text-[10px] font-semibold text-slate-400 hidden sm:block">Concurrency-safe MongoDB sequence</span>
+          <span className="text-[9px] sm:text-[10px] font-semibold text-slate-400 hidden sm:block">Order times are shown in this zone</span>
         </div>
       </div>
 
@@ -403,7 +403,7 @@ export const OrderHistoryPanel = ({
         {loadingHistory ? (
           <div className="p-12 text-center space-y-3">
             <RefreshCw className="w-8 h-8 text-orange-500 animate-spin mx-auto" />
-            <p className="text-xs font-bold text-slate-500">Searching orders database...</p>
+            <p className="text-xs font-bold text-slate-500">Searching orders…</p>
           </div>
         ) : (
           <ResponsiveDataView
@@ -415,7 +415,7 @@ export const OrderHistoryPanel = ({
               id: 'order-search-input',
               value: filters.orderSearchQuery,
               onChange: filters.setOrderSearchQuery,
-              placeholder: 'Search by Order ID, Customer Name, Phone, Table, or Transaction ID...',
+              placeholder: 'Search by order no., name, phone, table or payment ID…',
             }}
             pagination={{
               page: pagination.page,
@@ -429,7 +429,7 @@ export const OrderHistoryPanel = ({
               <div className="p-12 text-center space-y-3">
                 <FileText className="w-12 h-12 text-slate-300 mx-auto" />
                 <h3 className="text-base font-black text-slate-800">No matching orders found</h3>
-                <p className="text-xs font-medium text-slate-500">Try adjusting your search query or filter options.</p>
+                <p className="text-xs font-medium text-slate-500">Try a different search or filter.</p>
               </div>
             }
           />

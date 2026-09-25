@@ -23,15 +23,15 @@ const businessCards: BusinessCardData[] = [
   {
     id: '1',
     category: 'SPECIALTY COFFEE & PIZZA',
-    title: 'Automated 120ms KDS Kitchen Routing',
+    title: 'Orders Reach the Kitchen Instantly',
     businessName: 'The Artisan Roastery & Café',
     location: 'Bandra West, Mumbai',
     rating: '4.9 ★',
     monthlyOrders: '2,850+ orders/mo',
     imageUrl: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=1000&q=80',
     slug: 'artisan-cafe',
-    description: `Premier specialty coffee roastery serving single-origin pour-overs and sourdough pizzas powered by ${APP_NAME} real-time kitchen displays.`,
-    highlights: ['Instant Real-Time Kitchen Dispatch', 'QR Code Table Ordering', 'Double-Entry Financial Ledger'],
+    description: `A coffee shop known for fresh pour-over coffee and sourdough pizzas, running with ${APP_NAME}'s live kitchen screen.`,
+    highlights: ['Orders Sent to Kitchen Instantly', 'QR Code Table Ordering', 'Clear Sales & Fee Tracking'],
     popularDishes: ['Paneer Tikka Passion Pizza', 'Signature Cold Coffee', 'Peri Peri Fries']
   },
   {
@@ -45,49 +45,49 @@ const businessCards: BusinessCardData[] = [
     imageUrl: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=1000&q=80',
     slug: 'bean-and-butter',
     description: 'Charming French bakery offering double-baked almond croissants and ceremonial grade matcha lattes with zero-wait table ordering.',
-    highlights: ['Zero App Download Required', 'Automated Stock Deduction', 'Live Order Status Tracker'],
+    highlights: ['Zero App Download Required', 'Stock Updates on Its Own', 'Live Order Status Tracker'],
     popularDishes: ['Classic Almond Butter Croissant', 'Iced Uji Matcha Latte', 'Pain Au Chocolat']
   },
   {
     id: '3',
     category: 'ORGANIC BISTRO & BREW BAR',
-    title: 'Automated Recipe BOM Inventory',
+    title: 'Recipes That Track Stock for You',
     businessName: 'Verde Organic Bistro',
     location: 'Connaught Place, New Delhi',
     rating: '4.9 ★',
     monthlyOrders: '3,420+ orders/mo',
     imageUrl: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=1000&q=80',
     slug: 'verde-bistro',
-    description: `Sustainable plant-based bistro leveraging ${APP_NAME} recipe bill-of-materials tracking to eliminate food waste and auto-deduct raw ingredients.`,
-    highlights: ['Ingredient-Level Recipe BOM', 'Low-Stock Alerts', 'Financial Auditing'],
+    description: `Sustainable plant-based bistro using ${APP_NAME} recipes to cut food waste — ingredients come off the stock count on their own.`,
+    highlights: ['Recipe-Based Stock Tracking', 'Low-Stock Alerts', 'Clear Money Records'],
     popularDishes: ['Avocado Sourdough Toast', 'Cold Pressed Green Juice', 'Truffle Mushroom Pasta']
   },
   {
     id: '4',
     category: 'HERITAGE TEA & DIM SUM',
-    title: 'Multi-Tenant Multi-Table Management',
+    title: 'Easy Management for Many Tables',
     businessName: 'Copper Kettle Tea House',
     location: 'Park Street, Kolkata',
     rating: '4.7 ★',
     monthlyOrders: '1,980+ orders/mo',
     imageUrl: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1000&q=80',
     slug: 'copper-kettle',
-    description: 'Historic tea house specializing in first-flush Darjeeling teas and artisanal dim sum with instant receptionist bill generation.',
-    highlights: ['QR Code Generator for 50+ Tables', 'Receptionist Settlement POS', 'Custom Tax Breakdown'],
+    description: 'Historic tea house specializing in first-flush Darjeeling teas and artisanal dim sum with bills made instantly at the front desk.',
+    highlights: ['QR Code Generator for 50+ Tables', 'Front-Desk Billing', 'Custom Tax Breakdown'],
     popularDishes: ['Darjeeling First Flush Tea', 'Steamed Crystal Dumplings', 'Matcha Sponge Cake']
   },
   {
     id: '5',
     category: 'ROOFTOP LOUNGE & TAPAS',
-    title: 'High-Volume Multi-Staff Access Control',
+    title: 'Different Access for Each Staff Member',
     businessName: 'Aura Rooftop Lounge & Brews',
     location: 'Jubilee Hills, Hyderabad',
     rating: '4.9 ★',
     monthlyOrders: '4,500+ orders/mo',
     imageUrl: 'https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=1000&q=80',
     slug: 'aura-lounge',
-    description: `High-volume nightlife lounge utilizing ${APP_NAME} multi-role access control for bartenders, floor waitstaff, and general managers.`,
-    highlights: ['Role-Based RBAC Permissions', 'Real-Time Revenue Analytics', 'Automated E-Bills via SMS/WhatsApp'],
+    description: `High-volume nightlife lounge using ${APP_NAME} to give bartenders, waiters and managers their own access.`,
+    highlights: ['Staff Roles & Permissions', 'Live Sales Reports', 'Bills Sent by SMS/WhatsApp'],
     popularDishes: ['Craft Smoked Cocktails', 'Woodfired Tapas Platter', 'Truffle Fries']
   }
 ];
@@ -174,7 +174,7 @@ export const AppleCardsCarousel: React.FC = () => {
         <div className="space-y-2 text-left">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-50 border border-red-200/80 text-red-700 text-xs font-bold">
             <Sparkles className="w-3.5 h-3.5 text-red-600" />
-            <span>Featured Case Studies & Partners</span>
+            <span>Businesses Using Us</span>
           </div>
           <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
             Powered by {APP_NAME}.
@@ -275,7 +275,7 @@ export const AppleCardsCarousel: React.FC = () => {
 
               {/* Interactive CTA Link */}
               <div className="pt-2 flex items-center gap-1.5 text-xs font-extrabold text-red-400 group-hover:text-red-300 transition-colors">
-                <span>Explore Case Study & Menu</span>
+                <span>See Their Story & Menu</span>
                 <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform text-red-500" />
               </div>
             </div>
@@ -360,7 +360,7 @@ export const AppleCardsCarousel: React.FC = () => {
               {/* Modal Content */}
               <div className="p-6 sm:p-8 overflow-y-auto space-y-6 text-left">
                 <div>
-                  <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-400 mb-1">About The Partner</h4>
+                  <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-400 mb-1">About This Business</h4>
                   <p className="text-sm text-slate-700 leading-relaxed font-medium">
                     {activeCard.description}
                   </p>
@@ -402,7 +402,7 @@ export const AppleCardsCarousel: React.FC = () => {
                     onClick={() => setActiveCard(null)}
                     className="w-full sm:w-auto px-6 py-3 rounded-xl bg-red-600 hover:bg-red-700 active:scale-[0.99] text-white font-extrabold text-xs shadow-lg shadow-red-600/30 flex items-center justify-center gap-2 transition-all"
                   >
-                    <span>Launch Customer QR Menu Demo</span>
+                    <span>Try Their QR Menu</span>
                     <ExternalLink className="w-4 h-4" />
                   </Link>
                 </div>

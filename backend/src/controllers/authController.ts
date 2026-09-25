@@ -23,7 +23,7 @@ export const register = async (req: Request, res: Response) => {
     if (!name || !email || !password || !phone || !businessName || !slug) {
       return res.status(400).json({
         success: false,
-        error: { code: 'VALIDATION_ERROR', message: 'Name, email, password, phone, business name, and slug are required.' }
+        error: { code: 'VALIDATION_ERROR', message: 'Please fill in your name, email, password, phone, business name, and menu link name.' }
       });
     }
 
@@ -32,7 +32,7 @@ export const register = async (req: Request, res: Response) => {
     // skip verification entirely. isPhoneVerified checks the short-lived record otp.service
     // sets on a successful /otp/verify call for this exact phone; clearVerifiedPhone below
     // consumes it once registration actually succeeds, so it can't be replayed.
-    if (!isPhoneVerified(phone)) {
+    if (!(await isPhoneVerified(phone))) {
       return res.status(400).json({
         success: false,
         error: { code: 'PHONE_NOT_VERIFIED', message: 'Please verify your phone number with the OTP sent to it before registering.' }
@@ -52,7 +52,7 @@ export const register = async (req: Request, res: Response) => {
     if (existingBusiness) {
       return res.status(400).json({
         success: false,
-        error: { code: 'SLUG_EXISTS', message: 'Business URL slug is already taken. Please choose another.' }
+        error: { code: 'SLUG_EXISTS', message: 'That menu link name is already taken. Please choose another.' }
       });
     }
 
@@ -110,7 +110,7 @@ export const register = async (req: Request, res: Response) => {
     // Consume the verification only now that registration has actually succeeded —
     // checking it earlier without clearing means a later failure (duplicate email, etc.)
     // wouldn't force the user to redo OTP verification just to retry.
-    clearVerifiedPhone(phone);
+    await clearVerifiedPhone(phone);
 
     const token = generateToken(user);
 

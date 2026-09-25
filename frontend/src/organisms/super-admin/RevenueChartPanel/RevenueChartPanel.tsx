@@ -10,14 +10,14 @@ interface RevenueChartPanelProps {
 }
 
 export const RevenueChartPanel = ({ chartData, dateRange, onChangeDateRange }: RevenueChartPanelProps) => (
-  <div className="lg:col-span-8 bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
+  <div className="lg:col-span-8 bg-white p-4 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-4 sm:space-y-6 min-w-0">
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
         <h3 className="text-lg font-extrabold text-slate-900">
-          Revenue & Platform Settlement Overview
+          Sales & Fees
         </h3>
         <p className="text-xs text-slate-500 font-medium">
-          Live comparison of gross business order GMV vs platform fee revenues
+          Total sales across all businesses, and the fees we earned from them
         </p>
       </div>
 
@@ -36,7 +36,7 @@ export const RevenueChartPanel = ({ chartData, dateRange, onChangeDateRange }: R
       </div>
     </div>
 
-    <div className="h-72 w-full">
+    <div className="h-56 sm:h-72 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={chartData}>
           <defs>
@@ -50,17 +50,17 @@ export const RevenueChartPanel = ({ chartData, dateRange, onChangeDateRange }: R
             </linearGradient>
           </defs>
           <XAxis dataKey="time" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
-          <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `₹${v / 1000}k`} />
+          <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} width={40} tickFormatter={(v) => `₹${v / 1000}k`} />
           <Tooltip contentStyle={adminTooltipStyle} />
-          <Area type="monotone" dataKey="revenue" name="Gross GMV (₹)" stroke="#ef4444" fillOpacity={1} fill="url(#colorRevenue)" strokeWidth={3} />
-          <Area type="monotone" dataKey="fees" name="Platform Fees (₹)" stroke="#10b981" fillOpacity={1} fill="url(#colorFees)" strokeWidth={2.5} />
+          <Area type="monotone" dataKey="revenue" name="Total Sales (₹)" stroke="#ef4444" fillOpacity={1} fill="url(#colorRevenue)" strokeWidth={3} />
+          <Area type="monotone" dataKey="fees" name="Our Fees (₹)" stroke="#10b981" fillOpacity={1} fill="url(#colorFees)" strokeWidth={2.5} />
         </AreaChart>
       </ResponsiveContainer>
     </div>
 
     <div className="flex items-center gap-6 text-xs font-semibold text-slate-500">
-      <span className="flex items-center gap-1.5"><span className="w-3 h-1 bg-red-500 rounded-full inline-block" /> Gross GMV</span>
-      <span className="flex items-center gap-1.5"><span className="w-3 h-1 bg-emerald-500 rounded-full inline-block" /> Platform Fees</span>
+      <span className="flex items-center gap-1.5"><span className="w-3 h-1 bg-red-500 rounded-full inline-block" /> Total Sales</span>
+      <span className="flex items-center gap-1.5"><span className="w-3 h-1 bg-emerald-500 rounded-full inline-block" /> Our Fees</span>
     </div>
   </div>
 );

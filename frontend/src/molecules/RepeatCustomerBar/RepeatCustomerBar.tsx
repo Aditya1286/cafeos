@@ -16,7 +16,7 @@ export const RepeatCustomerBar: React.FC<RepeatCustomerBarProps> = ({ stats }) =
       <NoDataAvailable
         icon={Users}
         title="No customers yet"
-        message="Once paid orders start coming in, repeat-customer rate will show up here."
+        message="Once paid orders start coming in, you'll see how many customers come back."
       />
     );
   }

@@ -8,7 +8,9 @@ import { Recipe } from '../models/Recipe';
 import { InventoryItem } from '../models/InventoryItem';
 import { InventoryTransaction } from '../models/InventoryTransaction';
 import { FinancialLedger } from '../models/FinancialLedger';
-import { emitToBusiness, emitToOrder } from '../websocket/socketManager';
+import { emitToBusiness, emitToOrder, emitToAdminOrders } from '../websocket/socketManager';
+import { toAdminLiveOrder } from '../utils/adminLiveOrder';
+import { config } from '../config';
 import { generateDailyOrderId } from '../utils/orderSequence';
 import { computeRefundInsights } from '../services/refundInsights.service';
 import { isPhoneOrderVerified, touchPhoneOrderVerification } from '../services/otp.service';
@@ -48,6 +50,14 @@ const recordOrderPaymentLedger = async (order: InstanceType<typeof Order>) => {
   });
 };
 
+// Public customer endpoints identify an order ONLY by its Mongo _id — the unguessable value
+// the tracking URL carries. The human-readable orderId (ART-250926-0001) is a per-day
+// sequence, so accepting it here would let anyone enumerate every café's orders (customer
+// names, phones, amounts) and cancel/mark-paid them. Staff endpoints may still use it, but
+// always scoped to their business (findOrderForBusiness / findOrderForStaff).
+const findOrderByPublicId = (id: unknown) =>
+  typeof id === 'string' && /^[0-9a-f]{24}$/i.test(id) ? Order.findById(id) : Promise.resolve(null);
+
 // Public: Place Order (Guest Customer scanning QR code)
 export const createOrder = async (req: Request, res: Response) => {
   try {
@@ -78,7 +88,7 @@ export const createOrder = async (req: Request, res: Response) => {
     // long-lived, reusable record otp.service sets on a successful /otp/verify call for this
     // exact phone (see touchPhoneOrderVerification below, which slides that window forward on
     // every order so a repeat customer doesn't need to re-verify).
-    if (!isPhoneOrderVerified(customerPhone)) {
+    if (!(await isPhoneOrderVerified(customerPhone))) {
       return res.status(400).json({
         success: false,
         error: { code: 'PHONE_NOT_VERIFIED', message: 'Please verify your phone number with the OTP sent to it before placing an order.' }
@@ -269,7 +279,17 @@ export const createOrder = async (req: Request, res: Response) => {
       createdAt: order.createdAt
     });
 
-    touchPhoneOrderVerification(customerPhone);
+    // Super Admin live feed. Demo businesses stay out of it whenever they're excluded from
+    // platform analytics, matching the overview's recentOrders the feed starts from.
+    if (!(config.excludeDemoBusinessesFromAnalytics && business.isDemo)) {
+      emitToAdminOrders('admin_order:new', toAdminLiveOrder(order, business.name));
+    }
+
+    // The order is already saved — a failure to slide the verification window must not turn
+    // that into a 500 (the customer would retry and hit the duplicate-order guard instead).
+    await touchPhoneOrderVerification(customerPhone).catch((err) =>
+      console.error('[otp] Failed to extend order verification window:', err)
+    );
 
     return res.status(201).json({
       success: true,
@@ -288,9 +308,7 @@ export const createOrder = async (req: Request, res: Response) => {
 export const markOrderPaidByCustomer = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const order = mongoose.Types.ObjectId.isValid(id)
-      ? await Order.findById(id)
-      : await Order.findOne({ orderId: id });
+    const order = await findOrderByPublicId(id);
 
     if (!order) {
       return res.status(404).json({ success: false, error: { code: 'ORDER_NOT_FOUND', message: 'Order not found' } });
@@ -325,9 +343,7 @@ export const markOrderPaidByCustomer = async (req: Request, res: Response) => {
 export const cancelOrderByCustomer = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const order = mongoose.Types.ObjectId.isValid(id)
-      ? await Order.findById(id)
-      : await Order.findOne({ orderId: id });
+    const order = await findOrderByPublicId(id);
 
     if (!order) {
       return res.status(404).json({ success: false, error: { code: 'ORDER_NOT_FOUND', message: 'Order not found' } });
@@ -362,6 +378,7 @@ export const cancelOrderByCustomer = async (req: Request, res: Response) => {
       tableId: order.tableId || null,
       tableStatus: order.tableId ? 'AVAILABLE' : null
     });
+    emitToAdminOrders('admin_order:updated', { _id: order._id.toString(), status: order.orderStatus });
 
     return res.json({ success: true, message: 'Order cancelled.', data: order });
   } catch (error: any) {
@@ -377,9 +394,7 @@ export const requestOrderRefund = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { reason } = req.body;
-    const order = mongoose.Types.ObjectId.isValid(id)
-      ? await Order.findById(id)
-      : await Order.findOne({ orderId: id });
+    const order = await findOrderByPublicId(id);
 
     if (!order) {
       return res.status(404).json({ success: false, error: { code: 'ORDER_NOT_FOUND', message: 'Order not found' } });
@@ -419,60 +434,68 @@ export const requestOrderRefund = async (req: Request, res: Response) => {
 };
 
 // Public/Owner: Get Single Order Details by ID or orderId
-export const getOrderById = async (req: Request, res: Response) => {
+// Public: the customer tracking page — by _id only (see findOrderByPublicId).
+export const getPublicOrderById = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
-    let order = null;
-    
-    if (mongoose.Types.ObjectId.isValid(id)) {
-      order = await Order.findById(id);
-    }
-    if (!order) {
-      order = await Order.findOne({ orderId: id });
-    }
-
+    const order = await findOrderByPublicId(req.params.id);
     if (!order) {
       return res.status(404).json({ success: false, error: { code: 'ORDER_NOT_FOUND', message: 'Order not found' } });
     }
-
-    const business = await Business.findById(order.businessId);
-
-    // Calculate customer statistics
-    const customerOrderCount = await Order.countDocuments({
-      businessId: order.businessId,
-      customerPhone: order.customerPhone
-    });
-    
-    const customerTotalSpendRes = await Order.aggregate([
-      { $match: { businessId: order.businessId, customerPhone: order.customerPhone, paymentStatus: 'PAID' } },
-      { $group: { _id: null, totalSpendPaise: { $sum: '$totalAmountPaise' } } }
-    ]);
-    
-    const customerTotalSpendPaise = customerTotalSpendRes[0]?.totalSpendPaise || 0;
-
-    return res.json({
-      success: true,
-      data: {
-        order,
-        customerStats: {
-          previousOrdersCount: customerOrderCount,
-          lifetimeSpendPaise: customerTotalSpendPaise
-        },
-        business: business ? {
-          name: business.name,
-          slug: business.slug,
-          logoUrl: business.logoUrl,
-          currencySymbol: business.currencySymbol,
-          address: business.address,
-          phone: business.phone,
-          taxRatePercentage: business.taxRatePercentage,
-          upiVpa: business.upiVpa
-        } : null
-      }
-    });
+    return await sendOrderDetails(res, order);
   } catch (error: any) {
     return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
   }
+};
+
+// Owner/Staff: order details drawer — _id or human orderId, but only within their business.
+export const getOrderById = async (req: AuthRequest, res: Response) => {
+  try {
+    const order = await findOrderForStaff(req.params.id, req);
+    if (!order) {
+      return res.status(404).json({ success: false, error: { code: 'ORDER_NOT_FOUND', message: 'Order not found' } });
+    }
+    return await sendOrderDetails(res, order);
+  } catch (error: any) {
+    return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
+  }
+};
+
+const sendOrderDetails = async (res: Response, order: InstanceType<typeof Order>) => {
+  const business = await Business.findById(order.businessId);
+
+  // Calculate customer statistics
+  const customerOrderCount = await Order.countDocuments({
+    businessId: order.businessId,
+    customerPhone: order.customerPhone
+  });
+  
+  const customerTotalSpendRes = await Order.aggregate([
+    { $match: { businessId: order.businessId, customerPhone: order.customerPhone, paymentStatus: 'PAID' } },
+    { $group: { _id: null, totalSpendPaise: { $sum: '$totalAmountPaise' } } }
+  ]);
+  
+  const customerTotalSpendPaise = customerTotalSpendRes[0]?.totalSpendPaise || 0;
+
+  return res.json({
+    success: true,
+    data: {
+      order,
+      customerStats: {
+        previousOrdersCount: customerOrderCount,
+        lifetimeSpendPaise: customerTotalSpendPaise
+      },
+      business: business ? {
+        name: business.name,
+        slug: business.slug,
+        logoUrl: business.logoUrl,
+        currencySymbol: business.currencySymbol,
+        address: business.address,
+        phone: business.phone,
+        taxRatePercentage: business.taxRatePercentage,
+        upiVpa: business.upiVpa
+      } : null
+    }
+  });
 };
 
 // Owner/Staff: List & Search Orders with Pagination & Filtering
@@ -759,8 +782,19 @@ const applyOrderStatusChange = async (
     // occupied, so there's nothing new to tell the dashboard about it.
     tableStatus: tableWasFreed ? 'AVAILABLE' : undefined
   });
+  emitToAdminOrders('admin_order:updated', { _id: order._id.toString(), status: order.orderStatus });
 
   return { success: true, order };
+};
+
+// findOrderForBusiness for a staff request: scoped to the caller's business; only a
+// SUPER_ADMIN without an x-business-id header (enforceBusiness leaves businessId unset) may
+// look an order up across all businesses.
+const findOrderForStaff = async (id: string, req: AuthRequest) => {
+  if (req.businessId) return findOrderForBusiness(id, req.businessId.toString());
+  if (req.user?.role !== 'SUPER_ADMIN') return null;
+  const order = mongoose.Types.ObjectId.isValid(id) ? await Order.findById(id) : null;
+  return order || Order.findOne({ orderId: id });
 };
 
 const findOrderForBusiness = async (id: string, businessId: string) => {
@@ -912,16 +946,11 @@ export const confirmOrderPayment = async (req: AuthRequest, res: Response) => {
 };
 
 // Owner/Staff: Fetch Digital E-Bill Data
-export const getOrderBill = async (req: Request, res: Response) => {
+export const getOrderBill = async (req: AuthRequest, res: Response) => {
   try {
-    const { id } = req.params;
-    // Same findById-throws-on-non-ObjectId pitfall as updateOrderStatus above — every "View
-    // Bill" button in the dashboard passes the human-readable orderId first, which used to
-    // 500 here instead of falling through to the orderId lookup.
-    let order = mongoose.Types.ObjectId.isValid(id) ? await Order.findById(id) : null;
-    if (!order) {
-      order = await Order.findOne({ orderId: id });
-    }
+    // The dashboard's "View Bill" passes the human-readable orderId first; findOrderForStaff
+    // accepts either id but only within the caller's business (bills carry customer phones).
+    const order = await findOrderForStaff(req.params.id, req);
 
     if (!order) {
       return res.status(404).json({ success: false, error: { code: 'ORDER_NOT_FOUND', message: 'Order not found' } });

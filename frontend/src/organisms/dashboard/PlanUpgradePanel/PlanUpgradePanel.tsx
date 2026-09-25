@@ -5,6 +5,7 @@ import { UpiQrFallback } from '@/molecules/Payments/UpiQrFallback';
 import { isMobileDevice } from '@/utils/device';
 import { formatCurrency } from '@/utils/money';
 import { MySubscriptionStatus, SubscriptionPlan } from '@/types';
+import { INVENTORY_ENABLED } from '@/constants/features';
 
 interface PlanUpgradePanelProps {
   business: any;
@@ -117,7 +118,7 @@ const CompleteUpgradeCard: React.FC<{
             <div className="space-y-1">
               <h3 className="text-sm font-black text-slate-900">Confirm your payment</h3>
               <p className="text-[11px] text-slate-400 font-medium">
-                We don't get an automatic signal from UPI — this just flags it for our team to verify against the bank statement.
+                UPI doesn't tell us automatically — this lets our team know to check for your payment.
               </p>
             </div>
 
@@ -125,7 +126,7 @@ const CompleteUpgradeCard: React.FC<{
               type="text"
               value={utr}
               onChange={(e) => setUtr(e.target.value)}
-              placeholder="UTR / transaction ref (optional, speeds up verification)"
+              placeholder="UPI reference number (optional — helps us find it faster)"
               className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 font-medium outline-none focus:border-orange-500 focus:bg-white focus:ring-2 focus:ring-orange-100 transition-all"
             />
 
@@ -225,8 +226,8 @@ export const PlanUpgradePanel = ({
                 </div>
                 <div className="text-[10px] text-slate-500 font-semibold space-y-1 pt-1">
                   <div>Up to {plan.limits.maxTables} tables · {plan.limits.maxMenuItems} menu items</div>
-                  {plan.limits.inventoryEnabled && <div>Inventory tracking included</div>}
-                  {plan.limits.analyticsAdvanced && <div>Advanced analytics included</div>}
+                  {INVENTORY_ENABLED && plan.limits.inventoryEnabled && <div>Inventory tracking included</div>}
+                  {plan.limits.analyticsAdvanced && <div>Detailed sales reports included</div>}
                 </div>
               </div>
 

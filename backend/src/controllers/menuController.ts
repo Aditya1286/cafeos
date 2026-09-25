@@ -4,25 +4,55 @@ import { Category } from '../models/Category';
 import { Product } from '../models/Product';
 import { MenuImage } from '../models/MenuImage';
 import { Request } from 'express';
+import mongoose from 'mongoose';
+import { getPopularProductIds } from '../services/menuPopularity.service';
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5MB
+
+// The only fields an owner/manager may change on an update. Anything else in the body —
+// businessId (which would move the record into another café's menu), isDeleted, _id, or a
+// Mongo operator like $unset — is dropped rather than passed straight to the database.
+const EDITABLE_CATEGORY_FIELDS = ['name', 'description', 'displayOrder', 'isAvailable'] as const;
+const EDITABLE_PRODUCT_FIELDS = [
+  'name', 'categoryId', 'description', 'pricePaise', 'imageUrl', 'isVeg',
+  'preparationTimeMinutes', 'displayOrder', 'variants', 'addons', 'isAvailable'
+] as const;
+
+const pickFields = (body: any, fields: readonly string[]): Record<string, unknown> => {
+  const picked: Record<string, unknown> = {};
+  for (const field of fields) {
+    if (body && Object.prototype.hasOwnProperty.call(body, field)) picked[field] = body[field];
+  }
+  return picked;
+};
 
 // Public: Get menu by business slug
 export const getPublicMenu = async (req: Request, res: Response) => {
   try {
     const { businessId } = req.params;
-    
+    // A malformed id would otherwise throw a CastError out of the queries below and 500.
+    if (!mongoose.Types.ObjectId.isValid(businessId)) {
+      return res.status(404).json({ success: false, error: { code: 'BUSINESS_NOT_FOUND', message: 'Menu not found' } });
+    }
+
     const categories = await Category.find({ businessId, isAvailable: true }).sort({ displayOrder: 1 });
     // isDeleted excluded defensively too — it's already unorderable via isAvailable:false,
     // but a deleted item should never resurface here even if isAvailable were ever restored
     // without also clearing isDeleted.
     const products = await Product.find({ businessId, isAvailable: true, isDeleted: { $ne: true } }).sort({ displayOrder: 1 });
+    // Best sellers for the menu's "Popular" tags — a nice-to-have, so a failure here must never
+    // take the whole menu down with it.
+    const popularProductIds = await getPopularProductIds(businessId).catch((err) => {
+      console.error('[menu] Popular items lookup failed:', err);
+      return [] as string[];
+    });
 
     return res.json({
       success: true,
       data: {
         categories,
-        products
+        products,
+        popularProductIds
       }
     });
   } catch (error: any) {
@@ -63,8 +93,8 @@ export const updateCategory = async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
     const category = await Category.findOneAndUpdate(
       { _id: id, businessId: req.businessId },
-      req.body,
-      { new: true }
+      { $set: pickFields(req.body, EDITABLE_CATEGORY_FIELDS) },
+      { new: true, runValidators: true }
     );
     if (!category) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Category not found' } });
     return res.json({ success: true, data: category, message: 'Category updated' });
@@ -156,7 +186,7 @@ export const updateProduct = async (req: AuthRequest, res: Response) => {
 
     const product = await Product.findOneAndUpdate(
       { _id: id, businessId: req.businessId },
-      req.body,
+      { $set: pickFields(req.body, EDITABLE_PRODUCT_FIELDS) },
       { new: true, runValidators: true }
     );
     if (!product) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Product not found' } });

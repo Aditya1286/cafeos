@@ -13,7 +13,7 @@ export const Modal = ({ title, onClose, children, maxWidth = 'max-w-md' }: { tit
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-      className={`bg-white rounded-3xl border border-slate-200 shadow-2xl w-full ${maxWidth} p-6 space-y-5 my-8`}
+      className={`bg-white rounded-3xl border border-slate-200 shadow-2xl w-full ${maxWidth} p-5 sm:p-6 space-y-5 my-8`}
       onClick={e => e.stopPropagation()}
     >
       <div className="flex items-center justify-between pb-3 border-b border-slate-100">

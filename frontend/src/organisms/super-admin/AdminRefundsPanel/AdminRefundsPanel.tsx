@@ -28,14 +28,14 @@ interface AdminRefundsPanelProps {
 const needsRefund = (o: any) => o.orderStatus === 'CANCELLED' && o.paymentStatus === 'PAID';
 
 const InsightCard = ({ icon: Icon, label, value, subtext, color, iconBg }: { icon: any; label: string; value: string | number; subtext: string; color: string; iconBg: string }) => (
-  <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-2">
-    <div className="flex items-center justify-between">
-      <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">{label}</span>
+  <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-2 min-w-0">
+    <div className="flex items-start justify-between gap-2">
+      <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider leading-tight">{label}</span>
       <div className={`w-7 h-7 rounded-lg ${iconBg} text-white flex items-center justify-center shrink-0`}>
         <Icon className="w-3.5 h-3.5" />
       </div>
     </div>
-    <div className={`text-xl font-black ${color}`}>{value}</div>
+    <div className={`text-lg sm:text-xl font-black truncate ${color}`}>{value}</div>
     <div className="text-[10px] font-semibold text-slate-400">{subtext}</div>
   </div>
 );
@@ -191,9 +191,9 @@ export const AdminRefundsPanel = ({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-sm">
         <div>
-          <h2 className="text-xl font-black text-slate-900">Refunds & Cancellations</h2>
+          <h2 className="text-lg sm:text-xl font-black text-slate-900">Refunds & Cancellations</h2>
           <p className="text-xs text-slate-500 font-medium mt-0.5">
             Platform-wide, or narrowed to one business — what got cancelled, what's still owed, and what the customer said.
           </p>
@@ -207,7 +207,7 @@ export const AdminRefundsPanel = ({
         </button>
       </div>
 
-      <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center gap-3">
+      <div className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center gap-3">
         <div ref={searchBoxRef} className="relative flex-1">
           <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
@@ -248,9 +248,9 @@ export const AdminRefundsPanel = ({
         </div>
 
         {selectedBusiness ? (
-          <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-red-50 border border-red-200 text-xs font-bold text-red-700 whitespace-nowrap">
-            <span>Showing: {selectedBusiness.name}</span>
-            <button onClick={() => onSelectBusiness('')} className="p-0.5 rounded-md hover:bg-red-100">
+          <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-red-50 border border-red-200 text-xs font-bold text-red-700 min-w-0 sm:max-w-xs">
+            <span className="truncate">Showing: {selectedBusiness.name}</span>
+            <button onClick={() => onSelectBusiness('')} aria-label="Show all businesses" className="p-0.5 rounded-md hover:bg-red-100 shrink-0">
               <X className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -261,7 +261,7 @@ export const AdminRefundsPanel = ({
 
       {insights && (
         <>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-4">
             <InsightCard
               icon={Ban}
               label="Total Cancellations"
@@ -315,7 +315,26 @@ export const AdminRefundsPanel = ({
               <div className="p-4 border-b border-slate-100">
                 <h3 className="text-xs font-extrabold text-slate-700 uppercase tracking-wider">Top Businesses by Refund Volume</h3>
               </div>
-              <div className="overflow-x-auto">
+              {/* Mobile: tappable cards instead of a 5-column table scrolled sideways. */}
+              <div className="md:hidden divide-y divide-slate-100">
+                {insights.byBusiness.map((b) => (
+                  <button
+                    key={b.businessId}
+                    onClick={() => onSelectBusiness(b.businessId)}
+                    className="w-full text-left px-4 py-3 hover:bg-slate-50 transition-colors space-y-1"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-xs font-black text-slate-900 truncate">{b.name}</span>
+                      <span className="text-xs font-black text-violet-600 shrink-0">{formatCurrency(b.refundedAmountPaise)}</span>
+                    </div>
+                    <div className="text-[11px] font-semibold text-slate-500">
+                      {b.cancellations} cancelled · {b.refundedCount} refunded
+                      {b.needsRefundCount > 0 && <span className="text-amber-600 font-bold"> · {b.needsRefundCount} need refund</span>}
+                    </div>
+                  </button>
+                ))}
+              </div>
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="border-b border-slate-100 text-[10px] font-extrabold uppercase text-slate-400">

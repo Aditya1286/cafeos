@@ -6,7 +6,7 @@ import {
   getAllRemittanceRequests, updateBusinessFinanceSettings, getBusinessHourlyHeatmap,
   getTopBusinessesByRevenue, changeBusinessPlan, getBusinessInsights,
   getSubscriptionRequests, approveSubscriptionRequest, rejectSubscriptionRequest,
-  getAdminRefundOrders, getAdminRefundInsights
+  getAdminRefundOrders, getAdminRefundInsights, setBusinessDemoStatus
 } from '../controllers/superAdminController';
 import {
   listTicketsAdmin, getTicketAdmin, escalateTicketAdmin, assignTicketAdmin, resolveTicketAdmin,
@@ -26,6 +26,7 @@ router.get('/analytics/business-insights', getBusinessInsights);
 router.get('/analytics/top-businesses', getTopBusinessesByRevenue);
 router.get('/businesses', getAllBusinesses);
 router.put('/businesses/:id/status', toggleBusinessStatus);
+router.put('/businesses/:id/demo', setBusinessDemoStatus);
 router.put('/businesses/:id/finance-settings', updateBusinessFinanceSettings);
 router.put('/businesses/:id/plan', changeBusinessPlan);
 router.get('/businesses/:id/remittances', getBusinessRemittances);

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, X, ShieldAlert, AlertTriangle, CheckCircle2, Radar } from 'lucide-react';
 import { AdminBusinessSummary } from '@/types';
 import { formatCurrency } from '@/utils/money';
+import { businessHealthOf as healthOf, BusinessHealth as Health } from '@/utils/adminInsights';
 
 const SEARCH_RESULTS_LIMIT = 8;
 
@@ -10,11 +11,6 @@ interface BusinessConstellationProps {
   businesses: AdminBusinessSummary[];
   onSelectBusiness: (business: AdminBusinessSummary) => void;
 }
-
-type Health = 'suspended' | 'overdue' | 'healthy';
-
-const healthOf = (b: AdminBusinessSummary): Health =>
-  b.status === 'SUSPENDED' ? 'suspended' : b.overdueAmountPaise > 0 ? 'overdue' : 'healthy';
 
 // Fixed status colors (never brand hue, never magnitude) — same convention the
 // rest of the dashboard's semantic badges already use.
@@ -79,26 +75,26 @@ export const BusinessConstellation = ({ businesses, onSelectBusiness }: Business
   };
 
   return (
-    <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6">
+    <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-4 sm:p-8 space-y-5 sm:space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h3 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
-            <Radar className="w-4 h-4 text-red-500" /> Business Radar
+            <Radar className="w-4 h-4 text-red-500" /> Business Health
           </h3>
           <p className="text-xs text-slate-500 font-medium max-w-md">
-            Every business at a glance, worst-first — suspended and overdue accounts surface
-            before the healthy long tail. Click one, or search, to see it in full.
+            Every business at a glance — the ones that need help (suspended or late on fees) come first.
+            Tap one, or search, to see more.
           </p>
         </div>
 
-        <div ref={boxRef} className="relative shrink-0">
+        <div ref={boxRef} className="relative w-full sm:w-auto sm:shrink-0">
           <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             value={query}
             onChange={(e) => { setQuery(e.target.value); setShowResults(true); }}
             onFocus={() => setShowResults(true)}
             placeholder="Search business by name or email…"
-            className="pl-8 pr-7 py-2 w-64 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 placeholder:text-slate-400 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 transition-all"
+            className="pl-8 pr-7 py-2 w-full sm:w-64 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 placeholder:text-slate-400 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 transition-all"
           />
           {query && (
             <button
@@ -110,7 +106,7 @@ export const BusinessConstellation = ({ businesses, onSelectBusiness }: Business
           )}
 
           {showResults && term !== '' && (
-            <div className="absolute z-20 top-full mt-1.5 right-0 w-72 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden">
+            <div className="absolute z-20 top-full mt-1.5 left-0 sm:left-auto right-0 sm:w-72 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden">
               {searchResults.length === 0 ? (
                 <div className="px-3.5 py-3 text-xs text-slate-400 font-medium">No business matches "{query}"</div>
               ) : (
@@ -131,26 +127,26 @@ export const BusinessConstellation = ({ businesses, onSelectBusiness }: Business
       </div>
 
       {/* Real, computed insights — not decoration */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className={`p-4 rounded-2xl border ${needsAttentionCount > 0 ? 'bg-amber-50 border-amber-200' : 'bg-slate-50 border-slate-200'}`}>
-          <div className={`text-[10px] font-bold uppercase flex items-center gap-1 ${needsAttentionCount > 0 ? 'text-amber-600' : 'text-slate-400'}`}>
-            <AlertTriangle className="w-3 h-3" /> Needs Attention
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
+        <div className={`p-3 sm:p-4 rounded-2xl border min-w-0 ${needsAttentionCount > 0 ? 'bg-amber-50 border-amber-200' : 'bg-slate-50 border-slate-200'}`}>
+          <div className={`text-[10px] font-bold uppercase flex items-center gap-1 leading-tight ${needsAttentionCount > 0 ? 'text-amber-600' : 'text-slate-400'}`}>
+            <AlertTriangle className="w-3 h-3 shrink-0" /> <span className="truncate"><span className="sm:hidden">Attention</span><span className="hidden sm:inline">Needs Attention</span></span>
           </div>
-          <div className={`text-lg font-black ${needsAttentionCount > 0 ? 'text-amber-700' : 'text-slate-900'}`}>{needsAttentionCount}</div>
+          <div className={`text-base sm:text-lg font-black truncate ${needsAttentionCount > 0 ? 'text-amber-700' : 'text-slate-900'}`}>{needsAttentionCount}</div>
         </div>
-        <div className={`p-4 rounded-2xl border ${overdueBusinesses.length > 0 ? 'bg-rose-50 border-rose-200' : 'bg-slate-50 border-slate-200'}`}>
-          <div className={`text-[10px] font-bold uppercase flex items-center gap-1 ${overdueBusinesses.length > 0 ? 'text-rose-500' : 'text-slate-400'}`}>
-            <ShieldAlert className="w-3 h-3" /> Overdue Commission
+        <div className={`p-3 sm:p-4 rounded-2xl border min-w-0 ${overdueBusinesses.length > 0 ? 'bg-rose-50 border-rose-200' : 'bg-slate-50 border-slate-200'}`}>
+          <div className={`text-[10px] font-bold uppercase flex items-center gap-1 leading-tight ${overdueBusinesses.length > 0 ? 'text-rose-500' : 'text-slate-400'}`}>
+            <ShieldAlert className="w-3 h-3 shrink-0" /> <span className="truncate"><span className="sm:hidden">Overdue</span><span className="hidden sm:inline">Late Fees</span></span>
           </div>
-          <div className={`text-lg font-black ${overdueBusinesses.length > 0 ? 'text-rose-700' : 'text-slate-900'}`}>
+          <div className={`text-base sm:text-lg font-black truncate ${overdueBusinesses.length > 0 ? 'text-rose-700' : 'text-slate-900'}`}>
             {overdueBusinesses.length > 0 ? `${formatCurrency(overdueTotalPaise)} · ${overdueBusinesses.length}` : '₹0'}
           </div>
         </div>
-        <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200">
-          <div className="text-[10px] text-emerald-600 font-bold uppercase flex items-center gap-1">
-            <CheckCircle2 className="w-3 h-3" /> Healthy
+        <div className="p-3 sm:p-4 rounded-2xl bg-emerald-50 border border-emerald-200 min-w-0">
+          <div className="text-[10px] text-emerald-600 font-bold uppercase flex items-center gap-1 leading-tight">
+            <CheckCircle2 className="w-3 h-3 shrink-0" /> <span className="truncate">Healthy</span>
           </div>
-          <div className="text-lg font-black text-emerald-700">{businesses.length - needsAttentionCount} / {businesses.length}</div>
+          <div className="text-base sm:text-lg font-black text-emerald-700 truncate">{businesses.length - needsAttentionCount} / {businesses.length}</div>
         </div>
       </div>
 

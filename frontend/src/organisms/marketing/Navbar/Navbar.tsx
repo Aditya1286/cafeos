@@ -29,9 +29,9 @@ export const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
           </div>
           <div>
             <span className="text-xl font-black tracking-tight text-slate-900 flex items-center gap-1.5">
-              {APP_NAME} <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-50 text-red-600 font-bold border border-red-200">SaaS</span>
+              {APP_NAME}
             </span>
-            <p className="text-[10px] text-slate-500 font-semibold">Multi-Tenant Dining System</p>
+            <p className="text-[10px] text-slate-500 font-semibold">Ordering for Cafés & Restaurants</p>
           </div>
         </Link>
 

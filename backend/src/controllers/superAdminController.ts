@@ -14,33 +14,39 @@ import { computeRepeatCustomerStats, computeItemMargins, computeKitchenSpeed } f
 import { computeRefundInsights } from '../services/refundInsights.service';
 import { applyPlanChange } from '../services/subscription.service';
 import { getCurrentSnapshot, getMetricsHistory } from '../services/systemMetrics.service';
+import { getAnalyticsScope } from '../services/demoBusiness.service';
 import mongoose from 'mongoose';
+import { toAdminLiveOrder } from '../utils/adminLiveOrder';
 
 export const getSuperAdminOverview = async (req: AuthRequest, res: Response) => {
   try {
-    const totalBusinesses = await Business.countDocuments();
-    const activeBusinesses = await Business.countDocuments({ status: 'ACTIVE' });
-    const suspendedBusinesses = await Business.countDocuments({ status: 'SUSPENDED' });
+    // Demo businesses (when excluded) drop out of every number below — see demoBusiness.service.ts.
+    const scope = await getAnalyticsScope();
+    const biz = scope.byBusinessId;
 
-    const totalUsers = await User.countDocuments();
-    const totalOrders = await Order.countDocuments();
-    const paidOrders = await Order.countDocuments({ paymentStatus: 'PAID' });
+    const totalBusinesses = await Business.countDocuments(scope.byBusinessDoc);
+    const activeBusinesses = await Business.countDocuments({ ...scope.byBusinessDoc, status: 'ACTIVE' });
+    const suspendedBusinesses = await Business.countDocuments({ ...scope.byBusinessDoc, status: 'SUSPENDED' });
+
+    const totalUsers = await User.countDocuments(biz);
+    const totalOrders = await Order.countDocuments(biz);
+    const paidOrders = await Order.countDocuments({ ...biz, paymentStatus: 'PAID' });
 
     // Financial Ledger Metrics
     const gmvAggregation = await FinancialLedger.aggregate([
-      { $match: { type: 'ORDER_PAYMENT', status: 'SUCCESS' } },
+      { $match: { ...biz, type: 'ORDER_PAYMENT', status: 'SUCCESS' } },
       { $group: { _id: null, totalGMVPaise: { $sum: '$amountPaise' } } }
     ]);
     const totalGMVPaise = gmvAggregation[0]?.totalGMVPaise || 0;
 
     const platformFeeAggregation = await FinancialLedger.aggregate([
-      { $match: { type: 'PLATFORM_FEE', status: 'SUCCESS' } },
+      { $match: { ...biz, type: 'PLATFORM_FEE', status: 'SUCCESS' } },
       { $group: { _id: null, totalPlatformFeesPaise: { $sum: '$amountPaise' } } }
     ]);
     const totalPlatformFeesPaise = platformFeeAggregation[0]?.totalPlatformFeesPaise || 0;
 
     const subscriptionRevenueAggregation = await FinancialLedger.aggregate([
-      { $match: { type: 'SUBSCRIPTION_FEE', status: 'SUCCESS' } },
+      { $match: { ...biz, type: 'SUBSCRIPTION_FEE', status: 'SUCCESS' } },
       { $group: { _id: null, totalSubscriptionRevenuePaise: { $sum: '$amountPaise' } } }
     ]);
     const totalSubscriptionRevenuePaise = subscriptionRevenueAggregation[0]?.totalSubscriptionRevenuePaise || 0;
@@ -54,11 +60,12 @@ export const getSuperAdminOverview = async (req: AuthRequest, res: Response) => 
 
     // Platform-wide low stock alert count, for a genuine "needs attention" signal instead of a
     // fabricated one.
-    const lowStockItemsCount = await InventoryItem.countDocuments({ status: { $in: ['LOW_STOCK', 'OUT_OF_STOCK'] } });
+    const lowStockItemsCount = await InventoryItem.countDocuments({ ...biz, status: { $in: ['LOW_STOCK', 'OUT_OF_STOCK'] } });
 
     // Repeat-customer rate across every business, grouped by phone number (a customer can only
     // place an order with a phone, so it's a reliable identity key here).
     const customerAggregation = await Order.aggregate([
+      { $match: biz },
       { $group: { _id: '$customerPhone', orderCount: { $sum: 1 } } },
       {
         $group: {
@@ -75,31 +82,20 @@ export const getSuperAdminOverview = async (req: AuthRequest, res: Response) => 
       : null;
 
     // Fetch recent 10 orders with business info
-    const recentOrdersRaw = await Order.find()
+    const recentOrdersRaw = await Order.find(biz)
       .sort({ createdAt: -1 })
       .limit(10)
       .populate('businessId', 'name slug')
       .lean();
 
-    const recentOrders = recentOrdersRaw.map((o: any) => ({
-      _id: o._id.toString(),
-      orderNumber: o.orderNumber,
-      businessName: o.businessId?.name || 'Unknown Business',
-      tableName: o.tableName,
-      customerName: o.customerName,
-      itemsCount: o.items?.reduce((acc: number, item: any) => acc + (item.quantity || 1), 0) || 1,
-      total: Math.round((o.totalAmountPaise || 0) / 100),
-      status: o.orderStatus,
-      paymentMethod: o.paymentMethod,
-      createdAt: o.createdAt
-    }));
+    const recentOrders = recentOrdersRaw.map((o: any) => toAdminLiveOrder(o, o.businessId?.name));
 
     // Plans list, with how many active subscriptions are actually on each one —
     // the admin plans view is otherwise just a static pricing sheet with no signal
     // on whether anyone is actually subscribed to what's being edited.
     const plans = await SubscriptionPlan.find().lean();
     const subscriberCounts = await Subscription.aggregate([
-      { $match: { status: 'ACTIVE' } },
+      { $match: { ...biz, status: 'ACTIVE' } },
       { $group: { _id: '$planId', count: { $sum: 1 } } }
     ]);
     const countsByPlan = new Map(subscriberCounts.map((c: any) => [c._id.toString(), c.count]));
@@ -126,7 +122,10 @@ export const getSuperAdminOverview = async (req: AuthRequest, res: Response) => 
           repeatCustomerPercentage
         },
         recentOrders,
-        plans: plansWithCounts
+        plans: plansWithCounts,
+        // Lets the dashboard say "N demo accounts hidden" and apply the same exclusion to the
+        // analytics it derives client-side from the businesses list.
+        demoFilter: { enabled: scope.enabled, excludedCount: scope.excludedBusinessIds.length }
       }
     });
   } catch (error: any) {
@@ -233,7 +232,7 @@ export const markRemittancePaid = async (req: AuthRequest, res: Response) => {
 
     const remittance = await Remittance.findById(id);
     if (!remittance) {
-      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Remittance period not found' } });
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Billing period not found' } });
     }
     if (remittance.status === 'PAID') {
       return res.status(400).json({ success: false, error: { code: 'ALREADY_PAID', message: 'This period is already marked paid.' } });
@@ -261,7 +260,7 @@ export const markRemittancePaid = async (req: AuthRequest, res: Response) => {
       }
     });
 
-    return res.json({ success: true, message: 'Remittance marked as paid', data: remittance });
+    return res.json({ success: true, message: 'Fee payment marked as paid', data: remittance });
   } catch (error: any) {
     return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
   }
@@ -276,7 +275,7 @@ export const markRemittanceUnpaid = async (req: AuthRequest, res: Response) => {
 
     const remittance = await Remittance.findById(id);
     if (!remittance) {
-      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Remittance period not found' } });
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Billing period not found' } });
     }
     if (remittance.status !== 'PAID') {
       return res.status(400).json({ success: false, error: { code: 'NOT_PAID', message: 'This period is not marked paid.' } });
@@ -290,7 +289,7 @@ export const markRemittanceUnpaid = async (req: AuthRequest, res: Response) => {
 
     await FinancialLedger.deleteOne({ type: 'BUSINESS_SETTLEMENT', 'metadata.remittanceId': remittance._id });
 
-    return res.json({ success: true, message: 'Remittance reverted to unpaid', data: remittance });
+    return res.json({ success: true, message: 'Marked as unpaid again', data: remittance });
   } catch (error: any) {
     return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
   }
@@ -349,7 +348,7 @@ export const updateBusinessFinanceSettings = async (req: AuthRequest, res: Respo
     }
     if (remittanceCycleDays !== undefined) {
       if (typeof remittanceCycleDays !== 'number' || remittanceCycleDays < 1) {
-        return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'remittanceCycleDays must be a positive number.' } });
+        return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Pay-fees-every (days) must be at least 1.' } });
       }
       business.remittanceCycleDays = remittanceCycleDays;
     }
@@ -490,6 +489,34 @@ export const toggleBusinessStatus = async (req: AuthRequest, res: Response) => {
   }
 };
 
+// Super admin: flag/unflag a business as a demo (internal/test) account. Purely a reporting
+// flag — the business keeps operating normally; it only stops counting toward platform-wide
+// analytics while config.excludeDemoBusinessesFromAnalytics is on.
+export const setBusinessDemoStatus = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { isDemo } = req.body;
+
+    if (typeof isDemo !== 'boolean') {
+      return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'isDemo must be true or false.' } });
+    }
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'A valid business id is required.' } });
+    }
+
+    const business = await Business.findByIdAndUpdate(id, { isDemo }, { new: true }).select('name isDemo');
+    if (!business) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Business not found' } });
+
+    return res.json({
+      success: true,
+      message: isDemo ? `${business.name} marked as a demo account` : `${business.name} is no longer a demo account`,
+      data: { _id: business._id, isDemo: business.isDemo }
+    });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
+  }
+};
+
 export const createSubscriptionPlan = async (req: AuthRequest, res: Response) => {
   try {
     const { name, code, description, monthlyPricePaise, annualPricePaise, perOrderFeePaise, limits, isPopular } = req.body;
@@ -561,8 +588,10 @@ export const getSuperAdminAnalytics = async (req: AuthRequest, res: Response) =>
       dateFormat = '%H:00';
     }
 
+    const { byBusinessId: biz } = await getAnalyticsScope();
+
     const revenueTimeseriesRaw = await FinancialLedger.aggregate([
-      { $match: { status: 'SUCCESS', createdAt: { $gte: startDate, $lt: endDate }, type: { $in: ['ORDER_PAYMENT', 'PLATFORM_FEE'] } } },
+      { $match: { ...biz, status: 'SUCCESS', createdAt: { $gte: startDate, $lt: endDate }, type: { $in: ['ORDER_PAYMENT', 'PLATFORM_FEE'] } } },
       {
         $group: {
           _id: { bucket: { $dateToString: { format: dateFormat, date: '$createdAt' } }, type: '$type' },
@@ -583,13 +612,13 @@ export const getSuperAdminAnalytics = async (req: AuthRequest, res: Response) =>
     const revenueTimeseries = Array.from(bucketMap.values());
 
     const paymentMethodBreakdown = await Order.aggregate([
-      { $match: { paymentStatus: 'PAID' } },
+      { $match: { ...biz, paymentStatus: 'PAID' } },
       { $group: { _id: '$paymentMethod', count: { $sum: 1 }, amountPaise: { $sum: '$totalAmountPaise' } } },
       { $sort: { amountPaise: -1 } }
     ]);
 
     const bestSellers = await Order.aggregate([
-      { $match: { paymentStatus: 'PAID' } },
+      { $match: { ...biz, paymentStatus: 'PAID' } },
       { $unwind: '$items' },
       {
         $group: {
@@ -609,7 +638,7 @@ export const getSuperAdminAnalytics = async (req: AuthRequest, res: Response) =>
     // (IST, same default as Business.timezone) so "9 AM" in the chart means 9 AM local
     // wall-clock time for the restaurants, not 9 AM UTC (2:30 PM IST).
     const peakHeatmap = await Order.aggregate([
-      { $match: { paymentStatus: 'PAID', createdAt: { $gte: startDate, $lt: endDate } } },
+      { $match: { ...biz, paymentStatus: 'PAID', createdAt: { $gte: startDate, $lt: endDate } } },
       { $group: { _id: { $hour: { date: '$createdAt', timezone: 'Asia/Kolkata' } }, orders: { $sum: 1 } } },
       { $sort: { _id: 1 } }
     ]);
@@ -622,7 +651,7 @@ export const getSuperAdminAnalytics = async (req: AuthRequest, res: Response) =>
     const MIN_ORDERS_FOR_LEADERBOARD = 3;
 
     const cancellationTimeseriesRaw = await Order.aggregate([
-      { $match: { createdAt: { $gte: startDate, $lt: endDate }, orderStatus: { $in: TERMINAL_STATUSES } } },
+      { $match: { ...biz, createdAt: { $gte: startDate, $lt: endDate }, orderStatus: { $in: TERMINAL_STATUSES } } },
       {
         $group: {
           _id: { $dateToString: { format: dateFormat, date: '$createdAt' } },
@@ -662,7 +691,7 @@ export const getSuperAdminAnalytics = async (req: AuthRequest, res: Response) =>
     // Highest cancellation/refund rate businesses — a minimum sample size keeps a business
     // with e.g. 1 cancelled order out of 1 total from showing a meaningless "100%".
     const worstBusinessesByCancellation = await Order.aggregate([
-      { $match: { createdAt: { $gte: startDate, $lt: endDate }, orderStatus: { $in: TERMINAL_STATUSES } } },
+      { $match: { ...biz, createdAt: { $gte: startDate, $lt: endDate }, orderStatus: { $in: TERMINAL_STATUSES } } },
       {
         $group: {
           _id: '$businessId',
@@ -728,8 +757,10 @@ export const getTopBusinessesByRevenue = async (req: AuthRequest, res: Response)
     const limit = Math.min(Number(req.query.limit) || 8, 50);
     const since = new Date(Date.now() - BUSINESS_HEATMAP_WINDOW_DAYS * 24 * 60 * 60 * 1000);
 
+    const { byBusinessId: biz } = await getAnalyticsScope();
+
     const ranked = await Order.aggregate([
-      { $match: { paymentStatus: 'PAID', createdAt: { $gte: since } } },
+      { $match: { ...biz, paymentStatus: 'PAID', createdAt: { $gte: since } } },
       { $group: { _id: '$businessId', revenuePaise: { $sum: '$totalAmountPaise' }, orders: { $sum: 1 } } },
       { $sort: { revenuePaise: -1 } },
       { $limit: limit },
@@ -908,17 +939,20 @@ export const getAdminRefundOrders = async (req: AuthRequest, res: Response) => {
 export const getAdminRefundInsights = async (req: AuthRequest, res: Response) => {
   try {
     const { businessId } = req.query;
-    const matchBase: Record<string, any> = {};
+    const { byBusinessId: biz } = await getAnalyticsScope();
+    // Platform-wide view leaves demo businesses out; an explicitly selected business is always
+    // shown as-is, demo or not.
+    let matchBase: Record<string, any> = { ...biz };
     if (businessId && mongoose.Types.ObjectId.isValid(businessId as string)) {
-      matchBase.businessId = new mongoose.Types.ObjectId(businessId as string);
+      matchBase = { businessId: new mongoose.Types.ObjectId(businessId as string) };
     }
 
     const insights = await computeRefundInsights(matchBase);
 
     let byBusiness: any[] = [];
-    if (!matchBase.businessId) {
+    if (!(businessId && mongoose.Types.ObjectId.isValid(businessId as string))) {
       byBusiness = await Order.aggregate([
-        { $match: { orderStatus: { $in: ['CANCELLED', 'REFUNDED'] } } },
+        { $match: { ...biz, orderStatus: { $in: ['CANCELLED', 'REFUNDED'] } } },
         {
           $group: {
             _id: '$businessId',

@@ -17,21 +17,21 @@ interface RegisterPageProps {
 const carouselSlides = [
   {
     image: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=1400&q=80',
-    tag: 'INTELLIGENT POS & KDS',
-    title: "Automate Kitchen Operations.",
-    subtitle: 'Reduce order fulfillment time by 65% with real-time ticket routing across kitchens & baristas.'
+    tag: 'KITCHEN',
+    title: "Orders Go Straight to the Kitchen.",
+    subtitle: 'Every order shows up on your kitchen screen the moment it’s placed — no paper slips, no shouting.'
   },
   {
     image: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=1400&q=80',
-    tag: 'CONTACTLESS DINING',
-    title: 'Instant QR Table Ordering.',
-    subtitle: 'Customers scan, customize dishes, and pay seamlessly right from their phone browser — zero app download required.'
+    tag: 'QR ORDERING',
+    title: 'Customers Order From Their Phone.',
+    subtitle: 'They scan the QR code on the table, pick their food, and pay — no app to download.'
   },
   {
     image: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=1400&q=80',
-    tag: 'AUDITABLE FINANCIALS',
-    title: 'Double-Entry Financial Ledger.',
-    subtitle: 'Integer paise currency precision, inventory BOM auto-deduction, and automated platform fee settlements.'
+    tag: 'MONEY',
+    title: 'Know Where Your Money Goes.',
+    subtitle: 'See your sales, our fees and your stock in one place — all worked out for you.'
   }
 ];
 
@@ -126,15 +126,15 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-2xl font-black tracking-tight text-white">{APP_NAME}</span>
-                <span className="text-[10px] font-mono px-2 py-0.5 bg-red-600/30 text-red-300 rounded-full border border-red-500/30 font-bold">PROD</span>
+                <span className="text-[10px] font-mono px-2 py-0.5 bg-red-600/30 text-red-300 rounded-full border border-red-500/30 font-bold">LIVE</span>
               </div>
-              <span className="text-xs text-slate-300 font-semibold block">Enterprise Multi-Tenant SaaS</span>
+              <span className="text-xs text-slate-300 font-semibold block">Ordering & billing for cafés</span>
             </div>
           </Link>
 
           <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900/80 backdrop-blur-md border border-white/10 text-white text-xs font-semibold">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>Systems Operational</span>
+            <span>All systems working</span>
           </div>
         </div>
 
@@ -145,19 +145,19 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
           <div className="grid grid-cols-3 gap-3 p-4 rounded-2xl bg-slate-900/80 backdrop-blur-md border border-white/10 text-white">
             <div className="text-left space-y-0.5">
               <div className="text-[10px] font-bold uppercase text-slate-400 tracking-wider flex items-center gap-1">
-                <Zap className="w-3 h-3 text-red-500" /> KDS Speed
+                <Zap className="w-3 h-3 text-red-500" /> Orders reach kitchen
               </div>
-              <div className="text-base font-black text-white">&lt; 120ms</div>
+              <div className="text-base font-black text-white">Instantly</div>
             </div>
             <div className="text-left space-y-0.5 border-x border-white/10 px-3">
               <div className="text-[10px] font-bold uppercase text-slate-400 tracking-wider flex items-center gap-1">
-                <Shield className="w-3 h-3 text-emerald-400" /> Accuracy
+                <Shield className="w-3 h-3 text-emerald-400" /> Works on
               </div>
-              <div className="text-base font-black text-white">99.99%</div>
+              <div className="text-base font-black text-white">Any phone</div>
             </div>
             <div className="text-left space-y-0.5 pl-1">
               <div className="text-[10px] font-bold uppercase text-slate-400 tracking-wider flex items-center gap-1">
-                <Layers className="w-3 h-3 text-amber-400" /> Multi-Tenant
+                <Layers className="w-3 h-3 text-amber-400" /> Used by
               </div>
               <div className="text-base font-black text-white">500+ Businesses</div>
             </div>
@@ -225,7 +225,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
             </div>
             <h1 className="text-3xl font-black text-slate-900 tracking-tight">Create Business Account</h1>
             <p className="text-xs sm:text-sm text-slate-600 font-medium">
-              Launch your business's digital menu, KDS kitchen display, and POS in under 2 minutes.
+              Set up your menu, kitchen screen and billing in about 2 minutes.
             </p>
           </div>
 
@@ -250,7 +250,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
           <div className="flex items-center justify-between px-2 text-xs font-bold">
             <div className={`flex items-center gap-2 ${step >= 1 ? 'text-red-600' : 'text-slate-400'}`}>
               <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-extrabold ${step >= 1 ? 'bg-red-600 text-white shadow-md shadow-red-600/30' : 'bg-slate-200 text-slate-500'}`}>1</span>
-              <span>Account Credentials</span>
+              <span>Your Login Details</span>
             </div>
             <div className="w-12 h-0.5 bg-slate-200" />
             <div className={`flex items-center gap-2 ${step >= 2 ? 'text-red-600' : 'text-slate-400'}`}>
@@ -455,7 +455,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
 
                   {/* Business Subdomain / URL Slug */}
                   <div>
-                    <label className="block text-xs font-extrabold text-slate-900 mb-1.5">Unique Customer Menu URL Slug</label>
+                    <label className="block text-xs font-extrabold text-slate-900 mb-1.5">Your Menu Link Name</label>
                     <div className="relative flex items-center">
                       <Globe className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                       <input
@@ -537,12 +537,10 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
           {/* Security & Compliance Badges Footer */}
           <div className="flex items-center justify-center gap-4 text-[10px] text-slate-500 font-semibold pt-2">
             <span className="flex items-center gap-1">
-              <CheckCircle2 className="w-3 h-3 text-emerald-600" /> 256-bit TLS Encrypted
+              <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Secure connection
             </span>
             <span>•</span>
-            <span>Multi-Tenant Isolated</span>
-            <span>•</span>
-            <span>SOC2 Type II</span>
+            <span>Your data is kept private</span>
           </div>
 
         </div>

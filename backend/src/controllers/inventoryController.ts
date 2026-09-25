@@ -107,7 +107,7 @@ export const upsertRecipe = async (req: AuthRequest, res: Response) => {
       { new: true, upsert: true }
     );
 
-    return res.json({ success: true, data: recipe, message: 'Recipe BOM updated successfully' });
+    return res.json({ success: true, data: recipe, message: 'Recipe updated' });
   } catch (error: any) {
     return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
   }

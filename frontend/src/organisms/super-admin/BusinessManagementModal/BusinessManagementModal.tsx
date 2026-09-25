@@ -53,7 +53,7 @@ export const BusinessManagementModal: React.FC<BusinessManagementModalProps> = (
             <p className="text-xs text-slate-500 leading-relaxed">
               Are you sure you want to change the status of{' '}
               <span className="font-bold text-slate-900">{business.name}</span> to{' '}
-              <span className="font-bold">{targetStatus}</span>? This will take effect immediately across all QR orders and KDS terminals.
+              <span className="font-bold">{targetStatus}</span>? This takes effect right away for their QR menu and kitchen.
             </p>
           </div>
 

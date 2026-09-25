@@ -16,6 +16,12 @@ export const computeBusiestHour = (peakHeatmap: { _id: number; orders: number }[
   return busiest.orders > 0 ? busiest : null;
 };
 
+export type BusinessHealth = 'suspended' | 'overdue' | 'healthy';
+
+/** Account health as the ops team triages it: suspended first, then overdue commission, then fine. */
+export const businessHealthOf = (b: AdminBusinessSummary): BusinessHealth =>
+  b.status === 'SUSPENDED' ? 'suspended' : b.overdueAmountPaise > 0 ? 'overdue' : 'healthy';
+
 /** The single business with the highest lifetime GMV — real data already loaded for the businesses table. */
 export const computeTopBusinessByGMV = (businesses: AdminBusinessSummary[]): AdminBusinessSummary | null => {
   if (businesses.length === 0) return null;

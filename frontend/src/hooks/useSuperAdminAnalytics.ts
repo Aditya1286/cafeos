@@ -16,5 +16,5 @@ export const useSuperAdminAnalytics = (dateRange: string) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dateRange]);
 
-  return { analyticsData };
+  return { analyticsData, refresh: () => fetchAnalytics(dateRange) };
 };

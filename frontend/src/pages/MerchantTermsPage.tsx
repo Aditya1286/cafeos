@@ -64,51 +64,47 @@ export const MerchantTermsPage: React.FC = () => (
 
         <Section n={3} title="Commission">
           <p>
-            You pay a commission on the pre-tax value of every order that reaches a paid status through the
-            platform, at the rate shown in your dashboard (Settings → Financial Ledger). This rate is set per
-            business and may change with notice; a rate change never applies retroactively to a billing period
-            that has already closed.
+            You pay us a small fee (a percentage) on every paid order, worked out before tax. You can see your
+            rate in your dashboard under Fees &amp; Payments. The rate is set for each business and may change —
+            we'll tell you first, and a new rate never applies to a billing period that has already ended.
           </p>
         </Section>
 
         <Section n={4} title="Billing cycles and due dates">
           <p>
-            Commission accrues into fixed-length billing periods (shown in your dashboard as your remittance
-            cycle — 7 days by default). At the end of each period, the platform totals the commission owed for
-            that period and sets a due date. You can see every period — open, upcoming, and historical — in
-            your Financial Ledger tab at any time; nothing here is calculated behind closed doors.
+            Your fees add up over a fixed billing period (7 days by default). At the end of each period we
+            total the fees for that period and set a date to pay by. You can see every period — current and
+            past — in your Fees &amp; Payments tab at any time. Nothing is hidden.
           </p>
         </Section>
 
-        <Section n={5} title="How you pay, and what counts as settled">
+        <Section n={5} title="How you pay, and when it counts as paid">
           <p>
             Your dashboard shows a UPI QR code / payment link for the platform's own account. Paying that
-            amount and telling us you've paid (optionally with a UTR/transaction reference) records your claim
-            immediately, but <strong>a period is only marked "Paid" once we've confirmed the transfer against
-            our bank statement</strong> — self-reporting is not, by itself, settlement. We aim to confirm
+            amount and telling us you've paid (you can add the UPI reference number) lets us know right away, but
+            <strong> a period is only marked "Paid" once we see the money in our bank account</strong> — just
+            telling us isn't enough on its own. We aim to confirm
             promptly; if a payment doesn't show up as confirmed within a reasonable time after you've reported
             it, contact us with your reference number.
           </p>
           <p>
-            We intend to move to an automated payment processor (e.g. Razorpay or similar) in a future version,
-            at which point this manual QR-and-confirm process will be replaced by real-time settlement. Until
-            then, this manual process is how commission is collected.
+            Later, we plan to add automatic online payments (like Razorpay), so you won't need to tell us
+            you've paid. Until then, this is how fees are collected.
           </p>
         </Section>
 
-        <Section n={6} title="Overdue commission">
+        <Section n={6} title="Late fees">
           <p>
-            A period not settled by its due date is overdue. Continued non-payment of overdue commission may
-            result in restrictions on your account — up to and including suspending new order intake through
-            the platform — until the outstanding balance is settled. <em>Specific grace periods, late fees, or
+            If a period isn't paid by its due date, it's late. If late fees stay unpaid, we may limit your
+            account — including stopping new orders — until you pay what's owed. <em>Specific grace periods, late fees, or
             interest, if any, will be set out separately and are not yet defined in this draft.</em>
           </p>
         </Section>
 
         <Section n={7} title="Taxes">
           <p>
-            The commission rate shown excludes GST. We intend to issue a GST-compliant tax invoice for each
-            billed period; that invoicing flow is not yet built into the product, so please request an invoice
+            The fee rate shown doesn't include GST. We plan to send a proper GST bill for each billing period;
+            that isn't built yet, so please request an invoice
             directly from support for any period until it is. Any tax deducted at source that applies to
             payments between us is your and our respective legal obligation to handle correctly — this
             agreement doesn't override tax law, and neither of us should treat silence here as guidance on it.

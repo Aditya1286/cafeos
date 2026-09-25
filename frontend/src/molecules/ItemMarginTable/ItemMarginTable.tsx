@@ -22,7 +22,7 @@ export const ItemMarginTable: React.FC<ItemMarginTableProps> = ({ data }) => {
       <NoDataAvailable
         icon={PieChart}
         title="No item costs tracked yet"
-        message="Add a recipe (BOM) to your menu items in the Inventory tab to see true margins here."
+        message="Add a recipe to your menu items in the Inventory tab to see the profit on each one here."
       />
     );
   }
@@ -36,7 +36,7 @@ export const ItemMarginTable: React.FC<ItemMarginTableProps> = ({ data }) => {
               <th className="pb-2">Item</th>
               <th className="pb-2 text-right">Price</th>
               <th className="pb-2 text-right">Cost</th>
-              <th className="pb-2 text-right">Margin</th>
+              <th className="pb-2 text-right">Profit</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 text-slate-800">

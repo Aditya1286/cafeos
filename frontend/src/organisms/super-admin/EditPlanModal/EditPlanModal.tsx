@@ -110,7 +110,7 @@ export const EditPlanModal = ({ plan, onClose, onSaved }: EditPlanModalProps) =>
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
-          className="w-full max-w-lg bg-white border border-slate-200 rounded-3xl p-6 shadow-2xl space-y-5 my-8"
+          className="w-full max-w-lg bg-white border border-slate-200 rounded-3xl p-5 sm:p-6 shadow-2xl space-y-5 my-8"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-center justify-between pb-3 border-b border-slate-100">
@@ -125,7 +125,7 @@ export const EditPlanModal = ({ plan, onClose, onSaved }: EditPlanModalProps) =>
               <FormField label="Plan Name">
                 <input required value={name} onChange={(e) => setName(e.target.value)} className={inputCls} placeholder="e.g. Premium" />
               </FormField>
-              <FormField label="Plan Code">
+              <FormField label="Plan Code (short ID)">
                 <input
                   required
                   disabled={isEditing}
@@ -141,7 +141,7 @@ export const EditPlanModal = ({ plan, onClose, onSaved }: EditPlanModalProps) =>
               <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} className={inputCls} placeholder="What this plan is for" />
             </FormField>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <FormField label="Monthly Price (₹)">
                 <input type="number" min={0} value={monthlyPrice} onChange={(e) => setMonthlyPrice(Number(e.target.value))} className={inputCls} />
               </FormField>
@@ -153,7 +153,7 @@ export const EditPlanModal = ({ plan, onClose, onSaved }: EditPlanModalProps) =>
               </FormField>
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <FormField label="Max Tables">
                 <input type="number" min={0} value={maxTables} onChange={(e) => setMaxTables(Number(e.target.value))} className={inputCls} />
               </FormField>
@@ -168,11 +168,11 @@ export const EditPlanModal = ({ plan, onClose, onSaved }: EditPlanModalProps) =>
             <div className="flex flex-wrap items-center gap-4 pt-1">
               <label className="flex items-center gap-2 text-[11px] font-bold text-slate-700 cursor-pointer">
                 <input type="checkbox" checked={inventoryEnabled} onChange={(e) => setInventoryEnabled(e.target.checked)} className="accent-red-600" />
-                Inventory tracking
+                Stock tracking
               </label>
               <label className="flex items-center gap-2 text-[11px] font-bold text-slate-700 cursor-pointer">
                 <input type="checkbox" checked={analyticsAdvanced} onChange={(e) => setAnalyticsAdvanced(e.target.checked)} className="accent-red-600" />
-                Advanced analytics
+                Detailed sales reports
               </label>
               <label className="flex items-center gap-2 text-[11px] font-bold text-slate-700 cursor-pointer">
                 <input type="checkbox" checked={isPopular} onChange={(e) => setIsPopular(e.target.checked)} className="accent-red-600" />
@@ -182,8 +182,8 @@ export const EditPlanModal = ({ plan, onClose, onSaved }: EditPlanModalProps) =>
 
             <FormField label="Status">
               <select value={status} onChange={(e) => setStatus(e.target.value as 'ACTIVE' | 'DISABLED')} className={inputCls}>
-                <option value="ACTIVE">Active — visible &amp; assignable</option>
-                <option value="DISABLED">Disabled — hidden from new assignment</option>
+                <option value="ACTIVE">Active — businesses can pick it</option>
+                <option value="DISABLED">Disabled — hidden from new businesses</option>
               </select>
             </FormField>
 

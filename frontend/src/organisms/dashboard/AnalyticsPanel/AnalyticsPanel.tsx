@@ -6,6 +6,7 @@ import { paiseToRupees } from '@/utils/money';
 import { RepeatCustomerBar } from '@/molecules/RepeatCustomerBar';
 import { ItemMarginTable } from '@/molecules/ItemMarginTable';
 import { KitchenSpeedPanel } from '@/molecules/KitchenSpeedPanel';
+import { INVENTORY_ENABLED } from '@/constants/features';
 
 interface AnalyticsPanelProps {
   analytics: DashboardAnalytics | null;
@@ -27,12 +28,12 @@ export const AnalyticsPanel = ({ analytics }: AnalyticsPanelProps) => {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-black text-slate-900">Financial & Sales Analytics</h2>
-        <p className="text-xs text-slate-500 font-medium">Daily order volume and gross revenue metrics (last 7 days)</p>
+        <h2 className="text-lg font-black text-slate-900">Sales Report</h2>
+        <p className="text-xs text-slate-500 font-medium">Orders and money earned each day (last 7 days)</p>
       </div>
 
       <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
-        <h3 className="text-sm font-black text-slate-900">Daily Gross Revenue (₹)</h3>
+        <h3 className="text-sm font-black text-slate-900">Sales per Day (₹)</h3>
         {chartData.length === 0 ? (
           <div className="h-64 flex flex-col items-center justify-center text-center space-y-2">
             <BarChart3 className="w-10 h-10 text-slate-300" />
@@ -50,7 +51,7 @@ export const AnalyticsPanel = ({ analytics }: AnalyticsPanelProps) => {
                 </defs>
                 <XAxis dataKey="day" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
                 <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} tickFormatter={v => `₹${v}`} />
-                <Tooltip contentStyle={tooltipStyle} formatter={(v: any) => [`₹${v}`, 'Revenue']} />
+                <Tooltip contentStyle={tooltipStyle} formatter={(v: any) => [`₹${v}`, 'Sales']} />
                 <Area type="monotone" dataKey="sales" stroke="#f97316" strokeWidth={3} fillOpacity={1} fill="url(#colorSales)" />
               </AreaChart>
             </ResponsiveContainer>
@@ -61,28 +62,30 @@ export const AnalyticsPanel = ({ analytics }: AnalyticsPanelProps) => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
           <div>
-            <h3 className="text-sm font-black text-slate-900">Repeat Customer Rate</h3>
-            <p className="text-[11px] text-slate-500 font-medium">Who keeps coming back, and how much of your revenue they drive</p>
+            <h3 className="text-sm font-black text-slate-900">Returning Customers</h3>
+            <p className="text-[11px] text-slate-500 font-medium">How many customers come back, and how much they spend</p>
           </div>
           {analytics ? <RepeatCustomerBar stats={analytics.repeatCustomers} /> : null}
         </div>
 
         <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
           <div>
-            <h3 className="text-sm font-black text-slate-900">Real Kitchen Speed</h3>
-            <p className="text-[11px] text-slate-500 font-medium">From actual order timestamps, not a marketing number</p>
+            <h3 className="text-sm font-black text-slate-900">How Fast Orders Are Ready</h3>
+            <p className="text-[11px] text-slate-500 font-medium">Based on your real orders</p>
           </div>
           {analytics ? <KitchenSpeedPanel stats={analytics.kitchenSpeed} /> : null}
         </div>
       </div>
 
-      <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
-        <div>
-          <h3 className="text-sm font-black text-slate-900">True Item Margin</h3>
-          <p className="text-[11px] text-slate-500 font-medium">Selling price vs. actual ingredient cost from each item's recipe</p>
+      {INVENTORY_ENABLED && (
+        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+          <div>
+            <h3 className="text-sm font-black text-slate-900">Profit per Item</h3>
+            <p className="text-[11px] text-slate-500 font-medium">What each item sells for vs. what its ingredients cost</p>
+          </div>
+          {analytics ? <ItemMarginTable data={analytics.itemMargins} /> : null}
         </div>
-        {analytics ? <ItemMarginTable data={analytics.itemMargins} /> : null}
-      </div>
+      )}
     </div>
   );
 };

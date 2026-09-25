@@ -60,6 +60,30 @@ export const SupportTicketsPanel = ({
     }
   };
 
+  // Shared by the desktop table's Actions column and the mobile card — a super admin on a phone
+  // needs to assign, escalate, and resolve just as much as one at a desk.
+  const renderTicketActions = (t: any, stretch = false) => {
+    if (t.status === 'RESOLVED' || t.status === 'CLOSED') return null;
+    const btn = `px-2.5 py-1.5 rounded-xl text-[10px] font-black transition-colors flex items-center justify-center gap-1 ${stretch ? 'flex-1' : ''}`;
+    return (
+      <div className={`flex flex-wrap gap-1.5 ${stretch ? '' : 'justify-end'}`}>
+        {t.assignedToUserId?._id !== currentUserId && (
+          <button onClick={() => onAssignToSelf(t._id)} className={`${btn} bg-slate-100 hover:bg-slate-200 text-slate-700`}>
+            <UserCheck className="w-3.5 h-3.5" /> Assign to me
+          </button>
+        )}
+        {t.status !== 'ESCALATED' && (
+          <button onClick={() => onEscalate(t._id)} className={`${btn} bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700`}>
+            <TriangleAlert className="w-3.5 h-3.5" /> Escalate
+          </button>
+        )}
+        <button onClick={() => setTicketToResolve(t)} className={`${btn} bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700`}>
+          <CheckCircle2 className="w-3.5 h-3.5" /> Resolve
+        </button>
+      </div>
+    );
+  };
+
   const columns: ResponsiveColumn<any>[] = [
     {
       header: 'Ticket',
@@ -114,36 +138,7 @@ export const SupportTicketsPanel = ({
     {
       header: 'Actions',
       align: 'right',
-      render: (t) => (
-        <div className="flex flex-wrap gap-1.5 justify-end">
-          {t.status !== 'RESOLVED' && t.status !== 'CLOSED' && (
-            <>
-              {t.assignedToUserId?._id !== currentUserId && (
-                <button
-                  onClick={() => onAssignToSelf(t._id)}
-                  className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-black transition-colors flex items-center gap-1"
-                >
-                  <UserCheck className="w-3.5 h-3.5" /> Assign to me
-                </button>
-              )}
-              {t.status !== 'ESCALATED' && (
-                <button
-                  onClick={() => onEscalate(t._id)}
-                  className="px-2.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 text-[10px] font-black transition-colors flex items-center gap-1"
-                >
-                  <TriangleAlert className="w-3.5 h-3.5" /> Escalate
-                </button>
-              )}
-              <button
-                onClick={() => setTicketToResolve(t)}
-                className="px-2.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 text-[10px] font-black transition-colors flex items-center gap-1"
-              >
-                <CheckCircle2 className="w-3.5 h-3.5" /> Resolve
-              </button>
-            </>
-          )}
-        </div>
-      ),
+      render: (t) => renderTicketActions(t),
       headerClassName: 'whitespace-nowrap',
       cellClassName: 'whitespace-nowrap'
     }
@@ -153,9 +148,9 @@ export const SupportTicketsPanel = ({
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
         <div>
-          <h2 className="text-xl font-black text-slate-900 flex items-center gap-2"><LifeBuoy className="w-5 h-5 text-orange-500" /> Support Tickets</h2>
+          <h2 className="text-lg sm:text-xl font-black text-slate-900 flex items-center gap-2"><LifeBuoy className="w-5 h-5 text-orange-500" /> Support Tickets</h2>
           <p className="text-xs text-slate-500 font-medium mt-0.5">
-            Every consumer and business-owner issue, in one queue. Assign, escalate, and resolve — the business never sees this.
+            Every problem raised by customers and business owners, in one list. Businesses can't see this page.
           </p>
         </div>
         <button
@@ -168,7 +163,7 @@ export const SupportTicketsPanel = ({
       </div>
 
       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5">
-        <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider block mb-3">Call Agents (SUPER_ADMIN)</span>
+        <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider block mb-3">Team Members Taking Calls</span>
         {loadingAgents ? (
           <div className="text-xs text-slate-400 font-semibold">Loading agents…</div>
         ) : (
@@ -196,7 +191,7 @@ export const SupportTicketsPanel = ({
                 </div>
               );
             })}
-            {agents.length === 0 && <span className="text-xs text-slate-400 font-medium">No SUPER_ADMIN agents found.</span>}
+            {agents.length === 0 && <span className="text-xs text-slate-400 font-medium">No admin team members found.</span>}
           </div>
         )}
       </div>
@@ -211,7 +206,7 @@ export const SupportTicketsPanel = ({
           <option value="ALL">All Statuses</option>
           <option value="OPEN">Open</option>
           <option value="IN_PROGRESS">In Progress</option>
-          <option value="ESCALATED">Escalated</option>
+          <option value="ESCALATED">Urgent (escalated)</option>
           <option value="RESOLVED">Resolved</option>
           <option value="CLOSED">Closed</option>
         </select>
@@ -229,13 +224,27 @@ export const SupportTicketsPanel = ({
             keyExtractor={(t) => t._id}
             columns={columns}
             renderCard={(t) => (
-              <div className="p-4 space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="font-mono text-xs font-black text-slate-900 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-xl">{t.ticketNumber}</div>
-                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-black border ${STATUS_STYLE[t.status] || STATUS_STYLE.OPEN}`}>{t.status.replace('_', ' ')}</span>
+              <div className="p-4 space-y-2.5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="font-mono text-xs font-black text-slate-900 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-xl whitespace-nowrap">{t.ticketNumber}</div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded-full ${PRIORITY_STYLE[t.priority] || PRIORITY_STYLE.MEDIUM}`}>{t.priority}</span>
+                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-black border ${STATUS_STYLE[t.status] || STATUS_STYLE.OPEN}`}>{t.status.replace('_', ' ')}</span>
+                  </div>
                 </div>
-                <div className="font-black text-slate-900">{t.contactName} · {t.contactPhone}</div>
-                <div className="text-xs text-slate-600 italic">"{t.description}"</div>
+                <div className="min-w-0">
+                  <div className="font-black text-slate-900 truncate">{t.contactName}</div>
+                  <div className="text-[11px] text-slate-400 font-semibold">
+                    <a href={`tel:${t.contactPhone}`} className="underline decoration-dotted">{t.contactPhone}</a>
+                    {' · '}{t.raisedByType === 'BUSINESS_OWNER' ? 'Business owner' : 'Customer'}
+                    {' · '}{new Date(t.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+                  </div>
+                </div>
+                <div className="text-[11px] font-bold text-slate-700">
+                  {t.category?.replace(/_/g, ' ')}{t.subCategory ? ` · ${t.subCategory}` : ''}
+                </div>
+                <div className="text-xs text-slate-600 italic bg-slate-50 border border-slate-200 rounded-xl p-2">"{t.description}"</div>
+                {renderTicketActions(t, true)}
               </div>
             )}
             search={{ value: searchQuery, onChange: onSearchChange, placeholder: 'Search by ticket #, name, or phone...' }}

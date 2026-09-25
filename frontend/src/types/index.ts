@@ -31,6 +31,8 @@ export interface Business {
   openingTime: string;
   closingTime: string;
   status: 'ACTIVE' | 'SUSPENDED';
+  /** Super-admin flag for internal/test accounts — excluded from platform analytics when the backend's demo filter is on. */
+  isDemo?: boolean;
 }
 
 export interface SubscriptionPlan {
@@ -282,6 +284,8 @@ export interface SuperAdminOverview {
   metrics: SuperAdminMetrics;
   recentOrders: SuperAdminRecentOrder[];
   plans: SubscriptionPlan[];
+  /** Whether the backend is leaving demo businesses out of analytics, and how many it's excluding. */
+  demoFilter?: { enabled: boolean; excludedCount: number };
 }
 
 export interface AdminBusinessSummary extends Business {
@@ -293,6 +297,7 @@ export interface AdminBusinessSummary extends Business {
   nextDueDate: string | null;
   currentPlan: { _id: string; name: string; code: string } | null;
   subscriptionStatus: string | null;
+  createdAt?: string;
 }
 
 export interface RevenueTimeseriesPoint {

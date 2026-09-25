@@ -113,7 +113,8 @@ export const seedDatabase = async (forceClean: boolean = false) => {
       perOrderFeePaise: 200,
       openingTime: '08:00',
       closingTime: '23:00',
-      status: 'ACTIVE'
+      status: 'ACTIVE',
+      isDemo: true
     });
 
     const sub1 = await Subscription.create({
@@ -290,7 +291,8 @@ export const seedDatabase = async (forceClean: boolean = false) => {
       perOrderFeePaise: 200,
       openingTime: '07:30',
       closingTime: '22:00',
-      status: 'ACTIVE'
+      status: 'ACTIVE',
+      isDemo: true
     });
 
     const sub2 = await Subscription.create({
@@ -429,7 +431,8 @@ export const seedDatabase = async (forceClean: boolean = false) => {
       perOrderFeePaise: 200,
       openingTime: '08:30',
       closingTime: '23:30',
-      status: 'ACTIVE'
+      status: 'ACTIVE',
+      isDemo: true
     });
 
     const sub3 = await Subscription.create({

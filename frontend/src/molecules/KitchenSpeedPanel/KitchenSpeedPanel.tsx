@@ -25,7 +25,7 @@ export const KitchenSpeedPanel: React.FC<KitchenSpeedPanelProps> = ({ stats }) =
       <NoDataAvailable
         icon={Timer}
         title="No timed orders yet"
-        message="Once orders are accepted and marked ready, real kitchen speed will show up here."
+        message="Once orders are accepted and marked ready, you'll see how fast they get ready here."
       />
     );
   }

@@ -5,6 +5,7 @@ import { ApiListResponse, ApiMessageResponse, ApiResponse } from '../../apiTypes
 export type ListBusinessesResponse = ApiListResponse<AdminBusinessSummary>;
 export type UpdateStatusResponse = ApiMessageResponse;
 export type UpdatePlanResponse = ApiMessageResponse;
+export type UpdateDemoResponse = ApiMessageResponse;
 
 export interface BusinessRemittanceSummary {
   business: { _id: string; name: string; slug: string; commissionRatePercentage: number; remittanceCycleDays: number; taxRatePercentage: number };

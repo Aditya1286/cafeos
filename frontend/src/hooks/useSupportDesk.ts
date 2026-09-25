@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import superAdminSupportService from '../services/superAdmin/support';
-import { getSocket } from '../services/socket';
+import { getSocket, joinAdminSupportRoom, onReconnect } from '../services/socket';
 import { toast } from '../utils/toast';
 
 /** Super Admin's support desk — the ticket queue and the SUPER_ADMIN call-availability
@@ -70,14 +70,16 @@ export const useSupportDesk = (enabled: boolean) => {
   useEffect(() => {
     if (!enabled) return;
     const socket = getSocket();
-    socket.emit('join_admin_support_room');
+    joinAdminSupportRoom();
     socket.on('support_ticket:new', () => fetchTickets());
     socket.on('support_ticket:updated', (updated: any) => {
       setTickets(prev => prev.map(t => (t._id === updated.id ? { ...t, ...updated } : t)));
     });
+    const stopResync = onReconnect(() => fetchTickets());
     return () => {
       socket.off('support_ticket:new');
       socket.off('support_ticket:updated');
+      stopResync();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled]);

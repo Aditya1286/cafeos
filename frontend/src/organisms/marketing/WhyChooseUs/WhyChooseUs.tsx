@@ -11,19 +11,19 @@ export interface ComparisonFeature {
 const comparisonFeatures: ComparisonFeature[] = [
   {
     oldWay: 'Handwritten tickets causing kitchen errors & missing items',
-    newWay: 'Live real-time Kitchen Display System (KDS)',
+    newWay: 'A live kitchen screen that shows every order',
   },
   {
-    oldWay: 'End-of-day manual cash and payment reconciliation headaches',
-    newWay: 'Double-entry automated ledger with 3% commission transparency',
+    oldWay: 'Matching cash and payments by hand at the end of the day',
+    newWay: 'Sales and fees worked out for you, with a clear 3% fee',
   },
   {
     oldWay: 'Guests waiting 10 minutes for printed paper menus',
     newWay: 'Instant QR table ordering in under 45 seconds',
   },
   {
-    oldWay: 'Spreadsheet inventory math with zero stock alerts',
-    newWay: 'Automatic ingredient BOM stock deduction on completed orders',
+    oldWay: 'Counting stock on spreadsheets, with no warning when it runs low',
+    newWay: 'Stock goes down on its own as orders are completed',
   },
 ];
 
@@ -42,7 +42,7 @@ export const WhyChooseUs: React.FC = () => {
           Why Businesses Choose {APP_NAME}
         </h2>
         <p className="text-sm sm:text-base text-slate-500 font-medium max-w-xl mx-auto">
-          The old manual way vs. the modern automated platform
+          The old way vs. the easy way
         </p>
       </motion.div>
 

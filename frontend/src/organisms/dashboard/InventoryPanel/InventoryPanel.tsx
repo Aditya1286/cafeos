@@ -22,8 +22,8 @@ export const InventoryPanel = ({ inventoryItems, onAddIngredient }: InventoryPan
     { header: 'Ingredient Name', render: (item) => <span className="font-black text-slate-900">{item.name}</span> },
     { header: 'Stock', render: (item) => <span className="text-slate-900 font-bold">{item.currentStock}</span> },
     { header: 'Unit', render: (item) => <span className="text-slate-500">{item.unit}</span> },
-    { header: 'Min Stock Level', render: (item) => <span className="text-slate-500">{item.minimumStockLevel}</span> },
-    { header: 'Cost/Unit', render: (item) => formatCurrencyPrecise(item.costPerUnitPaise) },
+    { header: 'Alert Below', render: (item) => <span className="text-slate-500">{item.minimumStockLevel}</span> },
+    { header: 'Cost per Unit', render: (item) => formatCurrencyPrecise(item.costPerUnitPaise) },
     { header: 'Stock Status', render: (item) => <StockStatusBadge item={item} /> },
   ];
 
@@ -31,8 +31,8 @@ export const InventoryPanel = ({ inventoryItems, onAddIngredient }: InventoryPan
     <div className="space-y-6">
       <PanelHeader
         icon={Package}
-        title="Inventory Stock & Automatic BOM"
-        subtitle="Ingredients automatically deduct when kitchen accepts orders"
+        title="Stock & Ingredients"
+        subtitle="Stock goes down on its own when the kitchen accepts an order"
         actions={
           <button
             onClick={onAddIngredient}
@@ -52,7 +52,7 @@ export const InventoryPanel = ({ inventoryItems, onAddIngredient }: InventoryPan
             <NoDataAvailable
               icon={Package}
               title="No ingredients tracked yet"
-              message="Add your first ingredient to start tracking stock and automatic BOM deduction."
+              message="Add your first ingredient to keep track of how much you have left."
             />
           }
           renderCard={(item) => (
@@ -71,7 +71,7 @@ export const InventoryPanel = ({ inventoryItems, onAddIngredient }: InventoryPan
                   <div className="font-bold text-slate-700">{item.minimumStockLevel} {item.unit}</div>
                 </div>
                 <div>
-                  <div className="text-[10px] font-extrabold uppercase text-slate-400">Cost/Unit</div>
+                  <div className="text-[10px] font-extrabold uppercase text-slate-400">Cost per Unit</div>
                   <div className="font-bold text-slate-700">{formatCurrencyPrecise(item.costPerUnitPaise)}</div>
                 </div>
               </div>

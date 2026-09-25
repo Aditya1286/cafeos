@@ -4,6 +4,7 @@ import ResponsiveDataView from '@/molecules/ResponsiveDataView';
 import EmptyState from '@/atoms/EmptyState';
 import { formatCurrency } from '@/utils/money';
 import { AdminBusinessSummary, SubscriptionPlan } from '@/types';
+import { DemoBadge } from '@/atoms/DemoBadge';
 
 interface BusinessesManagementTableProps {
   businesses: AdminBusinessSummary[];
@@ -40,26 +41,26 @@ const PlanSelect = ({
 );
 
 export const BusinessesManagementTable = ({ businesses, plans, searchQuery, onSearchChange, onOpenFinance, onOpenStatusModal, onChangePlan }: BusinessesManagementTableProps) => (
-  <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+  <div className="bg-white p-4 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-5 sm:space-y-6">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
       <div>
         <h3 className="text-lg font-extrabold text-slate-900">
-          Registered Businesses Management
+          All Businesses
         </h3>
         <p className="text-xs text-slate-500 font-medium">
-          Detailed business status control, commission owed, and accounts overview
+          Each business's plan, what it owes, and quick actions
         </p>
       </div>
 
-      <div className="flex items-center gap-3">
-        <div className="relative">
+      <div className="flex items-center gap-3 w-full sm:w-auto">
+        <div className="relative w-full sm:w-64">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
           <input
             type="text"
             placeholder="Search business by name or email..."
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="pl-9 pr-4 py-2 rounded-xl bg-slate-100 border border-slate-200 text-xs font-semibold outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100 transition-all"
+            className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-100 border border-slate-200 text-xs font-semibold outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100 transition-all"
           />
         </div>
       </div>
@@ -71,9 +72,9 @@ export const BusinessesManagementTable = ({ businesses, plans, searchQuery, onSe
       breakpoint="md"
       emptyState={
         <EmptyState
-          title="No registered businesses match your filter"
-          description="Try clearing search keywords or resetting the status filter."
-          actionLabel="Reset Search Filter"
+          title="No businesses match your search"
+          description="Try a different name or clear the filter."
+          actionLabel="Clear search"
           onAction={() => onSearchChange('')}
         />
       }
@@ -86,20 +87,23 @@ export const BusinessesManagementTable = ({ businesses, plans, searchQuery, onSe
                 {r.name.charAt(0)}
               </div>
               <div>
-                <div className="font-extrabold text-slate-900">{r.name}</div>
+                <div className="font-extrabold text-slate-900 flex items-center gap-1.5">
+                  <span>{r.name}</span>
+                  {r.isDemo && <DemoBadge />}
+                </div>
                 <div className="text-[10px] text-slate-400 font-normal">{r.address}</div>
               </div>
             </div>
           ),
         },
-        { header: 'URL Slug', render: (r) => <span className="font-mono text-red-600 font-bold">/c/{r.slug}</span> },
+        { header: 'Menu Link', render: (r) => <span className="font-mono text-red-600 font-bold">/c/{r.slug}</span> },
         { header: 'Contact Email', render: (r) => <span className="font-medium text-slate-600">{r.email}</span> },
         {
           header: 'Plan',
           render: (r) => <PlanSelect business={r} plans={plans} onChangePlan={onChangePlan} />,
         },
         {
-          header: 'Commission Owed',
+          header: 'Fees Owed',
           render: (r) => (
             <>
               <div className="font-extrabold text-slate-900">{formatCurrency(r.totalCommissionOwedPaise)}</div>
@@ -156,7 +160,10 @@ export const BusinessesManagementTable = ({ businesses, plans, searchQuery, onSe
                 {r.name.charAt(0)}
               </div>
               <div className="min-w-0">
-                <div className="font-extrabold text-slate-900 truncate">{r.name}</div>
+                <div className="font-extrabold text-slate-900 flex items-center gap-1.5 min-w-0">
+                  <span className="truncate">{r.name}</span>
+                  {r.isDemo && <DemoBadge />}
+                </div>
                 <div className="text-[10px] font-mono text-red-600 font-bold">/c/{r.slug}</div>
               </div>
             </div>
@@ -178,7 +185,7 @@ export const BusinessesManagementTable = ({ businesses, plans, searchQuery, onSe
 
           <div className="flex items-center justify-between pt-2 border-t border-slate-100">
             <div>
-              <div className="text-[10px] text-slate-400 font-bold uppercase">Commission Owed</div>
+              <div className="text-[10px] text-slate-400 font-bold uppercase">Fees Owed</div>
               <div className="font-extrabold text-slate-900 text-sm">{formatCurrency(r.totalCommissionOwedPaise)}</div>
             </div>
             {r.overdueAmountPaise > 0 && (

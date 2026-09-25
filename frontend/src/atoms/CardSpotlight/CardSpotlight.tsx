@@ -27,7 +27,7 @@ export const CardSpotlight: React.FC<CardSpotlightProps> = ({
 
   return (
     <div
-      className={`group relative rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm transition-all duration-300 hover:shadow-xl hover:shadow-red-500/5 ${className}`}
+      className={`group relative rounded-3xl border border-slate-200 bg-white p-4 sm:p-8 shadow-sm transition-all duration-300 hover:shadow-xl hover:shadow-red-500/5 ${className}`}
       onMouseMove={handleMouseMove}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}

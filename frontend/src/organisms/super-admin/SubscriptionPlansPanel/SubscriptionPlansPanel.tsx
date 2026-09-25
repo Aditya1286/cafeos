@@ -15,18 +15,18 @@ export const SubscriptionPlansPanel = ({ plans, onPlansChanged }: SubscriptionPl
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h3 className="text-xl font-extrabold text-slate-900">
-            Multi-Tenant Subscription Plans
+          <h3 className="text-lg sm:text-xl font-extrabold text-slate-900">
+            Subscription Plans
           </h3>
           <p className="text-xs text-slate-500 font-medium">
-            Configure subscription tiers, table limits, and per-order fee rules
+            Set each plan's price, table limit and fee per order
           </p>
         </div>
         <button
           onClick={() => setEditingPlan(null)}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-extrabold text-xs shadow-md shadow-red-600/20 transition-all"
+          className="self-start sm:self-auto flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-extrabold text-xs shadow-md shadow-red-600/20 transition-all"
         >
           <Plus className="w-4 h-4" /> Create Plan
         </button>
@@ -42,11 +42,11 @@ export const SubscriptionPlansPanel = ({ plans, onPlansChanged }: SubscriptionPl
           />
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
           {plans.map((plan) => (
             <div
               key={plan._id}
-              className={`p-6 rounded-3xl bg-white border ${
+              className={`p-5 sm:p-6 rounded-3xl bg-white border ${
                 plan.isPopular ? 'border-2 border-red-400 shadow-xl shadow-red-500/10' : 'border-slate-200 shadow-sm'
               } space-y-5 flex flex-col justify-between relative overflow-hidden ${plan.status === 'DISABLED' ? 'opacity-60' : ''}`}
             >
@@ -78,7 +78,7 @@ export const SubscriptionPlansPanel = ({ plans, onPlansChanged }: SubscriptionPl
                   <div>🪑 Up to {plan.limits.maxTables} tables</div>
                   <div>📋 Up to {plan.limits.maxMenuItems} menu items</div>
                   {plan.limits.inventoryEnabled && <div>📦 Inventory tracking included</div>}
-                  {plan.limits.analyticsAdvanced && <div>📈 Advanced analytics included</div>}
+                  {plan.limits.analyticsAdvanced && <div>📈 Detailed sales reports included</div>}
                 </div>
               </div>
 

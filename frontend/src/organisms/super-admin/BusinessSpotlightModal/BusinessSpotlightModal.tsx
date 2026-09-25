@@ -114,14 +114,14 @@ export const BusinessSpotlightModal = ({ business, onClose, onOpenFinance, onOpe
                 {business.status}
               </span>
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-50 text-slate-600 text-[11px] font-extrabold border border-slate-200">
-                {business.commissionRatePercentage ?? 3}% commission
+                {business.commissionRatePercentage ?? 3}% fee per order
               </span>
             </motion.div>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gap-2 sm:gap-3">
               {[
-                { label: 'Lifetime GMV', value: paiseToRupees(business.lifetimeGMVPaise), icon: TrendingUp, delay: 0.3, tone: 'text-slate-900' },
-                { label: 'Commission Owed', value: paiseToRupees(business.totalCommissionOwedPaise), icon: Wallet, delay: 0.38, tone: 'text-slate-900' },
+                { label: 'Total Sales', value: paiseToRupees(business.lifetimeGMVPaise), icon: TrendingUp, delay: 0.3, tone: 'text-slate-900' },
+                { label: 'Fees Owed', value: paiseToRupees(business.totalCommissionOwedPaise), icon: Wallet, delay: 0.38, tone: 'text-slate-900' },
                 { label: 'Overdue', value: paiseToRupees(business.overdueAmountPaise), icon: AlertTriangle, delay: 0.46, tone: business.overdueAmountPaise > 0 ? 'text-rose-600' : 'text-slate-900' },
               ].map((stat) => (
                 <motion.div
@@ -129,13 +129,13 @@ export const BusinessSpotlightModal = ({ business, onClose, onOpenFinance, onOpe
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: stat.delay }}
-                  className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200"
+                  className="p-2.5 sm:p-3.5 rounded-2xl bg-slate-50 border border-slate-200 min-w-0"
                 >
                   <stat.icon className="w-3.5 h-3.5 text-slate-400 mb-1.5" />
-                  <div className={`text-base font-black ${stat.tone}`}>
+                  <div className={`text-sm sm:text-base font-black truncate ${stat.tone}`}>
                     <NumberTicker value={stat.value} prefix="₹" delay={stat.delay} />
                   </div>
-                  <div className="text-[9px] font-bold uppercase text-slate-400 mt-0.5">{stat.label}</div>
+                  <div className="text-[9px] font-bold uppercase text-slate-400 mt-0.5 leading-tight">{stat.label}</div>
                 </motion.div>
               ))}
             </div>
@@ -154,7 +154,7 @@ export const BusinessSpotlightModal = ({ business, onClose, onOpenFinance, onOpe
                   onClick={() => { onOpenFinance(business._id); onClose(); }}
                   className="w-full py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-extrabold text-xs shadow-md shadow-red-600/20 transition-all flex items-center justify-center gap-2"
                 >
-                  <Wallet className="w-3.5 h-3.5" /> View Finance Ledger
+                  <Wallet className="w-3.5 h-3.5" /> View Fee Payments
                 </button>
                 <button
                   onClick={() => { onOpenStatusModal({ id: business._id, name: business.name, status: business.status }); onClose(); }}

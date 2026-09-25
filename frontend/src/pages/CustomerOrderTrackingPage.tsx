@@ -4,7 +4,7 @@ import {
   Coffee, CheckCircle2, Clock, Utensils, Sparkles, Printer, ArrowLeft, ShieldCheck, Check
 } from 'lucide-react';
 import publicOrdersService from '../services/public/orders';
-import { getSocket } from '../services/socket';
+import { getSocket, joinOrderRoom, onReconnect } from '../services/socket';
 import { PaymentPanel } from '@/organisms/Payments/PaymentPanel';
 import { SupportWidget } from '@/organisms/SupportWidget';
 
@@ -32,7 +32,7 @@ export const CustomerOrderTrackingPage: React.FC = () => {
 
     if (orderId) {
       const socket = getSocket();
-      socket.emit('join_order_room', orderId);
+      joinOrderRoom(orderId);
 
       socket.on('order:status_updated', (updated: any) => {
         setOrder((prev: any) => (prev
@@ -40,8 +40,13 @@ export const CustomerOrderTrackingPage: React.FC = () => {
           : prev));
       });
 
+      // A status change during a dropped connection (phone switching networks, screen locked)
+      // is never re-sent — re-read the order once the room is re-joined.
+      const stopResync = onReconnect(fetchOrderDetails);
+
       return () => {
         socket.off('order:status_updated');
+        stopResync();
       };
     }
   }, [orderId]);
@@ -111,7 +116,7 @@ export const CustomerOrderTrackingPage: React.FC = () => {
           {isRefunded
             ? `Refunded (${order?.paymentMethod})`
             : isPaid
-            ? `E-Bill Paid (${order?.paymentMethod})`
+            ? `Paid (${order?.paymentMethod})`
             : `Payment Pending (${order?.paymentMethod})`}
         </div>
 
@@ -130,7 +135,7 @@ export const CustomerOrderTrackingPage: React.FC = () => {
         ) : (
           <div className="mt-6 pt-6 border-t border-slate-100 space-y-4 text-left">
             <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block mb-3">
-              Real-Time Kitchen Progress
+              Your Order Progress
             </span>
 
             <div className="space-y-4 relative pl-1">
@@ -186,7 +191,7 @@ export const CustomerOrderTrackingPage: React.FC = () => {
       {/* ── Digital E-Bill Breakdown Card ────────────────────── */}
       <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-3 text-xs">
         <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-          <h3 className="font-black text-slate-900 text-sm">Digital E-Bill Receipt</h3>
+          <h3 className="font-black text-slate-900 text-sm">Your Bill</h3>
           <span className="text-[10px] text-slate-400 font-mono">
             {new Date(order?.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </span>
