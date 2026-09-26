@@ -28,7 +28,10 @@ export const useSystemHealth = (enabled: boolean) => {
     setLoading(true);
     fetchHealth();
     const interval = setInterval(fetchHealth, POLL_INTERVAL_MS);
-    return () => { cancelled = true; clearInterval(interval); };
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
   }, [enabled]);
 
   return { systemHealth, loading };

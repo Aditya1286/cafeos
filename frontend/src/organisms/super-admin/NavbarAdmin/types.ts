@@ -1,5 +1,14 @@
 import {
-  Activity, Store, Layers, Server, BarChart3, Flame, Wallet, Undo2, LifeBuoy, LucideIcon,
+  Activity,
+  Store,
+  Layers,
+  Server,
+  BarChart3,
+  Flame,
+  Wallet,
+  Undo2,
+  LifeBuoy,
+  LucideIcon,
 } from 'lucide-react';
 
 export const DATE_PRESETS = [
@@ -38,7 +47,11 @@ export interface NavbarAdminProps {
 /** What the desktop and mobile navbar views receive from the parent `NavbarAdmin`. */
 export type NavbarAdminViewProps = Omit<
   NavbarAdminProps,
-  'businessesCount' | 'pendingRemittancesCount' | 'pendingSubscriptionRequestsCount' | 'refundsNeededCount' | 'openTicketsCount'
+  | 'businessesCount'
+  | 'pendingRemittancesCount'
+  | 'pendingSubscriptionRequestsCount'
+  | 'refundsNeededCount'
+  | 'openTicketsCount'
 > & {
   navItems: AdminNavItem[];
 };
@@ -49,15 +62,37 @@ export const buildNavItems = ({
   pendingSubscriptionRequestsCount = 0,
   refundsNeededCount = 0,
   openTicketsCount = 0,
-}: Pick<NavbarAdminProps, 'businessesCount' | 'pendingRemittancesCount' | 'pendingSubscriptionRequestsCount' | 'refundsNeededCount' | 'openTicketsCount'>): AdminNavItem[] => [
+}: Pick<
+  NavbarAdminProps,
+  | 'businessesCount'
+  | 'pendingRemittancesCount'
+  | 'pendingSubscriptionRequestsCount'
+  | 'refundsNeededCount'
+  | 'openTicketsCount'
+>): AdminNavItem[] => [
   { id: 'overview', label: 'Overview', icon: Activity },
   { id: 'businesses', label: 'Businesses', icon: Store, count: businessesCount },
-  { id: 'remittances', label: 'Fee Payments', icon: Wallet, count: pendingRemittancesCount || undefined },
-  { id: 'refunds', label: 'Refunds & Cancellations', icon: Undo2, count: refundsNeededCount || undefined },
+  {
+    id: 'remittances',
+    label: 'Fee Payments',
+    icon: Wallet,
+    count: pendingRemittancesCount || undefined,
+  },
+  {
+    id: 'refunds',
+    label: 'Refunds & Cancellations',
+    icon: Undo2,
+    count: refundsNeededCount || undefined,
+  },
   { id: 'support', label: 'Support Tickets', icon: LifeBuoy, count: openTicketsCount || undefined },
   { id: 'analytics', label: 'Reports', icon: BarChart3 },
   { id: 'kitchen', label: 'Live Kitchens', icon: Flame },
-  { id: 'plans', label: 'Plans', icon: Layers, count: pendingSubscriptionRequestsCount || undefined },
+  {
+    id: 'plans',
+    label: 'Plans',
+    icon: Layers,
+    count: pendingSubscriptionRequestsCount || undefined,
+  },
   { id: 'system', label: 'Server Health', icon: Server },
 ];
 

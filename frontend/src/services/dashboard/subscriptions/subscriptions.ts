@@ -1,5 +1,11 @@
 import { apiRequest } from '../../api';
-import { CancelUpgradeResponse, GetStatusResponse, ListPlansResponse, MarkUpgradePaidResponse, RequestUpgradeResponse } from './types';
+import {
+  CancelUpgradeResponse,
+  GetStatusResponse,
+  ListPlansResponse,
+  MarkUpgradePaidResponse,
+  RequestUpgradeResponse,
+} from './types';
 
 export const getStatus = (): Promise<GetStatusResponse> => apiRequest('/subscriptions/status');
 
@@ -8,7 +14,10 @@ export const getStatus = (): Promise<GetStatusResponse> => apiRequest('/subscrip
 export const listPlans = (): Promise<ListPlansResponse> => apiRequest('/public/plans');
 
 // Asking for a plan never changes what's active — a super admin approving this (after payment) does.
-export const requestUpgrade = (planId: string, billingCycle: 'MONTHLY' | 'ANNUAL' = 'MONTHLY'): Promise<RequestUpgradeResponse> =>
+export const requestUpgrade = (
+  planId: string,
+  billingCycle: 'MONTHLY' | 'ANNUAL' = 'MONTHLY',
+): Promise<RequestUpgradeResponse> =>
   apiRequest('/subscriptions/upgrade-request', 'POST', { planId, billingCycle });
 
 // Self-report payment via the platform's UPI QR — a super admin still has to verify and approve.

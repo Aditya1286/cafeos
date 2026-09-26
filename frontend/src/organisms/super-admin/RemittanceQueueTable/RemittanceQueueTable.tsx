@@ -14,25 +14,33 @@ interface RemittanceQueueTableProps {
   onUnmarkPaid: (id: string) => void;
 }
 
-const businessOf = (r: AdminRemittanceRequest) => (typeof r.businessId === 'string' ? null : r.businessId);
+const businessOf = (r: AdminRemittanceRequest) =>
+  typeof r.businessId === 'string' ? null : r.businessId;
 
-const shortDate = (iso: string) => new Date(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+const shortDate = (iso: string) =>
+  new Date(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
 
-const periodLabel = (r: AdminRemittanceRequest) => `${shortDate(r.periodStart)} – ${shortDate(r.periodEnd)}`;
+const periodLabel = (r: AdminRemittanceRequest) =>
+  `${shortDate(r.periodStart)} – ${shortDate(r.periodEnd)}`;
 
 const DueOrPaid = ({ r, view }: { r: AdminRemittanceRequest; view: 'UNPAID' | 'PAID' }) => {
   if (view === 'UNPAID') {
     const isOverdue = r.status === 'UNPAID' && new Date(r.dueDate) < new Date();
     return (
       <span className={isOverdue ? 'text-rose-600 font-bold' : 'text-slate-500'}>
-        Due {shortDate(r.dueDate)}{isOverdue && ' · Overdue'}
+        Due {shortDate(r.dueDate)}
+        {isOverdue && ' · Overdue'}
       </span>
     );
   }
   return (
     <span className="text-slate-600">
-      {r.paidAt ? `Paid ${new Date(r.paidAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}` : '—'}
-      {r.markedPaidByUserId?.name && <span className="block text-[10px] text-slate-400">by {r.markedPaidByUserId.name}</span>}
+      {r.paidAt
+        ? `Paid ${new Date(r.paidAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}`
+        : '—'}
+      {r.markedPaidByUserId?.name && (
+        <span className="block text-[10px] text-slate-400">by {r.markedPaidByUserId.name}</span>
+      )}
     </span>
   );
 };
@@ -43,13 +51,20 @@ const ClaimBadge = ({ r }: { r: AdminRemittanceRequest }) =>
       className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-orange-50 text-orange-700 text-[10px] font-extrabold border border-orange-200 whitespace-nowrap"
       title={r.merchantReportedUtr ? `UTR: ${r.merchantReportedUtr}` : 'No reference given'}
     >
-      <AlertTriangle className="w-3 h-3" /> Says they paid{r.merchantReportedUtr ? ` · ${r.merchantReportedUtr}` : ''}
+      <AlertTriangle className="w-3 h-3" /> Says they paid
+      {r.merchantReportedUtr ? ` · ${r.merchantReportedUtr}` : ''}
     </span>
   ) : (
     <span className="text-slate-300">—</span>
   );
 
-const RowAction = ({ r, view, onMarkPaid, onUnmarkPaid, fullWidth = false }: {
+const RowAction = ({
+  r,
+  view,
+  onMarkPaid,
+  onUnmarkPaid,
+  fullWidth = false,
+}: {
   r: AdminRemittanceRequest;
   view: 'UNPAID' | 'PAID';
   onMarkPaid: (id: string) => void;
@@ -72,7 +87,15 @@ const RowAction = ({ r, view, onMarkPaid, onUnmarkPaid, fullWidth = false }: {
     </button>
   );
 
-export const RemittanceQueueTable = ({ remittanceView, onChangeView, pendingCount, requests, loading, onMarkPaid, onUnmarkPaid }: RemittanceQueueTableProps) => (
+export const RemittanceQueueTable = ({
+  remittanceView,
+  onChangeView,
+  pendingCount,
+  requests,
+  loading,
+  onMarkPaid,
+  onUnmarkPaid,
+}: RemittanceQueueTableProps) => (
   <div className="space-y-6">
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
       <div>
@@ -122,40 +145,80 @@ export const RemittanceQueueTable = ({ remittanceView, onChangeView, pendingCoun
               header: 'Business',
               render: (r) => (
                 <>
-                  <div className="font-black text-slate-900">{businessOf(r)?.name || 'Unknown business'}</div>
-                  <div className="text-[10px] text-slate-400 font-mono">/c/{businessOf(r)?.slug}</div>
+                  <div className="font-black text-slate-900">
+                    {businessOf(r)?.name || 'Unknown business'}
+                  </div>
+                  <div className="text-[10px] text-slate-400 font-mono">
+                    /c/{businessOf(r)?.slug}
+                  </div>
                 </>
               ),
             },
-            { header: 'Period', render: (r) => <span className="text-slate-500 whitespace-nowrap">{periodLabel(r)}</span> },
+            {
+              header: 'Period',
+              render: (r) => (
+                <span className="text-slate-500 whitespace-nowrap">{periodLabel(r)}</span>
+              ),
+            },
             { header: 'Orders', render: (r) => r.ordersCount },
             { header: 'Gross', render: (r) => formatCurrency(r.grossAmountPaise) },
-            { header: 'Commission', render: (r) => <span className="font-black text-slate-900">{formatCurrency(r.commissionOwedPaise)}</span> },
-            { header: remittanceView === 'UNPAID' ? 'Due' : 'Paid', render: (r) => <DueOrPaid r={r} view={remittanceView} /> },
+            {
+              header: 'Commission',
+              render: (r) => (
+                <span className="font-black text-slate-900">
+                  {formatCurrency(r.commissionOwedPaise)}
+                </span>
+              ),
+            },
+            {
+              header: remittanceView === 'UNPAID' ? 'Due' : 'Paid',
+              render: (r) => <DueOrPaid r={r} view={remittanceView} />,
+            },
             { header: 'Claim', render: (r) => <ClaimBadge r={r} /> },
             {
               header: 'Action',
               align: 'right',
-              render: (r) => <RowAction r={r} view={remittanceView} onMarkPaid={onMarkPaid} onUnmarkPaid={onUnmarkPaid} />,
+              render: (r) => (
+                <RowAction
+                  r={r}
+                  view={remittanceView}
+                  onMarkPaid={onMarkPaid}
+                  onUnmarkPaid={onUnmarkPaid}
+                />
+              ),
             },
           ]}
           renderCard={(r) => (
             <div className="p-4 space-y-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <div className="font-black text-slate-900 text-sm truncate">{businessOf(r)?.name || 'Unknown business'}</div>
-                  <div className="text-[11px] text-slate-400 font-semibold">{periodLabel(r)} · {r.ordersCount} orders</div>
+                  <div className="font-black text-slate-900 text-sm truncate">
+                    {businessOf(r)?.name || 'Unknown business'}
+                  </div>
+                  <div className="text-[11px] text-slate-400 font-semibold">
+                    {periodLabel(r)} · {r.ordersCount} orders
+                  </div>
                 </div>
                 <div className="text-right shrink-0">
-                  <div className="font-black text-slate-900 text-sm">{formatCurrency(r.commissionOwedPaise)}</div>
-                  <div className="text-[10px] font-bold text-slate-400">of {formatCurrency(r.grossAmountPaise)} gross</div>
+                  <div className="font-black text-slate-900 text-sm">
+                    {formatCurrency(r.commissionOwedPaise)}
+                  </div>
+                  <div className="text-[10px] font-bold text-slate-400">
+                    of {formatCurrency(r.grossAmountPaise)} gross
+                  </div>
                 </div>
               </div>
               <div className="flex items-center justify-between gap-2 text-[11px] font-semibold">
                 <DueOrPaid r={r} view={remittanceView} />
                 <ClaimBadge r={r} />
               </div>
-              <RowAction r={r} view={remittanceView} onMarkPaid={onMarkPaid} onUnmarkPaid={onUnmarkPaid} fullWidth />
+              <RowAction
+                r={r}
+                view={remittanceView}
+                onMarkPaid={onMarkPaid}
+                onUnmarkPaid={onUnmarkPaid}
+                fullWidth
+              />
             </div>
           )}
         />

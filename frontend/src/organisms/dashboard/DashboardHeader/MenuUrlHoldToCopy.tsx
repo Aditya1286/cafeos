@@ -36,7 +36,10 @@ export const MenuUrlHoldToCopy = ({ slug, copied, onCopy }: MenuUrlHoldToCopyPro
       <span
         aria-hidden
         className="absolute inset-y-0 left-0 bg-orange-500/25"
-        style={{ width: holding ? '100%' : '0%', transition: holding ? `width ${LONG_PRESS_MS}ms linear` : 'none' }}
+        style={{
+          width: holding ? '100%' : '0%',
+          transition: holding ? `width ${LONG_PRESS_MS}ms linear` : 'none',
+        }}
       />
       <span className="relative truncate">/c/{slug}</span>
       {copied && (

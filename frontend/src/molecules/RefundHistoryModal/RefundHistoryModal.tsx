@@ -9,7 +9,15 @@ interface RefundHistoryModalProps {
 }
 
 const formatDateTime = (value?: string | null) =>
-  value ? new Date(value).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : null;
+  value
+    ? new Date(value).toLocaleString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    : null;
 
 interface TimelineStep {
   key: string;
@@ -59,11 +67,15 @@ export const RefundHistoryModal = ({ order, onClose }: RefundHistoryModalProps) 
       label: 'Refund Requested',
       at: order.refundRequestedAt || null,
       color: 'bg-amber-500',
-      detail: order.refundRequestedAt
-        ? (order.refundReason
-          ? <span className="italic text-slate-700 font-semibold">"{order.refundReason}"</span>
-          : <span className="text-slate-400">No note left by the customer.</span>)
-        : <span className="text-slate-400">Business-initiated — no customer request on file.</span>,
+      detail: order.refundRequestedAt ? (
+        order.refundReason ? (
+          <span className="italic text-slate-700 font-semibold">"{order.refundReason}"</span>
+        ) : (
+          <span className="text-slate-400">No note left by the customer.</span>
+        )
+      ) : (
+        <span className="text-slate-400">Business-initiated — no customer request on file.</span>
+      ),
     });
     steps.push({
       key: 'refunded',
@@ -78,27 +90,43 @@ export const RefundHistoryModal = ({ order, onClose }: RefundHistoryModalProps) 
   }
 
   return (
-    <Modal title={`Refund History · ${order.orderId || order.orderNumber}`} onClose={onClose} maxWidth="max-w-lg">
+    <Modal
+      title={`Refund History · ${order.orderId || order.orderNumber}`}
+      onClose={onClose}
+      maxWidth="max-w-lg"
+    >
       <div className="space-y-5">
         <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 grid grid-cols-2 gap-3 text-xs">
           <div>
-            <span className="text-[10px] font-extrabold uppercase text-slate-400 block">Customer</span>
+            <span className="text-[10px] font-extrabold uppercase text-slate-400 block">
+              Customer
+            </span>
             <div className="font-black text-slate-900">{order.customerName}</div>
             <div className="text-slate-500 font-semibold">{order.customerPhone}</div>
           </div>
           {businessName && (
             <div>
-              <span className="text-[10px] font-extrabold uppercase text-slate-400 block">Business</span>
+              <span className="text-[10px] font-extrabold uppercase text-slate-400 block">
+                Business
+              </span>
               <div className="font-black text-slate-900">{businessName}</div>
             </div>
           )}
           <div>
-            <span className="text-[10px] font-extrabold uppercase text-slate-400 block">Amount</span>
-            <div className="font-black text-slate-900">{formatCurrency(order.totalAmountPaise)}</div>
+            <span className="text-[10px] font-extrabold uppercase text-slate-400 block">
+              Amount
+            </span>
+            <div className="font-black text-slate-900">
+              {formatCurrency(order.totalAmountPaise)}
+            </div>
           </div>
           <div>
-            <span className="text-[10px] font-extrabold uppercase text-slate-400 block">Payment</span>
-            <div className="font-black text-slate-900">{order.paymentMethod} · {order.paymentStatus}</div>
+            <span className="text-[10px] font-extrabold uppercase text-slate-400 block">
+              Payment
+            </span>
+            <div className="font-black text-slate-900">
+              {order.paymentMethod} · {order.paymentStatus}
+            </div>
           </div>
         </div>
 
@@ -109,10 +137,16 @@ export const RefundHistoryModal = ({ order, onClose }: RefundHistoryModalProps) 
             return (
               <div key={step.key} className="flex gap-3">
                 <div className="flex flex-col items-center">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${happened ? step.color : 'bg-slate-200'} text-white`}>
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${happened ? step.color : 'bg-slate-200'} text-white`}
+                  >
                     <Icon className="w-4 h-4" />
                   </div>
-                  {idx < steps.length - 1 && <div className={`w-0.5 flex-1 min-h-6 ${happened ? 'bg-slate-300' : 'bg-slate-100'}`} />}
+                  {idx < steps.length - 1 && (
+                    <div
+                      className={`w-0.5 flex-1 min-h-6 ${happened ? 'bg-slate-300' : 'bg-slate-100'}`}
+                    />
+                  )}
                 </div>
                 <div className={`pb-5 ${!happened ? 'opacity-50' : ''}`}>
                   <div className="text-xs font-black text-slate-900">{step.label}</div>

@@ -67,18 +67,25 @@ test("an item cannot be moved into another café's menu", async () => {
   assert.equal(saved!.name, 'Still mine', 'the legitimate field in the same request should still apply');
 });
 
-test('internal flags and Mongo operators in the body are ignored', async () => {
+test('internal flags in the body are ignored', async () => {
   const p = await newProduct();
-  const res = await put(`/products/${p._id}`, artisanOwner, {
-    isDeleted: true,
-    discountPercentage: 90,
-    $set: { businessId: beanId },
-    $unset: { name: 1 }
-  });
+  const res = await put(`/products/${p._id}`, artisanOwner, { isDeleted: true, discountPercentage: 90 });
   assert.equal(res.status, 200, JSON.stringify(res.body));
   const saved = await Product.findById(p._id);
   assert.equal(saved!.isDeleted, false);
   assert.equal(saved!.discountPercentage, 0);
+});
+
+test('Mongo operators in the body reject the whole request, changing nothing', async () => {
+  const p = await newProduct();
+  const res = await put(`/products/${p._id}`, artisanOwner, {
+    name: 'Renamed',
+    $set: { businessId: beanId },
+    $unset: { name: 1 }
+  });
+  assert.equal(res.status, 400, JSON.stringify(res.body));
+  assert.equal(res.body.error.code, 'INVALID_INPUT');
+  const saved = await Product.findById(p._id);
   assert.equal(saved!.businessId.toString(), artisanId);
   assert.equal(saved!.name, 'Update Test');
 });

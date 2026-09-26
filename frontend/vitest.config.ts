@@ -7,12 +7,12 @@ import path from 'path';
 export default defineConfig({
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src')
-    }
+      '@': path.resolve(__dirname, './src'),
+    },
   },
   test: {
     include: ['tests/**/*.test.ts'],
     environment: 'node',
-    testTimeout: 15_000
-  }
+    testTimeout: 15_000,
+  },
 });

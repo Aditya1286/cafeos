@@ -49,7 +49,11 @@ const RejectButton: React.FC<{ onReject: (reason?: string) => void }> = ({ onRej
         />
         <div className="space-y-2 pt-1">
           <button
-            onClick={() => { onReject(reason.trim() || undefined); setOpen(false); setReason(''); }}
+            onClick={() => {
+              onReject(reason.trim() || undefined);
+              setOpen(false);
+              setReason('');
+            }}
             className="w-full py-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs shadow-lg shadow-rose-600/30 transition-all"
           >
             Yes, reject request
@@ -66,7 +70,8 @@ const RejectButton: React.FC<{ onReject: (reason?: string) => void }> = ({ onRej
   );
 };
 
-const businessOf = (r: AdminSubscriptionRequest) => (typeof r.businessId === 'string' ? null : r.businessId);
+const businessOf = (r: AdminSubscriptionRequest) =>
+  typeof r.businessId === 'string' ? null : r.businessId;
 const planOf = (r: AdminSubscriptionRequest) => (typeof r.planId === 'string' ? null : r.planId);
 
 const ClaimBadge = ({ r }: { r: AdminSubscriptionRequest }) =>
@@ -75,13 +80,20 @@ const ClaimBadge = ({ r }: { r: AdminSubscriptionRequest }) =>
       className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-orange-50 text-orange-700 text-[10px] font-extrabold border border-orange-200 whitespace-nowrap"
       title={r.merchantReportedUtr ? `UTR: ${r.merchantReportedUtr}` : 'No reference given'}
     >
-      <AlertTriangle className="w-3 h-3" /> Says they paid{r.merchantReportedUtr ? ` · ${r.merchantReportedUtr}` : ''}
+      <AlertTriangle className="w-3 h-3" /> Says they paid
+      {r.merchantReportedUtr ? ` · ${r.merchantReportedUtr}` : ''}
     </span>
   ) : (
     <span className="text-slate-300">—</span>
   );
 
-const RequestOutcome = ({ r, view, onApprove, onReject, fullWidth = false }: {
+const RequestOutcome = ({
+  r,
+  view,
+  onApprove,
+  onReject,
+  fullWidth = false,
+}: {
   r: AdminSubscriptionRequest;
   view: SubscriptionRequestStatus;
   onApprove: (id: string) => void;
@@ -101,12 +113,22 @@ const RequestOutcome = ({ r, view, onApprove, onReject, fullWidth = false }: {
       </div>
     );
   }
-  return view === 'REJECTED'
-    ? <span className="text-[10px] text-slate-400">{r.rejectionReason || 'No reason given'}</span>
-    : <span className="text-[10px] text-emerald-600 font-bold">Activated</span>;
+  return view === 'REJECTED' ? (
+    <span className="text-[10px] text-slate-400">{r.rejectionReason || 'No reason given'}</span>
+  ) : (
+    <span className="text-[10px] text-emerald-600 font-bold">Activated</span>
+  );
 };
 
-export const SubscriptionRequestsQueue = ({ requestsView, onChangeView, pendingCount, requests, loading, onApprove, onReject }: SubscriptionRequestsQueueProps) => (
+export const SubscriptionRequestsQueue = ({
+  requestsView,
+  onChangeView,
+  pendingCount,
+  requests,
+  loading,
+  onApprove,
+  onReject,
+}: SubscriptionRequestsQueueProps) => (
   <div className="space-y-6">
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
       <div>
@@ -139,12 +161,18 @@ export const SubscriptionRequestsQueue = ({ requestsView, onChangeView, pendingC
 
     <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
       {loading ? (
-        <div className="p-12 text-center text-xs text-slate-400 font-semibold">Loading requests…</div>
+        <div className="p-12 text-center text-xs text-slate-400 font-semibold">
+          Loading requests…
+        </div>
       ) : requests.length === 0 ? (
         <div className="p-12 text-center space-y-2">
           <CreditCard className="w-10 h-10 text-slate-300 mx-auto" />
           <h4 className="text-sm font-black text-slate-700">
-            {requestsView === 'PENDING' ? 'Nothing pending' : requestsView === 'APPROVED' ? 'No approved requests yet' : 'No rejected requests'}
+            {requestsView === 'PENDING'
+              ? 'Nothing pending'
+              : requestsView === 'APPROVED'
+                ? 'No approved requests yet'
+                : 'No rejected requests'}
           </h4>
           <p className="text-xs text-slate-400">
             {requestsView === 'PENDING'
@@ -162,34 +190,72 @@ export const SubscriptionRequestsQueue = ({ requestsView, onChangeView, pendingC
               header: 'Business',
               render: (r) => (
                 <>
-                  <div className="font-black text-slate-900">{businessOf(r)?.name || 'Unknown business'}</div>
-                  <div className="text-[10px] text-slate-400 font-mono">/c/{businessOf(r)?.slug}</div>
+                  <div className="font-black text-slate-900">
+                    {businessOf(r)?.name || 'Unknown business'}
+                  </div>
+                  <div className="text-[10px] text-slate-400 font-mono">
+                    /c/{businessOf(r)?.slug}
+                  </div>
                 </>
               ),
             },
-            { header: 'Requested Plan', render: (r) => <span className="font-black text-slate-900">{planOf(r)?.name || '—'}</span> },
-            { header: 'Cycle', render: (r) => <span className="text-slate-500">{r.billingCycle === 'ANNUAL' ? 'Annual' : 'Monthly'}</span> },
-            { header: 'Amount', render: (r) => <span className="font-black text-slate-900">{formatCurrency(r.amountPaise)}</span> },
+            {
+              header: 'Requested Plan',
+              render: (r) => (
+                <span className="font-black text-slate-900">{planOf(r)?.name || '—'}</span>
+              ),
+            },
+            {
+              header: 'Cycle',
+              render: (r) => (
+                <span className="text-slate-500">
+                  {r.billingCycle === 'ANNUAL' ? 'Annual' : 'Monthly'}
+                </span>
+              ),
+            },
+            {
+              header: 'Amount',
+              render: (r) => (
+                <span className="font-black text-slate-900">{formatCurrency(r.amountPaise)}</span>
+              ),
+            },
             { header: 'Claim', render: (r) => <ClaimBadge r={r} /> },
             {
               header: 'Action',
               align: 'right',
-              render: (r) => <RequestOutcome r={r} view={requestsView} onApprove={onApprove} onReject={onReject} />,
+              render: (r) => (
+                <RequestOutcome
+                  r={r}
+                  view={requestsView}
+                  onApprove={onApprove}
+                  onReject={onReject}
+                />
+              ),
             },
           ]}
           renderCard={(r) => (
             <div className="p-4 space-y-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <div className="font-black text-slate-900 text-sm truncate">{businessOf(r)?.name || 'Unknown business'}</div>
+                  <div className="font-black text-slate-900 text-sm truncate">
+                    {businessOf(r)?.name || 'Unknown business'}
+                  </div>
                   <div className="text-[11px] text-slate-500 font-semibold">
                     {planOf(r)?.name || '—'} · {r.billingCycle === 'ANNUAL' ? 'Annual' : 'Monthly'}
                   </div>
                 </div>
-                <div className="font-black text-slate-900 text-sm shrink-0">{formatCurrency(r.amountPaise)}</div>
+                <div className="font-black text-slate-900 text-sm shrink-0">
+                  {formatCurrency(r.amountPaise)}
+                </div>
               </div>
               <ClaimBadge r={r} />
-              <RequestOutcome r={r} view={requestsView} onApprove={onApprove} onReject={onReject} fullWidth />
+              <RequestOutcome
+                r={r}
+                view={requestsView}
+                onApprove={onApprove}
+                onReject={onReject}
+                fullWidth
+              />
             </div>
           )}
         />

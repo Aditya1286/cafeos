@@ -15,10 +15,7 @@ interface ProductDetailSheetProps {
   onClose: () => void;
 }
 
-export const ProductDetailSheet: React.FC<ProductDetailSheetProps> = ({
-  product,
-  onClose,
-}) => {
+export const ProductDetailSheet: React.FC<ProductDetailSheetProps> = ({ product, onClose }) => {
   if (!product) return null;
 
   return (
@@ -43,9 +40,7 @@ export const ProductDetailSheet: React.FC<ProductDetailSheetProps> = ({
                 <span className="text-[11px] font-extrabold uppercase tracking-wider text-red-600">
                   {product.category}
                 </span>
-                <h3 className="text-xl font-extrabold text-slate-900">
-                  {product.name}
-                </h3>
+                <h3 className="text-xl font-extrabold text-slate-900">{product.name}</h3>
               </div>
               <button
                 onClick={onClose}
@@ -89,20 +84,20 @@ export const ProductDetailSheet: React.FC<ProductDetailSheetProps> = ({
                 <span className="flex items-center gap-2 text-slate-500">
                   <TrendingUp className="w-4 h-4 text-emerald-500" /> Profit Margin
                 </span>
-                <span className="font-extrabold text-emerald-600">
-                  {product.marginPercent}%
-                </span>
+                <span className="font-extrabold text-emerald-600">{product.marginPercent}%</span>
               </div>
 
               <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 border border-slate-200">
                 <span className="flex items-center gap-2 text-slate-500">
                   <PackageCheck className="w-4 h-4 text-blue-500" /> Inventory Health
                 </span>
-                <span className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold ${
-                  product.stockStatus === 'Healthy'
-                    ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
-                    : 'bg-amber-100 text-amber-700 border border-amber-200'
-                }`}>
+                <span
+                  className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold ${
+                    product.stockStatus === 'Healthy'
+                      ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+                      : 'bg-amber-100 text-amber-700 border border-amber-200'
+                  }`}
+                >
                   {product.stockStatus}
                 </span>
               </div>

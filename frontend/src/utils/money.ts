@@ -1,11 +1,13 @@
 /** Central paise <-> rupee formatting so every screen rounds & localizes the same way. */
 
-export const paiseToRupees = (paise: number | undefined | null): number => Math.round((paise || 0) / 100);
+export const paiseToRupees = (paise: number | undefined | null): number =>
+  Math.round((paise || 0) / 100);
 
 export const formatRupees = (paise: number | undefined | null): string =>
   paiseToRupees(paise).toLocaleString('en-IN');
 
-export const formatCurrency = (paise: number | undefined | null): string => `₹${formatRupees(paise)}`;
+export const formatCurrency = (paise: number | undefined | null): string =>
+  `₹${formatRupees(paise)}`;
 
 /** Two-decimal rupee formatting for unit costs, where whole-rupee rounding would hide real precision (e.g. ₹4.50/gram). */
 export const formatCurrencyPrecise = (paise: number | undefined | null): string =>

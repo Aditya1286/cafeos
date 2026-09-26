@@ -16,12 +16,24 @@ interface KdsColumnProps extends KdsBoardViewProps {
 
 /** One status column of the KDS — header, bulk-accept bar (New column only), and the order cards. */
 export const KdsColumn = ({
-  status, scrollable, compact = false, orders, newlyArrivedOrderId, selectedIds, allNewSelected,
-  onToggleSelected, onToggleSelectAllNew, onClearSelection, onOpenBulkAccept,
-  onUpdateStatus, onCancel, onViewBill, onConfirmPayment,
+  status,
+  scrollable,
+  compact = false,
+  orders,
+  newlyArrivedOrderId,
+  selectedIds,
+  allNewSelected,
+  onToggleSelected,
+  onToggleSelectAllNew,
+  onClearSelection,
+  onOpenBulkAccept,
+  onUpdateStatus,
+  onCancel,
+  onViewBill,
+  onConfirmPayment,
 }: KdsColumnProps) => {
   const sc = STATUS_CONFIG[status];
-  const columnOrders = orders.filter(o => o.orderStatus === status);
+  const columnOrders = orders.filter((o) => o.orderStatus === status);
   const isNewOrderColumn = status === 'PLACED';
   // Compact mode: one ticket's details open at a time, so opening one never pushes the rest far down.
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -30,7 +42,9 @@ export const KdsColumn = ({
     <div
       className={`bg-white rounded-3xl border border-slate-200 shadow-sm flex flex-col overflow-hidden ${scrollable ? 'h-[600px]' : ''}`}
     >
-      <div className={`px-4 py-3.5 ${sc.badgeBg} border-b ${sc.borderAccent} border-t-4 flex items-center justify-between`}>
+      <div
+        className={`px-4 py-3.5 ${sc.badgeBg} border-b ${sc.borderAccent} border-t-4 flex items-center justify-between`}
+      >
         <div className="flex items-center gap-2">
           {isNewOrderColumn && columnOrders.length > 0 && (
             <input
@@ -46,7 +60,9 @@ export const KdsColumn = ({
             {sc.label}
           </span>
         </div>
-        <span className={`w-6 h-6 rounded-full bg-white border ${sc.badgeText} text-xs font-black flex items-center justify-center shadow-xs`}>
+        <span
+          className={`w-6 h-6 rounded-full bg-white border ${sc.badgeText} text-xs font-black flex items-center justify-center shadow-xs`}
+        >
           {columnOrders.length}
         </span>
       </div>
@@ -72,9 +88,11 @@ export const KdsColumn = ({
         </div>
       )}
 
-      <div className={`bg-slate-50/50 ${compact ? 'p-2.5 space-y-2' : 'p-3.5 space-y-3.5'} ${scrollable ? 'flex-1 overflow-y-auto' : ''}`}>
+      <div
+        className={`bg-slate-50/50 ${compact ? 'p-2.5 space-y-2' : 'p-3.5 space-y-3.5'} ${scrollable ? 'flex-1 overflow-y-auto' : ''}`}
+      >
         <AnimatePresence>
-          {columnOrders.map(order => {
+          {columnOrders.map((order) => {
             const targetOrderId = order._id || order.orderId;
             const isNew = newlyArrivedOrderId === targetOrderId;
             const isSelected = selectedIds.has(targetOrderId);
@@ -88,7 +106,9 @@ export const KdsColumn = ({
                   isSelectable={isNewOrderColumn}
                   isSelected={isSelected}
                   expanded={expandedId === targetOrderId}
-                  onToggleExpanded={() => setExpandedId(prev => (prev === targetOrderId ? null : targetOrderId))}
+                  onToggleExpanded={() =>
+                    setExpandedId((prev) => (prev === targetOrderId ? null : targetOrderId))
+                  }
                   onToggleSelected={() => onToggleSelected(targetOrderId)}
                   onAdvance={() => onUpdateStatus(targetOrderId, NEXT_STATUS[status].status)}
                   onCancel={() => onCancel(order)}
@@ -105,7 +125,11 @@ export const KdsColumn = ({
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 className={`bg-white rounded-2xl border shadow-sm hover:shadow-md hover:border-orange-300 transition-all p-4 space-y-3 ${
-                  isSelected ? 'border-blue-400 ring-4 ring-blue-100' : isNew ? 'border-orange-400 ring-4 ring-orange-100' : 'border-slate-200'
+                  isSelected
+                    ? 'border-blue-400 ring-4 ring-blue-100'
+                    : isNew
+                      ? 'border-orange-400 ring-4 ring-orange-100'
+                      : 'border-slate-200'
                 }`}
               >
                 <div className="flex items-center justify-between">
@@ -134,7 +158,9 @@ export const KdsColumn = ({
 
                 <div>
                   <div className="text-xs font-black text-slate-900">{order.customerName}</div>
-                  <div className="text-[10px] font-semibold text-slate-400">{order.customerPhone}</div>
+                  <div className="text-[10px] font-semibold text-slate-400">
+                    {order.customerPhone}
+                  </div>
                 </div>
 
                 {order.paymentStatus === 'UNPAID' && (
@@ -147,18 +173,24 @@ export const KdsColumn = ({
                     }`}
                   >
                     <Wallet className="w-3 h-3" />
-                    {order.customerMarkedPaidAt ? 'Customer says paid · Confirm' : 'Confirm Payment'}
+                    {order.customerMarkedPaidAt
+                      ? 'Customer says paid · Confirm'
+                      : 'Confirm Payment'}
                   </button>
                 )}
 
                 <div className="space-y-1.5 py-2.5 border-y border-slate-100 text-xs">
                   {order.items?.map((it: any, i: number) => (
-                    <div key={i} className="flex justify-between items-center text-slate-700 font-medium">
+                    <div
+                      key={i}
+                      className="flex justify-between items-center text-slate-700 font-medium"
+                    >
                       <span>
-                        <strong className="text-slate-900 font-extrabold">{it.quantity}×</strong> {it.name}
+                        <strong className="text-slate-900 font-extrabold">{it.quantity}×</strong>{' '}
+                        {it.name}
                       </span>
                       <span className="font-extrabold text-slate-900">
-                        {formatCurrency(it.itemTotalPaise || (it.pricePaise * it.quantity))}
+                        {formatCurrency(it.itemTotalPaise || it.pricePaise * it.quantity)}
                       </span>
                     </div>
                   ))}
@@ -203,10 +235,14 @@ export const KdsColumn = ({
 
         {columnOrders.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 text-center space-y-2">
-            <div className={`w-12 h-12 rounded-2xl ${sc.badgeBg} border ${sc.badgeText} flex items-center justify-center shadow-xs`}>
+            <div
+              className={`w-12 h-12 rounded-2xl ${sc.badgeBg} border ${sc.badgeText} flex items-center justify-center shadow-xs`}
+            >
               <CheckCircle2 className={`w-6 h-6 ${sc.color} opacity-60`} />
             </div>
-            <div className="text-xs font-black text-slate-400">No {sc.label.toLowerCase()} orders</div>
+            <div className="text-xs font-black text-slate-400">
+              No {sc.label.toLowerCase()} orders
+            </div>
             <div className="text-[10px] text-slate-400 font-medium">Kitchen is all caught up</div>
           </div>
         )}

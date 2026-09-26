@@ -10,7 +10,8 @@ import { KdsBoardViewProps, orderKey } from './types';
 interface KitchenKdsBoardProps {
   orders: any[];
   newlyArrivedOrderId: string | null;
-  onViewAllOrders: () => void;
+  /** Omitted for staff, who have no All Orders tab — the link is hidden then. */
+  onViewAllOrders?: () => void;
   onUpdateStatus: (orderId: string, status: string) => void;
   onCancel: (order: any) => void;
   onViewBill: (orderId: string) => void;
@@ -21,28 +22,39 @@ interface KitchenKdsBoardProps {
 
 /** Live kitchen board. Owns the bulk-accept selection and modal, and renders both the desktop
  * and mobile column views — CSS picks which one is visible at the `sm` breakpoint. */
-export const KitchenKdsBoard = ({ orders, newlyArrivedOrderId, onViewAllOrders, onUpdateStatus, onCancel, onViewBill, onConfirmPayment, onBulkAccept }: KitchenKdsBoardProps) => {
+export const KitchenKdsBoard = ({
+  orders,
+  newlyArrivedOrderId,
+  onViewAllOrders,
+  onUpdateStatus,
+  onCancel,
+  onViewBill,
+  onConfirmPayment,
+  onBulkAccept,
+}: KitchenKdsBoardProps) => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [submittingBulk, setSubmittingBulk] = useState(false);
 
-  const newOrders = orders.filter(o => o.orderStatus === 'PLACED');
-  const allNewSelected = newOrders.length > 0 && newOrders.every(o => selectedIds.has(orderKey(o)));
-  const selectedOrders = orders.filter(o => selectedIds.has(orderKey(o)));
+  const newOrders = orders.filter((o) => o.orderStatus === 'PLACED');
+  const allNewSelected =
+    newOrders.length > 0 && newOrders.every((o) => selectedIds.has(orderKey(o)));
+  const selectedOrders = orders.filter((o) => selectedIds.has(orderKey(o)));
 
   const toggleSelected = (id: string) => {
-    setSelectedIds(prev => {
+    setSelectedIds((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   };
 
   const toggleSelectAllNew = () => {
-    setSelectedIds(prev => {
+    setSelectedIds((prev) => {
       const next = new Set(prev);
-      if (allNewSelected) newOrders.forEach(o => next.delete(orderKey(o)));
-      else newOrders.forEach(o => next.add(orderKey(o)));
+      if (allNewSelected) newOrders.forEach((o) => next.delete(orderKey(o)));
+      else newOrders.forEach((o) => next.add(orderKey(o)));
       return next;
     });
   };
@@ -75,20 +87,21 @@ export const KitchenKdsBoard = ({ orders, newlyArrivedOrderId, onViewAllOrders, 
 
   return (
     <div className="space-y-6">
-
       <PanelHeader
         icon={ChefHat}
         title="Kitchen — Live Orders"
         subtitle="New orders show up here instantly. Move each one along as you cook."
         actions={
           <>
-            <button
-              onClick={onViewAllOrders}
-              className="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-black flex items-center gap-1.5 transition-colors border border-slate-200 whitespace-nowrap"
-            >
-              <FileText className="w-3.5 h-3.5 text-slate-500" />
-              <span>View All Orders →</span>
-            </button>
+            {onViewAllOrders && (
+              <button
+                onClick={onViewAllOrders}
+                className="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-black flex items-center gap-1.5 transition-colors border border-slate-200 whitespace-nowrap"
+              >
+                <FileText className="w-3.5 h-3.5 text-slate-500" />
+                <span>View All Orders →</span>
+              </button>
+            )}
 
             <div className="px-3.5 py-1.5 rounded-full bg-purple-50 border border-purple-200 text-purple-700 text-xs font-black items-center gap-1.5 hidden sm:flex">
               <Sparkles className="w-3.5 h-3.5 text-purple-500 animate-pulse" />

@@ -57,11 +57,19 @@ export const EditPlanModal = ({ plan, onClose, onSaved }: EditPlanModalProps) =>
       setStatus(plan.status || 'ACTIVE');
     } else if (plan === null) {
       // Creating a new plan — reset to sane defaults.
-      setName(''); setCode(''); setDescription('');
-      setMonthlyPrice(0); setAnnualPrice(0); setPerOrderFee(2);
-      setMaxTables(10); setMaxMenuItems(50); setMaxStaff(3);
-      setInventoryEnabled(false); setAnalyticsAdvanced(false);
-      setIsPopular(false); setStatus('ACTIVE');
+      setName('');
+      setCode('');
+      setDescription('');
+      setMonthlyPrice(0);
+      setAnnualPrice(0);
+      setPerOrderFee(2);
+      setMaxTables(10);
+      setMaxMenuItems(50);
+      setMaxStaff(3);
+      setInventoryEnabled(false);
+      setAnalyticsAdvanced(false);
+      setIsPopular(false);
+      setStatus('ACTIVE');
     }
   }, [plan]);
 
@@ -80,7 +88,7 @@ export const EditPlanModal = ({ plan, onClose, onSaved }: EditPlanModalProps) =>
         perOrderFeePaise: Math.round(perOrderFee * 100),
         limits: { maxTables, maxMenuItems, maxStaff, inventoryEnabled, analyticsAdvanced },
         isPopular,
-        status
+        status,
       };
 
       if (isEditing) {
@@ -114,8 +122,13 @@ export const EditPlanModal = ({ plan, onClose, onSaved }: EditPlanModalProps) =>
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-            <h3 className="text-base font-black text-slate-900">{isEditing ? `Edit ${plan!.name}` : 'Create Subscription Plan'}</h3>
-            <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
+            <h3 className="text-base font-black text-slate-900">
+              {isEditing ? `Edit ${plan!.name}` : 'Create Subscription Plan'}
+            </h3>
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+            >
               <X className="w-5 h-5" />
             </button>
           </div>
@@ -123,7 +136,13 @@ export const EditPlanModal = ({ plan, onClose, onSaved }: EditPlanModalProps) =>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <FormField label="Plan Name">
-                <input required value={name} onChange={(e) => setName(e.target.value)} className={inputCls} placeholder="e.g. Premium" />
+                <input
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className={inputCls}
+                  placeholder="e.g. Premium"
+                />
               </FormField>
               <FormField label="Plan Code (short ID)">
                 <input
@@ -138,50 +157,112 @@ export const EditPlanModal = ({ plan, onClose, onSaved }: EditPlanModalProps) =>
             </div>
 
             <FormField label="Description">
-              <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} className={inputCls} placeholder="What this plan is for" />
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={2}
+                className={inputCls}
+                placeholder="What this plan is for"
+              />
             </FormField>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <FormField label="Monthly Price (₹)">
-                <input type="number" min={0} value={monthlyPrice} onChange={(e) => setMonthlyPrice(Number(e.target.value))} className={inputCls} />
+                <input
+                  type="number"
+                  min={0}
+                  value={monthlyPrice}
+                  onChange={(e) => setMonthlyPrice(Number(e.target.value))}
+                  className={inputCls}
+                />
               </FormField>
               <FormField label="Annual Price (₹)">
-                <input type="number" min={0} value={annualPrice} onChange={(e) => setAnnualPrice(Number(e.target.value))} className={inputCls} />
+                <input
+                  type="number"
+                  min={0}
+                  value={annualPrice}
+                  onChange={(e) => setAnnualPrice(Number(e.target.value))}
+                  className={inputCls}
+                />
               </FormField>
               <FormField label="Per-Order Fee (₹)">
-                <input type="number" min={0} step="0.01" value={perOrderFee} onChange={(e) => setPerOrderFee(Number(e.target.value))} className={inputCls} />
+                <input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={perOrderFee}
+                  onChange={(e) => setPerOrderFee(Number(e.target.value))}
+                  className={inputCls}
+                />
               </FormField>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <FormField label="Max Tables">
-                <input type="number" min={0} value={maxTables} onChange={(e) => setMaxTables(Number(e.target.value))} className={inputCls} />
+                <input
+                  type="number"
+                  min={0}
+                  value={maxTables}
+                  onChange={(e) => setMaxTables(Number(e.target.value))}
+                  className={inputCls}
+                />
               </FormField>
               <FormField label="Max Menu Items">
-                <input type="number" min={0} value={maxMenuItems} onChange={(e) => setMaxMenuItems(Number(e.target.value))} className={inputCls} />
+                <input
+                  type="number"
+                  min={0}
+                  value={maxMenuItems}
+                  onChange={(e) => setMaxMenuItems(Number(e.target.value))}
+                  className={inputCls}
+                />
               </FormField>
               <FormField label="Max Staff">
-                <input type="number" min={0} value={maxStaff} onChange={(e) => setMaxStaff(Number(e.target.value))} className={inputCls} />
+                <input
+                  type="number"
+                  min={0}
+                  value={maxStaff}
+                  onChange={(e) => setMaxStaff(Number(e.target.value))}
+                  className={inputCls}
+                />
               </FormField>
             </div>
 
             <div className="flex flex-wrap items-center gap-4 pt-1">
               <label className="flex items-center gap-2 text-[11px] font-bold text-slate-700 cursor-pointer">
-                <input type="checkbox" checked={inventoryEnabled} onChange={(e) => setInventoryEnabled(e.target.checked)} className="accent-red-600" />
+                <input
+                  type="checkbox"
+                  checked={inventoryEnabled}
+                  onChange={(e) => setInventoryEnabled(e.target.checked)}
+                  className="accent-red-600"
+                />
                 Stock tracking
               </label>
               <label className="flex items-center gap-2 text-[11px] font-bold text-slate-700 cursor-pointer">
-                <input type="checkbox" checked={analyticsAdvanced} onChange={(e) => setAnalyticsAdvanced(e.target.checked)} className="accent-red-600" />
+                <input
+                  type="checkbox"
+                  checked={analyticsAdvanced}
+                  onChange={(e) => setAnalyticsAdvanced(e.target.checked)}
+                  className="accent-red-600"
+                />
                 Detailed sales reports
               </label>
               <label className="flex items-center gap-2 text-[11px] font-bold text-slate-700 cursor-pointer">
-                <input type="checkbox" checked={isPopular} onChange={(e) => setIsPopular(e.target.checked)} className="accent-red-600" />
+                <input
+                  type="checkbox"
+                  checked={isPopular}
+                  onChange={(e) => setIsPopular(e.target.checked)}
+                  className="accent-red-600"
+                />
                 Mark as "Popular"
               </label>
             </div>
 
             <FormField label="Status">
-              <select value={status} onChange={(e) => setStatus(e.target.value as 'ACTIVE' | 'DISABLED')} className={inputCls}>
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value as 'ACTIVE' | 'DISABLED')}
+                className={inputCls}
+              >
                 <option value="ACTIVE">Active — businesses can pick it</option>
                 <option value="DISABLED">Disabled — hidden from new businesses</option>
               </select>

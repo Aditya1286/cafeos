@@ -43,9 +43,15 @@ export const ItemMarginTable: React.FC<ItemMarginTableProps> = ({ data }) => {
             {withRecipe.map((item) => (
               <tr key={item.productId}>
                 <td className="py-2.5 font-bold text-slate-800">{item.name}</td>
-                <td className="py-2.5 text-right text-slate-500">{formatCurrency(item.pricePaise)}</td>
-                <td className="py-2.5 text-right text-slate-500">{formatCurrency(item.ingredientCostPaise)}</td>
-                <td className={`py-2.5 text-right font-black ${marginTone(item.marginPercentage ?? 0)}`}>
+                <td className="py-2.5 text-right text-slate-500">
+                  {formatCurrency(item.pricePaise)}
+                </td>
+                <td className="py-2.5 text-right text-slate-500">
+                  {formatCurrency(item.ingredientCostPaise)}
+                </td>
+                <td
+                  className={`py-2.5 text-right font-black ${marginTone(item.marginPercentage ?? 0)}`}
+                >
                   {item.marginPercentage}% · {formatCurrency(item.marginPaise)}
                 </td>
               </tr>
@@ -58,8 +64,8 @@ export const ItemMarginTable: React.FC<ItemMarginTableProps> = ({ data }) => {
         <div className="flex items-center gap-2 text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
           <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
           <span>
-            {data.productsWithoutRecipeCount} item{data.productsWithoutRecipeCount === 1 ? '' : 's'} without a recipe —
-            add one in Inventory to see its real margin.
+            {data.productsWithoutRecipeCount} item{data.productsWithoutRecipeCount === 1 ? '' : 's'}{' '}
+            without a recipe — add one in Inventory to see its real margin.
           </span>
         </div>
       )}

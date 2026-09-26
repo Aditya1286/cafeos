@@ -1,7 +1,14 @@
 import { apiRequest } from '../../api';
-import { GetAnalyticsResponse, GetBusinessHeatmapResponse, GetBusinessInsightsResponse, GetOverviewResponse, GetTopBusinessesResponse } from './types';
+import {
+  GetAnalyticsResponse,
+  GetBusinessHeatmapResponse,
+  GetBusinessInsightsResponse,
+  GetOverviewResponse,
+  GetTopBusinessesResponse,
+} from './types';
 
-export const getAnalytics = (range: string): Promise<GetAnalyticsResponse> => apiRequest(`/admin/analytics?range=${range}`);
+export const getAnalytics = (range: string): Promise<GetAnalyticsResponse> =>
+  apiRequest(`/admin/analytics?range=${range}`);
 
 export const getOverview = (): Promise<GetOverviewResponse> => apiRequest('/admin/overview');
 

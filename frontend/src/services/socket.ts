@@ -26,7 +26,8 @@ const JOIN_ACK_TIMEOUT_MS = 5000;
 const emitJoin = async (s: Socket, { event, arg }: RoomJoin): Promise<void> => {
   try {
     const timed = s.timeout(JOIN_ACK_TIMEOUT_MS);
-    const result: RoomJoinResult = arg === undefined ? await timed.emitWithAck(event) : await timed.emitWithAck(event, arg);
+    const result: RoomJoinResult =
+      arg === undefined ? await timed.emitWithAck(event) : await timed.emitWithAck(event, arg);
     if (!result?.ok) console.warn(`[WebSocket Client] ${event} refused: ${result?.code}`);
   } catch {
     console.warn(`[WebSocket Client] ${event}: no answer from server`);
@@ -42,7 +43,7 @@ export const getSocket = (): Socket => {
       auth: (cb) => {
         connectedToken = getAuthToken();
         cb(connectedToken ? { token: connectedToken } : {});
-      }
+      },
     });
 
     socket.on('connect', async () => {
@@ -77,9 +78,11 @@ export const joinBusinessRoom = (businessId: string) =>
 export const joinOrderRoom = (orderId: string) =>
   joinRoom(`order:${orderId}`, { event: 'join_order_room', arg: orderId });
 
-export const joinAdminSupportRoom = () => joinRoom('admin:support', { event: 'join_admin_support_room' });
+export const joinAdminSupportRoom = () =>
+  joinRoom('admin:support', { event: 'join_admin_support_room' });
 
-export const joinAdminOrdersRoom = () => joinRoom('admin:orders', { event: 'join_admin_orders_room' });
+export const joinAdminOrdersRoom = () =>
+  joinRoom('admin:orders', { event: 'join_admin_orders_room' });
 
 /** Runs `listener` after every reconnect, once this tab's rooms are re-joined. Returns an
  *  unsubscribe for the useEffect cleanup. */

@@ -33,10 +33,16 @@ export const BusinessManagementModal: React.FC<BusinessManagementModalProps> = (
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-center justify-between">
-            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${
-              isSuspending ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'
-            }`}>
-              {isSuspending ? <AlertTriangle className="w-6 h-6" /> : <ShieldCheck className="w-6 h-6" />}
+            <div
+              className={`w-12 h-12 rounded-2xl flex items-center justify-center ${
+                isSuspending ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'
+              }`}
+            >
+              {isSuspending ? (
+                <AlertTriangle className="w-6 h-6" />
+              ) : (
+                <ShieldCheck className="w-6 h-6" />
+              )}
             </div>
             <button
               onClick={onClose}
@@ -53,7 +59,8 @@ export const BusinessManagementModal: React.FC<BusinessManagementModalProps> = (
             <p className="text-xs text-slate-500 leading-relaxed">
               Are you sure you want to change the status of{' '}
               <span className="font-bold text-slate-900">{business.name}</span> to{' '}
-              <span className="font-bold">{targetStatus}</span>? This takes effect right away for their QR menu and kitchen.
+              <span className="font-bold">{targetStatus}</span>? This takes effect right away for
+              their QR menu and kitchen.
             </p>
           </div>
 

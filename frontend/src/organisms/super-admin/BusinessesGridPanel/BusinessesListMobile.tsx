@@ -5,13 +5,21 @@ import { AdminBusinessSummary } from '@/types';
 import { formatCurrency } from '@/utils/money';
 import { formatShortDate } from './businessNetwork';
 import {
-  BusinessRowActions, BusinessAvatar, BusinessBadges, BusinessContactLinks, DemoToggle, BusinessActionButtons,
+  BusinessRowActions,
+  BusinessAvatar,
+  BusinessBadges,
+  BusinessContactLinks,
+  DemoToggle,
+  BusinessActionButtons,
 } from './BusinessNetworkParts';
 
 /** Mobile (below `md`): a compact, scannable row per business — name, health, and what it owes —
  * that expands in place to contact links, details, and actions. One row open at a time, so the
  * list stays short enough to scan on a phone. */
-export const BusinessesListMobile = ({ businesses, ...actions }: { businesses: AdminBusinessSummary[] } & BusinessRowActions) => {
+export const BusinessesListMobile = ({
+  businesses,
+  ...actions
+}: { businesses: AdminBusinessSummary[] } & BusinessRowActions) => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   return (
@@ -37,12 +45,16 @@ export const BusinessesListMobile = ({ businesses, ...actions }: { businesses: A
                 <BusinessBadges business={b} />
               </div>
               <div className="text-right shrink-0">
-                <div className={`text-xs font-black ${b.overdueAmountPaise > 0 ? 'text-amber-700' : 'text-slate-900'}`}>
+                <div
+                  className={`text-xs font-black ${b.overdueAmountPaise > 0 ? 'text-amber-700' : 'text-slate-900'}`}
+                >
                   {formatCurrency(b.totalCommissionOwedPaise)}
                 </div>
                 <div className="text-[10px] font-bold text-slate-400">owed</div>
               </div>
-              <ChevronDown className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`} />
+              <ChevronDown
+                className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}
+              />
             </button>
 
             <AnimatePresence initial={false}>
@@ -59,12 +71,16 @@ export const BusinessesListMobile = ({ businesses, ...actions }: { businesses: A
 
                     <dl className="grid grid-cols-2 gap-x-3 gap-y-2 p-3 rounded-xl bg-white border border-slate-200 text-[11px]">
                       <div className="min-w-0">
-                        <dt className="font-bold text-slate-400 uppercase text-[10px]">Menu link</dt>
+                        <dt className="font-bold text-slate-400 uppercase text-[10px]">
+                          Menu link
+                        </dt>
                         <dd className="font-mono font-bold text-red-600 truncate">/c/{b.slug}</dd>
                       </div>
                       <div className="min-w-0">
                         <dt className="font-bold text-slate-400 uppercase text-[10px]">Overdue</dt>
-                        <dd className={`font-black ${b.overdueAmountPaise > 0 ? 'text-amber-700' : 'text-slate-900'}`}>
+                        <dd
+                          className={`font-black ${b.overdueAmountPaise > 0 ? 'text-amber-700' : 'text-slate-900'}`}
+                        >
                           {formatCurrency(b.overdueAmountPaise)}
                         </dd>
                       </div>
@@ -82,8 +98,16 @@ export const BusinessesListMobile = ({ businesses, ...actions }: { businesses: A
                       </div>
                     </dl>
 
-                    <DemoToggle business={b} updatingDemoId={actions.updatingDemoId} onSetDemo={actions.onSetDemo} />
-                    <BusinessActionButtons business={b} onOpenFinance={actions.onOpenFinance} onOpenStatusModal={actions.onOpenStatusModal} />
+                    <DemoToggle
+                      business={b}
+                      updatingDemoId={actions.updatingDemoId}
+                      onSetDemo={actions.onSetDemo}
+                    />
+                    <BusinessActionButtons
+                      business={b}
+                      onOpenFinance={actions.onOpenFinance}
+                      onOpenStatusModal={actions.onOpenStatusModal}
+                    />
                   </div>
                 </motion.div>
               )}

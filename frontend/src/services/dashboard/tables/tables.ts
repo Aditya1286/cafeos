@@ -1,5 +1,11 @@
 import { apiRequest } from '../../api';
-import { CreateTableResponse, DeleteTableResponse, ListTablesResponse, MarkTableEmptyResponse, ToggleTableResponse } from './types';
+import {
+  CreateTableResponse,
+  DeleteTableResponse,
+  ListTablesResponse,
+  MarkTableEmptyResponse,
+  ToggleTableResponse,
+} from './types';
 
 export const list = (): Promise<ListTablesResponse> => apiRequest('/tables');
 

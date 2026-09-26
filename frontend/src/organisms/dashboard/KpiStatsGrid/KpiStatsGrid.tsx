@@ -21,7 +21,13 @@ interface KpiStatsGridProps {
  * live order/table/inventory data or the backend's `/analytics/dashboard` aggregation — none
  * of it is a hardcoded placeholder.
  */
-export const KpiStatsGrid = ({ activeOrdersCount, occupiedTables, totalTables, lowStockCount, metrics }: KpiStatsGridProps) => {
+export const KpiStatsGrid = ({
+  activeOrdersCount,
+  occupiedTables,
+  totalTables,
+  lowStockCount,
+  metrics,
+}: KpiStatsGridProps) => {
   const todayOrders = metrics?.todayOrdersCount ?? 0;
   const occupancyPct = totalTables ? Math.round((occupiedTables / totalTables) * 100) : 0;
 
@@ -63,7 +69,10 @@ export const KpiStatsGrid = ({ activeOrdersCount, occupiedTables, totalTables, l
       subtext: lowStockCount > 0 ? 'Some ingredients need restocking' : 'Stock looks fine',
       trend: lowStockCount > 0 ? 'Restock soon' : 'All good',
       color: lowStockCount > 0 ? 'text-rose-600' : 'text-slate-600',
-      iconBg: lowStockCount > 0 ? 'bg-gradient-to-br from-rose-500 to-red-600' : 'bg-gradient-to-br from-slate-600 to-slate-700',
+      iconBg:
+        lowStockCount > 0
+          ? 'bg-gradient-to-br from-rose-500 to-red-600'
+          : 'bg-gradient-to-br from-slate-600 to-slate-700',
       border: lowStockCount > 0 ? 'border-rose-200/80' : 'border-slate-200/80',
     },
   ];

@@ -21,7 +21,11 @@ interface Insight {
  * canned/fabricated example. A fact that can't yet be computed (not enough data) is simply
  * omitted rather than backfilled with a plausible-looking number.
  */
-export const PlatformInsightsPanel = ({ metrics, businesses, peakHeatmap }: PlatformInsightsPanelProps) => {
+export const PlatformInsightsPanel = ({
+  metrics,
+  businesses,
+  peakHeatmap,
+}: PlatformInsightsPanelProps) => {
   const insights: Insight[] = [];
 
   const busiestHour = computeBusiestHour(peakHeatmap);
@@ -42,7 +46,10 @@ export const PlatformInsightsPanel = ({ metrics, businesses, peakHeatmap }: Plat
     });
   }
 
-  if (metrics?.repeatCustomerPercentage !== null && metrics?.repeatCustomerPercentage !== undefined) {
+  if (
+    metrics?.repeatCustomerPercentage !== null &&
+    metrics?.repeatCustomerPercentage !== undefined
+  ) {
     insights.push({
       emoji: '🎯',
       title: 'Repeat Customers',
@@ -59,7 +66,8 @@ export const PlatformInsightsPanel = ({ metrics, businesses, peakHeatmap }: Plat
   }
 
   if (metrics && metrics.totalGMVPaise > 0) {
-    const effectivePct = Math.round((metrics.totalPlatformFeesPaise / metrics.totalGMVPaise) * 1000) / 10;
+    const effectivePct =
+      Math.round((metrics.totalPlatformFeesPaise / metrics.totalGMVPaise) * 1000) / 10;
     insights.push({
       emoji: '📊',
       title: 'Our Fee Share',
@@ -96,7 +104,10 @@ export const PlatformInsightsPanel = ({ metrics, businesses, peakHeatmap }: Plat
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-xs font-semibold text-slate-700">
             {insights.map((insight) => (
-              <div key={insight.title} className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-start gap-3">
+              <div
+                key={insight.title}
+                className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-start gap-3"
+              >
                 <span className="text-base">{insight.emoji}</span>
                 <div>
                   <div className="font-extrabold text-slate-900 mb-0.5">{insight.title}</div>

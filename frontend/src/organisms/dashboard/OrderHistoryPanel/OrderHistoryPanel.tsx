@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { RefreshCw, FileText, X, Undo2, Wallet, MoreHorizontal } from 'lucide-react';
 import ResponsiveDataView, { ResponsiveColumn } from '@/molecules/ResponsiveDataView';
 import { STATUS_CONFIG, isOrderCancellable } from '@/constants/orderStatus';
+import { SMEPAY_CHECKOUT_ENABLED } from '@/constants/features';
 import { formatCurrency } from '@/utils/money';
 import { OrderHistoryFilters } from '@/hooks/useOrderHistory';
 import { StatusBadge, StatusBadgeTone } from '@/atoms/StatusBadge';
@@ -10,23 +11,30 @@ import { Modal } from '@/molecules/Modal';
 interface OrderHistoryPanelProps {
   business: any;
   orderHistory: any[];
-  todaySalesPaise: number;
+  /** null hides the Today's Sales tile (staff don't see sales figures). */
+  todaySalesPaise: number | null;
   loadingHistory: boolean;
   pagination: { page: number; limit: number; total: number; totalPages: number };
   onPageChange: (page: number) => void;
   onPageSizeChange: (pageSize: number) => void;
   filters: {
-    orderSearchQuery: string; setOrderSearchQuery: (v: string) => void;
-    selectedStatusFilter: string; setSelectedStatusFilter: (v: string) => void;
-    selectedPaymentFilter: string; setSelectedPaymentFilter: (v: string) => void;
-    selectedMethodFilter: string; setSelectedMethodFilter: (v: string) => void;
-    selectedDateFilter: OrderHistoryFilters['dateFilter']; setSelectedDateFilter: (v: OrderHistoryFilters['dateFilter']) => void;
+    orderSearchQuery: string;
+    setOrderSearchQuery: (v: string) => void;
+    selectedStatusFilter: string;
+    setSelectedStatusFilter: (v: string) => void;
+    selectedPaymentFilter: string;
+    setSelectedPaymentFilter: (v: string) => void;
+    selectedMethodFilter: string;
+    setSelectedMethodFilter: (v: string) => void;
+    selectedDateFilter: OrderHistoryFilters['dateFilter'];
+    setSelectedDateFilter: (v: OrderHistoryFilters['dateFilter']) => void;
   };
   onRefresh: () => void;
   onOpenDrawer: (order: any) => void;
   onOpenBill: (orderId: string) => void;
   onCancel: (order: any) => void;
-  onMarkRefunded: (order: any) => void;
+  /** Omitted for staff — confirming a refund was sent is the owner's/manager's job. */
+  onMarkRefunded?: (order: any) => void;
   onConfirmPayment: (order: any) => void;
 }
 
@@ -47,7 +55,20 @@ const ACTION_BUTTON_CLASS: Record<'amber' | 'violet' | 'rose', string> = {
 const needsRefund = (o: any) => o.orderStatus === 'CANCELLED' && o.paymentStatus === 'PAID';
 
 export const OrderHistoryPanel = ({
-  business, orderHistory, todaySalesPaise, loadingHistory, pagination, onPageChange, onPageSizeChange, filters, onRefresh, onOpenDrawer, onOpenBill, onCancel, onMarkRefunded, onConfirmPayment
+  business,
+  orderHistory,
+  todaySalesPaise,
+  loadingHistory,
+  pagination,
+  onPageChange,
+  onPageSizeChange,
+  filters,
+  onRefresh,
+  onOpenDrawer,
+  onOpenBill,
+  onCancel,
+  onMarkRefunded,
+  onConfirmPayment,
 }: OrderHistoryPanelProps) => {
   // Which order's "Actions" picker is open, if any — Confirm Payment / Mark Refunded / Cancel
   // used to be up to 3 separate buttons on every row; now they're one "Actions" button (shown
@@ -55,7 +76,13 @@ export const OrderHistoryPanel = ({
   const [actionsTarget, setActionsTarget] = useState<any | null>(null);
 
   const getAvailableActions = (o: any) => {
-    const actions: { key: string; label: string; icon: typeof Wallet; tone: 'amber' | 'violet' | 'rose'; onClick: () => void }[] = [];
+    const actions: {
+      key: string;
+      label: string;
+      icon: typeof Wallet;
+      tone: 'amber' | 'violet' | 'rose';
+      onClick: () => void;
+    }[] = [];
     if (o.paymentStatus === 'UNPAID' && o.orderStatus !== 'CANCELLED') {
       actions.push({
         key: 'confirm',
@@ -65,22 +92,41 @@ export const OrderHistoryPanel = ({
         onClick: () => onConfirmPayment(o),
       });
     }
-    if (needsRefund(o)) {
-      actions.push({ key: 'refund', label: 'Mark Refunded', icon: Undo2, tone: 'violet', onClick: () => onMarkRefunded(o) });
+    if (needsRefund(o) && onMarkRefunded) {
+      actions.push({
+        key: 'refund',
+        label: 'Mark Refunded',
+        icon: Undo2,
+        tone: 'violet',
+        onClick: () => onMarkRefunded(o),
+      });
     }
     if (isOrderCancellable(o.orderStatus)) {
-      actions.push({ key: 'cancel', label: 'Cancel Order', icon: X, tone: 'rose', onClick: () => onCancel(o) });
+      actions.push({
+        key: 'cancel',
+        label: 'Cancel Order',
+        icon: X,
+        tone: 'rose',
+        onClick: () => onCancel(o),
+      });
     }
     return actions;
   };
-  const rows = orderHistory.map(o => ({
+  const rows = orderHistory.map((o) => ({
     ...o,
     _sc: STATUS_CONFIG[o.orderStatus] || STATUS_CONFIG.COMPLETED,
-    _dateFormatted: new Date(o.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
-    _timeFormatted: new Date(o.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+    _dateFormatted: new Date(o.createdAt).toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    }),
+    _timeFormatted: new Date(o.createdAt).toLocaleTimeString('en-IN', {
+      hour: '2-digit',
+      minute: '2-digit',
+    }),
   }));
 
-  const columns: ResponsiveColumn<typeof rows[number]>[] = [
+  const columns: ResponsiveColumn<(typeof rows)[number]>[] = [
     {
       header: 'Order ID & Date',
       render: (o) => (
@@ -88,7 +134,9 @@ export const OrderHistoryPanel = ({
           <div className="font-mono text-xs font-black text-orange-600 bg-orange-50 border border-orange-200 px-2.5 py-1 rounded-xl inline-block mb-1">
             {o.orderId || o.orderNumber}
           </div>
-          <div className="text-[11px] text-slate-400 font-medium">{o._dateFormatted} · {o._timeFormatted}</div>
+          <div className="text-[11px] text-slate-400 font-medium">
+            {o._dateFormatted} · {o._timeFormatted}
+          </div>
         </>
       ),
       headerClassName: 'whitespace-nowrap',
@@ -99,7 +147,9 @@ export const OrderHistoryPanel = ({
       render: (o) => (
         <>
           <div className="font-black text-slate-900 truncate max-w-[160px]">{o.customerName}</div>
-          <div className="text-[11px] text-slate-400 font-semibold whitespace-nowrap">{o.customerPhone}</div>
+          <div className="text-[11px] text-slate-400 font-semibold whitespace-nowrap">
+            {o.customerPhone}
+          </div>
         </>
       ),
     },
@@ -120,13 +170,19 @@ export const OrderHistoryPanel = ({
           <div className="text-slate-900 font-bold max-w-[220px] truncate">
             {o.items?.map((it: any) => `${it.quantity}× ${it.name}`).join(', ')}
           </div>
-          <span className="text-[10px] text-slate-400 font-medium">{o.items?.length || 0} items</span>
+          <span className="text-[10px] text-slate-400 font-medium">
+            {o.items?.length || 0} items
+          </span>
         </>
       ),
     },
     {
       header: 'Amount',
-      render: (o) => <div className="font-black text-slate-900 text-sm">{formatCurrency(o.totalAmountPaise)}</div>,
+      render: (o) => (
+        <div className="font-black text-slate-900 text-sm">
+          {formatCurrency(o.totalAmountPaise)}
+        </div>
+      ),
       headerClassName: 'whitespace-nowrap',
       cellClassName: 'whitespace-nowrap',
     },
@@ -138,17 +194,26 @@ export const OrderHistoryPanel = ({
             <StatusBadge tone={PAYMENT_BADGE_TONE[o.paymentStatus] || 'success'}>
               {o.paymentStatus || 'PAID'}
             </StatusBadge>
-            <span className="text-[10px] font-bold text-slate-400 uppercase">{o.paymentMethod || 'ONLINE'}</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase">
+              {o.paymentMethod || 'ONLINE'}
+            </span>
           </div>
           {o.transactionId && (
-            <div className="text-[9px] font-mono text-slate-400 truncate max-w-[100px]" title={o.transactionId}>
+            <div
+              className="text-[9px] font-mono text-slate-400 truncate max-w-[100px]"
+              title={o.transactionId}
+            >
               {o.transactionId}
             </div>
           )}
           {needsRefund(o) && (
-            <div className={`mt-1 text-[9px] font-black uppercase px-1.5 py-0.5 rounded-full inline-block ${
-              o.refundRequestedAt ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-slate-100 text-slate-500 border border-slate-200'
-            }`}>
+            <div
+              className={`mt-1 text-[9px] font-black uppercase px-1.5 py-0.5 rounded-full inline-block ${
+                o.refundRequestedAt
+                  ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                  : 'bg-slate-100 text-slate-500 border border-slate-200'
+              }`}
+            >
               {o.refundRequestedAt ? 'Refund requested' : 'Refund pending'}
             </div>
           )}
@@ -165,7 +230,9 @@ export const OrderHistoryPanel = ({
     {
       header: 'Status',
       render: (o) => (
-        <span className={`px-2.5 py-1 rounded-full text-[10px] font-black border ${o._sc.badgeBg} ${o._sc.badgeText}`}>
+        <span
+          className={`px-2.5 py-1 rounded-full text-[10px] font-black border ${o._sc.badgeBg} ${o._sc.badgeText}`}
+        >
           ● {o._sc.label}
         </span>
       ),
@@ -177,15 +244,24 @@ export const OrderHistoryPanel = ({
       align: 'right',
       render: (o) => (
         <div className="flex items-center justify-end gap-1.5">
-          <button onClick={() => onOpenDrawer(o)} className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-black transition-colors shadow-xs">
+          <button
+            onClick={() => onOpenDrawer(o)}
+            className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-black transition-colors shadow-xs"
+          >
             Details
           </button>
-          <button onClick={() => onOpenBill(o.orderId || o._id)} className="px-3 py-1.5 rounded-xl bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-700 text-xs font-black transition-colors flex items-center gap-1">
+          <button
+            onClick={() => onOpenBill(o.orderId || o._id)}
+            className="px-3 py-1.5 rounded-xl bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-700 text-xs font-black transition-colors flex items-center gap-1"
+          >
             <FileText className="w-3.5 h-3.5" />
             <span>Bill</span>
           </button>
           {getAvailableActions(o).length > 0 && (
-            <button onClick={() => setActionsTarget(o)} className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 text-xs font-black transition-colors flex items-center gap-1">
+            <button
+              onClick={() => setActionsTarget(o)}
+              className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 text-xs font-black transition-colors flex items-center gap-1"
+            >
               <MoreHorizontal className="w-3.5 h-3.5" />
               <span>Actions</span>
             </button>
@@ -197,16 +273,20 @@ export const OrderHistoryPanel = ({
     },
   ];
 
-  const renderCard = (o: typeof rows[number]) => (
+  const renderCard = (o: (typeof rows)[number]) => (
     <div className="p-3.5 space-y-2.5">
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
           <div className="font-mono text-xs font-black text-orange-600 bg-orange-50 border border-orange-200 px-2 py-1 rounded-lg inline-block whitespace-nowrap">
             {o.orderId || o.orderNumber}
           </div>
-          <div className="text-[10px] text-slate-400 font-medium mt-1">{o._dateFormatted} · {o._timeFormatted}</div>
+          <div className="text-[10px] text-slate-400 font-medium mt-1">
+            {o._dateFormatted} · {o._timeFormatted}
+          </div>
         </div>
-        <span className={`px-2 py-1 rounded-full text-[9px] font-black border whitespace-nowrap shrink-0 ${o._sc.badgeBg} ${o._sc.badgeText}`}>
+        <span
+          className={`px-2 py-1 rounded-full text-[9px] font-black border whitespace-nowrap shrink-0 ${o._sc.badgeBg} ${o._sc.badgeText}`}
+        >
           ● {o._sc.label}
         </span>
       </div>
@@ -233,7 +313,9 @@ export const OrderHistoryPanel = ({
           <StatusBadge tone={PAYMENT_BADGE_TONE[o.paymentStatus] || 'success'}>
             {o.paymentStatus || 'PAID'}
           </StatusBadge>
-          <span className="text-[10px] font-bold text-slate-400 uppercase whitespace-nowrap">{o.paymentMethod || 'ONLINE'}</span>
+          <span className="text-[10px] font-bold text-slate-400 uppercase whitespace-nowrap">
+            {o.paymentMethod || 'ONLINE'}
+          </span>
         </div>
         <div className="font-black text-slate-900 text-sm whitespace-nowrap">
           {formatCurrency(o.totalAmountPaise)}
@@ -243,9 +325,13 @@ export const OrderHistoryPanel = ({
       {(needsRefund(o) || (o.paymentStatus === 'UNPAID' && o.customerMarkedPaidAt)) && (
         <div className="flex flex-wrap gap-1.5">
           {needsRefund(o) && (
-            <span className={`text-[9px] font-black uppercase px-2 py-1 rounded-full ${
-              o.refundRequestedAt ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-slate-100 text-slate-500 border border-slate-200'
-            }`}>
+            <span
+              className={`text-[9px] font-black uppercase px-2 py-1 rounded-full ${
+                o.refundRequestedAt
+                  ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                  : 'bg-slate-100 text-slate-500 border border-slate-200'
+              }`}
+            >
               {o.refundRequestedAt ? 'Refund requested' : 'Refund pending'}
             </span>
           )}
@@ -258,15 +344,24 @@ export const OrderHistoryPanel = ({
       )}
 
       <div className="grid grid-cols-2 gap-2 pt-1">
-        <button onClick={() => onOpenDrawer(o)} className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-black transition-colors shadow-xs">
+        <button
+          onClick={() => onOpenDrawer(o)}
+          className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-black transition-colors shadow-xs"
+        >
           Details
         </button>
-        <button onClick={() => onOpenBill(o.orderId || o._id)} className="px-3 py-1.5 rounded-xl bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-700 text-xs font-black transition-colors flex items-center justify-center gap-1">
+        <button
+          onClick={() => onOpenBill(o.orderId || o._id)}
+          className="px-3 py-1.5 rounded-xl bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-700 text-xs font-black transition-colors flex items-center justify-center gap-1"
+        >
           <FileText className="w-3.5 h-3.5" />
           <span>Bill</span>
         </button>
         {getAvailableActions(o).length > 0 && (
-          <button onClick={() => setActionsTarget(o)} className="col-span-2 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 text-xs font-black transition-colors flex items-center justify-center gap-1">
+          <button
+            onClick={() => setActionsTarget(o)}
+            className="col-span-2 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 text-xs font-black transition-colors flex items-center justify-center gap-1"
+          >
             <MoreHorizontal className="w-3.5 h-3.5" />
             <span>Actions</span>
           </button>
@@ -292,14 +387,23 @@ export const OrderHistoryPanel = ({
 
         <div className="flex items-center gap-2 shrink-0">
           <span className="px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-200 text-slate-500 text-xs font-mono font-bold hidden md:inline-block">
-            Shortcut: <kbd className="px-1.5 py-0.5 bg-white rounded border border-slate-300 shadow-2xs text-slate-700 font-black">⌘K</kbd> / <kbd className="px-1.5 py-0.5 bg-white rounded border border-slate-300 shadow-2xs text-slate-700 font-black">Ctrl+K</kbd>
+            Shortcut:{' '}
+            <kbd className="px-1.5 py-0.5 bg-white rounded border border-slate-300 shadow-2xs text-slate-700 font-black">
+              ⌘K
+            </kbd>{' '}
+            /{' '}
+            <kbd className="px-1.5 py-0.5 bg-white rounded border border-slate-300 shadow-2xs text-slate-700 font-black">
+              Ctrl+K
+            </kbd>
           </span>
 
           <button
             onClick={onRefresh}
             className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-black transition-all flex items-center gap-1.5 shadow-sm whitespace-nowrap"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loadingHistory ? 'animate-spin text-orange-400' : ''}`} />
+            <RefreshCw
+              className={`w-3.5 h-3.5 ${loadingHistory ? 'animate-spin text-orange-400' : ''}`}
+            />
             <span>Refresh</span>
           </button>
         </div>
@@ -307,41 +411,71 @@ export const OrderHistoryPanel = ({
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-4">
         <div className="bg-white p-2.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-0.5 sm:space-y-1">
-          <span className="text-[9px] sm:text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Total Orders</span>
-          <div className="text-base sm:text-2xl font-black text-slate-900">{pagination.total || orderHistory.length}</div>
-          <span className="text-[9px] sm:text-[10px] font-semibold text-slate-400 hidden sm:block">All orders so far</span>
+          <span className="text-[9px] sm:text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">
+            Total Orders
+          </span>
+          <div className="text-base sm:text-2xl font-black text-slate-900">
+            {pagination.total || orderHistory.length}
+          </div>
+          <span className="text-[9px] sm:text-[10px] font-semibold text-slate-400 hidden sm:block">
+            All orders so far
+          </span>
         </div>
 
-        <div className="bg-white p-2.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-0.5 sm:space-y-1">
-          <span className="text-[9px] sm:text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Today's Sales</span>
-          <div className="text-base sm:text-2xl font-black text-emerald-600 truncate">{formatCurrency(todaySalesPaise)}</div>
-          <span className="text-[9px] sm:text-[10px] font-semibold text-emerald-600 hidden sm:block">Money from today's orders</span>
-        </div>
+        {todaySalesPaise !== null && (
+          <div className="bg-white p-2.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-0.5 sm:space-y-1">
+            <span className="text-[9px] sm:text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">
+              Today's Sales
+            </span>
+            <div className="text-base sm:text-2xl font-black text-emerald-600 truncate">
+              {formatCurrency(todaySalesPaise)}
+            </div>
+            <span className="text-[9px] sm:text-[10px] font-semibold text-emerald-600 hidden sm:block">
+              Money from today's orders
+            </span>
+          </div>
+        )}
 
         <div className="bg-white p-2.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-0.5 sm:space-y-1">
-          <span className="text-[9px] sm:text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Order Numbers</span>
+          <span className="text-[9px] sm:text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">
+            Order Numbers
+          </span>
           <div className="text-base sm:text-2xl font-black text-orange-600 font-mono truncate">
-            {business?.shortCode || 'ART'}-{new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' }).replace(/\//g, '')}-01
+            {business?.shortCode || 'ART'}-
+            {new Date()
+              .toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' })
+              .replace(/\//g, '')}
+            -01
           </div>
-          <span className="text-[9px] sm:text-[10px] font-semibold text-slate-400 hidden sm:block">Starts again from 01 each day</span>
+          <span className="text-[9px] sm:text-[10px] font-semibold text-slate-400 hidden sm:block">
+            Starts again from 01 each day
+          </span>
         </div>
 
         <div className="bg-white p-2.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs space-y-0.5 sm:space-y-1">
-          <span className="text-[9px] sm:text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Time Zone</span>
+          <span className="text-[9px] sm:text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">
+            Time Zone
+          </span>
           <div className="text-base sm:text-2xl font-black text-indigo-600 truncate">
-            {(business?.timezone || 'Asia/Kolkata') === 'Asia/Kolkata' ? 'India (IST)' : business?.timezone}
+            {(business?.timezone || 'Asia/Kolkata') === 'Asia/Kolkata'
+              ? 'India (IST)'
+              : business?.timezone}
           </div>
-          <span className="text-[9px] sm:text-[10px] font-semibold text-slate-400 hidden sm:block">Order times are shown in this zone</span>
+          <span className="text-[9px] sm:text-[10px] font-semibold text-slate-400 hidden sm:block">
+            Order times are shown in this zone
+          </span>
         </div>
       </div>
 
       <div className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-sm space-y-4">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 pt-1">
           <div>
-            <label className="text-[10px] font-extrabold uppercase text-slate-400 mb-1 block">Order Status</label>
+            <label className="text-[10px] font-extrabold uppercase text-slate-400 mb-1 block">
+              Order Status
+            </label>
             <select
               value={filters.selectedStatusFilter}
-              onChange={e => filters.setSelectedStatusFilter(e.target.value)}
+              onChange={(e) => filters.setSelectedStatusFilter(e.target.value)}
               className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 outline-none focus:border-orange-500"
             >
               <option value="ALL">All Statuses</option>
@@ -356,10 +490,12 @@ export const OrderHistoryPanel = ({
           </div>
 
           <div>
-            <label className="text-[10px] font-extrabold uppercase text-slate-400 mb-1 block">Payment Status</label>
+            <label className="text-[10px] font-extrabold uppercase text-slate-400 mb-1 block">
+              Payment Status
+            </label>
             <select
               value={filters.selectedPaymentFilter}
-              onChange={e => filters.setSelectedPaymentFilter(e.target.value)}
+              onChange={(e) => filters.setSelectedPaymentFilter(e.target.value)}
               className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 outline-none focus:border-orange-500"
             >
               <option value="ALL">All Payment Statuses</option>
@@ -370,24 +506,35 @@ export const OrderHistoryPanel = ({
           </div>
 
           <div>
-            <label className="text-[10px] font-extrabold uppercase text-slate-400 mb-1 block">Payment Method</label>
+            <label className="text-[10px] font-extrabold uppercase text-slate-400 mb-1 block">
+              Payment Method
+            </label>
             <select
               value={filters.selectedMethodFilter}
-              onChange={e => filters.setSelectedMethodFilter(e.target.value)}
+              onChange={(e) => filters.setSelectedMethodFilter(e.target.value)}
               className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 outline-none focus:border-orange-500"
             >
               <option value="ALL">All Payment Methods</option>
-              <option value="ONLINE">Online</option>
+              <option value="ONLINE">
+                {SMEPAY_CHECKOUT_ENABLED ? 'Online (Direct UPI)' : 'Online'}
+              </option>
+              {SMEPAY_CHECKOUT_ENABLED && (
+                <option value="CHECKOUT">Online Checkout (SMEPay)</option>
+              )}
               <option value="CASH">Cash</option>
               <option value="CARD">Credit/Debit Card</option>
             </select>
           </div>
 
           <div>
-            <label className="text-[10px] font-extrabold uppercase text-slate-400 mb-1 block">Date Filter</label>
+            <label className="text-[10px] font-extrabold uppercase text-slate-400 mb-1 block">
+              Date Filter
+            </label>
             <select
               value={filters.selectedDateFilter}
-              onChange={e => filters.setSelectedDateFilter(e.target.value as OrderHistoryFilters['dateFilter'])}
+              onChange={(e) =>
+                filters.setSelectedDateFilter(e.target.value as OrderHistoryFilters['dateFilter'])
+              }
               className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 outline-none focus:border-orange-500"
             >
               <option value="ALL">All Time</option>
@@ -429,7 +576,9 @@ export const OrderHistoryPanel = ({
               <div className="p-12 text-center space-y-3">
                 <FileText className="w-12 h-12 text-slate-300 mx-auto" />
                 <h3 className="text-base font-black text-slate-800">No matching orders found</h3>
-                <p className="text-xs font-medium text-slate-500">Try a different search or filter.</p>
+                <p className="text-xs font-medium text-slate-500">
+                  Try a different search or filter.
+                </p>
               </div>
             }
           />
@@ -442,10 +591,13 @@ export const OrderHistoryPanel = ({
           onClose={() => setActionsTarget(null)}
         >
           <div className="space-y-2">
-            {getAvailableActions(actionsTarget).map(action => (
+            {getAvailableActions(actionsTarget).map((action) => (
               <button
                 key={action.key}
-                onClick={() => { action.onClick(); setActionsTarget(null); }}
+                onClick={() => {
+                  action.onClick();
+                  setActionsTarget(null);
+                }}
                 className={`w-full flex items-center gap-2.5 px-4 py-3 rounded-xl border text-sm font-black transition-colors ${ACTION_BUTTON_CLASS[action.tone]}`}
               >
                 <action.icon className="w-4 h-4 shrink-0" />

@@ -1,6 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, ArrowRight, X, ExternalLink, MapPin, Star, Utensils, Zap, Sparkles, ChevronRight } from 'lucide-react';
+import {
+  ArrowLeft,
+  ArrowRight,
+  X,
+  ExternalLink,
+  MapPin,
+  Star,
+  Utensils,
+  Zap,
+  Sparkles,
+  ChevronRight,
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { APP_NAME } from '@/constants/app';
 
@@ -31,8 +42,12 @@ const businessCards: BusinessCardData[] = [
     imageUrl: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=1000&q=80',
     slug: 'artisan-cafe',
     description: `A coffee shop known for fresh pour-over coffee and sourdough pizzas, running with ${APP_NAME}'s live kitchen screen.`,
-    highlights: ['Orders Sent to Kitchen Instantly', 'QR Code Table Ordering', 'Clear Sales & Fee Tracking'],
-    popularDishes: ['Paneer Tikka Passion Pizza', 'Signature Cold Coffee', 'Peri Peri Fries']
+    highlights: [
+      'Orders Sent to Kitchen Instantly',
+      'QR Code Table Ordering',
+      'Clear Sales & Fee Tracking',
+    ],
+    popularDishes: ['Paneer Tikka Passion Pizza', 'Signature Cold Coffee', 'Peri Peri Fries'],
   },
   {
     id: '2',
@@ -44,9 +59,14 @@ const businessCards: BusinessCardData[] = [
     monthlyOrders: '2,140+ orders/mo',
     imageUrl: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=1000&q=80',
     slug: 'bean-and-butter',
-    description: 'Charming French bakery offering double-baked almond croissants and ceremonial grade matcha lattes with zero-wait table ordering.',
-    highlights: ['Zero App Download Required', 'Stock Updates on Its Own', 'Live Order Status Tracker'],
-    popularDishes: ['Classic Almond Butter Croissant', 'Iced Uji Matcha Latte', 'Pain Au Chocolat']
+    description:
+      'Charming French bakery offering double-baked almond croissants and ceremonial grade matcha lattes with zero-wait table ordering.',
+    highlights: [
+      'Zero App Download Required',
+      'Stock Updates on Its Own',
+      'Live Order Status Tracker',
+    ],
+    popularDishes: ['Classic Almond Butter Croissant', 'Iced Uji Matcha Latte', 'Pain Au Chocolat'],
   },
   {
     id: '3',
@@ -60,7 +80,11 @@ const businessCards: BusinessCardData[] = [
     slug: 'verde-bistro',
     description: `Sustainable plant-based bistro using ${APP_NAME} recipes to cut food waste — ingredients come off the stock count on their own.`,
     highlights: ['Recipe-Based Stock Tracking', 'Low-Stock Alerts', 'Clear Money Records'],
-    popularDishes: ['Avocado Sourdough Toast', 'Cold Pressed Green Juice', 'Truffle Mushroom Pasta']
+    popularDishes: [
+      'Avocado Sourdough Toast',
+      'Cold Pressed Green Juice',
+      'Truffle Mushroom Pasta',
+    ],
   },
   {
     id: '4',
@@ -72,9 +96,14 @@ const businessCards: BusinessCardData[] = [
     monthlyOrders: '1,980+ orders/mo',
     imageUrl: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1000&q=80',
     slug: 'copper-kettle',
-    description: 'Historic tea house specializing in first-flush Darjeeling teas and artisanal dim sum with bills made instantly at the front desk.',
+    description:
+      'Historic tea house specializing in first-flush Darjeeling teas and artisanal dim sum with bills made instantly at the front desk.',
     highlights: ['QR Code Generator for 50+ Tables', 'Front-Desk Billing', 'Custom Tax Breakdown'],
-    popularDishes: ['Darjeeling First Flush Tea', 'Steamed Crystal Dumplings', 'Matcha Sponge Cake']
+    popularDishes: [
+      'Darjeeling First Flush Tea',
+      'Steamed Crystal Dumplings',
+      'Matcha Sponge Cake',
+    ],
   },
   {
     id: '5',
@@ -88,8 +117,8 @@ const businessCards: BusinessCardData[] = [
     slug: 'aura-lounge',
     description: `High-volume nightlife lounge using ${APP_NAME} to give bartenders, waiters and managers their own access.`,
     highlights: ['Staff Roles & Permissions', 'Live Sales Reports', 'Bills Sent by SMS/WhatsApp'],
-    popularDishes: ['Craft Smoked Cocktails', 'Woodfired Tapas Platter', 'Truffle Fries']
-  }
+    popularDishes: ['Craft Smoked Cocktails', 'Woodfired Tapas Platter', 'Truffle Fries'],
+  },
 ];
 
 export const AppleCardsCarousel: React.FC = () => {
@@ -168,7 +197,6 @@ export const AppleCardsCarousel: React.FC = () => {
 
   return (
     <div className="w-full py-16 bg-slate-50 relative overflow-hidden font-sans border-y border-slate-200/80">
-      
       {/* Section Title Header */}
       <div className="max-w-7xl mx-auto px-6 lg:px-8 mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div className="space-y-2 text-left">
@@ -180,7 +208,8 @@ export const AppleCardsCarousel: React.FC = () => {
             Powered by {APP_NAME}.
           </h2>
           <p className="text-slate-600 text-xs sm:text-sm max-w-xl font-medium">
-            Discover real businesses, artisan bakeries, and rooftop lounges operating with zero kitchen delay on {APP_NAME}.
+            Discover real businesses, artisan bakeries, and rooftop lounges operating with zero
+            kitchen delay on {APP_NAME}.
           </p>
         </div>
 
@@ -221,66 +250,66 @@ export const AppleCardsCarousel: React.FC = () => {
           className="flex gap-6 overflow-x-auto scrollbar-none pb-8 pt-2 snap-x snap-mandatory"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
-        {businessCards.map((card, idx) => (
-          <motion.div
-            key={card.id}
-            layoutId={`card-${card.id}`}
-            onClick={() => setActiveCard(card)}
-            whileHover={{ y: -8, scale: 1.015 }}
-            transition={{ duration: 0.3, ease: 'easeOut' }}
-            className="flex-shrink-0 w-[310px] sm:w-[360px] h-[460px] rounded-3xl relative overflow-hidden cursor-pointer shadow-xl shadow-slate-200/80 border border-slate-300/80 bg-slate-950 group snap-start transition-all"
-          >
-            {/* Crisp High-Res Image with Smooth Scale */}
-            <img
-              src={card.imageUrl}
-              alt={card.businessName}
-              className="w-full h-full object-cover object-center filter-none group-hover:scale-110 transition-transform duration-1000 ease-out"
-            />
+          {businessCards.map((card, idx) => (
+            <motion.div
+              key={card.id}
+              layoutId={`card-${card.id}`}
+              onClick={() => setActiveCard(card)}
+              whileHover={{ y: -8, scale: 1.015 }}
+              transition={{ duration: 0.3, ease: 'easeOut' }}
+              className="flex-shrink-0 w-[310px] sm:w-[360px] h-[460px] rounded-3xl relative overflow-hidden cursor-pointer shadow-xl shadow-slate-200/80 border border-slate-300/80 bg-slate-950 group snap-start transition-all"
+            >
+              {/* Crisp High-Res Image with Smooth Scale */}
+              <img
+                src={card.imageUrl}
+                alt={card.businessName}
+                className="w-full h-full object-cover object-center filter-none group-hover:scale-110 transition-transform duration-1000 ease-out"
+              />
 
-            {/* Carefully Tuned Gradient Scrim (Vivid Image on Top, Dark Gradient on Bottom Text) */}
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent" />
+              {/* Carefully Tuned Gradient Scrim (Vivid Image on Top, Dark Gradient on Bottom Text) */}
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent" />
 
-            {/* Top Pill Badges */}
-            <div className="absolute top-5 left-5 right-5 flex justify-between items-center z-10 gap-2">
-              <span className="text-[9px] font-mono font-extrabold uppercase tracking-widest text-white bg-slate-950/80 backdrop-blur-md px-3 py-1 rounded-full border border-white/20 shadow-lg truncate max-w-[200px]">
-                {card.category}
-              </span>
-              <span className="text-[10px] font-extrabold text-white bg-red-600/90 backdrop-blur-md px-2.5 py-1 rounded-full border border-red-500/40 flex items-center gap-1 shadow-lg flex-shrink-0">
-                <Zap className="w-3 h-3 fill-white" /> {card.monthlyOrders}
-              </span>
-            </div>
-
-            {/* Bottom Content Area */}
-            <div className="absolute bottom-6 left-6 right-6 z-10 space-y-2.5 text-left">
-              {/* Location & Rating Pill */}
-              <div className="flex items-center gap-2 text-xs font-semibold text-slate-300">
-                <span className="flex items-center gap-1 text-slate-200">
-                  <MapPin className="w-3.5 h-3.5 text-red-500" /> {card.location}
+              {/* Top Pill Badges */}
+              <div className="absolute top-5 left-5 right-5 flex justify-between items-center z-10 gap-2">
+                <span className="text-[9px] font-mono font-extrabold uppercase tracking-widest text-white bg-slate-950/80 backdrop-blur-md px-3 py-1 rounded-full border border-white/20 shadow-lg truncate max-w-[200px]">
+                  {card.category}
                 </span>
-                <span className="text-slate-500">•</span>
-                <span className="text-amber-400 font-extrabold flex items-center gap-1">
-                  <Star className="w-3.5 h-3.5 fill-amber-400" /> {card.rating}
+                <span className="text-[10px] font-extrabold text-white bg-red-600/90 backdrop-blur-md px-2.5 py-1 rounded-full border border-red-500/40 flex items-center gap-1 shadow-lg flex-shrink-0">
+                  <Zap className="w-3 h-3 fill-white" /> {card.monthlyOrders}
                 </span>
               </div>
 
-              {/* Business Name */}
-              <h3 className="text-2xl font-black text-white leading-snug drop-shadow-md">
-                {card.businessName}
-              </h3>
+              {/* Bottom Content Area */}
+              <div className="absolute bottom-6 left-6 right-6 z-10 space-y-2.5 text-left">
+                {/* Location & Rating Pill */}
+                <div className="flex items-center gap-2 text-xs font-semibold text-slate-300">
+                  <span className="flex items-center gap-1 text-slate-200">
+                    <MapPin className="w-3.5 h-3.5 text-red-500" /> {card.location}
+                  </span>
+                  <span className="text-slate-500">•</span>
+                  <span className="text-amber-400 font-extrabold flex items-center gap-1">
+                    <Star className="w-3.5 h-3.5 fill-amber-400" /> {card.rating}
+                  </span>
+                </div>
 
-              {/* Subtitle Feature */}
-              <p className="text-xs text-slate-300 font-medium line-clamp-2 leading-relaxed">
-                {card.title}
-              </p>
+                {/* Business Name */}
+                <h3 className="text-2xl font-black text-white leading-snug drop-shadow-md">
+                  {card.businessName}
+                </h3>
 
-              {/* Interactive CTA Link */}
-              <div className="pt-2 flex items-center gap-1.5 text-xs font-extrabold text-red-400 group-hover:text-red-300 transition-colors">
-                <span>See Their Story & Menu</span>
-                <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform text-red-500" />
+                {/* Subtitle Feature */}
+                <p className="text-xs text-slate-300 font-medium line-clamp-2 leading-relaxed">
+                  {card.title}
+                </p>
+
+                {/* Interactive CTA Link */}
+                <div className="pt-2 flex items-center gap-1.5 text-xs font-extrabold text-red-400 group-hover:text-red-300 transition-colors">
+                  <span>See Their Story & Menu</span>
+                  <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform text-red-500" />
+                </div>
               </div>
-            </div>
-          </motion.div>
-        ))}
+            </motion.div>
+          ))}
         </div>
       </div>
 
@@ -292,8 +321,8 @@ export const AppleCardsCarousel: React.FC = () => {
             onClick={() => scrollToIndex(idx)}
             aria-label={`Go to slide ${idx + 1}`}
             className={`h-2 rounded-full transition-all duration-500 ${
-              activeIndex === idx 
-                ? 'w-8 bg-red-600 shadow-md shadow-red-600/50' 
+              activeIndex === idx
+                ? 'w-8 bg-red-600 shadow-md shadow-red-600/50'
                 : 'w-2.5 bg-slate-300 hover:bg-slate-400'
             }`}
           />
@@ -348,11 +377,15 @@ export const AppleCardsCarousel: React.FC = () => {
                     {activeCard.businessName}
                   </h3>
                   <div className="flex items-center gap-3 text-xs font-semibold text-slate-300">
-                    <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5 text-red-500" /> {activeCard.location}</span>
+                    <span className="flex items-center gap-1">
+                      <MapPin className="w-3.5 h-3.5 text-red-500" /> {activeCard.location}
+                    </span>
                     <span>•</span>
                     <span className="text-amber-400 font-extrabold">{activeCard.rating}</span>
                     <span>•</span>
-                    <span className="text-emerald-400 font-extrabold">{activeCard.monthlyOrders}</span>
+                    <span className="text-emerald-400 font-extrabold">
+                      {activeCard.monthlyOrders}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -360,7 +393,9 @@ export const AppleCardsCarousel: React.FC = () => {
               {/* Modal Content */}
               <div className="p-6 sm:p-8 overflow-y-auto space-y-6 text-left">
                 <div>
-                  <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-400 mb-1">About This Business</h4>
+                  <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-400 mb-1">
+                    About This Business
+                  </h4>
                   <p className="text-sm text-slate-700 leading-relaxed font-medium">
                     {activeCard.description}
                   </p>
@@ -368,10 +403,15 @@ export const AppleCardsCarousel: React.FC = () => {
 
                 {/* Highlights */}
                 <div>
-                  <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-400 mb-3">{APP_NAME} Features Utilized</h4>
+                  <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-400 mb-3">
+                    {APP_NAME} Features Utilized
+                  </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     {activeCard.highlights.map((feat, idx) => (
-                      <div key={idx} className="p-3 rounded-2xl bg-red-50/80 border border-red-200/80 text-red-900 text-xs font-extrabold flex items-center gap-2">
+                      <div
+                        key={idx}
+                        className="p-3 rounded-2xl bg-red-50/80 border border-red-200/80 text-red-900 text-xs font-extrabold flex items-center gap-2"
+                      >
                         <Zap className="w-4 h-4 text-red-600 flex-shrink-0" />
                         <span>{feat}</span>
                       </div>
@@ -381,10 +421,15 @@ export const AppleCardsCarousel: React.FC = () => {
 
                 {/* Popular Dishes */}
                 <div>
-                  <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-400 mb-3">Popular Menu Selections</h4>
+                  <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-400 mb-3">
+                    Popular Menu Selections
+                  </h4>
                   <div className="flex flex-wrap gap-2">
                     {activeCard.popularDishes.map((dish, idx) => (
-                      <span key={idx} className="px-3.5 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-slate-800 text-xs font-bold flex items-center gap-1.5">
+                      <span
+                        key={idx}
+                        className="px-3.5 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-slate-800 text-xs font-bold flex items-center gap-1.5"
+                      >
                         <Utensils className="w-3.5 h-3.5 text-slate-500" /> {dish}
                       </span>
                     ))}
@@ -407,7 +452,6 @@ export const AppleCardsCarousel: React.FC = () => {
                   </Link>
                 </div>
               </div>
-
             </motion.div>
           </div>
         )}

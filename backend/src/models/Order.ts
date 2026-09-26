@@ -11,7 +11,9 @@ export type OrderStatus =
   | 'REFUNDED';
 
 export type PaymentStatus = 'UNPAID' | 'PAID' | 'REFUNDED' | 'FAILED';
-export type PaymentMethod = 'ONLINE' | 'CASH' | 'CARD';
+// ONLINE = the customer pays the café's own UPI ID directly (confirmed by staff); CHECKOUT = paid
+// through the café's SMEPay checkout, created only once SMEPay validated the payment.
+export type PaymentMethod = 'ONLINE' | 'CASH' | 'CARD' | 'CHECKOUT';
 export type OrderSource = 'QR_TABLE' | 'STAFF' | 'TAKEAWAY' | 'ADMIN';
 
 export interface IOrderItemAddonSnapshot {
@@ -63,7 +65,11 @@ export interface IOrder extends Document {
   orderStatus: OrderStatus;
   paymentStatus: PaymentStatus;
   paymentMethod: PaymentMethod;
-  transactionId?: string;
+  transactionId?: string; // For CHECKOUT orders, SMEPay's order id
+  paymentProvider?: 'SMEPAY';
+  // The CheckoutSession this order was created from (CHECKOUT) or switched away from (the
+  // customer abandoned online checkout and chose cash/direct UPI instead).
+  checkoutSessionId?: mongoose.Types.ObjectId;
   idempotencyKey?: string;
   notes?: string;
   timeline?: IOrderTimeline;
@@ -152,10 +158,13 @@ const OrderSchema = new Schema<IOrder>(
     },
     paymentMethod: {
       type: String,
-      enum: ['ONLINE', 'CASH', 'CARD'],
+      enum: ['ONLINE', 'CASH', 'CARD', 'CHECKOUT'],
       default: 'ONLINE'
     },
     transactionId: { type: String, default: '' },
+    paymentProvider: { type: String, enum: ['SMEPAY'] },
+    // Unique: the last line of defence against one paid checkout ever producing two orders.
+    checkoutSessionId: { type: Schema.Types.ObjectId, ref: 'CheckoutSession', unique: true, sparse: true },
     idempotencyKey: { type: String, unique: true, sparse: true },
     notes: { type: String, default: '' },
     timeline: { type: TimelineSchema, default: () => ({ placedAt: new Date() }) },

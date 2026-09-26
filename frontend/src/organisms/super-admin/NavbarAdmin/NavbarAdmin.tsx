@@ -8,11 +8,19 @@ export type { NavbarAdminProps } from './types';
 /** Sticky super admin header. Builds the nav items (with their live counts) once and renders both
  * the desktop and mobile views — CSS picks which one is visible at the `lg` breakpoint. */
 export const NavbarAdmin: React.FC<NavbarAdminProps> = ({
-  businessesCount, pendingRemittancesCount, pendingSubscriptionRequestsCount, refundsNeededCount, openTicketsCount,
+  businessesCount,
+  pendingRemittancesCount,
+  pendingSubscriptionRequestsCount,
+  refundsNeededCount,
+  openTicketsCount,
   ...viewProps
 }) => {
   const navItems = buildNavItems({
-    businessesCount, pendingRemittancesCount, pendingSubscriptionRequestsCount, refundsNeededCount, openTicketsCount,
+    businessesCount,
+    pendingRemittancesCount,
+    pendingSubscriptionRequestsCount,
+    refundsNeededCount,
+    openTicketsCount,
   });
 
   return (

@@ -32,7 +32,11 @@ const PlanSelect = ({
   >
     {!business.currentPlan && <option value="">No plan</option>}
     {plans.map((p) => (
-      <option key={p._id} value={p._id} disabled={p.status === 'DISABLED' && p._id !== business.currentPlan?._id}>
+      <option
+        key={p._id}
+        value={p._id}
+        disabled={p.status === 'DISABLED' && p._id !== business.currentPlan?._id}
+      >
         {p.name}
         {p.status === 'DISABLED' ? ' (disabled)' : ''}
       </option>
@@ -40,13 +44,19 @@ const PlanSelect = ({
   </select>
 );
 
-export const BusinessesManagementTable = ({ businesses, plans, searchQuery, onSearchChange, onOpenFinance, onOpenStatusModal, onChangePlan }: BusinessesManagementTableProps) => (
+export const BusinessesManagementTable = ({
+  businesses,
+  plans,
+  searchQuery,
+  onSearchChange,
+  onOpenFinance,
+  onOpenStatusModal,
+  onChangePlan,
+}: BusinessesManagementTableProps) => (
   <div className="bg-white p-4 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-5 sm:space-y-6">
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
       <div>
-        <h3 className="text-lg font-extrabold text-slate-900">
-          All Businesses
-        </h3>
+        <h3 className="text-lg font-extrabold text-slate-900">All Businesses</h3>
         <p className="text-xs text-slate-500 font-medium">
           Each business's plan, what it owes, and quick actions
         </p>
@@ -96,8 +106,14 @@ export const BusinessesManagementTable = ({ businesses, plans, searchQuery, onSe
             </div>
           ),
         },
-        { header: 'Menu Link', render: (r) => <span className="font-mono text-red-600 font-bold">/c/{r.slug}</span> },
-        { header: 'Contact Email', render: (r) => <span className="font-medium text-slate-600">{r.email}</span> },
+        {
+          header: 'Menu Link',
+          render: (r) => <span className="font-mono text-red-600 font-bold">/c/{r.slug}</span>,
+        },
+        {
+          header: 'Contact Email',
+          render: (r) => <span className="font-medium text-slate-600">{r.email}</span>,
+        },
         {
           header: 'Plan',
           render: (r) => <PlanSelect business={r} plans={plans} onChangePlan={onChangePlan} />,
@@ -106,10 +122,13 @@ export const BusinessesManagementTable = ({ businesses, plans, searchQuery, onSe
           header: 'Fees Owed',
           render: (r) => (
             <>
-              <div className="font-extrabold text-slate-900">{formatCurrency(r.totalCommissionOwedPaise)}</div>
+              <div className="font-extrabold text-slate-900">
+                {formatCurrency(r.totalCommissionOwedPaise)}
+              </div>
               {r.overdueAmountPaise > 0 && (
                 <div className="text-[10px] font-bold text-rose-600 flex items-center gap-1">
-                  <AlertTriangle className="w-3 h-3" /> {formatCurrency(r.overdueAmountPaise)} overdue
+                  <AlertTriangle className="w-3 h-3" /> {formatCurrency(r.overdueAmountPaise)}{' '}
+                  overdue
                 </div>
               )}
             </>
@@ -118,11 +137,13 @@ export const BusinessesManagementTable = ({ businesses, plans, searchQuery, onSe
         {
           header: 'Status',
           render: (r) => (
-            <span className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold whitespace-nowrap ${
-              r.status === 'ACTIVE'
-                ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                : 'bg-rose-100 text-rose-800 border border-rose-200'
-            }`}>
+            <span
+              className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold whitespace-nowrap ${
+                r.status === 'ACTIVE'
+                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                  : 'bg-rose-100 text-rose-800 border border-rose-200'
+              }`}
+            >
               {r.status}
             </span>
           ),
@@ -167,11 +188,13 @@ export const BusinessesManagementTable = ({ businesses, plans, searchQuery, onSe
                 <div className="text-[10px] font-mono text-red-600 font-bold">/c/{r.slug}</div>
               </div>
             </div>
-            <span className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold whitespace-nowrap shrink-0 ${
-              r.status === 'ACTIVE'
-                ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                : 'bg-rose-100 text-rose-800 border border-rose-200'
-            }`}>
+            <span
+              className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold whitespace-nowrap shrink-0 ${
+                r.status === 'ACTIVE'
+                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                  : 'bg-rose-100 text-rose-800 border border-rose-200'
+              }`}
+            >
               {r.status}
             </span>
           </div>
@@ -186,7 +209,9 @@ export const BusinessesManagementTable = ({ businesses, plans, searchQuery, onSe
           <div className="flex items-center justify-between pt-2 border-t border-slate-100">
             <div>
               <div className="text-[10px] text-slate-400 font-bold uppercase">Fees Owed</div>
-              <div className="font-extrabold text-slate-900 text-sm">{formatCurrency(r.totalCommissionOwedPaise)}</div>
+              <div className="font-extrabold text-slate-900 text-sm">
+                {formatCurrency(r.totalCommissionOwedPaise)}
+              </div>
             </div>
             {r.overdueAmountPaise > 0 && (
               <div className="text-[10px] font-bold text-rose-600 flex items-center gap-1">

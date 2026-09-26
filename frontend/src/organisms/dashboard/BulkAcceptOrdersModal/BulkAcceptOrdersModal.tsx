@@ -17,13 +17,22 @@ interface BulkAcceptOrdersModalProps {
  * since that single click also triggers automatic ingredient stock deduction for every one of
  * them and can't be individually undone from here.
  */
-export const BulkAcceptOrdersModal = ({ orders, submitting, onClose, onConfirm }: BulkAcceptOrdersModalProps) => {
+export const BulkAcceptOrdersModal = ({
+  orders,
+  submitting,
+  onClose,
+  onConfirm,
+}: BulkAcceptOrdersModalProps) => {
   if (orders.length === 0) return null;
 
   const totalAmountPaise = orders.reduce((sum, o) => sum + (o.totalAmountPaise || 0), 0);
 
   return (
-    <Modal title={`Accept ${orders.length} Order${orders.length === 1 ? '' : 's'}?`} onClose={() => !submitting && onClose()} maxWidth="max-w-lg">
+    <Modal
+      title={`Accept ${orders.length} Order${orders.length === 1 ? '' : 's'}?`}
+      onClose={() => !submitting && onClose()}
+      maxWidth="max-w-lg"
+    >
       <div className="space-y-4">
         <p className="text-xs text-slate-500 font-medium">
           Review the orders below, then confirm to accept all of them at once.
@@ -37,10 +46,14 @@ export const BulkAcceptOrdersModal = ({ orders, submitting, onClose, onConfirm }
                 <span className="text-xs font-black text-orange-600 bg-orange-50 border border-orange-200 px-2 py-0.5 rounded-lg">
                   {o.orderId || o.orderNumber}
                 </span>
-                <span className="text-xs font-black text-slate-900">{formatCurrency(o.totalAmountPaise)}</span>
+                <span className="text-xs font-black text-slate-900">
+                  {formatCurrency(o.totalAmountPaise)}
+                </span>
               </div>
               <div className="flex items-center justify-between gap-2 text-[11px] text-slate-500 font-semibold">
-                <span className="truncate">{o.customerName} · {o.tableName || 'Takeaway'}</span>
+                <span className="truncate">
+                  {o.customerName} · {o.tableName || 'Takeaway'}
+                </span>
               </div>
               <div className="text-[11px] text-slate-600 font-medium truncate">
                 {o.items?.map((it: any) => `${it.quantity}× ${it.name}`).join(', ')}
@@ -50,7 +63,9 @@ export const BulkAcceptOrdersModal = ({ orders, submitting, onClose, onConfirm }
         </div>
 
         <div className="flex items-center justify-between px-1 text-xs font-bold text-slate-500">
-          <span>Total across {orders.length} order{orders.length === 1 ? '' : 's'}</span>
+          <span>
+            Total across {orders.length} order{orders.length === 1 ? '' : 's'}
+          </span>
           <span className="text-slate-900 font-black">{formatCurrency(totalAmountPaise)}</span>
         </div>
 
@@ -67,8 +82,16 @@ export const BulkAcceptOrdersModal = ({ orders, submitting, onClose, onConfirm }
             disabled={submitting}
             className="flex-1 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black text-xs shadow-md shadow-blue-500/20 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-            <span>{submitting ? 'Accepting…' : `Accept ${orders.length} Order${orders.length === 1 ? '' : 's'}`}</span>
+            {submitting ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <CheckCircle2 className="w-4 h-4" />
+            )}
+            <span>
+              {submitting
+                ? 'Accepting…'
+                : `Accept ${orders.length} Order${orders.length === 1 ? '' : 's'}`}
+            </span>
           </button>
         </div>
       </div>

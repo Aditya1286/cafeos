@@ -2,12 +2,12 @@ import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { Category } from '../models/Category';
 import { Product } from '../models/Product';
-import { MenuImage } from '../models/MenuImage';
+import { uploadImage, readMongoFile } from '../services/storage';
+import { handleServiceError } from '../utils/serviceError';
 import { Request } from 'express';
 import mongoose from 'mongoose';
 import { getPopularProductIds } from '../services/menuPopularity.service';
 
-const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5MB
 
 // The only fields an owner/manager may change on an update. Anything else in the body —
 // businessId (which would move the record into another café's menu), isDeleted, _id, or a
@@ -196,45 +196,23 @@ export const updateProduct = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// Owner/Staff: Upload a menu image (category or product photo). No cloud
-// storage yet — the bytes are decoded from a base64 data URL and saved
-// straight into MongoDB; the returned imageUrl points at getMenuImage below.
+// Owner/Manager: Upload a menu image (category or product photo). Validation and where the
+// bytes end up (MongoDB or S3, per config.storageDriver) live in services/storage.
 export const uploadMenuImage = async (req: AuthRequest, res: Response) => {
   try {
-    const { image } = req.body;
-    if (!image || typeof image !== 'string') {
-      return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'An image is required.' } });
-    }
-
-    const match = image.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
-    if (!match) {
-      return res.status(400).json({ success: false, error: { code: 'INVALID_IMAGE', message: 'Image must be a JPEG, PNG, or WEBP file.' } });
-    }
-
-    const [, contentType, base64Data] = match;
-    const data = Buffer.from(base64Data, 'base64');
-    if (data.length > MAX_IMAGE_BYTES) {
-      return res.status(400).json({ success: false, error: { code: 'IMAGE_TOO_LARGE', message: 'Image must be under 5MB.' } });
-    }
-
-    const menuImage = await MenuImage.create({ businessId: req.businessId, contentType, data });
-
-    return res.status(201).json({
-      success: true,
-      data: { imageUrl: `/api/v1/public/images/${menuImage._id}` },
-      message: 'Image uploaded'
-    });
+    const { url } = await uploadImage({ dataUrl: req.body.image, folder: 'menu', ownerId: req.businessId?.toString() });
+    return res.status(201).json({ success: true, data: { imageUrl: url }, message: 'Image uploaded' });
   } catch (error: any) {
-    return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
+    return handleServiceError(res, error);
   }
 };
 
-// Public: Serve a stored menu image by id. Public because <img> tags can't
-// carry an Authorization header — the id itself is an unguessable ObjectId.
+// Public: Serve an image stored by the 'mongo' storage driver. Public because <img> tags can't
+// carry an Authorization header — the id itself is an unguessable ObjectId. (S3-stored images
+// are served by S3/the CDN directly and never come through here.)
 export const getMenuImage = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
-    const image = await MenuImage.findById(id);
+    const image = await readMongoFile(req.params.id);
     if (!image) {
       return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Image not found' } });
     }

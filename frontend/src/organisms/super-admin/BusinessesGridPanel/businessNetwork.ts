@@ -13,10 +13,14 @@ export const BUSINESS_FILTERS: { id: BusinessFilter; label: string }[] = [
 
 export const matchesBusinessFilter = (b: AdminBusinessSummary, filter: BusinessFilter): boolean => {
   switch (filter) {
-    case 'ALL': return true;
-    case 'OVERDUE': return b.overdueAmountPaise > 0;
-    case 'DEMO': return !!b.isDemo;
-    default: return b.status === filter;
+    case 'ALL':
+      return true;
+    case 'OVERDUE':
+      return b.overdueAmountPaise > 0;
+    case 'DEMO':
+      return !!b.isDemo;
+    default:
+      return b.status === filter;
   }
 };
 
@@ -31,15 +35,20 @@ export const BUSINESS_SORTS: { id: BusinessSort; label: string }[] = [
 
 const HEALTH_RANK = { suspended: 0, overdue: 1, healthy: 2 } as const;
 
-export const sortBusinesses = (list: AdminBusinessSummary[], sort: BusinessSort): AdminBusinessSummary[] => {
+export const sortBusinesses = (
+  list: AdminBusinessSummary[],
+  sort: BusinessSort,
+): AdminBusinessSummary[] => {
   const sorted = [...list];
   switch (sort) {
     case 'attention':
       // Same worst-first order as the Business Radar: suspended, then overdue (largest first).
-      return sorted.sort((a, b) =>
-        HEALTH_RANK[businessHealthOf(a)] - HEALTH_RANK[businessHealthOf(b)]
-        || b.overdueAmountPaise - a.overdueAmountPaise
-        || b.totalCommissionOwedPaise - a.totalCommissionOwedPaise);
+      return sorted.sort(
+        (a, b) =>
+          HEALTH_RANK[businessHealthOf(a)] - HEALTH_RANK[businessHealthOf(b)] ||
+          b.overdueAmountPaise - a.overdueAmountPaise ||
+          b.totalCommissionOwedPaise - a.totalCommissionOwedPaise,
+      );
     case 'owed':
       return sorted.sort((a, b) => b.totalCommissionOwedPaise - a.totalCommissionOwedPaise);
     case 'newest':

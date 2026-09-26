@@ -27,3 +27,9 @@ export interface RegisterFormData {
   businessName: string;
   slug: string;
 }
+
+export interface PasswordResetResponse {
+  success: boolean;
+  data: { ok: boolean };
+  message?: string;
+}

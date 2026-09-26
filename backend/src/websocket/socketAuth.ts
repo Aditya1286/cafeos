@@ -1,9 +1,8 @@
 import mongoose from 'mongoose';
-import jwt from 'jsonwebtoken';
 import { Socket } from 'socket.io';
-import { config } from '../config';
 import { User, UserRole } from '../models/User';
 import { Order } from '../models/Order';
+import { verifyAuthToken, isTokenRevoked } from '../utils/authToken';
 
 // Who a socket connection belongs to. Staff/admin sockets carry the same JWT the REST API
 // uses (sent as `auth.token` in the Socket.IO handshake); customer sockets carry none and
@@ -30,9 +29,9 @@ export const authenticateSocket = async (socket: Socket, next: (err?: Error) => 
   if (typeof token !== 'string' || !token) return next();
 
   try {
-    const decoded = jwt.verify(token, config.jwtSecret) as { id: string };
+    const decoded = verifyAuthToken(token);
     const user = await User.findById(decoded.id);
-    if (user && user.status === 'ACTIVE') {
+    if (user && user.status === 'ACTIVE' && !isTokenRevoked(user, decoded)) {
       const identity: SocketIdentity = {
         userId: user._id.toString(),
         role: user.role,

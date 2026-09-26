@@ -9,7 +9,7 @@ import {
   RemoveProductResponse,
   RestoreProductResponse,
   UpdateProductResponse,
-  UploadImageResponse
+  UploadImageResponse,
 } from './types';
 
 export const listCategories = (): Promise<ListCategoriesResponse> => apiRequest('/menu/categories');
@@ -22,8 +22,10 @@ export const createCategory = (name: string): Promise<CreateCategoryResponse> =>
 export const createProduct = (payload: ProductPayload): Promise<CreateProductResponse> =>
   apiRequest('/menu/products', 'POST', payload);
 
-export const updateProduct = (productId: string, payload: ProductPayload): Promise<UpdateProductResponse> =>
-  apiRequest(`/menu/products/${productId}`, 'PUT', payload);
+export const updateProduct = (
+  productId: string,
+  payload: ProductPayload,
+): Promise<UpdateProductResponse> => apiRequest(`/menu/products/${productId}`, 'PUT', payload);
 
 // Soft-remove: flips isAvailable off, keeps the item in the owner's list to restore later.
 export const removeProduct = (productId: string): Promise<RemoveProductResponse> =>

@@ -6,7 +6,9 @@ import mongoose, { Schema, Document } from 'mongoose';
 //
 // - ORDER: long-lived, reusable, sliding window — gates guest order placement.
 // - REGISTRATION: short-lived, single-use — gates owner account registration.
-export type VerifiedPhonePurpose = 'ORDER' | 'REGISTRATION';
+// - ACCOUNT: short-lived, single-use, and always from a fresh OTP — gates sensitive account
+//   actions (password reset, email change) that prove control of the business phone number.
+export type VerifiedPhonePurpose = 'ORDER' | 'REGISTRATION' | 'ACCOUNT';
 
 export interface IVerifiedPhone extends Document {
   _id: mongoose.Types.ObjectId;
@@ -20,7 +22,7 @@ export interface IVerifiedPhone extends Document {
 const VerifiedPhoneSchema = new Schema<IVerifiedPhone>(
   {
     mobile: { type: String, required: true },
-    purpose: { type: String, enum: ['ORDER', 'REGISTRATION'], required: true },
+    purpose: { type: String, enum: ['ORDER', 'REGISTRATION', 'ACCOUNT'], required: true },
     expiresAt: { type: Date, required: true }
   },
   { timestamps: true }

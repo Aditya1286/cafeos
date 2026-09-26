@@ -58,8 +58,15 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
   }, []);
 
   const {
-    overview, businesses, liveOrders, loading, fetchDashboardData, handleToggleBusinessStatus, handleChangeBusinessPlan,
-    updatingDemoId, handleSetBusinessDemo,
+    overview,
+    businesses,
+    liveOrders,
+    loading,
+    fetchDashboardData,
+    handleToggleBusinessStatus,
+    handleChangeBusinessPlan,
+    updatingDemoId,
+    handleSetBusinessDemo,
   } = useSuperAdminDashboardData();
   const { systemHealth } = useSystemHealth(activeTab === 'system');
   const { analyticsData, refresh: refreshAnalytics } = useSuperAdminAnalytics(dateRange);
@@ -71,9 +78,13 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
 
   const handleExport = (format: 'csv' | 'pdf') => {
     if (format === 'csv') {
-      const header = 'Business Name,Menu Link,Email,Status,Fee per Order (%),Fees Owed (₹),Late (₹)\n';
+      const header =
+        'Business Name,Menu Link,Email,Status,Fee per Order (%),Fees Owed (₹),Late (₹)\n';
       const rows = businesses
-        .map((r) => `"${r.name}","${r.slug}","${r.email}","${r.status}",${r.commissionRatePercentage ?? 3},${(r.totalCommissionOwedPaise || 0) / 100},${(r.overdueAmountPaise || 0) / 100}`)
+        .map(
+          (r) =>
+            `"${r.name}","${r.slug}","${r.email}","${r.status}",${r.commissionRatePercentage ?? 3},${(r.totalCommissionOwedPaise || 0) / 100},${(r.overdueAmountPaise || 0) / 100}`,
+        )
         .join('\n');
       downloadCsv(`${APP_SLUG}_businesses_export_${Date.now()}.csv`, header, rows);
       toast.success('Report downloaded!');
@@ -118,10 +129,7 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
         onSelect={(type, id) => toast(`Opened ${type}: ${id}`)}
       />
 
-      <ProductDetailSheet
-        product={selectedProduct}
-        onClose={() => setSelectedProduct(null)}
-      />
+      <ProductDetailSheet product={selectedProduct} onClose={() => setSelectedProduct(null)} />
 
       <BusinessManagementModal
         business={selectedBusinessForModal}
@@ -160,7 +168,9 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
         }}
         businessesCount={businesses.length}
         pendingRemittancesCount={remittanceQueue.pendingRemittancesCount}
-        pendingSubscriptionRequestsCount={subscriptionRequestsQueue.pendingSubscriptionRequestsCount}
+        pendingSubscriptionRequestsCount={
+          subscriptionRequestsQueue.pendingSubscriptionRequestsCount
+        }
         refundsNeededCount={adminRefunds.insights?.needsRefundCount}
         openTicketsCount={supportDesk.needsAttentionCount}
       />
@@ -187,15 +197,17 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
           </div>
         </div>
 
-        {demoFilterEnabled && hiddenDemoCount > 0 && (activeTab === 'overview' || activeTab === 'analytics') && (
-          <div className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold">
-            <FlaskConical className="w-4 h-4 shrink-0" />
-            <span>
-              {hiddenDemoCount} demo account{hiddenDemoCount === 1 ? ' is' : 's are'} not counted in these numbers.
-              Manage them from the Businesses tab.
-            </span>
-          </div>
-        )}
+        {demoFilterEnabled &&
+          hiddenDemoCount > 0 &&
+          (activeTab === 'overview' || activeTab === 'analytics') && (
+            <div className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold">
+              <FlaskConical className="w-4 h-4 shrink-0" />
+              <span>
+                {hiddenDemoCount} demo account{hiddenDemoCount === 1 ? ' is' : 's are'} not counted
+                in these numbers. Manage them from the Businesses tab.
+              </span>
+            </div>
+          )}
 
         {activeTab === 'overview' && (
           <>
@@ -210,7 +222,10 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
               <LiveOrdersPanel liveOrders={liveOrders} />
             </div>
 
-            <BusinessConstellation businesses={analyticsBusinesses} onSelectBusiness={setSpotlightBusiness} />
+            <BusinessConstellation
+              businesses={analyticsBusinesses}
+              onSelectBusiness={setSpotlightBusiness}
+            />
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
               <CancellationRatePanel
@@ -277,8 +292,10 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
             loading={adminRefunds.loading}
             insights={adminRefunds.insights}
             pagination={adminRefunds.pagination}
-            onPageChange={(page) => adminRefunds.setPagination(prev => ({ ...prev, page }))}
-            onPageSizeChange={(limit) => adminRefunds.setPagination(prev => ({ ...prev, limit, page: 1 }))}
+            onPageChange={(page) => adminRefunds.setPagination((prev) => ({ ...prev, page }))}
+            onPageSizeChange={(limit) =>
+              adminRefunds.setPagination((prev) => ({ ...prev, limit, page: 1 }))
+            }
             searchQuery={adminRefunds.searchQuery}
             onSearchChange={adminRefunds.setSearchQuery}
             paymentStatusFilter={adminRefunds.paymentStatusFilter}
@@ -296,8 +313,10 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
             tickets={supportDesk.tickets}
             loading={supportDesk.loading}
             pagination={supportDesk.pagination}
-            onPageChange={(page) => supportDesk.setPagination(prev => ({ ...prev, page }))}
-            onPageSizeChange={(limit) => supportDesk.setPagination(prev => ({ ...prev, limit, page: 1 }))}
+            onPageChange={(page) => supportDesk.setPagination((prev) => ({ ...prev, page }))}
+            onPageSizeChange={(limit) =>
+              supportDesk.setPagination((prev) => ({ ...prev, limit, page: 1 }))
+            }
             searchQuery={supportDesk.searchQuery}
             onSearchChange={supportDesk.setSearchQuery}
             statusFilter={supportDesk.statusFilter}
@@ -316,16 +335,17 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
         {activeTab === 'analytics' && (
           <PlatformAnalyticsPanel
             metrics={overview?.metrics ?? null}
-            activeBusinessesCount={overview?.metrics?.activeBusinesses ?? analyticsBusinesses.filter((b) => b.status === 'ACTIVE').length}
+            activeBusinessesCount={
+              overview?.metrics?.activeBusinesses ??
+              analyticsBusinesses.filter((b) => b.status === 'ACTIVE').length
+            }
             totalBusinessesCount={analyticsBusinesses.length}
             paymentMethodBreakdown={analyticsData?.paymentMethodBreakdown ?? []}
             onExportCsv={() => handleExport('csv')}
           />
         )}
 
-        {activeTab === 'kitchen' && (
-          <GlobalKitchenMonitor liveOrders={liveOrders} />
-        )}
+        {activeTab === 'kitchen' && <GlobalKitchenMonitor liveOrders={liveOrders} />}
 
         {activeTab === 'plans' && (
           <div className="space-y-8">
@@ -338,13 +358,14 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
               onApprove={subscriptionRequestsQueue.handleApproveRequest}
               onReject={subscriptionRequestsQueue.handleRejectRequest}
             />
-            <SubscriptionPlansPanel plans={overview?.plans ?? []} onPlansChanged={fetchDashboardData} />
+            <SubscriptionPlansPanel
+              plans={overview?.plans ?? []}
+              onPlansChanged={fetchDashboardData}
+            />
           </div>
         )}
 
-        {activeTab === 'system' && (
-          <SystemHealthPanel systemHealth={systemHealth} />
-        )}
+        {activeTab === 'system' && <SystemHealthPanel systemHealth={systemHealth} />}
       </main>
     </div>
   );

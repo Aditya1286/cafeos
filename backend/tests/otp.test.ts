@@ -6,6 +6,7 @@ import request from 'supertest';
 import { startHarness, businessIdFor, firstProductIdFor, Harness } from './helpers';
 import { VerifiedPhone } from '../src/models/VerifiedPhone';
 import { Table } from '../src/models/Table';
+import { verifyWidgetAccessToken } from '../src/services/otp.service';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 let h: Harness;
@@ -155,4 +156,42 @@ test('Mongo has the TTL index that garbage-collects expired records', async () =
   assert.equal(ttl?.expireAfterSeconds, 0);
   const unique = indexes.find((i) => i.key.mobile === 1 && i.key.purpose === 1);
   assert.equal(unique?.unique, true);
+});
+
+// ── Account verifications (password reset, email change) ────────────────────
+
+test('an account OTP is always sent fresh, even for an order-verified phone', async () => {
+  await verifyPhone('9812340004');
+  const status = await request(h.app).get('/api/v1/public/otp/status').query({ phone: '9812340004', purpose: 'ACCOUNT' });
+  assert.equal(status.body.verified, false);
+  const sent = await request(h.app).post('/api/v1/public/otp/request').send({ phone: '9812340004', purpose: 'ACCOUNT' });
+  assert.equal(sent.body.code, 'OTP_SENT');
+});
+
+// Live mode: the MSG91 widget runs in the browser, so for an account action the backend must be
+// able to tie the token to the business number itself — a genuine token for some other phone
+// must not count. MSG91's verifyAccessToken endpoint is stubbed here.
+test('a live widget token only proves an account verification for the number it mentions', async () => {
+  const realFetch = globalThis.fetch;
+  const msg91Says = (body: unknown) => {
+    globalThis.fetch = (async () => new Response(JSON.stringify(body), { status: 200 })) as typeof fetch;
+  };
+  try {
+    msg91Says({ type: 'success', message: '919999900000' });
+    const foreign = await verifyWidgetAccessToken('9812340005', 'opaque-token', 'ACCOUNT');
+    assert.equal(foreign.success, false);
+    assert.equal(foreign.code, 'PHONE_MISMATCH');
+    assert.equal(await VerifiedPhone.countDocuments({ purpose: 'ACCOUNT' }), 0);
+
+    msg91Says({ type: 'success', message: '919812340005' });
+    const own = await verifyWidgetAccessToken('9812340005', 'opaque-token', 'ACCOUNT');
+    assert.equal(own.success, true);
+    assert.equal(await VerifiedPhone.countDocuments({ mobile: '919812340005', purpose: 'ACCOUNT' }), 1);
+
+    // The ordinary (non-account) flow keeps working as before when MSG91 doesn't echo the number.
+    msg91Says({ type: 'success', message: 'verified' });
+    assert.equal((await verifyWidgetAccessToken('9812340006', 'opaque-token')).success, true);
+  } finally {
+    globalThis.fetch = realFetch;
+  }
 });

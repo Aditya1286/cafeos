@@ -18,9 +18,16 @@ interface FinancialLedgerPanelProps {
 // "Of every ₹100 a business earns through CafeOS, how much do we actually take?" — a plain
 // gross-vs-commission bar across every period we have data for (closed periods + the one in
 // progress), so the take-rate reads as a real, small slice rather than an abstract percentage.
-const ProfitShareBar: React.FC<{ periods: RemittancePeriod[]; currentPeriod: any }> = ({ periods, currentPeriod }) => {
-  const totalGrossPaise = periods.reduce((acc, p) => acc + p.grossAmountPaise, 0) + (currentPeriod?.grossAmountPaise || 0);
-  const totalCommissionPaise = periods.reduce((acc, p) => acc + p.commissionOwedPaise, 0) + (currentPeriod?.commissionOwedPaise || 0);
+const ProfitShareBar: React.FC<{ periods: RemittancePeriod[]; currentPeriod: any }> = ({
+  periods,
+  currentPeriod,
+}) => {
+  const totalGrossPaise =
+    periods.reduce((acc, p) => acc + p.grossAmountPaise, 0) +
+    (currentPeriod?.grossAmountPaise || 0);
+  const totalCommissionPaise =
+    periods.reduce((acc, p) => acc + p.commissionOwedPaise, 0) +
+    (currentPeriod?.commissionOwedPaise || 0);
 
   if (totalGrossPaise === 0) {
     return (
@@ -56,14 +63,18 @@ const ProfitShareBar: React.FC<{ periods: RemittancePeriod[]; currentPeriod: any
         <div className="flex items-center gap-2">
           <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500 shrink-0" />
           <div>
-            <div className="font-black text-slate-900">{merchantPct.toFixed(1)}% · {formatCurrency(merchantSharePaise)}</div>
+            <div className="font-black text-slate-900">
+              {merchantPct.toFixed(1)}% · {formatCurrency(merchantSharePaise)}
+            </div>
             <div className="text-[10px] text-slate-400 font-semibold uppercase">You keep</div>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <span className="w-2.5 h-2.5 rounded-sm bg-slate-800 shrink-0" />
           <div>
-            <div className="font-black text-slate-900">{commissionPct.toFixed(1)}% · {formatCurrency(totalCommissionPaise)}</div>
+            <div className="font-black text-slate-900">
+              {commissionPct.toFixed(1)}% · {formatCurrency(totalCommissionPaise)}
+            </div>
             <div className="text-[10px] text-slate-400 font-semibold uppercase">We take</div>
           </div>
         </div>
@@ -100,7 +111,9 @@ const PayCommissionCard: React.FC<{
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-center space-y-1">
           <CheckCircle2 className="w-6 h-6 text-emerald-600 mx-auto" />
           <p className="text-xs font-black text-emerald-700">Thanks — noted</p>
-          <p className="text-[11px] text-emerald-600">We'll check the payment and update this page soon.</p>
+          <p className="text-[11px] text-emerald-600">
+            We'll check the payment and update this page soon.
+          </p>
         </div>
       </div>
     );
@@ -114,15 +127,27 @@ const PayCommissionCard: React.FC<{
         </div>
         <div>
           <h3 className="text-sm font-black text-slate-900">Pay your fee</h3>
-          <p className="text-[11px] text-slate-500 font-medium">{formatCurrency(remittanceSummary.totalUnpaidOwedPaise)} outstanding</p>
+          <p className="text-[11px] text-slate-500 font-medium">
+            {formatCurrency(remittanceSummary.totalUnpaidOwedPaise)} outstanding
+          </p>
         </div>
       </div>
 
       <div className="max-w-xs">
         {isMobileDevice() ? (
-          <UpiAppButtons payeeVpa={payeeVpa} payeeName={payeeName} amount={amount} transactionRef={transactionRef} />
+          <UpiAppButtons
+            payeeVpa={payeeVpa}
+            payeeName={payeeName}
+            amount={amount}
+            transactionRef={transactionRef}
+          />
         ) : (
-          <UpiQrFallback payeeVpa={payeeVpa} payeeName={payeeName} amount={amount} transactionRef={transactionRef} />
+          <UpiQrFallback
+            payeeVpa={payeeVpa}
+            payeeName={payeeName}
+            amount={amount}
+            transactionRef={transactionRef}
+          />
         )}
       </div>
 
@@ -147,7 +172,8 @@ const PayCommissionCard: React.FC<{
             <div className="space-y-1">
               <h3 className="text-sm font-black text-slate-900">Confirm your payment</h3>
               <p className="text-[11px] text-slate-400 font-medium">
-                UPI doesn't tell us automatically — this lets our team know to check for your payment.
+                UPI doesn't tell us automatically — this lets our team know to check for your
+                payment.
               </p>
             </div>
 
@@ -184,7 +210,13 @@ const PayCommissionCard: React.FC<{
   );
 };
 
-export const FinancialLedgerPanel = ({ business, remittanceSummary, loadingRemittance, markingPaid, onMarkPaid }: FinancialLedgerPanelProps) => (
+export const FinancialLedgerPanel = ({
+  business,
+  remittanceSummary,
+  loadingRemittance,
+  markingPaid,
+  onMarkPaid,
+}: FinancialLedgerPanelProps) => (
   <div className="space-y-6">
     <div>
       <h2 className="text-lg font-black text-slate-900">Fees & Payments</h2>
@@ -202,12 +234,13 @@ export const FinancialLedgerPanel = ({ business, remittanceSummary, loadingRemit
         <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4 text-xs font-medium text-orange-800 flex items-start gap-2.5">
           <Info className="w-4 h-4 shrink-0 mt-0.5" />
           <span>
-            You pay a {remittanceSummary.commissionRatePercentage}% fee on completed
-            orders, excluding GST. Commission accrues into {remittanceSummary.cycleDays}-day
-            billing periods — settle each period with us by its due date. Full terms in the{' '}
+            You pay a {remittanceSummary.commissionRatePercentage}% fee on completed orders,
+            excluding GST. Commission accrues into {remittanceSummary.cycleDays}-day billing periods
+            — settle each period with us by its due date. Full terms in the{' '}
             <Link to="/terms" target="_blank" className="font-bold underline hover:text-orange-900">
               Merchant Terms of Service
-            </Link>.
+            </Link>
+            .
           </span>
         </div>
 
@@ -230,17 +263,26 @@ export const FinancialLedgerPanel = ({ business, remittanceSummary, loadingRemit
             <div className="text-[10px] text-slate-400 font-bold uppercase">Next Due</div>
             <div className="text-sm font-extrabold text-slate-900">
               {remittanceSummary.nextDueDate
-                ? new Date(remittanceSummary.nextDueDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })
+                ? new Date(remittanceSummary.nextDueDate).toLocaleDateString('en-IN', {
+                    day: '2-digit',
+                    month: 'short',
+                  })
                 : '—'}
             </div>
           </div>
           <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm">
-            <div className="text-[10px] text-slate-400 font-bold uppercase">This Billing Period</div>
+            <div className="text-[10px] text-slate-400 font-bold uppercase">
+              This Billing Period
+            </div>
             <div className="text-sm font-extrabold text-emerald-600">
               {formatCurrency(remittanceSummary.currentPeriod.commissionOwedPaise)}
             </div>
             <div className="text-[10px] text-slate-400 font-medium mt-0.5">
-              Not due until {new Date(remittanceSummary.currentPeriod.periodEnd).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+              Not due until{' '}
+              {new Date(remittanceSummary.currentPeriod.periodEnd).toLocaleDateString('en-IN', {
+                day: '2-digit',
+                month: 'short',
+              })}
             </div>
           </div>
         </div>
@@ -256,9 +298,14 @@ export const FinancialLedgerPanel = ({ business, remittanceSummary, loadingRemit
           <div className="bg-white p-5 rounded-3xl border border-dashed border-slate-200 flex items-start gap-2.5">
             <Info className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
             <p className="text-xs text-slate-500 font-medium">
-              Nothing to pay yet — {formatCurrency(remittanceSummary.currentPeriod.commissionOwedPaise)} is
-              accruing this billing period. It becomes payable once the period closes on{' '}
-              {new Date(remittanceSummary.currentPeriod.periodEnd).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+              Nothing to pay yet —{' '}
+              {formatCurrency(remittanceSummary.currentPeriod.commissionOwedPaise)} is accruing this
+              billing period. It becomes payable once the period closes on{' '}
+              {new Date(remittanceSummary.currentPeriod.periodEnd).toLocaleDateString('en-IN', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+              })}
               , and a "Pay your fee" option will appear here.
             </p>
           </div>
@@ -267,9 +314,14 @@ export const FinancialLedgerPanel = ({ business, remittanceSummary, loadingRemit
         <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
           <div>
             <h3 className="text-sm font-black text-slate-900">Where your money goes</h3>
-            <p className="text-[11px] text-slate-500 font-medium">From every paid order, since you started</p>
+            <p className="text-[11px] text-slate-500 font-medium">
+              From every paid order, since you started
+            </p>
           </div>
-          <ProfitShareBar periods={remittanceSummary.periods as RemittancePeriod[]} currentPeriod={remittanceSummary.currentPeriod} />
+          <ProfitShareBar
+            periods={remittanceSummary.periods as RemittancePeriod[]}
+            currentPeriod={remittanceSummary.currentPeriod}
+          />
         </div>
 
         <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">

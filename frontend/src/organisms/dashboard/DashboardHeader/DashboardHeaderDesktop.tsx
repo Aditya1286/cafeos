@@ -1,11 +1,22 @@
 import React from 'react';
-import { TABS, HeaderViewProps } from './types';
-import { HeaderBrand, LiveOrdersPill, AddItemButton, RefreshButton, UserLogoutButton } from './HeaderParts';
+import { HeaderViewProps } from './types';
+import { HeaderBrand, LiveOrdersPill, AddItemButton, RefreshButton, UserMenu } from './HeaderParts';
 
 /** Desktop (`lg`+) header: brand + live status + actions, then the full row of section tabs. */
 export const DashboardHeaderDesktop = ({
-  user, business, activeOrdersCount, activeTab, onChangeTab, badgeFor,
-  copiedUrl, onCopyMenuUrl, loading, onRefresh, onAddItem,
+  user,
+  business,
+  activeOrdersCount,
+  tabs,
+  activeTab,
+  onChangeTab,
+  badgeFor,
+  copiedUrl,
+  onCopyMenuUrl,
+  loading,
+  onRefresh,
+  onAddItem,
+  onOpenProfile,
 }: HeaderViewProps) => (
   <div className="max-w-7xl mx-auto px-8">
     <div className="h-16 flex items-center justify-between gap-4 border-b border-slate-800/80">
@@ -14,7 +25,7 @@ export const DashboardHeaderDesktop = ({
       <div className="flex items-center gap-2 shrink-0">
         <AddItemButton onAddItem={onAddItem} />
         <RefreshButton loading={loading} onRefresh={onRefresh} showLabel />
-        <UserLogoutButton user={user} showIcon />
+        <UserMenu user={user} onOpenProfile={onOpenProfile} />
       </div>
     </div>
 
@@ -22,7 +33,7 @@ export const DashboardHeaderDesktop = ({
         over at `lg`. overflow-x-auto is a safety net in case a longer label set or larger badge
         count outgrows the row. */}
     <div className="flex items-center gap-2 py-2.5 overflow-x-auto">
-      {TABS.map(tab => {
+      {tabs.map((tab) => {
         const Icon = tab.icon;
         const active = activeTab === tab.id;
         const badge = badgeFor(tab.id);
@@ -39,9 +50,13 @@ export const DashboardHeaderDesktop = ({
             <Icon className={`w-4 h-4 ${active ? 'text-white' : 'text-slate-500'}`} />
             <span>{tab.label}</span>
             {badge !== null && badge > 0 && (
-              <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono ${
-                active ? 'bg-white/30 text-white' : 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
-              }`}>
+              <span
+                className={`px-2 py-0.5 rounded-full text-[10px] font-mono ${
+                  active
+                    ? 'bg-white/30 text-white'
+                    : 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+                }`}
+              >
                 {badge}
               </span>
             )}

@@ -3,6 +3,7 @@ import { AuthRequest } from '../middleware/auth';
 import { Table } from '../models/Table';
 import { Business } from '../models/Business';
 import { Order } from '../models/Order';
+import { isCheckoutAvailable } from '../services/checkout.service';
 import qrcode from 'qrcode';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -50,7 +51,8 @@ export const getTableByToken = async (req: Request, res: Response) => {
           logoUrl: business.logoUrl,
           coverImageUrl: business.coverImageUrl,
           currencySymbol: business.currencySymbol,
-          taxRatePercentage: business.taxRatePercentage
+          taxRatePercentage: business.taxRatePercentage,
+          checkoutAvailable: isCheckoutAvailable(business)
         }
       }
     });

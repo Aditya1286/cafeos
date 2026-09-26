@@ -5,12 +5,22 @@ import { FormField, inputCls } from '@/molecules/FormField';
 interface AddTableModalProps {
   open: boolean;
   onClose: () => void;
-  tableNumber: string; setTableNumber: (v: string) => void;
-  capacity: number; setCapacity: (v: number) => void;
+  tableNumber: string;
+  setTableNumber: (v: string) => void;
+  capacity: number;
+  setCapacity: (v: number) => void;
   onSubmit: (e: React.FormEvent) => void;
 }
 
-export const AddTableModal = ({ open, onClose, tableNumber, setTableNumber, capacity, setCapacity, onSubmit }: AddTableModalProps) => {
+export const AddTableModal = ({
+  open,
+  onClose,
+  tableNumber,
+  setTableNumber,
+  capacity,
+  setCapacity,
+  onSubmit,
+}: AddTableModalProps) => {
   if (!open) return null;
 
   return (
@@ -21,7 +31,7 @@ export const AddTableModal = ({ open, onClose, tableNumber, setTableNumber, capa
             type="text"
             required
             value={tableNumber}
-            onChange={e => setTableNumber(e.target.value)}
+            onChange={(e) => setTableNumber(e.target.value)}
             placeholder="e.g. Table 12"
             className={inputCls}
           />
@@ -32,7 +42,7 @@ export const AddTableModal = ({ open, onClose, tableNumber, setTableNumber, capa
             required
             min={1}
             value={capacity}
-            onChange={e => setCapacity(Number(e.target.value))}
+            onChange={(e) => setCapacity(Number(e.target.value))}
             className={inputCls}
           />
         </FormField>

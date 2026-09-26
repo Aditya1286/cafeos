@@ -37,27 +37,27 @@ export const App: React.FC = () => {
 
   return (
     <>
-    <Toaster position="top-right" richColors closeButton />
-    <Routes>
-      {routes.map(({ path, access, element }) => {
-        const page = element({ user, onAuthSuccess: handleAuthSuccess });
-        return (
-          <Route
-            key={path}
-            path={path}
-            element={
-              access === 'public' ? (
-                page
-              ) : (
-                <RequireAuth access={access} user={user} loading={loading}>
-                  {page}
-                </RequireAuth>
-              )
-            }
-          />
-        );
-      })}
-    </Routes>
+      <Toaster position="top-right" richColors closeButton />
+      <Routes>
+        {routes.map(({ path, access, element }) => {
+          const page = element({ user, onAuthSuccess: handleAuthSuccess });
+          return (
+            <Route
+              key={path}
+              path={path}
+              element={
+                access === 'public' ? (
+                  page
+                ) : (
+                  <RequireAuth access={access} user={user} loading={loading}>
+                    {page}
+                  </RequireAuth>
+                )
+              }
+            />
+          );
+        })}
+      </Routes>
     </>
   );
 };

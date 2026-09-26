@@ -19,6 +19,7 @@ import { initSocketServer, getIO } from '../src/websocket/socketManager';
 import publicRoutes from '../src/routes/publicRoutes';
 import orderRoutes from '../src/routes/orderRoutes';
 import menuRoutes from '../src/routes/menuRoutes';
+import { rejectMongoOperators } from '../src/middleware/rejectMongoOperators';
 import { User } from '../src/models/User';
 import { Business } from '../src/models/Business';
 import { Product } from '../src/models/Product';
@@ -46,6 +47,7 @@ export const startHarness = async (): Promise<Harness> => {
 
   const app = express();
   app.use(express.json());
+  app.use('/api/v1', rejectMongoOperators); // as in server.ts
   app.use('/api/v1/public', publicRoutes);
   app.use('/api/v1/orders', orderRoutes);
   app.use('/api/v1/menu', menuRoutes);

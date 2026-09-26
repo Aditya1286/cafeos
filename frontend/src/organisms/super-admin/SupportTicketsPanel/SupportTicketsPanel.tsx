@@ -1,5 +1,13 @@
 import React, { useState } from 'react';
-import { RefreshCw, LifeBuoy, UserCheck, TriangleAlert, CheckCircle2, PhoneCall, PhoneOff } from 'lucide-react';
+import {
+  RefreshCw,
+  LifeBuoy,
+  UserCheck,
+  TriangleAlert,
+  CheckCircle2,
+  PhoneCall,
+  PhoneOff,
+} from 'lucide-react';
 import ResponsiveDataView, { ResponsiveColumn } from '@/molecules/ResponsiveDataView';
 import { Modal } from '@/molecules/Modal';
 
@@ -29,21 +37,35 @@ const STATUS_STYLE: Record<string, string> = {
   IN_PROGRESS: 'bg-amber-50 text-amber-700 border-amber-200',
   ESCALATED: 'bg-rose-50 text-rose-700 border-rose-200',
   RESOLVED: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  CLOSED: 'bg-slate-100 text-slate-500 border-slate-200'
+  CLOSED: 'bg-slate-100 text-slate-500 border-slate-200',
 };
 
 const PRIORITY_STYLE: Record<string, string> = {
   LOW: 'bg-slate-100 text-slate-500',
   MEDIUM: 'bg-blue-50 text-blue-700',
   HIGH: 'bg-orange-50 text-orange-700',
-  URGENT: 'bg-rose-100 text-rose-700'
+  URGENT: 'bg-rose-100 text-rose-700',
 };
 
 export const SupportTicketsPanel = ({
-  currentUserId, tickets, loading, pagination, onPageChange, onPageSizeChange,
-  searchQuery, onSearchChange, statusFilter, onStatusFilterChange, onRefresh,
-  onAssignToSelf, onEscalate, onResolve,
-  agents, loadingAgents, togglingAvailability, onToggleMyAvailability
+  currentUserId,
+  tickets,
+  loading,
+  pagination,
+  onPageChange,
+  onPageSizeChange,
+  searchQuery,
+  onSearchChange,
+  statusFilter,
+  onStatusFilterChange,
+  onRefresh,
+  onAssignToSelf,
+  onEscalate,
+  onResolve,
+  agents,
+  loadingAgents,
+  togglingAvailability,
+  onToggleMyAvailability,
 }: SupportTicketsPanelProps) => {
   const [ticketToResolve, setTicketToResolve] = useState<any | null>(null);
   const [resolutionNote, setResolutionNote] = useState('');
@@ -68,16 +90,25 @@ export const SupportTicketsPanel = ({
     return (
       <div className={`flex flex-wrap gap-1.5 ${stretch ? '' : 'justify-end'}`}>
         {t.assignedToUserId?._id !== currentUserId && (
-          <button onClick={() => onAssignToSelf(t._id)} className={`${btn} bg-slate-100 hover:bg-slate-200 text-slate-700`}>
+          <button
+            onClick={() => onAssignToSelf(t._id)}
+            className={`${btn} bg-slate-100 hover:bg-slate-200 text-slate-700`}
+          >
             <UserCheck className="w-3.5 h-3.5" /> Assign to me
           </button>
         )}
         {t.status !== 'ESCALATED' && (
-          <button onClick={() => onEscalate(t._id)} className={`${btn} bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700`}>
+          <button
+            onClick={() => onEscalate(t._id)}
+            className={`${btn} bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700`}
+          >
             <TriangleAlert className="w-3.5 h-3.5" /> Escalate
           </button>
         )}
-        <button onClick={() => setTicketToResolve(t)} className={`${btn} bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700`}>
+        <button
+          onClick={() => setTicketToResolve(t)}
+          className={`${btn} bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700`}
+        >
           <CheckCircle2 className="w-3.5 h-3.5" /> Resolve
         </button>
       </div>
@@ -93,12 +124,16 @@ export const SupportTicketsPanel = ({
             {t.ticketNumber}
           </div>
           <div className="text-[11px] text-slate-400 font-medium">
-            {new Date(t.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+            {new Date(t.createdAt).toLocaleDateString('en-IN', {
+              day: '2-digit',
+              month: 'short',
+              year: 'numeric',
+            })}
           </div>
         </>
       ),
       headerClassName: 'whitespace-nowrap',
-      cellClassName: 'whitespace-nowrap'
+      cellClassName: 'whitespace-nowrap',
     },
     {
       header: 'Raised By',
@@ -106,9 +141,11 @@ export const SupportTicketsPanel = ({
         <>
           <div className="font-black text-slate-900 truncate max-w-[160px]">{t.contactName}</div>
           <div className="text-[11px] text-slate-400 font-semibold">{t.contactPhone}</div>
-          <span className="text-[9px] font-black uppercase text-slate-400">{t.raisedByType === 'BUSINESS_OWNER' ? 'Business Owner' : 'Customer'}</span>
+          <span className="text-[9px] font-black uppercase text-slate-400">
+            {t.raisedByType === 'BUSINESS_OWNER' ? 'Business Owner' : 'Customer'}
+          </span>
         </>
-      )
+      ),
     },
     {
       header: 'Issue',
@@ -116,41 +153,53 @@ export const SupportTicketsPanel = ({
         <>
           <div className="font-bold text-slate-800 text-xs">{t.category?.replace(/_/g, ' ')}</div>
           {t.subCategory && <div className="text-[11px] text-slate-400">{t.subCategory}</div>}
-          <div className="text-[11px] text-slate-500 italic truncate max-w-[220px]" title={t.description}>"{t.description}"</div>
+          <div
+            className="text-[11px] text-slate-500 italic truncate max-w-[220px]"
+            title={t.description}
+          >
+            "{t.description}"
+          </div>
         </>
-      )
+      ),
     },
     {
       header: 'Status',
       render: (t) => (
         <div className="space-y-1">
-          <span className={`px-2.5 py-1 rounded-full text-[10px] font-black border inline-block ${STATUS_STYLE[t.status] || STATUS_STYLE.OPEN}`}>
+          <span
+            className={`px-2.5 py-1 rounded-full text-[10px] font-black border inline-block ${STATUS_STYLE[t.status] || STATUS_STYLE.OPEN}`}
+          >
             ● {t.status.replace('_', ' ')}
           </span>
-          <span className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded-full inline-block ${PRIORITY_STYLE[t.priority] || PRIORITY_STYLE.MEDIUM}`}>
+          <span
+            className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded-full inline-block ${PRIORITY_STYLE[t.priority] || PRIORITY_STYLE.MEDIUM}`}
+          >
             {t.priority}
           </span>
         </div>
       ),
       headerClassName: 'whitespace-nowrap',
-      cellClassName: 'whitespace-nowrap'
+      cellClassName: 'whitespace-nowrap',
     },
     {
       header: 'Actions',
       align: 'right',
       render: (t) => renderTicketActions(t),
       headerClassName: 'whitespace-nowrap',
-      cellClassName: 'whitespace-nowrap'
-    }
+      cellClassName: 'whitespace-nowrap',
+    },
   ];
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
         <div>
-          <h2 className="text-lg sm:text-xl font-black text-slate-900 flex items-center gap-2"><LifeBuoy className="w-5 h-5 text-orange-500" /> Support Tickets</h2>
+          <h2 className="text-lg sm:text-xl font-black text-slate-900 flex items-center gap-2">
+            <LifeBuoy className="w-5 h-5 text-orange-500" /> Support Tickets
+          </h2>
           <p className="text-xs text-slate-500 font-medium mt-0.5">
-            Every problem raised by customers and business owners, in one list. Businesses can't see this page.
+            Every problem raised by customers and business owners, in one list. Businesses can't see
+            this page.
           </p>
         </div>
         <button
@@ -163,7 +212,9 @@ export const SupportTicketsPanel = ({
       </div>
 
       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5">
-        <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider block mb-3">Team Members Taking Calls</span>
+        <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider block mb-3">
+          Team Members Taking Calls
+        </span>
         {loadingAgents ? (
           <div className="text-xs text-slate-400 font-semibold">Loading agents…</div>
         ) : (
@@ -174,11 +225,20 @@ export const SupportTicketsPanel = ({
                 <div
                   key={a.id}
                   className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-bold ${
-                    a.isAvailableForCalls ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-slate-50 border-slate-200 text-slate-400'
+                    a.isAvailableForCalls
+                      ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                      : 'bg-slate-50 border-slate-200 text-slate-400'
                   }`}
                 >
-                  {a.isAvailableForCalls ? <PhoneCall className="w-3.5 h-3.5" /> : <PhoneOff className="w-3.5 h-3.5" />}
-                  <span>{a.name}{isMe ? ' (you)' : ''}</span>
+                  {a.isAvailableForCalls ? (
+                    <PhoneCall className="w-3.5 h-3.5" />
+                  ) : (
+                    <PhoneOff className="w-3.5 h-3.5" />
+                  )}
+                  <span>
+                    {a.name}
+                    {isMe ? ' (you)' : ''}
+                  </span>
                   {isMe && (
                     <button
                       onClick={onToggleMyAvailability}
@@ -191,13 +251,19 @@ export const SupportTicketsPanel = ({
                 </div>
               );
             })}
-            {agents.length === 0 && <span className="text-xs text-slate-400 font-medium">No admin team members found.</span>}
+            {agents.length === 0 && (
+              <span className="text-xs text-slate-400 font-medium">
+                No admin team members found.
+              </span>
+            )}
           </div>
         )}
       </div>
 
       <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
-        <label className="text-[10px] font-extrabold uppercase text-slate-400 mb-1 block">Status</label>
+        <label className="text-[10px] font-extrabold uppercase text-slate-400 mb-1 block">
+          Status
+        </label>
         <select
           value={statusFilter}
           onChange={(e) => onStatusFilterChange(e.target.value)}
@@ -226,41 +292,67 @@ export const SupportTicketsPanel = ({
             renderCard={(t) => (
               <div className="p-4 space-y-2.5">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="font-mono text-xs font-black text-slate-900 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-xl whitespace-nowrap">{t.ticketNumber}</div>
+                  <div className="font-mono text-xs font-black text-slate-900 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-xl whitespace-nowrap">
+                    {t.ticketNumber}
+                  </div>
                   <div className="flex items-center gap-1.5 shrink-0">
-                    <span className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded-full ${PRIORITY_STYLE[t.priority] || PRIORITY_STYLE.MEDIUM}`}>{t.priority}</span>
-                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-black border ${STATUS_STYLE[t.status] || STATUS_STYLE.OPEN}`}>{t.status.replace('_', ' ')}</span>
+                    <span
+                      className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded-full ${PRIORITY_STYLE[t.priority] || PRIORITY_STYLE.MEDIUM}`}
+                    >
+                      {t.priority}
+                    </span>
+                    <span
+                      className={`px-2.5 py-1 rounded-full text-[10px] font-black border ${STATUS_STYLE[t.status] || STATUS_STYLE.OPEN}`}
+                    >
+                      {t.status.replace('_', ' ')}
+                    </span>
                   </div>
                 </div>
                 <div className="min-w-0">
                   <div className="font-black text-slate-900 truncate">{t.contactName}</div>
                   <div className="text-[11px] text-slate-400 font-semibold">
-                    <a href={`tel:${t.contactPhone}`} className="underline decoration-dotted">{t.contactPhone}</a>
-                    {' · '}{t.raisedByType === 'BUSINESS_OWNER' ? 'Business owner' : 'Customer'}
-                    {' · '}{new Date(t.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+                    <a href={`tel:${t.contactPhone}`} className="underline decoration-dotted">
+                      {t.contactPhone}
+                    </a>
+                    {' · '}
+                    {t.raisedByType === 'BUSINESS_OWNER' ? 'Business owner' : 'Customer'}
+                    {' · '}
+                    {new Date(t.createdAt).toLocaleDateString('en-IN', {
+                      day: '2-digit',
+                      month: 'short',
+                    })}
                   </div>
                 </div>
                 <div className="text-[11px] font-bold text-slate-700">
-                  {t.category?.replace(/_/g, ' ')}{t.subCategory ? ` · ${t.subCategory}` : ''}
+                  {t.category?.replace(/_/g, ' ')}
+                  {t.subCategory ? ` · ${t.subCategory}` : ''}
                 </div>
-                <div className="text-xs text-slate-600 italic bg-slate-50 border border-slate-200 rounded-xl p-2">"{t.description}"</div>
+                <div className="text-xs text-slate-600 italic bg-slate-50 border border-slate-200 rounded-xl p-2">
+                  "{t.description}"
+                </div>
                 {renderTicketActions(t, true)}
               </div>
             )}
-            search={{ value: searchQuery, onChange: onSearchChange, placeholder: 'Search by ticket #, name, or phone...' }}
+            search={{
+              value: searchQuery,
+              onChange: onSearchChange,
+              placeholder: 'Search by ticket #, name, or phone...',
+            }}
             pagination={{
               page: pagination.page,
               pageSize: pagination.limit,
               total: pagination.total,
               onPageChange,
               onPageSizeChange,
-              pageSizeOptions: [10, 15, 25, 50]
+              pageSizeOptions: [10, 15, 25, 50],
             }}
             emptyState={
               <div className="p-12 text-center space-y-3">
                 <LifeBuoy className="w-12 h-12 text-slate-300 mx-auto" />
                 <h3 className="text-base font-black text-slate-800">No support tickets found</h3>
-                <p className="text-xs font-medium text-slate-500">Try adjusting your search or filter.</p>
+                <p className="text-xs font-medium text-slate-500">
+                  Try adjusting your search or filter.
+                </p>
               </div>
             }
           />
@@ -268,7 +360,11 @@ export const SupportTicketsPanel = ({
       </div>
 
       {ticketToResolve && (
-        <Modal title={`Resolve ${ticketToResolve.ticketNumber}`} onClose={() => setTicketToResolve(null)} maxWidth="max-w-md">
+        <Modal
+          title={`Resolve ${ticketToResolve.ticketNumber}`}
+          onClose={() => setTicketToResolve(null)}
+          maxWidth="max-w-md"
+        >
           <div className="space-y-4">
             <p className="text-xs text-slate-500 font-medium">
               This note is what the customer will see when they check their ticket status.

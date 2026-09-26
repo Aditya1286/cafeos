@@ -43,7 +43,7 @@ export const KitchenKdsBoardMobile = (props: KdsBoardViewProps) => {
       <div className="grid grid-cols-4 gap-1.5 p-1.5 bg-slate-100 rounded-2xl">
         {KDS_COLUMN_STATUSES.map((s, i) => {
           const sc = STATUS_CONFIG[s];
-          const count = orders.filter(o => o.orderStatus === s).length;
+          const count = orders.filter((o) => o.orderStatus === s).length;
           const active = s === status;
           return (
             <button
@@ -55,11 +55,17 @@ export const KitchenKdsBoardMobile = (props: KdsBoardViewProps) => {
             >
               <span className="flex items-center gap-1">
                 <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />
-                <span className={`text-[10px] font-black uppercase tracking-wide ${active ? sc.color : 'text-slate-400'}`}>
+                <span
+                  className={`text-[10px] font-black uppercase tracking-wide ${active ? sc.color : 'text-slate-400'}`}
+                >
                   {MOBILE_STATUS_LABEL[s]}
                 </span>
               </span>
-              <span className={`text-[11px] font-mono font-bold ${active ? sc.color : 'text-slate-400'}`}>{count}</span>
+              <span
+                className={`text-[11px] font-mono font-bold ${active ? sc.color : 'text-slate-400'}`}
+              >
+                {count}
+              </span>
             </button>
           );
         })}

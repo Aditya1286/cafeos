@@ -1,8 +1,24 @@
 import React, { useState } from 'react';
-import { 
-  LayoutDashboard, BarChart3, ShoppingBag, Utensils, Grid, Users,
-  Boxes, CreditCard, UserCheck, Flame, FileText, History, Settings,
-  ChevronLeft, ChevronRight, ShieldCheck, Sparkles, LogOut, CheckCircle2
+import {
+  LayoutDashboard,
+  BarChart3,
+  ShoppingBag,
+  Utensils,
+  Grid,
+  Users,
+  Boxes,
+  CreditCard,
+  UserCheck,
+  Flame,
+  FileText,
+  History,
+  Settings,
+  ChevronLeft,
+  ChevronRight,
+  ShieldCheck,
+  Sparkles,
+  LogOut,
+  CheckCircle2,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { APP_NAME } from '@/constants/app';
@@ -14,12 +30,7 @@ interface SidebarProps {
   onLogout?: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({
-  activeTab,
-  onTabChange,
-  user,
-  onLogout,
-}) => {
+export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, user, onLogout }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const navGroups = [
@@ -52,9 +63,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
     {
       title: 'SYSTEM',
-      items: [
-        { id: 'settings', label: 'Settings', icon: Settings },
-      ],
+      items: [{ id: 'settings', label: 'Settings', icon: Settings }],
     },
   ];
 
@@ -114,10 +123,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 hover:bg-slate-100/80 dark:hover:bg-zinc-800/60'
                       }`}
                     >
-                      <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-white' : 'text-slate-500 dark:text-zinc-400 group-hover:text-slate-900 dark:group-hover:text-zinc-100'}`} />
-                      {!isCollapsed && (
-                        <span className="truncate">{item.label}</span>
-                      )}
+                      <Icon
+                        className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-white' : 'text-slate-500 dark:text-zinc-400 group-hover:text-slate-900 dark:group-hover:text-zinc-100'}`}
+                      />
+                      {!isCollapsed && <span className="truncate">{item.label}</span>}
 
                       {/* Tooltip on Collapsed Hover */}
                       {isCollapsed && (
@@ -143,7 +152,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               System Operational
             </span>
-            <span className="text-[10px] text-emerald-600 dark:text-emerald-500 font-mono">v1.0.0</span>
+            <span className="text-[10px] text-emerald-600 dark:text-emerald-500 font-mono">
+              v1.0.0
+            </span>
           </div>
         ) : (
           <div className="flex justify-center" title="System Operational · v1.0.0">

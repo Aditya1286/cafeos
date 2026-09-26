@@ -7,18 +7,10 @@ import { generateDailyTicketId } from '../utils/ticketSequence';
 import * as ticketDao from '../dao/supportTicket.dao';
 import * as callAgentDao from '../dao/callAgent.dao';
 import { emitToAdminSupport } from '../websocket/socketManager';
+import { ServiceError } from '../utils/serviceError';
 
-// Thrown for expected failure cases — the controller maps statusCode/code/message straight
-// onto the standard {success:false, error:{code,message}} response shape used everywhere else.
-export class ServiceError extends Error {
-  statusCode: number;
-  code: string;
-  constructor(statusCode: number, code: string, message: string) {
-    super(message);
-    this.statusCode = statusCode;
-    this.code = code;
-  }
-}
+// Re-exported so existing `import { ServiceError } from '../services/support.service'` keeps working.
+export { ServiceError };
 
 const summarizeTicket = (ticket: ISupportTicket) => ({
   id: ticket._id,

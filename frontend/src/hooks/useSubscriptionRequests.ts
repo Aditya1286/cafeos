@@ -58,7 +58,8 @@ export const useSubscriptionRequests = (activeTab: string) => {
   };
 
   return {
-    requestsView, setRequestsView,
+    requestsView,
+    setRequestsView,
     subscriptionRequests,
     loadingSubscriptionRequests,
     pendingSubscriptionRequestsCount,

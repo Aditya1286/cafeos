@@ -1,10 +1,5 @@
-export type UserRole = 
-  | 'SUPER_ADMIN' 
-  | 'OWNER' 
-  | 'MANAGER' 
-  | 'RECEPTIONIST' 
-  | 'STAFF' 
-  | 'INVENTORY_MANAGER';
+export type UserRole =
+  'SUPER_ADMIN' | 'OWNER' | 'MANAGER' | 'RECEPTIONIST' | 'STAFF' | 'INVENTORY_MANAGER';
 
 export interface User {
   id: string;
@@ -33,6 +28,11 @@ export interface Business {
   status: 'ACTIVE' | 'SUSPENDED';
   /** Super-admin flag for internal/test accounts — excluded from platform analytics when the backend's demo filter is on. */
   isDemo?: boolean;
+  /** SMEPay online checkout: allowed by a super admin, then switched on by the owner. */
+  checkoutAllowed?: boolean;
+  checkoutEnabled?: boolean;
+  /** Public menu payloads only — both of the above are on, so customers see "Pay online". */
+  checkoutAvailable?: boolean;
 }
 
 export interface SubscriptionPlan {
@@ -98,14 +98,8 @@ export interface TableItem {
   status: 'AVAILABLE' | 'OCCUPIED' | 'RESERVED';
 }
 
-export type OrderStatus = 
-  | 'PLACED' 
-  | 'CONFIRMED' 
-  | 'PREPARING' 
-  | 'READY' 
-  | 'SERVED' 
-  | 'COMPLETED' 
-  | 'CANCELLED';
+export type OrderStatus =
+  'PLACED' | 'CONFIRMED' | 'PREPARING' | 'READY' | 'SERVED' | 'COMPLETED' | 'CANCELLED';
 
 export interface OrderItemSnapshot {
   productId: string;
@@ -134,7 +128,8 @@ export interface Order {
   businessEarningsPaise: number;
   orderStatus: OrderStatus;
   paymentStatus: 'UNPAID' | 'PAID' | 'REFUNDED';
-  paymentMethod: 'ONLINE' | 'CASH';
+  /** ONLINE = direct UPI to the café (staff-confirmed); CHECKOUT = paid via the café's SMEPay checkout. */
+  paymentMethod: 'ONLINE' | 'CASH' | 'CHECKOUT';
   createdAt: string;
 }
 
@@ -297,6 +292,7 @@ export interface AdminBusinessSummary extends Business {
   nextDueDate: string | null;
   currentPlan: { _id: string; name: string; code: string } | null;
   subscriptionStatus: string | null;
+  checkoutOnboardingStatus?: 'NOT_STARTED' | 'KYC_PENDING' | 'CONNECTED';
   createdAt?: string;
 }
 
@@ -389,7 +385,14 @@ export interface MongoServerStats {
   version: string;
   uptimeSeconds: number;
   connections: { current: number; available: number; totalCreated: number; active: number };
-  opcounters: { insert: number; query: number; update: number; delete: number; getmore: number; command: number };
+  opcounters: {
+    insert: number;
+    query: number;
+    update: number;
+    delete: number;
+    getmore: number;
+    command: number;
+  };
   memMB: { resident: number; virtual: number };
   network: { bytesInMB: number; bytesOutMB: number };
 }
@@ -485,7 +488,15 @@ export interface AdminRefundInsights extends RefundInsights {
 export interface AdminSubscriptionRequest {
   _id: string;
   businessId: { name: string; slug: string } | string;
-  planId: { _id: string; name: string; code: string; monthlyPricePaise: number; annualPricePaise: number } | string;
+  planId:
+    | {
+        _id: string;
+        name: string;
+        code: string;
+        monthlyPricePaise: number;
+        annualPricePaise: number;
+      }
+    | string;
   billingCycle: 'MONTHLY' | 'ANNUAL';
   amountPaise: number;
   status: SubscriptionRequestStatus;

@@ -1,12 +1,13 @@
 import { apiRequest } from '../../api';
 import {
+  BusinessCheckoutResponse,
   FinanceSettingsPayload,
   GetBusinessRemittancesResponse,
   ListBusinessesResponse,
   UpdateFinanceSettingsResponse,
   UpdateDemoResponse,
   UpdatePlanResponse,
-  UpdateStatusResponse
+  UpdateStatusResponse,
 } from './types';
 
 export const list = (): Promise<ListBusinessesResponse> => apiRequest('/admin/businesses');
@@ -23,5 +24,17 @@ export const setDemo = (businessId: string, isDemo: boolean): Promise<UpdateDemo
 export const getRemittanceSummary = (businessId: string): Promise<GetBusinessRemittancesResponse> =>
   apiRequest(`/admin/businesses/${businessId}/remittances`);
 
-export const updateFinanceSettings = (businessId: string, payload: FinanceSettingsPayload): Promise<UpdateFinanceSettingsResponse> =>
+export const updateFinanceSettings = (
+  businessId: string,
+  payload: FinanceSettingsPayload,
+): Promise<UpdateFinanceSettingsResponse> =>
   apiRequest(`/admin/businesses/${businessId}/finance-settings`, 'PUT', payload);
+
+export const getCheckout = (businessId: string): Promise<BusinessCheckoutResponse> =>
+  apiRequest(`/admin/businesses/${businessId}/checkout`);
+
+export const setCheckoutAllowed = (
+  businessId: string,
+  allowed: boolean,
+): Promise<BusinessCheckoutResponse> =>
+  apiRequest(`/admin/businesses/${businessId}/checkout`, 'PUT', { allowed });

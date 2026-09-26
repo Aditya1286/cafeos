@@ -11,7 +11,8 @@ export const useTopBusinessesByRevenue = (limit = 8) => {
 
   useEffect(() => {
     setLoading(true);
-    superAdminAnalyticsService.getTopBusinesses(limit)
+    superAdminAnalyticsService
+      .getTopBusinesses(limit)
       .then((res) => setBusinesses(res?.data?.businesses || []))
       .catch(() => setBusinesses([]))
       .finally(() => setLoading(false));

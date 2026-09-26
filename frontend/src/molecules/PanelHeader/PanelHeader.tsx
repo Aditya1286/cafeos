@@ -14,7 +14,14 @@ interface PanelHeaderProps {
 /** The icon-badge + title/subtitle + trailing-actions header row repeated at the top of every
  * dashboard panel. Stacks to two rows below `sm` instead of squeezing title and actions onto
  * one line — the thing that was making panel headers overflow/clip on narrow phones. */
-export const PanelHeader = ({ icon: Icon, title, subtitle, actions, iconClassName, className = '' }: PanelHeaderProps) => (
+export const PanelHeader = ({
+  icon: Icon,
+  title,
+  subtitle,
+  actions,
+  iconClassName,
+  className = '',
+}: PanelHeaderProps) => (
   <div
     className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-white p-4 rounded-3xl border border-slate-200/80 shadow-sm ${className}`}
   >
@@ -33,9 +40,7 @@ export const PanelHeader = ({ icon: Icon, title, subtitle, actions, iconClassNam
     </div>
 
     {actions && (
-      <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap sm:shrink-0">
-        {actions}
-      </div>
+      <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap sm:shrink-0">{actions}</div>
     )}
   </div>
 );

@@ -26,7 +26,8 @@ export const BusinessHourlyHeatmapPanel = ({ businesses }: BusinessHourlyHeatmap
   // Ranked by actual paid-order revenue in the last 90 days, not `lifetimeGMVPaise`
   // (remittance-cycle based — can be 0 for an active business whose first billing
   // period hasn't closed yet, which would make "top N" meaningless).
-  const { businesses: topBusinesses, loading: loadingBusinesses } = useTopBusinessesByRevenue(TOP_N);
+  const { businesses: topBusinesses, loading: loadingBusinesses } =
+    useTopBusinessesByRevenue(TOP_N);
 
   const [selectedBusinessId, setSelectedBusinessId] = useState<string>('');
   const [selectedBusinessName, setSelectedBusinessName] = useState<string>('');
@@ -79,7 +80,7 @@ export const BusinessHourlyHeatmapPanel = ({ businesses }: BusinessHourlyHeatmap
   const totalOrders = (heatmap?.cells || []).reduce((sum, c) => sum + c.orders, 0);
   const busiestCell = (heatmap?.cells || []).reduce<BusinessHeatmapCell | null>(
     (best, cur) => (!best || cur.revenuePaise > best.revenuePaise ? cur : best),
-    null
+    null,
   );
 
   // The <select> below only lists the top-N-by-revenue businesses — if the current selection
@@ -91,16 +92,12 @@ export const BusinessHourlyHeatmapPanel = ({ businesses }: BusinessHourlyHeatmap
     <div className="lg:col-span-12 bg-white p-4 sm:p-6 rounded-3xl border border-slate-200 shadow-sm space-y-5 min-w-0">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h3 className="text-base font-extrabold text-slate-900">
-            Busiest Hours for a Business
-          </h3>
+          <h3 className="text-base font-extrabold text-slate-900">Busiest Hours for a Business</h3>
           <p className="text-xs text-slate-500 font-medium">
             Sales by day and hour over the last 90 days. Pick a business to see its busy times.
           </p>
           {selectedBusinessName && (
-            <p className="text-xs font-bold text-red-600 mt-1">
-              Showing: {selectedBusinessName}
-            </p>
+            <p className="text-xs font-bold text-red-600 mt-1">Showing: {selectedBusinessName}</p>
           )}
         </div>
 
@@ -111,14 +108,20 @@ export const BusinessHourlyHeatmapPanel = ({ businesses }: BusinessHourlyHeatmap
             <input
               type="text"
               value={searchQuery}
-              onChange={(e) => { setSearchQuery(e.target.value); setShowResults(true); }}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setShowResults(true);
+              }}
               onFocus={() => setShowResults(true)}
               placeholder="Search business by name or email…"
               className="pl-8 pr-7 py-2 w-full sm:w-64 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 placeholder:text-slate-400 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 transition-all"
             />
             {searchQuery && (
               <button
-                onClick={() => { setSearchQuery(''); setShowResults(false); }}
+                onClick={() => {
+                  setSearchQuery('');
+                  setShowResults(false);
+                }}
                 className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded-md hover:bg-slate-200 text-slate-400 hover:text-slate-600"
               >
                 <X className="w-3.5 h-3.5" />
@@ -128,7 +131,9 @@ export const BusinessHourlyHeatmapPanel = ({ businesses }: BusinessHourlyHeatmap
             {showResults && searchQuery.trim() !== '' && (
               <div className="absolute z-20 top-full mt-1.5 left-0 w-full bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden">
                 {searchResults.length === 0 ? (
-                  <div className="px-3.5 py-3 text-xs text-slate-400 font-medium">No business matches "{searchQuery}"</div>
+                  <div className="px-3.5 py-3 text-xs text-slate-400 font-medium">
+                    No business matches "{searchQuery}"
+                  </div>
                 ) : (
                   searchResults.map((b) => (
                     <button
@@ -156,11 +161,14 @@ export const BusinessHourlyHeatmapPanel = ({ businesses }: BusinessHourlyHeatmap
               className="w-full sm:w-auto sm:max-w-xs px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100"
             >
               {!selectedInTopBusinesses && (
-                <option value="" disabled>Top businesses by sales…</option>
+                <option value="" disabled>
+                  Top businesses by sales…
+                </option>
               )}
               {topBusinesses.map((b) => (
                 <option key={b._id} value={b._id}>
-                  {b.name} · ₹{Math.round((b.revenuePaise || 0) / 100).toLocaleString('en-IN')} (90d)
+                  {b.name} · ₹{Math.round((b.revenuePaise || 0) / 100).toLocaleString('en-IN')}{' '}
+                  (90d)
                 </option>
               ))}
             </select>
@@ -171,7 +179,9 @@ export const BusinessHourlyHeatmapPanel = ({ businesses }: BusinessHourlyHeatmap
       {loadingBusinesses ? (
         <p className="text-xs text-slate-400 font-medium py-6 text-center">Loading businesses…</p>
       ) : topBusinesses.length === 0 ? (
-        <p className="text-xs text-slate-400 font-medium py-6 text-center">No paid orders in the last 90 days for any business.</p>
+        <p className="text-xs text-slate-400 font-medium py-6 text-center">
+          No paid orders in the last 90 days for any business.
+        </p>
       ) : loading ? (
         <p className="text-xs text-slate-400 font-medium py-6 text-center">Loading…</p>
       ) : (

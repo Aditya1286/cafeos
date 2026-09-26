@@ -17,6 +17,8 @@ import { getCurrentSnapshot, getMetricsHistory } from '../services/systemMetrics
 import { getAnalyticsScope } from '../services/demoBusiness.service';
 import mongoose from 'mongoose';
 import { toAdminLiveOrder } from '../utils/adminLiveOrder';
+import { findAccountsByBusinessIds } from '../dao/smepayAccount.dao';
+import { isAcceptableGstRate, GST_RATE_ERROR_MESSAGE } from '../utils/gst';
 
 export const getSuperAdminOverview = async (req: AuthRequest, res: Response) => {
   try {
@@ -176,6 +178,10 @@ export const getAllBusinesses = async (req: AuthRequest, res: Response) => {
       .lean();
     const subscriptionByBusiness = new Map(subscriptions.map((s: any) => [s.businessId.toString(), s]));
 
+    // SMEPay checkout onboarding state, for the businesses table's checkout column.
+    const smepayAccounts = await findAccountsByBusinessIds(businesses.map((b: any) => b._id));
+    const smepayByBusiness = new Map(smepayAccounts.map((a: any) => [a.businessId.toString(), a]));
+
     const businessesWithFinancials = businesses.map((b: any) => {
       const f = financialsByBusiness.get(b._id.toString());
       const sub = subscriptionByBusiness.get(b._id.toString());
@@ -186,7 +192,10 @@ export const getAllBusinesses = async (req: AuthRequest, res: Response) => {
         overdueAmountPaise: f?.overdueAmountPaise || 0,
         nextDueDate: f?.nextDueDate || null,
         currentPlan: sub?.planId ? { _id: sub.planId._id, name: sub.planId.name, code: sub.planId.code } : null,
-        subscriptionStatus: sub?.status || null
+        subscriptionStatus: sub?.status || null,
+        checkoutAllowed: !!b.checkoutAllowed,
+        checkoutEnabled: !!b.checkoutEnabled,
+        checkoutOnboardingStatus: smepayByBusiness.get(b._id.toString())?.onboardingStatus || 'NOT_STARTED'
       };
     });
 
@@ -338,11 +347,11 @@ export const updateBusinessFinanceSettings = async (req: AuthRequest, res: Respo
       }
       business.commissionRatePercentage = commissionRatePercentage;
     }
-    // 0 = GST disabled for this business (the current platform-wide default) — any nonzero
-    // value re-enables it, applied to every new order placed from that point on.
+    // 0 = GST disabled for this business (the current platform-wide default) — a restaurant GST
+    // slab (utils/gst.ts) re-enables it, applied to every new order placed from that point on.
     if (taxRatePercentage !== undefined) {
-      if (typeof taxRatePercentage !== 'number' || taxRatePercentage < 0 || taxRatePercentage > 100) {
-        return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'taxRatePercentage must be a number between 0 and 100.' } });
+      if (!isAcceptableGstRate(taxRatePercentage, business.taxRatePercentage)) {
+        return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: GST_RATE_ERROR_MESSAGE } });
       }
       business.taxRatePercentage = taxRatePercentage;
     }

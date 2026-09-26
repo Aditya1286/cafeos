@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { CheckCircle2, ShieldCheck, XCircle, HelpCircle, Undo2 } from 'lucide-react';
 import { isMobileDevice } from '@/utils/device';
@@ -8,7 +7,7 @@ import { UpiQrFallback } from '@/molecules/Payments/UpiQrFallback';
 
 interface PaymentPanelProps {
   orderId: string;
-  paymentMethod: 'ONLINE' | 'CASH';
+  paymentMethod: 'ONLINE' | 'CASH' | 'CHECKOUT';
   paymentStatus: 'UNPAID' | 'PAID' | 'REFUNDED' | 'FAILED';
   orderStatus: string;
   customerMarkedPaidAt?: string | null;
@@ -21,8 +20,10 @@ interface PaymentPanelProps {
 }
 
 /**
- * There's no gateway in this flow, so there's no payment webhook — the
- * business confirms receipt on their own dashboard. This panel's job is to
+ * For direct-UPI (ONLINE) orders there's no gateway, so there's no payment
+ * webhook — the business confirms receipt on their own dashboard. (CHECKOUT
+ * orders were already confirmed by SMEPay before they existed; this panel
+ * only shows them as paid, or offers a refund request if cancelled.) This panel's job is to
  * get the customer's money moving (UPI deep link / QR) and then capture
  * what happened next ("I paid" vs "I didn't, cancel it") as a clear
  * customer-reported signal, not to assert that payment actually succeeded.
@@ -70,7 +71,12 @@ export const PaymentPanel: React.FC<PaymentPanelProps> = ({
           <p className="text-xs font-black text-violet-700">Refunded</p>
           {refundedAt && (
             <p className="text-[11px] text-violet-600">
-              on {new Date(refundedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+              on{' '}
+              {new Date(refundedAt).toLocaleDateString('en-IN', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+              })}
             </p>
           )}
         </div>
@@ -91,7 +97,9 @@ export const PaymentPanel: React.FC<PaymentPanelProps> = ({
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-center space-y-1">
           <HelpCircle className="w-6 h-6 text-amber-600 mx-auto" />
           <p className="text-xs font-black text-amber-700">Refund requested</p>
-          <p className="text-[11px] text-amber-600">The business will process this and confirm here.</p>
+          <p className="text-[11px] text-amber-600">
+            The business will process this and confirm here.
+          </p>
         </div>
       );
     }
@@ -100,11 +108,17 @@ export const PaymentPanel: React.FC<PaymentPanelProps> = ({
       <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 space-y-3">
         <div className="text-center space-y-1">
           <XCircle className="w-6 h-6 text-rose-600 mx-auto" />
-          <p className="text-xs font-black text-rose-700">This order was cancelled after you paid</p>
-          <p className="text-[11px] text-rose-600">Request a refund and the business will process it.</p>
+          <p className="text-xs font-black text-rose-700">
+            This order was cancelled after you paid
+          </p>
+          <p className="text-[11px] text-rose-600">
+            Request a refund and the business will process it.
+          </p>
         </div>
 
-        {actionError && <p className="text-[11px] font-bold text-rose-700 text-center">{actionError}</p>}
+        {actionError && (
+          <p className="text-[11px] font-bold text-rose-700 text-center">{actionError}</p>
+        )}
 
         <textarea
           value={refundReason}
@@ -142,8 +156,19 @@ export const PaymentPanel: React.FC<PaymentPanelProps> = ({
       <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-center space-y-1">
         <CheckCircle2 className="w-6 h-6 text-emerald-600 mx-auto" />
         <p className="text-xs font-black text-emerald-700">Payment confirmed</p>
+        {paymentMethod === 'CHECKOUT' && (
+          <p className="text-[11px] text-emerald-600">
+            Paid online — no need to pay at the counter.
+          </p>
+        )}
       </div>
     );
+  }
+
+  // A CHECKOUT order only exists once SMEPay confirmed it, so it's always PAID (or cancelled,
+  // handled above) — never fall through to the direct-UPI flow below for one.
+  if (paymentMethod === 'CHECKOUT') {
+    return null;
   }
 
   if (!payeeVpa) {
@@ -244,9 +269,7 @@ export const PaymentPanel: React.FC<PaymentPanelProps> = ({
               </p>
             </div>
 
-            {actionError && (
-              <p className="text-[11px] font-bold text-rose-600">{actionError}</p>
-            )}
+            {actionError && <p className="text-[11px] font-bold text-rose-600">{actionError}</p>}
 
             <div className="space-y-2 pt-1">
               <button

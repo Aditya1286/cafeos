@@ -17,9 +17,7 @@ export const SubscriptionPlansPanel = ({ plans, onPlansChanged }: SubscriptionPl
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h3 className="text-lg sm:text-xl font-extrabold text-slate-900">
-            Subscription Plans
-          </h3>
+          <h3 className="text-lg sm:text-xl font-extrabold text-slate-900">Subscription Plans</h3>
           <p className="text-xs text-slate-500 font-medium">
             Set each plan's price, table limit and fee per order
           </p>
@@ -47,7 +45,9 @@ export const SubscriptionPlansPanel = ({ plans, onPlansChanged }: SubscriptionPl
             <div
               key={plan._id}
               className={`p-5 sm:p-6 rounded-3xl bg-white border ${
-                plan.isPopular ? 'border-2 border-red-400 shadow-xl shadow-red-500/10' : 'border-slate-200 shadow-sm'
+                plan.isPopular
+                  ? 'border-2 border-red-400 shadow-xl shadow-red-500/10'
+                  : 'border-slate-200 shadow-sm'
               } space-y-5 flex flex-col justify-between relative overflow-hidden ${plan.status === 'DISABLED' ? 'opacity-60' : ''}`}
             >
               {plan.isPopular && (
@@ -59,18 +59,22 @@ export const SubscriptionPlansPanel = ({ plans, onPlansChanged }: SubscriptionPl
                 <div className="flex items-center justify-between">
                   <h4 className="font-extrabold text-slate-900 text-lg">{plan.name}</h4>
                   {plan.status === 'DISABLED' && (
-                    <span className="px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-500 text-[10px] font-black">DISABLED</span>
+                    <span className="px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-500 text-[10px] font-black">
+                      DISABLED
+                    </span>
                   )}
                 </div>
                 <p className="text-xs text-slate-500">{plan.description}</p>
 
                 <div className="text-3xl font-black text-slate-900">
-                  ₹{plan.monthlyPricePaise / 100} <span className="text-xs font-normal text-slate-400">/ mo</span>
+                  ₹{plan.monthlyPricePaise / 100}{' '}
+                  <span className="text-xs font-normal text-slate-400">/ mo</span>
                 </div>
 
                 <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-500">
                   <Users className="w-3.5 h-3.5" />
-                  {plan.subscriberCount ?? 0} business{plan.subscriberCount === 1 ? '' : 'es'} subscribed
+                  {plan.subscriberCount ?? 0} business{plan.subscriberCount === 1 ? '' : 'es'}{' '}
+                  subscribed
                 </div>
 
                 <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100 text-xs text-slate-600 font-semibold space-y-1.5">

@@ -6,20 +6,20 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src')
-    }
+      '@': path.resolve(__dirname, './src'),
+    },
   },
   server: {
     port: 5173,
     proxy: {
       '/api': {
         target: 'http://localhost:5000',
-        changeOrigin: true
+        changeOrigin: true,
       },
       '/socket.io': {
         target: 'http://localhost:5000',
-        ws: true
-      }
-    }
-  }
+        ws: true,
+      },
+    },
+  },
 });

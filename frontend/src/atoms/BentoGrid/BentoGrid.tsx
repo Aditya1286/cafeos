@@ -35,15 +35,13 @@ export const BentoGridItem: React.FC<{
 
       <div className="relative z-10 space-y-2">
         <div className="flex items-center justify-between">
-        <div className="p-2 rounded-xl bg-slate-100 text-slate-700">{icon}</div>
+          <div className="p-2 rounded-xl bg-slate-100 text-slate-700">{icon}</div>
           {badge}
         </div>
         <div className="font-black text-slate-900 text-3xl sm:text-4xl tracking-tight pt-1">
           {title}
         </div>
-        <div className="font-semibold text-slate-500 text-xs leading-relaxed">
-          {description}
-        </div>
+        <div className="font-semibold text-slate-500 text-xs leading-relaxed">{description}</div>
       </div>
     </motion.div>
   );

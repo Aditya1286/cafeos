@@ -35,22 +35,33 @@ export const KitchenSpeedPanel: React.FC<KitchenSpeedPanelProps> = ({ stats }) =
       <div className="grid grid-cols-3 gap-3">
         <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
           <Flag className="w-3.5 h-3.5 text-slate-400 mb-1.5" />
-          <div className="text-base font-black text-slate-900">{formatDuration(stats.avgAcceptSeconds)}</div>
+          <div className="text-base font-black text-slate-900">
+            {formatDuration(stats.avgAcceptSeconds)}
+          </div>
           <div className="text-[9px] font-bold uppercase text-slate-400 mt-0.5">Time to accept</div>
         </div>
         <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
           <ChefHat className="w-3.5 h-3.5 text-slate-400 mb-1.5" />
-          <div className="text-base font-black text-slate-900">{formatDuration(stats.avgPrepSeconds)}</div>
-          <div className="text-[9px] font-bold uppercase text-slate-400 mt-0.5">Kitchen prep time</div>
+          <div className="text-base font-black text-slate-900">
+            {formatDuration(stats.avgPrepSeconds)}
+          </div>
+          <div className="text-[9px] font-bold uppercase text-slate-400 mt-0.5">
+            Kitchen prep time
+          </div>
         </div>
         <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
           <Timer className="w-3.5 h-3.5 text-slate-400 mb-1.5" />
-          <div className="text-base font-black text-slate-900">{formatDuration(stats.avgFulfillmentSeconds)}</div>
-          <div className="text-[9px] font-bold uppercase text-slate-400 mt-0.5">Order to complete</div>
+          <div className="text-base font-black text-slate-900">
+            {formatDuration(stats.avgFulfillmentSeconds)}
+          </div>
+          <div className="text-[9px] font-bold uppercase text-slate-400 mt-0.5">
+            Order to complete
+          </div>
         </div>
       </div>
       <p className="text-[10px] text-slate-400 font-medium">
-        Averaged over {stats.sampleSize} order{stats.sampleSize === 1 ? '' : 's'} in the last {stats.windowDays} days.
+        Averaged over {stats.sampleSize} order{stats.sampleSize === 1 ? '' : 's'} in the last{' '}
+        {stats.windowDays} days.
       </p>
     </div>
   );

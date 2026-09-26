@@ -16,8 +16,10 @@ interface KpiOverviewBentoProps {
 export const KpiOverviewBento = ({ metrics }: KpiOverviewBentoProps) => {
   const totalGMVPaise = metrics?.totalGMVPaise ?? 0;
   const totalPlatformFeesPaise = metrics?.totalPlatformFeesPaise ?? 0;
-  const effectiveFeePercentage = totalGMVPaise > 0 ? Math.round((totalPlatformFeesPaise / totalGMVPaise) * 1000) / 10 : null;
-  const feeRateLabel = effectiveFeePercentage !== null ? `${effectiveFeePercentage}% of sales` : 'No sales yet';
+  const effectiveFeePercentage =
+    totalGMVPaise > 0 ? Math.round((totalPlatformFeesPaise / totalGMVPaise) * 1000) / 10 : null;
+  const feeRateLabel =
+    effectiveFeePercentage !== null ? `${effectiveFeePercentage}% of sales` : 'No sales yet';
 
   const tiles: KpiTile[] = [
     {
@@ -36,7 +38,9 @@ export const KpiOverviewBento = ({ metrics }: KpiOverviewBentoProps) => {
     },
     {
       key: 'aov',
-      value: <NumberTicker value={Math.round((metrics?.avgOrderValuePaise ?? 0) / 100)} prefix="₹" />,
+      value: (
+        <NumberTicker value={Math.round((metrics?.avgOrderValuePaise ?? 0) / 100)} prefix="₹" />
+      ),
       label: 'Average order',
       description: 'How much a customer spends per paid order, on average',
       icon: <TrendingUp className="w-5 h-5 text-amber-600" />,

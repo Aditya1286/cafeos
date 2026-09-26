@@ -11,9 +11,7 @@ export const GlobalKitchenMonitor = ({ liveOrders }: GlobalKitchenMonitorProps) 
   <div className="bg-white p-4 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-5 sm:space-y-6">
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200">
       <div>
-        <h3 className="text-lg sm:text-xl font-extrabold text-slate-900">
-          Live Kitchens
-        </h3>
+        <h3 className="text-lg sm:text-xl font-extrabold text-slate-900">Live Kitchens</h3>
         <p className="text-xs text-slate-500 font-medium">
           Orders being prepared right now at every business
         </p>
@@ -39,20 +37,28 @@ export const GlobalKitchenMonitor = ({ liveOrders }: GlobalKitchenMonitorProps) 
               <span className="font-extrabold text-slate-900 text-base">
                 Order #{ord.orderNumber || ord._id?.toString().slice(-6)}
               </span>
-              <span className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold ${
-                ord.status === 'PREPARING' ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-              }`}>
+              <span
+                className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold ${
+                  ord.status === 'PREPARING'
+                    ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                    : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                }`}
+              >
                 {ord.status}
               </span>
             </div>
 
             <div className="text-xs text-slate-500 font-medium">
-              <div className="font-semibold text-slate-700">{ord.businessName || 'Unknown business'}</div>
+              <div className="font-semibold text-slate-700">
+                {ord.businessName || 'Unknown business'}
+              </div>
               <div className="text-[11px] text-slate-400">Table: {ord.tableName || 'Takeaway'}</div>
             </div>
 
             <div className="pt-3 border-t border-slate-200 flex items-center justify-between text-xs">
-              <span className="font-extrabold text-slate-900">Total: {formatCurrency((ord.total ?? 0) * 100)}</span>
+              <span className="font-extrabold text-slate-900">
+                Total: {formatCurrency((ord.total ?? 0) * 100)}
+              </span>
               <button
                 onClick={() => toast.success(`Order #${ord.orderNumber} moved to the next step`)}
                 className="px-3 py-1.5 rounded-xl bg-red-600 text-white font-bold hover:bg-red-700 transition-colors"

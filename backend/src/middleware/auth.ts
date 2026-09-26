@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
-import { config } from '../config';
-import { User, IUser, UserRole } from '../models/User';
+import { User, IUser } from '../models/User';
+import { verifyAuthToken, isTokenRevoked } from '../utils/authToken';
 import mongoose from 'mongoose';
 
 export interface AuthRequest extends Request {
@@ -26,11 +25,11 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
       });
     }
 
-    const decoded = jwt.verify(token, config.jwtSecret) as { id: string; role: UserRole; businessId?: string };
+    const decoded = verifyAuthToken(token);
 
     const currentUser = await User.findById(decoded.id);
 
-    if (!currentUser || currentUser.status !== 'ACTIVE') {
+    if (!currentUser || currentUser.status !== 'ACTIVE' || isTokenRevoked(currentUser, decoded)) {
       return res.status(401).json({
         success: false,
         error: { code: 'USER_NOT_FOUND', message: 'The user belonging to this token no longer exists or is inactive.' }

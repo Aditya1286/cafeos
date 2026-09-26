@@ -1,7 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { 
-  Coffee, CheckCircle2, Clock, Utensils, Sparkles, Printer, ArrowLeft, ShieldCheck, Check
+import {
+  Coffee,
+  CheckCircle2,
+  Clock,
+  Utensils,
+  Sparkles,
+  Printer,
+  ArrowLeft,
+  ShieldCheck,
+  Check,
 } from 'lucide-react';
 import publicOrdersService from '../services/public/orders';
 import { getSocket, joinOrderRoom, onReconnect } from '../services/socket';
@@ -35,9 +43,16 @@ export const CustomerOrderTrackingPage: React.FC = () => {
       joinOrderRoom(orderId);
 
       socket.on('order:status_updated', (updated: any) => {
-        setOrder((prev: any) => (prev
-          ? { ...prev, orderStatus: updated.orderStatus, paymentStatus: updated.paymentStatus, refundedAt: updated.refundedAt ?? prev.refundedAt }
-          : prev));
+        setOrder((prev: any) =>
+          prev
+            ? {
+                ...prev,
+                orderStatus: updated.orderStatus,
+                paymentStatus: updated.paymentStatus,
+                refundedAt: updated.refundedAt ?? prev.refundedAt,
+              }
+            : prev,
+        );
       });
 
       // A status change during a dropped connection (phone switching networks, screen locked)
@@ -67,26 +82,33 @@ export const CustomerOrderTrackingPage: React.FC = () => {
     { key: 'CONFIRMED', label: 'Order Confirmed' },
     { key: 'PREPARING', label: 'Cooking in Kitchen' },
     { key: 'READY', label: 'Ready to Serve' },
-    { key: 'COMPLETED', label: 'Served & Enjoy!' }
+    { key: 'COMPLETED', label: 'Served & Enjoy!' },
   ];
 
-  const currentStepIndex = steps.findIndex(s => s.key === (order?.orderStatus || 'PLACED'));
+  const currentStepIndex = steps.findIndex((s) => s.key === (order?.orderStatus || 'PLACED'));
   const isPaid = order?.paymentStatus === 'PAID';
   const isRefunded = order?.paymentStatus === 'REFUNDED';
   const isCancelled = order?.orderStatus === 'CANCELLED' || order?.orderStatus === 'REFUNDED';
+  // CHECKOUT (paid through the café's SMEPay checkout) reads as plain "ONLINE" to a customer.
+  const methodLabel = order?.paymentMethod === 'CHECKOUT' ? 'ONLINE' : order?.paymentMethod;
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 p-4 max-w-md mx-auto relative border-x border-slate-200 font-sans pb-12">
-      
       {/* ── Top Header ────────────────────────────────────────── */}
       <div className="flex items-center justify-between pb-4 border-b border-slate-200 mb-6 bg-white -mx-4 px-4 pt-2">
-        <Link to={`/c/${business?.slug || 'artisan-cafe'}`} className="p-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors">
+        <Link
+          to={`/c/${business?.slug || 'artisan-cafe'}`}
+          className="p-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
+        >
           <ArrowLeft className="w-4 h-4" />
         </Link>
         <span className="text-xs font-black text-slate-900 flex items-center gap-1.5 uppercase tracking-wider">
           <Sparkles className="w-3.5 h-3.5 text-orange-500" /> Live Kitchen Tracker
         </span>
-        <button onClick={() => window.print()} className="p-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors">
+        <button
+          onClick={() => window.print()}
+          className="p-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
+        >
           <Printer className="w-4 h-4" />
         </button>
       </div>
@@ -101,28 +123,36 @@ export const CustomerOrderTrackingPage: React.FC = () => {
           <span className="text-xs font-extrabold text-orange-600 uppercase tracking-widest block mb-0.5">
             Order #{order?.orderNumber}
           </span>
-          <h2 className="text-xl font-black text-slate-900">{business?.name || 'Artisan Roastery'}</h2>
-          <p className="text-xs text-slate-400 font-medium">{order?.tableName || 'Table 01'} • Guest: {order?.customerName}</p>
+          <h2 className="text-xl font-black text-slate-900">
+            {business?.name || 'Artisan Roastery'}
+          </h2>
+          <p className="text-xs text-slate-400 font-medium">
+            {order?.tableName || 'Table 01'} • Guest: {order?.customerName}
+          </p>
         </div>
 
-        <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black border ${
-          isRefunded
-            ? 'bg-violet-50 text-violet-700 border-violet-200'
-            : isPaid
-            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-            : 'bg-amber-50 text-amber-700 border-amber-200'
-        }`}>
+        <div
+          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black border ${
+            isRefunded
+              ? 'bg-violet-50 text-violet-700 border-violet-200'
+              : isPaid
+                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                : 'bg-amber-50 text-amber-700 border-amber-200'
+          }`}
+        >
           <ShieldCheck className="w-3.5 h-3.5" />
           {isRefunded
-            ? `Refunded (${order?.paymentMethod})`
+            ? `Refunded (${methodLabel})`
             : isPaid
-            ? `Paid (${order?.paymentMethod})`
-            : `Payment Pending (${order?.paymentMethod})`}
+              ? `Paid (${methodLabel})`
+              : `Payment Pending (${methodLabel})`}
         </div>
 
         {/* ── Realtime Status Stepper ──────────────────────────── */}
         {isCancelled ? (
-          <div className={`mt-6 pt-6 border-t border-slate-100 text-center space-y-1 ${isRefunded ? 'text-violet-700' : 'text-rose-700'}`}>
+          <div
+            className={`mt-6 pt-6 border-t border-slate-100 text-center space-y-1 ${isRefunded ? 'text-violet-700' : 'text-rose-700'}`}
+          >
             <span className="text-xs font-black uppercase tracking-wider block">
               {isRefunded ? 'Order Cancelled & Refunded' : 'Order Cancelled'}
             </span>
@@ -149,15 +179,21 @@ export const CustomerOrderTrackingPage: React.FC = () => {
                         isCurrent
                           ? 'bg-orange-500 text-white ring-4 ring-orange-100 shadow-md shadow-orange-500/20'
                           : isPassed
-                          ? 'bg-emerald-500 text-white'
-                          : 'bg-slate-100 text-slate-400 border border-slate-200'
+                            ? 'bg-emerald-500 text-white'
+                            : 'bg-slate-100 text-slate-400 border border-slate-200'
                       }`}
                     >
                       {isPassed ? <Check className="w-4 h-4 stroke-[3]" /> : idx + 1}
                     </div>
-                    <span className={`text-xs font-extrabold ${
-                      isCurrent ? 'text-orange-600 font-black' : isPassed ? 'text-slate-900' : 'text-slate-400'
-                    }`}>
+                    <span
+                      className={`text-xs font-extrabold ${
+                        isCurrent
+                          ? 'text-orange-600 font-black'
+                          : isPassed
+                            ? 'text-slate-900'
+                            : 'text-slate-400'
+                      }`}
+                    >
                       {st.label}
                     </span>
                   </div>
@@ -168,8 +204,8 @@ export const CustomerOrderTrackingPage: React.FC = () => {
         )}
       </div>
 
-      {/* ── Payment (Online orders only — cash orders just show the pill above) ── */}
-      {order?.paymentMethod === 'ONLINE' && (
+      {/* ── Payment (Online/checkout orders only — cash orders just show the pill above) ── */}
+      {(order?.paymentMethod === 'ONLINE' || order?.paymentMethod === 'CHECKOUT') && (
         <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-3 mb-6">
           <h3 className="font-black text-slate-900 text-sm">Payment</h3>
           <PaymentPanel
@@ -193,15 +229,22 @@ export const CustomerOrderTrackingPage: React.FC = () => {
         <div className="flex items-center justify-between pb-2 border-b border-slate-100">
           <h3 className="font-black text-slate-900 text-sm">Your Bill</h3>
           <span className="text-[10px] text-slate-400 font-mono">
-            {new Date(order?.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            {new Date(order?.createdAt || Date.now()).toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
+            })}
           </span>
         </div>
 
         <div className="space-y-2.5 pt-1">
           {order?.items?.map((it: any, idx: number) => (
             <div key={idx} className="flex justify-between items-center text-slate-700">
-              <span className="font-semibold">{it.quantity}× {it.name}</span>
-              <span className="font-bold text-slate-900">₹{((it.itemTotalPaise || (it.pricePaise * it.quantity) || 0) / 100).toFixed(0)}</span>
+              <span className="font-semibold">
+                {it.quantity}× {it.name}
+              </span>
+              <span className="font-bold text-slate-900">
+                ₹{((it.itemTotalPaise || it.pricePaise * it.quantity || 0) / 100).toFixed(0)}
+              </span>
             </div>
           ))}
         </div>
@@ -217,7 +260,9 @@ export const CustomerOrderTrackingPage: React.FC = () => {
           </div>
           <div className="flex justify-between text-sm font-black text-slate-900 pt-2 border-t border-slate-200">
             <span>Total Paid Amount</span>
-            <span className="text-emerald-600">₹{((order?.totalAmountPaise || 0) / 100).toFixed(0)}</span>
+            <span className="text-emerald-600">
+              ₹{((order?.totalAmountPaise || 0) / 100).toFixed(0)}
+            </span>
           </div>
         </div>
       </div>

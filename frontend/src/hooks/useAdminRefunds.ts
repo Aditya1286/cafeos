@@ -28,7 +28,7 @@ export const useAdminRefunds = (enabled: boolean) => {
         limit: pagination.limit,
         q: debouncedQuery || undefined,
         businessId: businessId || undefined,
-        paymentStatus: paymentStatusFilter !== 'ALL' ? paymentStatusFilter : undefined
+        paymentStatus: paymentStatusFilter !== 'ALL' ? paymentStatusFilter : undefined,
       });
       if (res.success) {
         setOrders(res.data || []);
@@ -64,7 +64,9 @@ export const useAdminRefunds = (enabled: boolean) => {
   }, [enabled, businessId]);
 
   const patchOrder = (orderId: string, patch: Record<string, any>) => {
-    setOrders(prev => prev.map(o => ((o._id === orderId || o.orderId === orderId) ? { ...o, ...patch } : o)));
+    setOrders((prev) =>
+      prev.map((o) => (o._id === orderId || o.orderId === orderId ? { ...o, ...patch } : o)),
+    );
   };
 
   const refresh = () => {
@@ -74,17 +76,23 @@ export const useAdminRefunds = (enabled: boolean) => {
 
   const selectBusiness = (id: string) => {
     setBusinessId(id);
-    setPagination(prev => ({ ...prev, page: 1 }));
+    setPagination((prev) => ({ ...prev, page: 1 }));
   };
 
   return {
-    searchQuery, setSearchQuery,
-    businessId, setBusinessId: selectBusiness,
-    paymentStatusFilter, setPaymentStatusFilter,
-    orders, patchOrder,
-    pagination, setPagination,
+    searchQuery,
+    setSearchQuery,
+    businessId,
+    setBusinessId: selectBusiness,
+    paymentStatusFilter,
+    setPaymentStatusFilter,
+    orders,
+    patchOrder,
+    pagination,
+    setPagination,
     loading,
-    insights, loadingInsights,
+    insights,
+    loadingInsights,
     refresh,
   };
 };

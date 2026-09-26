@@ -1,5 +1,14 @@
 import React from 'react';
-import { LifeBuoy, X, PhoneCall, MessageCircleQuestion, Search, ChevronLeft, CheckCircle2, Loader2 } from 'lucide-react';
+import {
+  LifeBuoy,
+  X,
+  PhoneCall,
+  MessageCircleQuestion,
+  Search,
+  ChevronLeft,
+  CheckCircle2,
+  Loader2,
+} from 'lucide-react';
 import { useSupportWidget } from '@/hooks/useSupportWidget';
 import { getSupportCategories } from '@/constants/supportCategories';
 
@@ -7,8 +16,20 @@ import { getSupportCategories } from '@/constants/supportCategories';
 // union, so a call site that forgets it (e.g. <SupportWidget mode="CUSTOMER" />) is a
 // compile error rather than a 400 the customer only sees after filling out the whole flow.
 type SupportWidgetProps =
-  | { mode: 'CUSTOMER'; businessId: string; orderId?: string; prefill?: { name?: string; phone?: string }; raised?: boolean }
-  | { mode: 'BUSINESS_OWNER'; businessId?: string; orderId?: string; prefill?: { name?: string; phone?: string }; raised?: boolean };
+  | {
+      mode: 'CUSTOMER';
+      businessId: string;
+      orderId?: string;
+      prefill?: { name?: string; phone?: string };
+      raised?: boolean;
+    }
+  | {
+      mode: 'BUSINESS_OWNER';
+      businessId?: string;
+      orderId?: string;
+      prefill?: { name?: string; phone?: string };
+      raised?: boolean;
+    };
 
 // Floating support entry point used on both customer-facing pages (mode="CUSTOMER") and the
 // owner dashboard (mode="BUSINESS_OWNER"). One component, two contact-collection paths — the
@@ -31,7 +52,10 @@ export const SupportWidget: React.FC<SupportWidgetProps> = (props) => {
   );
 
   const BackRow = ({ onBack }: { onBack: () => void }) => (
-    <button onClick={onBack} className="flex items-center gap-1 text-[11px] font-bold text-slate-400 hover:text-slate-600 transition-colors">
+    <button
+      onClick={onBack}
+      className="flex items-center gap-1 text-[11px] font-bold text-slate-400 hover:text-slate-600 transition-colors"
+    >
       <ChevronLeft className="w-3.5 h-3.5" /> Back
     </button>
   );
@@ -111,7 +135,15 @@ export const SupportWidget: React.FC<SupportWidgetProps> = (props) => {
     if (w.step === 'DETAILS') {
       return (
         <div className="space-y-3">
-          <BackRow onBack={() => w.goToStep(activeCategoryDef && activeCategoryDef.subCategories.length > 0 ? 'SUBCATEGORY' : 'CATEGORY')} />
+          <BackRow
+            onBack={() =>
+              w.goToStep(
+                activeCategoryDef && activeCategoryDef.subCategories.length > 0
+                  ? 'SUBCATEGORY'
+                  : 'CATEGORY',
+              )
+            }
+          />
           <Bubble>Tell us a bit more about what happened.</Bubble>
           <div className="pl-9 space-y-2">
             <textarea
@@ -122,7 +154,9 @@ export const SupportWidget: React.FC<SupportWidgetProps> = (props) => {
               className="w-full px-3 py-2.5 rounded-xl bg-white border border-slate-200 text-xs text-slate-800 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all"
               autoFocus
             />
-            {w.submitError && <p className="text-[11px] font-bold text-rose-600">{w.submitError}</p>}
+            {w.submitError && (
+              <p className="text-[11px] font-bold text-rose-600">{w.submitError}</p>
+            )}
             <button
               onClick={w.submitDescription}
               disabled={!w.description.trim()}
@@ -155,7 +189,9 @@ export const SupportWidget: React.FC<SupportWidgetProps> = (props) => {
               placeholder="Phone number"
               className="w-full px-3 py-2.5 rounded-xl bg-white border border-slate-200 text-xs text-slate-800 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all"
             />
-            {w.submitError && <p className="text-[11px] font-bold text-rose-600">{w.submitError}</p>}
+            {w.submitError && (
+              <p className="text-[11px] font-bold text-rose-600">{w.submitError}</p>
+            )}
             <button
               onClick={w.submitContact}
               disabled={!w.contactName.trim() || !w.contactPhone.trim()}
@@ -182,11 +218,17 @@ export const SupportWidget: React.FC<SupportWidgetProps> = (props) => {
       <div className="space-y-3">
         <div className="flex flex-col items-center text-center gap-2 py-2">
           <CheckCircle2 className="w-9 h-9 text-emerald-500" />
-          <p className="text-xs font-bold text-slate-700">Ticket raised! Our team will reach out to you soon.</p>
+          <p className="text-xs font-bold text-slate-700">
+            Ticket raised! Our team will reach out to you soon.
+          </p>
           <div className="font-mono text-xs font-black text-slate-900 bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-xl">
             {w.ticketNumber}
           </div>
-          {mode === 'CUSTOMER' && <p className="text-[10px] text-slate-400 font-medium">Save this number to track your ticket later.</p>}
+          {mode === 'CUSTOMER' && (
+            <p className="text-[10px] text-slate-400 font-medium">
+              Save this number to track your ticket later.
+            </p>
+          )}
         </div>
         <button
           onClick={w.goToMenu}
@@ -220,7 +262,10 @@ export const SupportWidget: React.FC<SupportWidgetProps> = (props) => {
       )}
       {w.callState === 'NONE_AVAILABLE' && (
         <div className="space-y-3">
-          <Bubble>No one's free to take a call right now — sorry! Raise a ticket instead and we'll reach out.</Bubble>
+          <Bubble>
+            No one's free to take a call right now — sorry! Raise a ticket instead and we'll reach
+            out.
+          </Bubble>
           <button
             onClick={w.startTicketFlow}
             className="ml-9 w-[calc(100%-2.25rem)] py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-black transition-all"
@@ -261,7 +306,9 @@ export const SupportWidget: React.FC<SupportWidgetProps> = (props) => {
         </button>
         {w.trackResult && (
           <div className="bg-white rounded-xl border border-slate-200 p-3 space-y-1">
-            <div className="text-[10px] font-black uppercase text-slate-400">{w.trackResult.status.replace('_', ' ')}</div>
+            <div className="text-[10px] font-black uppercase text-slate-400">
+              {w.trackResult.status.replace('_', ' ')}
+            </div>
             {w.trackResult.resolutionNote && (
               <p className="text-xs text-slate-600 italic">"{w.trackResult.resolutionNote}"</p>
             )}
@@ -284,9 +331,11 @@ export const SupportWidget: React.FC<SupportWidgetProps> = (props) => {
       </button>
 
       {w.isOpen && (
-        <div className={`fixed right-4 sm:right-6 z-40 w-[calc(100%-2rem)] sm:w-[calc(100%-3rem)] max-w-sm max-h-[70vh] bg-slate-50 rounded-3xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden ${
-          raised ? 'bottom-40 sm:bottom-24' : 'bottom-20 sm:bottom-24'
-        }`}>
+        <div
+          className={`fixed right-4 sm:right-6 z-40 w-[calc(100%-2rem)] sm:w-[calc(100%-3rem)] max-w-sm max-h-[70vh] bg-slate-50 rounded-3xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden ${
+            raised ? 'bottom-40 sm:bottom-24' : 'bottom-20 sm:bottom-24'
+          }`}
+        >
           <div className="px-4 py-3.5 bg-white border-b border-slate-200 flex items-center gap-2">
             <LifeBuoy className="w-4 h-4 text-orange-500" />
             <span className="text-sm font-black text-slate-900">Support</span>

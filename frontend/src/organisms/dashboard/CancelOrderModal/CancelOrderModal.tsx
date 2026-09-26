@@ -9,7 +9,12 @@ interface CancelOrderModalProps {
   onConfirm: () => void;
 }
 
-export const CancelOrderModal = ({ order, cancelling, onClose, onConfirm }: CancelOrderModalProps) => {
+export const CancelOrderModal = ({
+  order,
+  cancelling,
+  onClose,
+  onConfirm,
+}: CancelOrderModalProps) => {
   if (!order) return null;
 
   return (

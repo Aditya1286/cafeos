@@ -83,9 +83,7 @@ export const DigitalMenuPanel = ({
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <h2 className="text-lg font-black text-slate-900">Your Menu</h2>
-          <p className="text-xs text-slate-500 font-medium">
-            {summary}
-          </p>
+          <p className="text-xs text-slate-500 font-medium">{summary}</p>
         </div>
         <button
           onClick={onAddItem}
@@ -142,7 +140,11 @@ export const DigitalMenuPanel = ({
                     onClick={(e) => {
                       setActiveCategory(chip.id);
                       // Keep the picked chip visible in the swipeable row.
-                      e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                      e.currentTarget.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'nearest',
+                        inline: 'center',
+                      });
                     }}
                     aria-pressed={active}
                     className={`shrink-0 px-3.5 py-2 rounded-full text-xs font-bold border transition-all whitespace-nowrap ${

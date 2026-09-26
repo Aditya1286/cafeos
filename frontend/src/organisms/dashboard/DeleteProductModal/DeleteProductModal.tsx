@@ -9,7 +9,12 @@ interface DeleteProductModalProps {
   onConfirm: () => void;
 }
 
-export const DeleteProductModal = ({ product, deleting, onClose, onConfirm }: DeleteProductModalProps) => {
+export const DeleteProductModal = ({
+  product,
+  deleting,
+  onClose,
+  onConfirm,
+}: DeleteProductModalProps) => {
   if (!product) return null;
 
   return (
@@ -23,8 +28,9 @@ export const DeleteProductModal = ({ product, deleting, onClose, onConfirm }: De
             Delete <span className="text-rose-600">{product.name}</span> from your menu?
           </p>
           <p className="text-xs text-slate-500 font-medium">
-            It disappears from this list and the customer menu right away — unlike "Remove from menu," there's no
-            restore button for this here. Its record and past order history are kept, not erased.
+            It disappears from this list and the customer menu right away — unlike "Remove from
+            menu," there's no restore button for this here. Its record and past order history are
+            kept, not erased.
           </p>
         </div>
         <div className="flex gap-3">

@@ -49,11 +49,15 @@ export const useSuperAdminDashboardData = () => {
     const socket = getSocket();
     joinAdminOrdersRoom();
     socket.on('admin_order:new', (newOrder: any) => {
-      setLiveOrders((prev) => [newOrder, ...prev.filter((o) => o._id !== newOrder._id)].slice(0, LIVE_FEED_SIZE));
+      setLiveOrders((prev) =>
+        [newOrder, ...prev.filter((o) => o._id !== newOrder._id)].slice(0, LIVE_FEED_SIZE),
+      );
       toast(`⚡ New order #${newOrder.orderNumber || newOrder._id?.slice(-4)} arrived!`);
     });
     socket.on('admin_order:updated', (updated: { _id: string; status: string }) => {
-      setLiveOrders((prev) => prev.map((o) => (o._id === updated._id ? { ...o, status: updated.status } : o)));
+      setLiveOrders((prev) =>
+        prev.map((o) => (o._id === updated._id ? { ...o, status: updated.status } : o)),
+      );
     });
 
     // Orders placed or moved while disconnected never arrive as events — quietly re-read the
@@ -100,7 +104,9 @@ export const useSuperAdminDashboardData = () => {
       toast.success(res.message || (isDemo ? 'Marked as demo account' : 'Demo flag removed'));
       await fetchDashboardData();
     } catch (err: any) {
-      setBusinesses((prev) => prev.map((b) => (b._id === businessId ? { ...b, isDemo: !isDemo } : b)));
+      setBusinesses((prev) =>
+        prev.map((b) => (b._id === businessId ? { ...b, isDemo: !isDemo } : b)),
+      );
       toast.error(err.message || 'Failed to update demo flag');
     } finally {
       setUpdatingDemoId(null);

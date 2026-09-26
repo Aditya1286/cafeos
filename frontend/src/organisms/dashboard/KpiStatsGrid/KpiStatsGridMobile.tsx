@@ -11,13 +11,17 @@ export const KpiStatsGridMobile = ({ cards }: { cards: StatCardProps[] }) => {
   return (
     <div>
       <button
-        onClick={() => setCollapsed(c => !c)}
+        onClick={() => setCollapsed((c) => !c)}
         className="w-full flex items-center justify-between px-1 pb-2"
       >
-        <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">Overview</span>
+        <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+          Overview
+        </span>
         <span className="flex items-center gap-1 text-[11px] font-bold text-slate-500">
           {collapsed ? 'Show' : 'Hide'}
-          <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${collapsed ? '-rotate-90' : ''}`} />
+          <ChevronDown
+            className={`w-3.5 h-3.5 transition-transform duration-200 ${collapsed ? '-rotate-90' : ''}`}
+          />
         </span>
       </button>
 
@@ -31,7 +35,9 @@ export const KpiStatsGridMobile = ({ cards }: { cards: StatCardProps[] }) => {
             className="overflow-hidden"
           >
             <div className="grid grid-cols-2 gap-2.5 [&>*:last-child:nth-child(odd)]:col-span-2">
-              {cards.map((card) => <StatCard key={card.label} {...card} />)}
+              {cards.map((card) => (
+                <StatCard key={card.label} {...card} />
+              ))}
             </div>
           </motion.div>
         )}

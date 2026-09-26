@@ -6,7 +6,13 @@ import { KpiTile } from './types';
 export const KpiOverviewBentoDesktop = ({ tiles }: { tiles: KpiTile[] }) => (
   <BentoGrid>
     {tiles.map((t) => (
-      <BentoGridItem key={t.key} title={t.value} description={t.description} icon={t.icon} badge={t.badge} />
+      <BentoGridItem
+        key={t.key}
+        title={t.value}
+        description={t.description}
+        icon={t.icon}
+        badge={t.badge}
+      />
     ))}
   </BentoGrid>
 );

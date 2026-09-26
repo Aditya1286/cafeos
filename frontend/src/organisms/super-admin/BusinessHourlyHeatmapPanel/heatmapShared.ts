@@ -8,12 +8,12 @@ export const intensityClass = (intensity: number) =>
   intensity >= 9
     ? 'bg-red-500'
     : intensity >= 7
-    ? 'bg-red-400'
-    : intensity >= 5
-    ? 'bg-red-200'
-    : intensity >= 2
-    ? 'bg-red-100'
-    : 'bg-slate-100';
+      ? 'bg-red-400'
+      : intensity >= 5
+        ? 'bg-red-200'
+        : intensity >= 2
+          ? 'bg-red-100'
+          : 'bg-slate-100';
 
 /** What both heatmap views need: a (day, hour) lookup and the peak value to scale intensity by. */
 export interface HeatmapGridProps {
@@ -21,11 +21,16 @@ export interface HeatmapGridProps {
   maxRevenuePaise: number;
 }
 
-export const cellFor = ({ cellByKey, maxRevenuePaise }: HeatmapGridProps, day: number, hour: number) => {
+export const cellFor = (
+  { cellByKey, maxRevenuePaise }: HeatmapGridProps,
+  day: number,
+  hour: number,
+) => {
   const cell = cellByKey.get(`${day}-${hour}`);
   const revenuePaise = cell?.revenuePaise || 0;
   const orders = cell?.orders || 0;
   return { revenuePaise, orders, intensity: Math.round((revenuePaise / maxRevenuePaise) * 10) };
 };
 
-export const formatRupees = (paise: number) => `₹${Math.round(paise / 100).toLocaleString('en-IN')}`;
+export const formatRupees = (paise: number) =>
+  `₹${Math.round(paise / 100).toLocaleString('en-IN')}`;

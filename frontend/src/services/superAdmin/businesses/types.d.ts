@@ -1,6 +1,7 @@
 import { AdminBusinessSummary } from '../../../types';
 import { RemittancePeriod } from '@/molecules/RemittanceHistoryTable';
 import { ApiListResponse, ApiMessageResponse, ApiResponse } from '../../apiTypes';
+import { CheckoutSettings } from '../../dashboard/checkout/types';
 
 export type ListBusinessesResponse = ApiListResponse<AdminBusinessSummary>;
 export type UpdateStatusResponse = ApiMessageResponse;
@@ -8,7 +9,14 @@ export type UpdatePlanResponse = ApiMessageResponse;
 export type UpdateDemoResponse = ApiMessageResponse;
 
 export interface BusinessRemittanceSummary {
-  business: { _id: string; name: string; slug: string; commissionRatePercentage: number; remittanceCycleDays: number; taxRatePercentage: number };
+  business: {
+    _id: string;
+    name: string;
+    slug: string;
+    commissionRatePercentage: number;
+    remittanceCycleDays: number;
+    taxRatePercentage: number;
+  };
   cycleDays: number;
   periods: RemittancePeriod[];
   currentPeriod: {
@@ -34,3 +42,6 @@ export interface FinanceSettingsPayload {
 }
 
 export type UpdateFinanceSettingsResponse = ApiMessageResponse;
+
+// A business's SMEPay checkout state as the super admin sees it (same shape the owner gets).
+export type BusinessCheckoutResponse = ApiResponse<CheckoutSettings>;

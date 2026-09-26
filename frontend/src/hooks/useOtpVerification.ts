@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import otpService from '../services/otp';
+import { OtpPurpose } from '../services/otp/types';
 import { loadMsg91Widget, widgetSendOtp, widgetVerifyOtp } from '../services/msg91Widget';
 
 interface UseOtpVerificationResult {
@@ -41,7 +42,17 @@ const RESEND_COOLDOWN_SECONDS = 30;
  * `captchaContainerId`, if given, must be the id of an empty element already in the DOM —
  * the widget renders its own bot-check into it (live mode only).
  */
-export function useOtpVerification(phone: string, captchaContainerId?: string): UseOtpVerificationResult {
+interface UseOtpVerificationOptions {
+  // 'ACCOUNT' for sensitive account actions (password reset, email change): always sends a fresh
+  // OTP and records a short-lived, single-use verification instead of the ordering one.
+  purpose?: OtpPurpose;
+}
+
+export function useOtpVerification(
+  phone: string,
+  captchaContainerId?: string,
+  { purpose = 'DEFAULT' }: UseOtpVerificationOptions = {},
+): UseOtpVerificationResult {
   const [otpSent, setOtpSent] = useState(false);
   const [otpCode, setOtpCode] = useState('');
   const [otpVerified, setOtpVerified] = useState(false);
@@ -89,7 +100,7 @@ export function useOtpVerification(phone: string, captchaContainerId?: string): 
     try {
       // Skip sending anything entirely if this phone already has a live order-verification
       // window from a recent order — and learn which mode the backend wants us to use.
-      const status = await otpService.getStatus(trimmed);
+      const status = await otpService.getStatus(trimmed, purpose);
       modeRef.current = status.mode === 'mock' ? 'mock' : 'live';
       if (status.verified) {
         setOtpVerified(true);
@@ -98,7 +109,7 @@ export function useOtpVerification(phone: string, captchaContainerId?: string): 
       }
 
       if (modeRef.current === 'mock') {
-        const res = await otpService.request(trimmed);
+        const res = await otpService.request(trimmed, purpose);
         if (res.success) {
           setOtpSent(true);
           setOtpCode('');
@@ -120,7 +131,7 @@ export function useOtpVerification(phone: string, captchaContainerId?: string): 
     } finally {
       setSending(false);
     }
-  }, [phone, resendSecondsLeft, captchaContainerId]);
+  }, [phone, resendSecondsLeft, captchaContainerId, purpose]);
 
   const verifyOtp = useCallback(async () => {
     if (!otpCode.trim()) {
@@ -131,7 +142,7 @@ export function useOtpVerification(phone: string, captchaContainerId?: string): 
     setVerifying(true);
     try {
       if (modeRef.current === 'mock') {
-        const res = await otpService.verify(phone, otpCode.trim());
+        const res = await otpService.verify(phone, otpCode.trim(), purpose);
         if (res.success) {
           setOtpVerified(true);
           setDevOtp(null);
@@ -147,7 +158,7 @@ export function useOtpVerification(phone: string, captchaContainerId?: string): 
         throw new Error('Verification failed. Please try again.');
       }
 
-      const res = await otpService.confirmToken(phone, accessToken);
+      const res = await otpService.confirmToken(phone, accessToken, purpose);
       if (res.success) {
         setOtpVerified(true);
       } else {
@@ -158,7 +169,7 @@ export function useOtpVerification(phone: string, captchaContainerId?: string): 
     } finally {
       setVerifying(false);
     }
-  }, [phone, otpCode]);
+  }, [phone, otpCode, purpose]);
 
   return {
     otpSent,

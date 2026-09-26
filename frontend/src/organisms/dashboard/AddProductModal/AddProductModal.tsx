@@ -8,16 +8,23 @@ interface AddProductModalProps {
   isEditing?: boolean;
   onClose: () => void;
   categories: any[];
-  name: string; setName: (v: string) => void;
-  categoryId: string; setCategoryId: (v: string) => void;
-  pricePaise: number; setPricePaise: (v: number) => void;
-  description: string; setDescription: (v: string) => void;
-  isVeg: boolean; setIsVeg: (v: boolean) => void;
+  name: string;
+  setName: (v: string) => void;
+  categoryId: string;
+  setCategoryId: (v: string) => void;
+  pricePaise: number;
+  setPricePaise: (v: number) => void;
+  description: string;
+  setDescription: (v: string) => void;
+  isVeg: boolean;
+  setIsVeg: (v: boolean) => void;
   onSubmit: (e: React.FormEvent) => void;
 
   // Inline "add a new category" without leaving this form
-  showAddCategory: boolean; setShowAddCategory: (v: boolean) => void;
-  newCategoryName: string; setNewCategoryName: (v: string) => void;
+  showAddCategory: boolean;
+  setShowAddCategory: (v: boolean) => void;
+  newCategoryName: string;
+  setNewCategoryName: (v: string) => void;
   creatingCategory: boolean;
   onCreateCategory: () => void;
 
@@ -28,10 +35,30 @@ interface AddProductModalProps {
 }
 
 export const AddProductModal = ({
-  open, isEditing, onClose, categories, name, setName, categoryId, setCategoryId,
-  pricePaise, setPricePaise, description, setDescription, isVeg, setIsVeg, onSubmit,
-  showAddCategory, setShowAddCategory, newCategoryName, setNewCategoryName, creatingCategory, onCreateCategory,
-  imagePreviewUrl, uploadingImage, onSelectImage
+  open,
+  isEditing,
+  onClose,
+  categories,
+  name,
+  setName,
+  categoryId,
+  setCategoryId,
+  pricePaise,
+  setPricePaise,
+  description,
+  setDescription,
+  isVeg,
+  setIsVeg,
+  onSubmit,
+  showAddCategory,
+  setShowAddCategory,
+  newCategoryName,
+  setNewCategoryName,
+  creatingCategory,
+  onCreateCategory,
+  imagePreviewUrl,
+  uploadingImage,
+  onSelectImage,
 }: AddProductModalProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   if (!open) return null;
@@ -90,7 +117,7 @@ export const AddProductModal = ({
             type="text"
             required
             value={name}
-            onChange={e => setName(e.target.value)}
+            onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Cappuccino"
             className={inputCls}
           />
@@ -115,7 +142,7 @@ export const AddProductModal = ({
                 type="text"
                 autoFocus
                 value={newCategoryName}
-                onChange={e => setNewCategoryName(e.target.value)}
+                onChange={(e) => setNewCategoryName(e.target.value)}
                 onKeyDown={handleCategoryKeyDown}
                 placeholder="e.g. Cold Beverages"
                 className={inputCls}
@@ -130,7 +157,10 @@ export const AddProductModal = ({
               </button>
               <button
                 type="button"
-                onClick={() => { setShowAddCategory(false); setNewCategoryName(''); }}
+                onClick={() => {
+                  setShowAddCategory(false);
+                  setNewCategoryName('');
+                }}
                 className="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 transition-all shrink-0"
               >
                 <X className="w-3.5 h-3.5" />
@@ -140,12 +170,16 @@ export const AddProductModal = ({
             <select
               required
               value={categoryId}
-              onChange={e => setCategoryId(e.target.value)}
+              onChange={(e) => setCategoryId(e.target.value)}
               className={inputCls}
             >
-              <option value="" disabled>Select a category</option>
+              <option value="" disabled>
+                Select a category
+              </option>
               {categories.map((c: any) => (
-                <option key={c._id} value={c._id}>{c.name}</option>
+                <option key={c._id} value={c._id}>
+                  {c.name}
+                </option>
               ))}
             </select>
           )}
@@ -164,7 +198,7 @@ export const AddProductModal = ({
             min={0}
             step="0.01"
             value={pricePaise / 100}
-            onChange={e => setPricePaise(Math.round(Number(e.target.value) * 100))}
+            onChange={(e) => setPricePaise(Math.round(Number(e.target.value) * 100))}
             className={inputCls}
           />
         </FormField>
@@ -172,7 +206,7 @@ export const AddProductModal = ({
         <FormField label="Description (optional)">
           <textarea
             value={description}
-            onChange={e => setDescription(e.target.value)}
+            onChange={(e) => setDescription(e.target.value)}
             rows={2}
             className={inputCls}
           />

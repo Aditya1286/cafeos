@@ -4,7 +4,7 @@ import {
   CreatePublicTicketPayload,
   CreateTicketPayload,
   CreateTicketResponse,
-  TrackTicketResponse
+  TrackTicketResponse,
 } from './types';
 
 // Authenticated (business owner raising a ticket against their own account).
@@ -12,13 +12,13 @@ export const createTicket = (payload: CreateTicketPayload): Promise<CreateTicket
   apiRequest('/support/tickets', 'POST', payload);
 
 // Public (customer raising a ticket, no auth — identified by name/phone instead).
-export const createPublicTicket = (payload: CreatePublicTicketPayload): Promise<CreateTicketResponse> =>
-  apiRequest('/public/support/tickets', 'POST', payload);
+export const createPublicTicket = (
+  payload: CreatePublicTicketPayload,
+): Promise<CreateTicketResponse> => apiRequest('/public/support/tickets', 'POST', payload);
 
-export const callAgent = (): Promise<CallAgentResponse> =>
-  apiRequest('/public/support/call-agent');
+export const callAgent = (): Promise<CallAgentResponse> => apiRequest('/public/support/call-agent');
 
 export const trackTicket = (ticketNumber: string, phone: string): Promise<TrackTicketResponse> =>
   apiRequest(
-    `/public/support/tickets/${encodeURIComponent(ticketNumber)}/status?phone=${encodeURIComponent(phone)}`
+    `/public/support/tickets/${encodeURIComponent(ticketNumber)}/status?phone=${encodeURIComponent(phone)}`,
   );

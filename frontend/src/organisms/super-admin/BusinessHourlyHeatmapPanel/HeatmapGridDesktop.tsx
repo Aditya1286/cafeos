@@ -1,6 +1,13 @@
 import React from 'react';
 import { formatHeatmapHour } from '@/utils/adminInsights';
-import { DAY_LABELS, HOURS, intensityClass, HeatmapGridProps, cellFor, formatRupees } from './heatmapShared';
+import {
+  DAY_LABELS,
+  HOURS,
+  intensityClass,
+  HeatmapGridProps,
+  cellFor,
+  formatRupees,
+} from './heatmapShared';
 
 /** Desktop/tablet (`md`+): days down the side, all 24 hours across, hover a cell for its numbers. */
 export const HeatmapGridDesktop = (props: HeatmapGridProps) => (

@@ -25,7 +25,7 @@ export const useRefundsAndCancellations = (enabled: boolean) => {
         page: pagination.page,
         limit: pagination.limit,
         q: debouncedQuery || undefined,
-        paymentStatus: paymentStatusFilter !== 'ALL' ? paymentStatusFilter : undefined
+        paymentStatus: paymentStatusFilter !== 'ALL' ? paymentStatusFilter : undefined,
       });
       if (res.success) {
         setOrders(res.data || []);
@@ -61,7 +61,9 @@ export const useRefundsAndCancellations = (enabled: boolean) => {
   }, [enabled]);
 
   const patchOrder = (orderId: string, patch: Record<string, any>) => {
-    setOrders(prev => prev.map(o => ((o._id === orderId || o.orderId === orderId) ? { ...o, ...patch } : o)));
+    setOrders((prev) =>
+      prev.map((o) => (o._id === orderId || o.orderId === orderId ? { ...o, ...patch } : o)),
+    );
   };
 
   const refresh = () => {
@@ -70,12 +72,17 @@ export const useRefundsAndCancellations = (enabled: boolean) => {
   };
 
   return {
-    searchQuery, setSearchQuery,
-    paymentStatusFilter, setPaymentStatusFilter,
-    orders, patchOrder,
-    pagination, setPagination,
+    searchQuery,
+    setSearchQuery,
+    paymentStatusFilter,
+    setPaymentStatusFilter,
+    orders,
+    patchOrder,
+    pagination,
+    setPagination,
     loading,
-    insights, loadingInsights,
+    insights,
+    loadingInsights,
     refresh,
   };
 };

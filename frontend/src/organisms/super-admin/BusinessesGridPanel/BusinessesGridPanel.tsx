@@ -3,7 +3,12 @@ import { Search, X, Store, Wallet, AlertTriangle, Ban, FlaskConical } from 'luci
 import { formatCurrency } from '@/utils/money';
 import { AdminBusinessSummary } from '@/types';
 import {
-  BusinessFilter, BUSINESS_FILTERS, matchesBusinessFilter, BusinessSort, BUSINESS_SORTS, sortBusinesses,
+  BusinessFilter,
+  BUSINESS_FILTERS,
+  matchesBusinessFilter,
+  BusinessSort,
+  BUSINESS_SORTS,
+  sortBusinesses,
 } from './businessNetwork';
 import { BusinessRowActions } from './BusinessNetworkParts';
 import { BusinessesGridDesktop } from './BusinessesGridDesktop';
@@ -28,7 +33,13 @@ interface BusinessesGridPanelProps extends BusinessRowActions {
  * which one is visible at the `md` breakpoint.
  */
 export const BusinessesGridPanel = ({
-  allBusinesses, businesses, searchQuery, onSearchChange, statusFilter, onStatusFilterChange, ...actions
+  allBusinesses,
+  businesses,
+  searchQuery,
+  onSearchChange,
+  statusFilter,
+  onStatusFilterChange,
+  ...actions
 }: BusinessesGridPanelProps) => {
   const [sort, setSort] = useState<BusinessSort>('attention');
   const sorted = useMemo(() => sortBusinesses(businesses, sort), [businesses, sort]);
@@ -45,23 +56,50 @@ export const BusinessesGridPanel = ({
   }, [allBusinesses]);
 
   const filterCounts = useMemo(
-    () => Object.fromEntries(BUSINESS_FILTERS.map((f) => [f.id, allBusinesses.filter((b) => matchesBusinessFilter(b, f.id)).length])) as Record<BusinessFilter, number>,
-    [allBusinesses]
+    () =>
+      Object.fromEntries(
+        BUSINESS_FILTERS.map((f) => [
+          f.id,
+          allBusinesses.filter((b) => matchesBusinessFilter(b, f.id)).length,
+        ]),
+      ) as Record<BusinessFilter, number>,
+    [allBusinesses],
   );
 
   const hasActiveFilters = searchQuery.trim() !== '' || statusFilter !== 'ALL';
 
   const stats = [
-    { label: 'Total owed', value: formatCurrency(summary.owedPaise), icon: Wallet, tone: 'text-slate-900', bg: 'bg-white border-slate-200' },
+    {
+      label: 'Total owed',
+      value: formatCurrency(summary.owedPaise),
+      icon: Wallet,
+      tone: 'text-slate-900',
+      bg: 'bg-white border-slate-200',
+    },
     {
       label: 'Overdue',
-      value: summary.overdueCount > 0 ? `${summary.overdueCount} · ${formatCurrency(summary.overduePaise)}` : 'None',
+      value:
+        summary.overdueCount > 0
+          ? `${summary.overdueCount} · ${formatCurrency(summary.overduePaise)}`
+          : 'None',
       icon: AlertTriangle,
       tone: summary.overdueCount > 0 ? 'text-amber-700' : 'text-slate-900',
       bg: summary.overdueCount > 0 ? 'bg-amber-50 border-amber-200' : 'bg-white border-slate-200',
     },
-    { label: 'Suspended', value: String(summary.suspendedCount), icon: Ban, tone: summary.suspendedCount > 0 ? 'text-rose-700' : 'text-slate-900', bg: 'bg-white border-slate-200' },
-    { label: 'Demo', value: String(summary.demoCount), icon: FlaskConical, tone: 'text-slate-900', bg: 'bg-white border-slate-200' },
+    {
+      label: 'Suspended',
+      value: String(summary.suspendedCount),
+      icon: Ban,
+      tone: summary.suspendedCount > 0 ? 'text-rose-700' : 'text-slate-900',
+      bg: 'bg-white border-slate-200',
+    },
+    {
+      label: 'Demo',
+      value: String(summary.demoCount),
+      icon: FlaskConical,
+      tone: 'text-slate-900',
+      bg: 'bg-white border-slate-200',
+    },
   ];
 
   return (
@@ -70,7 +108,9 @@ export const BusinessesGridPanel = ({
         <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 flex items-center gap-2">
           <Store className="w-5 h-5 text-red-500 shrink-0" />
           <span>Businesses</span>
-          <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs font-mono">{allBusinesses.length}</span>
+          <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs font-mono">
+            {allBusinesses.length}
+          </span>
         </h3>
         <p className="text-xs text-slate-500 font-medium mt-0.5">
           Every business on the platform — what it owes, its plan, and quick actions.
@@ -116,7 +156,11 @@ export const BusinessesGridPanel = ({
             aria-label="Sort businesses"
             className="px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 outline-none focus:border-red-400"
           >
-            {BUSINESS_SORTS.map((s) => <option key={s.id} value={s.id}>Sort: {s.label}</option>)}
+            {BUSINESS_SORTS.map((s) => (
+              <option key={s.id} value={s.id}>
+                Sort: {s.label}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -130,11 +174,17 @@ export const BusinessesGridPanel = ({
                 onClick={() => onStatusFilterChange(f.id)}
                 aria-pressed={active}
                 className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${
-                  active ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                  active
+                    ? 'bg-slate-900 text-white border-slate-900'
+                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                 }`}
               >
                 {f.label}
-                <span className={`text-[10px] font-mono ${active ? 'text-white/70' : 'text-slate-400'}`}>{filterCounts[f.id]}</span>
+                <span
+                  className={`text-[10px] font-mono ${active ? 'text-white/70' : 'text-slate-400'}`}
+                >
+                  {filterCounts[f.id]}
+                </span>
               </button>
             );
           })}
@@ -145,11 +195,16 @@ export const BusinessesGridPanel = ({
         <div className="py-10 text-center space-y-2 border border-dashed border-slate-200 rounded-2xl">
           <Store className="w-8 h-8 text-slate-300 mx-auto" />
           <p className="text-xs font-bold text-slate-500">
-            {allBusinesses.length === 0 ? 'No businesses registered yet.' : 'No businesses match these filters.'}
+            {allBusinesses.length === 0
+              ? 'No businesses registered yet.'
+              : 'No businesses match these filters.'}
           </p>
           {hasActiveFilters && (
             <button
-              onClick={() => { onSearchChange(''); onStatusFilterChange('ALL'); }}
+              onClick={() => {
+                onSearchChange('');
+                onStatusFilterChange('ALL');
+              }}
               className="text-xs font-extrabold text-red-600 hover:underline"
             >
               Clear filters

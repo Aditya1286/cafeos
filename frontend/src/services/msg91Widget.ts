@@ -6,16 +6,33 @@
 // dashboard-generated embed snippet confirms this (it's not a separate scoped token like
 // some of their other docs suggest). That means this key is unavoidably visible in page
 // source once the widget is live; that's how MSG91 built this product, not a mistake here.
-const WIDGET_SCRIPT_URLS = ['https://verify.msg91.com/otp-provider.js', 'https://verify.phone91.com/otp-provider.js'];
+const WIDGET_SCRIPT_URLS = [
+  'https://verify.msg91.com/otp-provider.js',
+  'https://verify.phone91.com/otp-provider.js',
+];
 const WIDGET_ID = import.meta.env.VITE_MSG91_WIDGET_ID || '';
 const WIDGET_TOKEN = import.meta.env.VITE_MSG91_WIDGET_TOKEN || '';
 
 declare global {
   interface Window {
     initSendOTP?: (config: Record<string, unknown>) => void;
-    sendOtp?: (identifier: string, success?: (data: any) => void, failure?: (error: any) => void) => void;
-    verifyOtp?: (otp: string | number, success?: (data: any) => void, failure?: (error: any) => void, reqId?: string) => void;
-    retryOtp?: (channel: string, success?: (data: any) => void, failure?: (error: any) => void, reqId?: string) => void;
+    sendOtp?: (
+      identifier: string,
+      success?: (data: any) => void,
+      failure?: (error: any) => void,
+    ) => void;
+    verifyOtp?: (
+      otp: string | number,
+      success?: (data: any) => void,
+      failure?: (error: any) => void,
+      reqId?: string,
+    ) => void;
+    retryOtp?: (
+      channel: string,
+      success?: (data: any) => void,
+      failure?: (error: any) => void,
+      reqId?: string,
+    ) => void;
   }
 }
 
@@ -52,7 +69,12 @@ function waitForWidgetProcessReady(timeoutMs = 8000): Promise<void> {
       }) as typeof fetch;
     }
 
-    XMLHttpRequest.prototype.open = function (this: XMLHttpRequest, method: string, url: string | URL, ...rest: any[]) {
+    XMLHttpRequest.prototype.open = function (
+      this: XMLHttpRequest,
+      method: string,
+      url: string | URL,
+      ...rest: any[]
+    ) {
       if (String(url).includes('getWidgetProcess')) {
         this.addEventListener('loadend', finish);
       }
@@ -70,7 +92,11 @@ export function loadMsg91Widget(captchaRenderId?: string): Promise<void> {
 
   loadPromise = new Promise((resolve, reject) => {
     if (!WIDGET_ID || !WIDGET_TOKEN) {
-      reject(new Error('MSG91 widget is not configured (missing VITE_MSG91_WIDGET_ID / VITE_MSG91_WIDGET_TOKEN).'));
+      reject(
+        new Error(
+          'MSG91 widget is not configured (missing VITE_MSG91_WIDGET_ID / VITE_MSG91_WIDGET_TOKEN).',
+        ),
+      );
       return;
     }
 
@@ -87,7 +113,7 @@ export function loadMsg91Widget(captchaRenderId?: string): Promise<void> {
           exposeMethods: true,
           captchaRenderId: captchaRenderId || '',
           success: () => {},
-          failure: () => {}
+          failure: () => {},
         });
         ready.then(resolve);
       };

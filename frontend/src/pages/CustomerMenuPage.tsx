@@ -17,10 +17,12 @@ import {
 } from 'lucide-react';
 import publicMenuService from '../services/public/menu';
 import publicOrdersService from '../services/public/orders';
+import publicCheckoutService from '../services/public/checkout';
 import confetti from 'canvas-confetti';
 import { useOtpVerification } from '@/hooks/useOtpVerification';
 import { formatTime } from '@/utils/DateUtils';
 import { toast } from '@/utils/toast';
+import { SMEPAY_CHECKOUT_ENABLED } from '@/constants/features';
 import { SupportWidget } from '@/organisms/SupportWidget';
 import VegMark from '@/atoms/VegMark';
 import MenuItemCard from '@/organisms/customer-menu/MenuItemCard';
@@ -58,7 +60,9 @@ export const CustomerMenuPage: React.FC = () => {
   // Customer guest details
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<'ONLINE' | 'CASH'>('ONLINE');
+  // CHECKOUT = the café's SMEPay online checkout (only offered when business.checkoutAvailable);
+  // ONLINE = pay the café's own UPI ID directly; CASH = pay at the counter.
+  const [paymentMethod, setPaymentMethod] = useState<'CHECKOUT' | 'ONLINE' | 'CASH'>('ONLINE');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -82,7 +86,9 @@ export const CustomerMenuPage: React.FC = () => {
           const businessRes = await publicMenuService.getBusinessBySlug(slug);
           setBusiness(businessRes.data);
 
-          const menuRes = await publicMenuService.getMenu((businessRes.data as any)._id || businessRes.data.id);
+          const menuRes = await publicMenuService.getMenu(
+            (businessRes.data as any)._id || businessRes.data.id,
+          );
           setCategories(menuRes.data.categories || []);
           setProducts(menuRes.data.products || []);
           setPopularProductIds(menuRes.data.popularProductIds || []);
@@ -123,11 +129,25 @@ export const CustomerMenuPage: React.FC = () => {
     (acc, item) => acc + item.product.pricePaise * item.quantity,
     0,
   );
+  // Without a table in the link (the business's master QR / general menu link) an order is a
+  // counter order — allowed when the business has no tables, or when its master QR is switched
+  // on (the default; `!== false` also covers businesses saved before that setting existed).
+  const canOrderWithoutTable =
+    business?.tablesEnabled === false || business?.masterQrEnabled !== false;
+  const needsTableQr = !table && !canOrderWithoutTable;
   const orderContextLabel = table
     ? table.tableNumber
-    : business?.tablesEnabled === false
-      ? 'Counter Order'
-      : 'Scan Table QR';
+    : needsTableQr
+      ? 'Scan Table QR'
+      : 'Counter Order';
+  const orderContextHint = table
+    ? 'Order at your table'
+    : needsTableQr
+      ? 'Scan table QR'
+      : 'Pick up at counter';
+
+  // SMEPay "Pay Online" appears only while the feature is switched on AND this café has it live.
+  const offerCheckout = SMEPAY_CHECKOUT_ENABLED && !!business?.checkoutAvailable;
 
   const taxRate = business?.taxRatePercentage ?? 0;
   const taxPaise = Math.round((cartSubtotalPaise * taxRate) / 100);
@@ -144,6 +164,7 @@ export const CustomerMenuPage: React.FC = () => {
       return;
     }
     setSubmitting(true);
+    let leavingForPayment = false;
     try {
       const resolvedQrToken = qrToken || table?.qrToken;
       const payload: Record<string, any> = {
@@ -162,6 +183,23 @@ export const CustomerMenuPage: React.FC = () => {
         payload.businessSlug = business?.slug;
       }
 
+      if (paymentMethod === 'CHECKOUT') {
+        // No order exists until SMEPay confirms the payment — the customer pays on SMEPay's page,
+        // which sends them back to /c/:slug/checkout/:sessionId (CheckoutReturnPage).
+        const checkout = await publicCheckoutService.start({
+          customerName,
+          customerPhone,
+          items: payload.items,
+          qrToken: payload.qrToken,
+          businessSlug: payload.businessSlug,
+        });
+        if (!checkout.data.paymentUrl)
+          throw new Error('Could not start the online payment. Please try another method.');
+        leavingForPayment = true; // keep the button busy while the browser leaves for SMEPay
+        window.location.assign(checkout.data.paymentUrl);
+        return;
+      }
+
       const res = await publicOrdersService.create(payload as any);
 
       try {
@@ -172,7 +210,7 @@ export const CustomerMenuPage: React.FC = () => {
     } catch (err: any) {
       toast.error(err.message || 'Failed to place order.');
     } finally {
-      setSubmitting(false);
+      if (!leavingForPayment) setSubmitting(false);
     }
   };
 
@@ -190,7 +228,9 @@ export const CustomerMenuPage: React.FC = () => {
       const results = visible.filter(
         (p) => p.name.toLowerCase().includes(query) || p.description?.toLowerCase().includes(query),
       );
-      return results.length ? [{ id: 'search', title: `Results for "${searchQuery.trim()}"`, products: results }] : [];
+      return results.length
+        ? [{ id: 'search', title: `Results for "${searchQuery.trim()}"`, products: results }]
+        : [];
     }
 
     const result: MenuSectionData[] = [];
@@ -198,13 +238,25 @@ export const CustomerMenuPage: React.FC = () => {
     const popular = popularProductIds.map((id) => byId.get(id)).filter(Boolean);
     // A lone best seller reads as an empty shelf; it still gets its "Popular" tag in its category.
     if (popular.length >= 2) {
-      result.push({ id: 'popular', title: 'Popular here', subtitle: 'Most ordered here in the last 30 days', products: popular });
+      result.push({
+        id: 'popular',
+        title: 'Popular here',
+        subtitle: 'Most ordered here in the last 30 days',
+        products: popular,
+      });
     }
 
-    const categoryIdOf = (p: any) => (typeof p.categoryId === 'string' ? p.categoryId : p.categoryId?._id);
+    const categoryIdOf = (p: any) =>
+      typeof p.categoryId === 'string' ? p.categoryId : p.categoryId?._id;
     for (const cat of categories) {
       const items = visible.filter((p) => categoryIdOf(p) === cat._id);
-      if (items.length) result.push({ id: cat._id, title: cat.name, subtitle: cat.description || undefined, products: items });
+      if (items.length)
+        result.push({
+          id: cat._id,
+          title: cat.name,
+          subtitle: cat.description || undefined,
+          products: items,
+        });
     }
     // Items whose category is hidden or missing must still be orderable.
     const known = new Set(categories.map((c) => c._id));
@@ -219,14 +271,16 @@ export const CustomerMenuPage: React.FC = () => {
   const jumpToSection = (id: string) => {
     setCollapsedSections((prev) => ({ ...prev, [id]: false }));
     // Wait a frame so a just-expanded section has its height before scrolling to it.
-    requestAnimationFrame(() => sectionRefs.current[id]?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+    requestAnimationFrame(() =>
+      sectionRefs.current[id]?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+    );
   };
 
   const toggleDiet = (diet: Exclude<DietFilter, 'ALL'>) =>
     setDietFilter((prev) => (prev === diet ? 'ALL' : diet));
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-28 selection:bg-orange-500 selection:text-white max-w-md mx-auto relative shadow-xl border-x border-slate-200 font-sans">
+    <div className="min-h-screen bg-slate-50 text-slate-900 pb-28 selection:bg-orange-500 selection:text-white max-w-md mx-auto relative shadow-xl border-x border-slate-200 font-sans overflow-x-clip">
       {/* ── Top Hero Header (Swiggy / Zomato Aesthetic) ────────────────── */}
       <div className="relative bg-white border-b border-slate-200">
         <div className="h-44 relative overflow-hidden bg-slate-100">
@@ -251,11 +305,13 @@ export const CustomerMenuPage: React.FC = () => {
         <div className="px-4 pb-4 -mt-10 relative z-10">
           <div className="bg-white rounded-3xl p-4 shadow-lg border border-slate-100 space-y-2">
             <div className="flex items-start justify-between gap-3">
-              <div>
+              {/* min-w-0: lets this column shrink so a long address truncates instead of pushing
+                  the rating badge (and the whole page) past the right edge of the phone. */}
+              <div className="min-w-0 flex-1">
                 <h1 className="text-xl font-black text-slate-900 leading-tight">
                   {business?.name || 'The Artisan Roastery'}
                 </h1>
-                <p className="text-xs text-slate-500 font-medium mt-0.5 flex items-center gap-1">
+                <p className="text-xs text-slate-500 font-medium mt-0.5 flex items-center gap-1 min-w-0">
                   <MapPin className="w-3 h-3 text-orange-500 shrink-0" />
                   <span className="truncate">{business?.address || 'Bandra West, Mumbai'}</span>
                 </p>
@@ -267,13 +323,13 @@ export const CustomerMenuPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] font-bold text-slate-500">
-              <span className="flex items-center gap-1 text-slate-600">
+            <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 text-[11px] font-bold text-slate-500">
+              <span className="flex items-center gap-1 text-slate-600 shrink-0">
                 <Clock className="w-3.5 h-3.5 text-slate-400" />
                 15-20 min prep time
               </span>
-              <span className="px-2.5 py-0.5 rounded-full bg-orange-50 text-orange-600 text-[10px] font-extrabold uppercase">
-                Order From Your Table
+              <span className="px-2.5 py-0.5 rounded-full bg-orange-50 text-orange-600 text-[10px] font-extrabold uppercase whitespace-nowrap">
+                {orderContextHint}
               </span>
             </div>
           </div>
@@ -285,10 +341,10 @@ export const CustomerMenuPage: React.FC = () => {
         <div className="relative">
           <input
             type="search"
-            placeholder={`Search in ${business?.name || 'menu'}`}
+            placeholder="Search dishes & drinks"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-5 pr-11 py-3 rounded-full bg-slate-100 border border-transparent text-sm text-slate-900 placeholder:text-slate-500 outline-none focus:border-orange-400 focus:bg-white focus:ring-2 focus:ring-orange-100 transition-all font-medium"
+            className="w-full pl-5 pr-11 py-3 rounded-full bg-slate-100 border border-transparent text-base sm:text-sm text-slate-900 placeholder:text-slate-500 outline-none focus:border-orange-400 focus:bg-white focus:ring-2 focus:ring-orange-100 transition-all font-medium"
           />
           <Search className="w-5 h-5 absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
         </div>
@@ -306,10 +362,17 @@ export const CustomerMenuPage: React.FC = () => {
                 aria-label={isVeg ? 'Veg only' : 'Non-veg only'}
                 onClick={() => toggleDiet(diet)}
                 className={`flex items-center gap-2 pl-3 pr-2.5 h-10 rounded-full border transition-all ${
-                  on ? (isVeg ? 'border-emerald-500 bg-emerald-50' : 'border-rose-500 bg-rose-50') : 'border-slate-200 bg-white'
+                  on
+                    ? isVeg
+                      ? 'border-emerald-500 bg-emerald-50'
+                      : 'border-rose-500 bg-rose-50'
+                    : 'border-slate-200 bg-white'
                 }`}
               >
                 <VegMark isVeg={isVeg} />
+                <span className="text-xs font-bold text-slate-700">
+                  {isVeg ? 'Veg' : 'Non-veg'}
+                </span>
                 <span
                   className={`relative w-8 h-4 rounded-full transition-colors ${
                     on ? (isVeg ? 'bg-emerald-500' : 'bg-rose-500') : 'bg-slate-200'
@@ -331,7 +394,9 @@ export const CustomerMenuPage: React.FC = () => {
           <div className="my-6 py-14 text-center space-y-3 bg-white rounded-3xl border border-slate-200 p-8">
             <ShoppingBag className="w-12 h-12 text-slate-300 mx-auto" />
             <h3 className="text-sm font-bold text-slate-700">No menu items found</h3>
-            <p className="text-xs text-slate-400">Try a different search or turn off the veg filter</p>
+            <p className="text-xs text-slate-400">
+              Try a different search or turn off the veg filter
+            </p>
           </div>
         ) : (
           sections.map((section) => (
@@ -389,7 +454,11 @@ export const CustomerMenuPage: React.FC = () => {
       {/* ── Floating "MENU" jump button (hidden while searching) ─────────── */}
       {!searchQuery.trim() && (
         <MenuJumpSheet
-          targets={sections.map((sec) => ({ id: sec.id, title: sec.title, count: sec.products.length }))}
+          targets={sections.map((sec) => ({
+            id: sec.id,
+            title: sec.title,
+            count: sec.products.length,
+          }))}
           onJump={jumpToSection}
           raised={cartItemsList.length > 0}
         />
@@ -398,7 +467,7 @@ export const CustomerMenuPage: React.FC = () => {
       {/* ── Checkout Drawer Sheet ────────────────────────────────────────── */}
       {showCheckoutDrawer && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-end justify-center">
-          <div className="w-full max-w-md bg-white rounded-t-3xl shadow-2xl border-t border-slate-200 p-6 space-y-5 max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom duration-300">
+          <div className="w-full max-w-md bg-white rounded-t-3xl shadow-2xl border-t border-slate-200 p-6 space-y-5 max-h-[85dvh] overflow-y-auto overscroll-contain animate-in slide-in-from-bottom duration-300">
             {/* Sheet Header */}
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div>
@@ -420,13 +489,16 @@ export const CustomerMenuPage: React.FC = () => {
             {/* Cart Items Summary */}
             <div className="space-y-3 max-h-48 overflow-y-auto pr-1">
               {cartItemsList.map((item) => (
-                <div key={item.product._id} className="flex justify-between items-center text-xs">
-                  <div className="flex items-center gap-2">
+                <div
+                  key={item.product._id}
+                  className="flex justify-between items-center gap-3 text-xs"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
                     <VegMark isVeg={item.product.isVeg} size="sm" />
-                    <span className="font-bold text-slate-800">{item.product.name}</span>
-                    <span className="text-slate-400 font-medium">× {item.quantity}</span>
+                    <span className="font-bold text-slate-800 truncate">{item.product.name}</span>
+                    <span className="text-slate-400 font-medium shrink-0">× {item.quantity}</span>
                   </div>
-                  <span className="font-extrabold text-slate-900">
+                  <span className="font-extrabold text-slate-900 shrink-0">
                     ₹{((item.product.pricePaise * item.quantity) / 100).toFixed(0)}
                   </span>
                 </div>
@@ -463,7 +535,7 @@ export const CustomerMenuPage: React.FC = () => {
                   placeholder="e.g. Sahil Sharma"
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 font-medium outline-none focus:border-orange-500 focus:bg-white focus:ring-2 focus:ring-orange-100 transition-all"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-base sm:text-xs text-slate-900 font-medium outline-none focus:border-orange-500 focus:bg-white focus:ring-2 focus:ring-orange-100 transition-all"
                 />
               </div>
 
@@ -481,7 +553,7 @@ export const CustomerMenuPage: React.FC = () => {
                     onChange={(e) =>
                       setCustomerPhone(e.target.value.replace(/\D/g, '').slice(0, 10))
                     }
-                    className="flex-1 px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 font-medium outline-none focus:border-orange-500 focus:bg-white focus:ring-2 focus:ring-orange-100 transition-all disabled:opacity-60"
+                    className="flex-1 min-w-0 px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-base sm:text-xs text-slate-900 font-medium outline-none focus:border-orange-500 focus:bg-white focus:ring-2 focus:ring-orange-100 transition-all disabled:opacity-60"
                   />
                   {!otp.otpVerified && (
                     <div className="flex items-center gap-2">
@@ -539,7 +611,7 @@ export const CustomerMenuPage: React.FC = () => {
                       onChange={(e) =>
                         otp.setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))
                       }
-                      className="flex-1 px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 font-medium outline-none focus:border-orange-500 focus:bg-white focus:ring-2 focus:ring-orange-100 transition-all"
+                      className="flex-1 min-w-0 px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-base sm:text-xs text-slate-900 font-medium outline-none focus:border-orange-500 focus:bg-white focus:ring-2 focus:ring-orange-100 transition-all"
                     />
                     <button
                       type="button"
@@ -561,11 +633,18 @@ export const CustomerMenuPage: React.FC = () => {
                 <label className="block text-xs font-bold text-slate-700 mb-1.5">
                   Payment Method
                 </label>
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { id: 'ONLINE', label: 'Online' },
-                    { id: 'CASH', label: 'Pay at Counter' },
-                  ].map((pm) => (
+                <div className={`grid gap-2 ${offerCheckout ? 'grid-cols-3' : 'grid-cols-2'}`}>
+                  {(offerCheckout
+                    ? [
+                        { id: 'CHECKOUT', label: 'Pay Online' },
+                        { id: 'ONLINE', label: 'Direct UPI' },
+                        { id: 'CASH', label: 'Pay at Counter' },
+                      ]
+                    : [
+                        { id: 'ONLINE', label: 'Online' },
+                        { id: 'CASH', label: 'Pay at Counter' },
+                      ]
+                  ).map((pm) => (
                     <button
                       key={pm.id}
                       type="button"
@@ -582,15 +661,29 @@ export const CustomerMenuPage: React.FC = () => {
                 </div>
               </div>
 
+              {needsTableQr && (
+                <p className="text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 text-center">
+                  This café takes orders from table QR codes. Please scan the QR on your table to
+                  order.
+                </p>
+              )}
+
               <button
                 type="submit"
-                disabled={submitting || !otp.otpVerified}
+                disabled={submitting || !otp.otpVerified || needsTableQr}
                 className="w-full py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-xl shadow-emerald-600/30 transition-all disabled:opacity-50 uppercase tracking-wider flex items-center justify-center gap-2 mt-3"
               >
                 {submitting ? (
-                  <span>Placing Order...</span>
+                  <span>
+                    {paymentMethod === 'CHECKOUT' ? 'Opening Payment...' : 'Placing Order...'}
+                  </span>
                 ) : !otp.otpVerified ? (
                   <span>Verify phone to continue</span>
+                ) : paymentMethod === 'CHECKOUT' ? (
+                  <>
+                    <span>Continue to Payment • ₹{(totalAmountPaise / 100).toFixed(0)}</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
                 ) : (
                   <>
                     <span>Pay & Place Order • ₹{(totalAmountPaise / 100).toFixed(0)}</span>

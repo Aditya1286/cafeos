@@ -60,7 +60,11 @@ const StatusBadges = ({ p }: { p: RemittancePeriod }) => {
 /** Every billing period, newest first — paged 10 at a time so a business with months of history
  * doesn't get one endless list. Shared by the owner's Fees & Payments tab (read-only) and the
  * super admin's finance drawer (with Mark as Paid / Unmark actions). */
-export const RemittanceHistoryTable: React.FC<RemittanceHistoryTableProps> = ({ periods, onMarkPaid, onUnmarkPaid }) => {
+export const RemittanceHistoryTable: React.FC<RemittanceHistoryTableProps> = ({
+  periods,
+  onMarkPaid,
+  onUnmarkPaid,
+}) => {
   const showActions = !!(onMarkPaid || onUnmarkPaid);
 
   const renderAction = (p: RemittancePeriod, fullWidth = false) => (
@@ -99,26 +103,51 @@ export const RemittanceHistoryTable: React.FC<RemittanceHistoryTableProps> = ({ 
         columns={[
           {
             header: 'Period',
-            render: (p) => <span className="font-semibold text-slate-700 whitespace-nowrap">{formatDate(p.periodStart)} – {formatDate(p.periodEnd)}</span>,
+            render: (p) => (
+              <span className="font-semibold text-slate-700 whitespace-nowrap">
+                {formatDate(p.periodStart)} – {formatDate(p.periodEnd)}
+              </span>
+            ),
           },
           { header: 'Orders', render: (p) => p.ordersCount },
           { header: 'Sales', render: (p) => rupees(p.grossAmountPaise) },
-          { header: 'Fee Owed', render: (p) => <span className="font-extrabold text-slate-900">{rupees(p.commissionOwedPaise)}</span> },
-          { header: 'Due', render: (p) => <span className="whitespace-nowrap">{formatDate(p.dueDate)}</span> },
+          {
+            header: 'Fee Owed',
+            render: (p) => (
+              <span className="font-extrabold text-slate-900">{rupees(p.commissionOwedPaise)}</span>
+            ),
+          },
+          {
+            header: 'Due',
+            render: (p) => <span className="whitespace-nowrap">{formatDate(p.dueDate)}</span>,
+          },
           { header: 'Status', render: (p) => <StatusBadges p={p} /> },
-          ...(showActions ? [{ header: 'Action', align: 'right' as const, render: (p: RemittancePeriod) => renderAction(p) }] : []),
+          ...(showActions
+            ? [
+                {
+                  header: 'Action',
+                  align: 'right' as const,
+                  render: (p: RemittancePeriod) => renderAction(p),
+                },
+              ]
+            : []),
         ]}
         renderCard={(p) => (
           <div className="p-4 space-y-2.5">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <div className="text-xs font-black text-slate-900">{formatDate(p.periodStart)} – {formatDate(p.periodEnd)}</div>
+                <div className="text-xs font-black text-slate-900">
+                  {formatDate(p.periodStart)} – {formatDate(p.periodEnd)}
+                </div>
                 <div className="text-[11px] font-semibold text-slate-500">
-                  {p.ordersCount} orders · {rupees(p.grossAmountPaise)} sales · due {formatDate(p.dueDate)}
+                  {p.ordersCount} orders · {rupees(p.grossAmountPaise)} sales · due{' '}
+                  {formatDate(p.dueDate)}
                 </div>
               </div>
               <div className="text-right shrink-0">
-                <div className="text-sm font-black text-slate-900">{rupees(p.commissionOwedPaise)}</div>
+                <div className="text-sm font-black text-slate-900">
+                  {rupees(p.commissionOwedPaise)}
+                </div>
                 <div className="text-[10px] font-bold text-slate-400">fee</div>
               </div>
             </div>

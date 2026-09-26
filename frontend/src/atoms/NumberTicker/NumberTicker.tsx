@@ -51,10 +51,7 @@ export const NumberTicker: React.FC<NumberTickerProps> = ({
   }, [springValue, prefix, suffix, decimals]);
 
   return (
-    <span
-      ref={ref}
-      className={`inline-block tabular-nums tracking-tight ${className}`}
-    >
+    <span ref={ref} className={`inline-block tabular-nums tracking-tight ${className}`}>
       {prefix}0{suffix}
     </span>
   );

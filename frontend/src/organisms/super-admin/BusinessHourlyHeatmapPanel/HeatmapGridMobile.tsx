@@ -1,8 +1,16 @@
 import React, { useState } from 'react';
 import { formatHeatmapHour } from '@/utils/adminInsights';
-import { DAY_LABELS, HOURS, intensityClass, HeatmapGridProps, cellFor, formatRupees } from './heatmapShared';
+import {
+  DAY_LABELS,
+  HOURS,
+  intensityClass,
+  HeatmapGridProps,
+  cellFor,
+  formatRupees,
+} from './heatmapShared';
 
-const shortHour = (h: number) => (h === 0 ? '12a' : h === 12 ? '12p' : h > 12 ? `${h - 12}p` : `${h}a`);
+const shortHour = (h: number) =>
+  h === 0 ? '12a' : h === 12 ? '12p' : h > 12 ? `${h - 12}p` : `${h}a`;
 
 /** Mobile (below `md`): transposed — 7 day columns across, 24 hour rows down — so it fits a phone's
  * width with no sideways scroll. Hover tooltips don't exist on touch, so tapping a cell pins its
@@ -22,12 +30,16 @@ export const HeatmapGridMobile = (props: HeatmapGridProps) => {
       <div className="grid grid-cols-[2.25rem_repeat(7,minmax(0,1fr))] gap-[3px]">
         <div />
         {DAY_LABELS.map((d) => (
-          <div key={d} className="text-center text-[10px] font-bold text-slate-500">{d.charAt(0)}</div>
+          <div key={d} className="text-center text-[10px] font-bold text-slate-500">
+            {d.charAt(0)}
+          </div>
         ))}
 
         {HOURS.map((h) => (
           <React.Fragment key={h}>
-            <div className="text-[9px] font-bold text-slate-400 flex items-center">{shortHour(h)}</div>
+            <div className="text-[9px] font-bold text-slate-400 flex items-center">
+              {shortHour(h)}
+            </div>
             {DAY_LABELS.map((_, idx) => {
               const day = idx + 1;
               const { intensity } = cellFor(props, day, h);

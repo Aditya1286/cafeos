@@ -1,15 +1,18 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { Business } from '../models/Business';
+import { isAcceptableGstRate, GST_RATE_ERROR_MESSAGE } from '../utils/gst';
 
 // Owner: Update their own business's self-service settings — the UPI VPA used
 // for the customer-facing payment QR/intent link, whether this business uses
 // physical tables at all (a kirana/general store can turn tables off entirely
-// and take unlimited counter orders), and their GST/tax rate (0 = no tax
-// charged on new orders — the current platform-wide default).
+// and take unlimited counter orders), whether their master QR (the general
+// menu link) still takes counter orders while tables are on, and their GST/tax rate — one of the
+// restaurant GST slabs in utils/gst.ts (0 = no tax charged on new orders, the
+// current platform-wide default).
 export const updateBusinessSettings = async (req: AuthRequest, res: Response) => {
   try {
-    const { upiVpa, tablesEnabled, taxRatePercentage } = req.body;
+    const { upiVpa, tablesEnabled, masterQrEnabled, taxRatePercentage } = req.body;
 
     const business = await Business.findById(req.businessId);
     if (!business) {
@@ -27,11 +30,18 @@ export const updateBusinessSettings = async (req: AuthRequest, res: Response) =>
       business.tablesEnabled = Boolean(tablesEnabled);
     }
 
+    if (masterQrEnabled !== undefined) {
+      if (typeof masterQrEnabled !== 'boolean') {
+        return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'masterQrEnabled must be true or false.' } });
+      }
+      business.masterQrEnabled = masterQrEnabled;
+    }
+
     if (taxRatePercentage !== undefined) {
-      if (typeof taxRatePercentage !== 'number' || taxRatePercentage < 0 || taxRatePercentage > 100) {
+      if (!isAcceptableGstRate(taxRatePercentage, business.taxRatePercentage)) {
         return res.status(400).json({
           success: false,
-          error: { code: 'VALIDATION_ERROR', message: 'taxRatePercentage must be a number between 0 and 100.' }
+          error: { code: 'VALIDATION_ERROR', message: GST_RATE_ERROR_MESSAGE }
         });
       }
       business.taxRatePercentage = taxRatePercentage;
@@ -42,7 +52,13 @@ export const updateBusinessSettings = async (req: AuthRequest, res: Response) =>
     return res.json({
       success: true,
       message: 'Business settings updated successfully',
-      data: { id: business._id, upiVpa: business.upiVpa, tablesEnabled: business.tablesEnabled, taxRatePercentage: business.taxRatePercentage }
+      data: {
+        id: business._id,
+        upiVpa: business.upiVpa,
+        tablesEnabled: business.tablesEnabled,
+        masterQrEnabled: business.masterQrEnabled,
+        taxRatePercentage: business.taxRatePercentage
+      }
     });
   } catch (error: any) {
     return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });

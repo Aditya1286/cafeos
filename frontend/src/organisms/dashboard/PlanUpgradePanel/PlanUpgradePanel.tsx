@@ -27,7 +27,14 @@ const CompleteUpgradeCard: React.FC<{
   cancellingUpgrade: boolean;
   onMarkUpgradePaid: (utr?: string) => void;
   onCancelUpgrade: () => void;
-}> = ({ business, status, markingUpgradePaid, cancellingUpgrade, onMarkUpgradePaid, onCancelUpgrade }) => {
+}> = ({
+  business,
+  status,
+  markingUpgradePaid,
+  cancellingUpgrade,
+  onMarkUpgradePaid,
+  onCancelUpgrade,
+}) => {
   const [showConfirm, setShowConfirm] = useState(false);
   const [utr, setUtr] = useState('');
   const [justClaimed, setJustClaimed] = useState(false);
@@ -52,7 +59,9 @@ const CompleteUpgradeCard: React.FC<{
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-center space-y-1">
           <CheckCircle2 className="w-6 h-6 text-emerald-600 mx-auto" />
           <p className="text-xs font-black text-emerald-700">Thanks — noted</p>
-          <p className="text-[11px] text-emerald-600">We'll confirm receipt and activate the {plan?.name || 'requested'} plan shortly.</p>
+          <p className="text-[11px] text-emerald-600">
+            We'll confirm receipt and activate the {plan?.name || 'requested'} plan shortly.
+          </p>
         </div>
         <button
           type="button"
@@ -74,8 +83,13 @@ const CompleteUpgradeCard: React.FC<{
             <Wallet className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="text-sm font-black text-slate-900">Complete your upgrade to {plan?.name || 'the new plan'}</h3>
-            <p className="text-[11px] text-slate-500 font-medium">{formatCurrency(request.amountPaise)} · {request.billingCycle === 'ANNUAL' ? 'billed annually' : 'billed monthly'}</p>
+            <h3 className="text-sm font-black text-slate-900">
+              Complete your upgrade to {plan?.name || 'the new plan'}
+            </h3>
+            <p className="text-[11px] text-slate-500 font-medium">
+              {formatCurrency(request.amountPaise)} ·{' '}
+              {request.billingCycle === 'ANNUAL' ? 'billed annually' : 'billed monthly'}
+            </p>
           </div>
         </div>
         <button
@@ -91,9 +105,19 @@ const CompleteUpgradeCard: React.FC<{
 
       <div className="max-w-xs">
         {isMobileDevice() ? (
-          <UpiAppButtons payeeVpa={payeeVpa} payeeName={payeeName} amount={amount} transactionRef={transactionRef} />
+          <UpiAppButtons
+            payeeVpa={payeeVpa}
+            payeeName={payeeName}
+            amount={amount}
+            transactionRef={transactionRef}
+          />
         ) : (
-          <UpiQrFallback payeeVpa={payeeVpa} payeeName={payeeName} amount={amount} transactionRef={transactionRef} />
+          <UpiQrFallback
+            payeeVpa={payeeVpa}
+            payeeName={payeeName}
+            amount={amount}
+            transactionRef={transactionRef}
+          />
         )}
       </div>
 
@@ -118,7 +142,8 @@ const CompleteUpgradeCard: React.FC<{
             <div className="space-y-1">
               <h3 className="text-sm font-black text-slate-900">Confirm your payment</h3>
               <p className="text-[11px] text-slate-400 font-medium">
-                UPI doesn't tell us automatically — this lets our team know to check for your payment.
+                UPI doesn't tell us automatically — this lets our team know to check for your
+                payment.
               </p>
             </div>
 
@@ -156,9 +181,16 @@ const CompleteUpgradeCard: React.FC<{
 };
 
 export const PlanUpgradePanel = ({
-  business, subscriptionStatus, subscriptionPlans, loadingSubscription,
-  requestingPlanId, markingUpgradePaid, cancellingUpgrade,
-  onRequestUpgrade, onMarkUpgradePaid, onCancelUpgrade,
+  business,
+  subscriptionStatus,
+  subscriptionPlans,
+  loadingSubscription,
+  requestingPlanId,
+  markingUpgradePaid,
+  cancellingUpgrade,
+  onRequestUpgrade,
+  onMarkUpgradePaid,
+  onCancelUpgrade,
 }: PlanUpgradePanelProps) => {
   const [billingCycle, setBillingCycle] = useState<'MONTHLY' | 'ANNUAL'>('MONTHLY');
 
@@ -205,12 +237,17 @@ export const PlanUpgradePanel = ({
         {subscriptionPlans.map((plan) => {
           const isCurrent = plan.code === currentPlanCode;
           const isPendingThis = pendingPlanId === plan._id;
-          const pricePaise = billingCycle === 'ANNUAL' ? plan.annualPricePaise : plan.monthlyPricePaise;
+          const pricePaise =
+            billingCycle === 'ANNUAL' ? plan.annualPricePaise : plan.monthlyPricePaise;
           return (
             <div
               key={plan._id}
               className={`p-5 rounded-2xl border flex flex-col justify-between gap-4 relative overflow-hidden ${
-                isCurrent ? 'border-2 border-emerald-400 bg-emerald-50/40' : plan.isPopular ? 'border-2 border-orange-300' : 'border-slate-200'
+                isCurrent
+                  ? 'border-2 border-emerald-400 bg-emerald-50/40'
+                  : plan.isPopular
+                    ? 'border-2 border-orange-300'
+                    : 'border-slate-200'
               }`}
             >
               {plan.isPopular && !isCurrent && (
@@ -222,11 +259,18 @@ export const PlanUpgradePanel = ({
                 <h4 className="font-extrabold text-slate-900 text-sm">{plan.name}</h4>
                 <p className="text-[11px] text-slate-500 leading-relaxed">{plan.description}</p>
                 <div className="text-2xl font-black text-slate-900">
-                  {formatCurrency(pricePaise)} <span className="text-[10px] font-normal text-slate-400">/ {billingCycle === 'ANNUAL' ? 'yr' : 'mo'}</span>
+                  {formatCurrency(pricePaise)}{' '}
+                  <span className="text-[10px] font-normal text-slate-400">
+                    / {billingCycle === 'ANNUAL' ? 'yr' : 'mo'}
+                  </span>
                 </div>
                 <div className="text-[10px] text-slate-500 font-semibold space-y-1 pt-1">
-                  <div>Up to {plan.limits.maxTables} tables · {plan.limits.maxMenuItems} menu items</div>
-                  {INVENTORY_ENABLED && plan.limits.inventoryEnabled && <div>Inventory tracking included</div>}
+                  <div>
+                    Up to {plan.limits.maxTables} tables · {plan.limits.maxMenuItems} menu items
+                  </div>
+                  {INVENTORY_ENABLED && plan.limits.inventoryEnabled && (
+                    <div>Inventory tracking included</div>
+                  )}
                   {plan.limits.analyticsAdvanced && <div>Detailed sales reports included</div>}
                 </div>
               </div>
@@ -240,10 +284,16 @@ export const PlanUpgradePanel = ({
                   onClick={() => onRequestUpgrade(plan._id, billingCycle)}
                   disabled={requestingPlanId === plan._id || isPendingThis}
                   className={`w-full py-2.5 rounded-xl font-bold text-[11px] transition-colors disabled:opacity-50 ${
-                    isPendingThis ? 'bg-orange-100 text-orange-700' : 'bg-slate-900 text-white hover:bg-slate-800'
+                    isPendingThis
+                      ? 'bg-orange-100 text-orange-700'
+                      : 'bg-slate-900 text-white hover:bg-slate-800'
                   }`}
                 >
-                  {isPendingThis ? 'Request pending' : requestingPlanId === plan._id ? 'Requesting…' : 'Request this plan'}
+                  {isPendingThis
+                    ? 'Request pending'
+                    : requestingPlanId === plan._id
+                      ? 'Requesting…'
+                      : 'Request this plan'}
                 </button>
               )}
             </div>

@@ -14,7 +14,8 @@ export const useBusinessInsights = (businessId: string | null) => {
       return;
     }
     setLoading(true);
-    superAdminAnalyticsService.getBusinessInsights(businessId)
+    superAdminAnalyticsService
+      .getBusinessInsights(businessId)
       .then((res) => setInsights(res?.data || null))
       .catch(() => setInsights(null))
       .finally(() => setLoading(false));

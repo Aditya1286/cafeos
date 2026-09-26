@@ -5,8 +5,11 @@ import { getPublicMenu, getMenuImage } from '../controllers/menuController';
 import { createOrder, getPublicOrderById, markOrderPaidByCustomer, cancelOrderByCustomer, requestOrderRefund } from '../controllers/orderController';
 import { SubscriptionPlan } from '../models/SubscriptionPlan';
 import { Business } from '../models/Business';
+import { config } from '../config';
 import { getOtpStatus, confirmWidgetToken, requestOtp, confirmOtp, resendOtpRequest } from '../controllers/otp.controller';
 import { createTicketPublic, getTicketStatusPublic, getCallAgentPublic } from '../controllers/supportController';
+import { startCheckoutPublic, getCheckoutPublic, retryCheckoutPublic, switchCheckoutPublic } from '../controllers/checkoutController';
+import { isCheckoutAvailable } from '../services/checkout.service';
 
 const router = Router();
 
@@ -37,7 +40,9 @@ router.get('/c/:slug', async (req, res) => {
           error: { code: 'NOT_FOUND', message: 'Business not found or inactive.' },
         });
     }
-    return res.json({ success: true, data: business });
+    // checkoutAvailable: whether the menu should offer SMEPay online checkout. Credentials live
+    // in SmepayAccount, never on this document.
+    return res.json({ success: true, data: { ...business.toJSON(), checkoutAvailable: isCheckoutAvailable(business) } });
   } catch (error: any) {
     return res
       .status(500)
@@ -56,6 +61,22 @@ router.get('/orders/:id', getPublicOrderById);
 router.put('/orders/:id/mark-paid', markOrderPaidByCustomer);
 router.put('/orders/:id/cancel', cancelOrderByCustomer);
 router.put('/orders/:id/request-refund', requestOrderRefund);
+
+// Public: SMEPay online checkout (services/checkout.service.ts). The order is only created once
+// SMEPay confirms payment; until then the customer holds a checkout session. Each write can open
+// a paid SMEPay order, so they get their own limiter; status polling rides the default one.
+const checkoutRouteLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: config.nodeEnv === 'production' ? 20 : 1000,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many payment attempts. Please try again later.' } }
+});
+
+router.post('/checkout', checkoutRouteLimiter, startCheckoutPublic);
+router.get('/checkout/:id', getCheckoutPublic);
+router.post('/checkout/:id/retry', checkoutRouteLimiter, retryCheckoutPublic);
+router.post('/checkout/:id/switch', checkoutRouteLimiter, switchCheckoutPublic);
 
 // Public: Subscription plans for marketing page
 router.get('/plans', async (req, res) => {

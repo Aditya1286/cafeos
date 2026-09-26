@@ -37,7 +37,10 @@ export const useSubscription = (activeTab: string) => {
 
   // Asking for a plan never changes what's active — a super admin approving this (after
   // payment) does that. Requesting again before paying just updates the existing request.
-  const handleRequestUpgrade = async (planId: string, billingCycle: 'MONTHLY' | 'ANNUAL' = 'MONTHLY') => {
+  const handleRequestUpgrade = async (
+    planId: string,
+    billingCycle: 'MONTHLY' | 'ANNUAL' = 'MONTHLY',
+  ) => {
     setRequestingPlanId(planId);
     try {
       const res = await subscriptionsService.requestUpgrade(planId, billingCycle);

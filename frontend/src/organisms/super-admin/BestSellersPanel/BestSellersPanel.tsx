@@ -11,9 +11,7 @@ interface BestSellersPanelProps {
 export const BestSellersPanel = ({ bestSellers }: BestSellersPanelProps) => (
   <div className="lg:col-span-6 bg-white p-4 sm:p-6 rounded-3xl border border-slate-200 shadow-sm space-y-5 min-w-0">
     <div>
-      <h3 className="text-base font-extrabold text-slate-900">
-        Best-Selling Menu Items
-      </h3>
+      <h3 className="text-base font-extrabold text-slate-900">Best-Selling Menu Items</h3>
       <p className="text-xs text-slate-500 font-medium">
         Top items by sales across all businesses (paid orders only)
       </p>
@@ -36,9 +34,7 @@ export const BestSellersPanel = ({ bestSellers }: BestSellersPanelProps) => (
                 <Coffee className="w-4 h-4" />
               </div>
               <div className="min-w-0">
-                <div className="text-xs font-extrabold text-slate-900 truncate">
-                  {item._id}
-                </div>
+                <div className="text-xs font-extrabold text-slate-900 truncate">{item._id}</div>
                 <div className="text-[10px] text-slate-400 font-medium">
                   {item.totalQuantity} sold
                 </div>

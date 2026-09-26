@@ -9,10 +9,18 @@ export const formatHeatmapHour = (h: number) =>
   h === 0 ? '12 AM' : h === 12 ? '12 PM' : h > 12 ? `${h - 12} PM` : `${h} AM`;
 
 /** Used by `PlatformInsightsPanel` so the "busiest hour" fact it quotes matches the underlying data. */
-export const computeBusiestHour = (peakHeatmap: { _id: number; orders: number }[] | undefined): { hour: string; orders: number } | null => {
+export const computeBusiestHour = (
+  peakHeatmap: { _id: number; orders: number }[] | undefined,
+): { hour: string; orders: number } | null => {
   const byHour = new Map((peakHeatmap || []).map((h) => [h._id, h.orders]));
-  const withOrders = HEATMAP_HOURS.map((h) => ({ hour: formatHeatmapHour(h), orders: byHour.get(h) || 0 }));
-  const busiest = withOrders.reduce((best, cur) => (cur.orders > best.orders ? cur : best), withOrders[0]);
+  const withOrders = HEATMAP_HOURS.map((h) => ({
+    hour: formatHeatmapHour(h),
+    orders: byHour.get(h) || 0,
+  }));
+  const busiest = withOrders.reduce(
+    (best, cur) => (cur.orders > best.orders ? cur : best),
+    withOrders[0],
+  );
   return busiest.orders > 0 ? busiest : null;
 };
 
@@ -23,7 +31,12 @@ export const businessHealthOf = (b: AdminBusinessSummary): BusinessHealth =>
   b.status === 'SUSPENDED' ? 'suspended' : b.overdueAmountPaise > 0 ? 'overdue' : 'healthy';
 
 /** The single business with the highest lifetime GMV — real data already loaded for the businesses table. */
-export const computeTopBusinessByGMV = (businesses: AdminBusinessSummary[]): AdminBusinessSummary | null => {
+export const computeTopBusinessByGMV = (
+  businesses: AdminBusinessSummary[],
+): AdminBusinessSummary | null => {
   if (businesses.length === 0) return null;
-  return businesses.reduce((best, cur) => (cur.lifetimeGMVPaise > best.lifetimeGMVPaise ? cur : best), businesses[0]);
+  return businesses.reduce(
+    (best, cur) => (cur.lifetimeGMVPaise > best.lifetimeGMVPaise ? cur : best),
+    businesses[0],
+  );
 };

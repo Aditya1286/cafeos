@@ -1,7 +1,15 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { QRCodeSVG } from 'qrcode.react';
-import { X, ShieldCheck, ShieldAlert, Wallet, TrendingUp, AlertTriangle, Settings2 } from 'lucide-react';
+import {
+  X,
+  ShieldCheck,
+  ShieldAlert,
+  Wallet,
+  TrendingUp,
+  AlertTriangle,
+  Settings2,
+} from 'lucide-react';
 import NumberTicker from '@/atoms/NumberTicker';
 import { AdminBusinessSummary } from '@/types';
 import { paiseToRupees, formatCurrency } from '@/utils/money';
@@ -19,7 +27,12 @@ interface BusinessSpotlightModalProps {
  * reason someone clicked a flagged business in the first place — the numbers
  * below are context, not the headline.
  */
-export const BusinessSpotlightModal = ({ business, onClose, onOpenFinance, onOpenStatusModal }: BusinessSpotlightModalProps) => (
+export const BusinessSpotlightModal = ({
+  business,
+  onClose,
+  onOpenFinance,
+  onOpenStatusModal,
+}: BusinessSpotlightModalProps) => (
   <AnimatePresence>
     {business && (
       <motion.div
@@ -70,8 +83,12 @@ export const BusinessSpotlightModal = ({ business, onClose, onOpenFinance, onOpe
                 )}
               </div>
               <div className="pb-1 min-w-0">
-                <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight truncate">{business.name}</h2>
-                <p className="text-xs text-slate-500 font-mono truncate">/c/{business.slug} · {business.email}</p>
+                <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight truncate">
+                  {business.name}
+                </h2>
+                <p className="text-xs text-slate-500 font-mono truncate">
+                  /c/{business.slug} · {business.email}
+                </p>
               </div>
             </motion.div>
 
@@ -99,18 +116,32 @@ export const BusinessSpotlightModal = ({ business, onClose, onOpenFinance, onOpe
                 <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
                 <p className="text-xs font-bold text-rose-700">
                   {formatCurrency(business.overdueAmountPaise)} in commission is overdue
-                  {business.nextDueDate ? ` (was due ${new Date(business.nextDueDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })})` : ''}.
+                  {business.nextDueDate
+                    ? ` (was due ${new Date(business.nextDueDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })})`
+                    : ''}
+                  .
                 </p>
               </motion.div>
             )}
 
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.24 }} className="flex items-center gap-2 flex-wrap">
-              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-extrabold border ${
-                business.status === 'ACTIVE'
-                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                  : 'bg-slate-100 text-slate-600 border-slate-300'
-              }`}>
-                {business.status === 'ACTIVE' ? <ShieldCheck className="w-3 h-3" /> : <ShieldAlert className="w-3 h-3" />}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.24 }}
+              className="flex items-center gap-2 flex-wrap"
+            >
+              <span
+                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-extrabold border ${
+                  business.status === 'ACTIVE'
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                    : 'bg-slate-100 text-slate-600 border-slate-300'
+                }`}
+              >
+                {business.status === 'ACTIVE' ? (
+                  <ShieldCheck className="w-3 h-3" />
+                ) : (
+                  <ShieldAlert className="w-3 h-3" />
+                )}
                 {business.status}
               </span>
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-50 text-slate-600 text-[11px] font-extrabold border border-slate-200">
@@ -120,9 +151,27 @@ export const BusinessSpotlightModal = ({ business, onClose, onOpenFinance, onOpe
 
             <div className="grid grid-cols-3 gap-2 sm:gap-3">
               {[
-                { label: 'Total Sales', value: paiseToRupees(business.lifetimeGMVPaise), icon: TrendingUp, delay: 0.3, tone: 'text-slate-900' },
-                { label: 'Fees Owed', value: paiseToRupees(business.totalCommissionOwedPaise), icon: Wallet, delay: 0.38, tone: 'text-slate-900' },
-                { label: 'Overdue', value: paiseToRupees(business.overdueAmountPaise), icon: AlertTriangle, delay: 0.46, tone: business.overdueAmountPaise > 0 ? 'text-rose-600' : 'text-slate-900' },
+                {
+                  label: 'Total Sales',
+                  value: paiseToRupees(business.lifetimeGMVPaise),
+                  icon: TrendingUp,
+                  delay: 0.3,
+                  tone: 'text-slate-900',
+                },
+                {
+                  label: 'Fees Owed',
+                  value: paiseToRupees(business.totalCommissionOwedPaise),
+                  icon: Wallet,
+                  delay: 0.38,
+                  tone: 'text-slate-900',
+                },
+                {
+                  label: 'Overdue',
+                  value: paiseToRupees(business.overdueAmountPaise),
+                  icon: AlertTriangle,
+                  delay: 0.46,
+                  tone: business.overdueAmountPaise > 0 ? 'text-rose-600' : 'text-slate-900',
+                },
               ].map((stat) => (
                 <motion.div
                   key={stat.label}
@@ -135,7 +184,9 @@ export const BusinessSpotlightModal = ({ business, onClose, onOpenFinance, onOpe
                   <div className={`text-sm sm:text-base font-black truncate ${stat.tone}`}>
                     <NumberTicker value={stat.value} prefix="₹" delay={stat.delay} />
                   </div>
-                  <div className="text-[9px] font-bold uppercase text-slate-400 mt-0.5 leading-tight">{stat.label}</div>
+                  <div className="text-[9px] font-bold uppercase text-slate-400 mt-0.5 leading-tight">
+                    {stat.label}
+                  </div>
                 </motion.div>
               ))}
             </div>
@@ -151,13 +202,23 @@ export const BusinessSpotlightModal = ({ business, onClose, onOpenFinance, onOpe
               </div>
               <div className="flex-1 space-y-2 min-w-0">
                 <button
-                  onClick={() => { onOpenFinance(business._id); onClose(); }}
+                  onClick={() => {
+                    onOpenFinance(business._id);
+                    onClose();
+                  }}
                   className="w-full py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-extrabold text-xs shadow-md shadow-red-600/20 transition-all flex items-center justify-center gap-2"
                 >
                   <Wallet className="w-3.5 h-3.5" /> View Fee Payments
                 </button>
                 <button
-                  onClick={() => { onOpenStatusModal({ id: business._id, name: business.name, status: business.status }); onClose(); }}
+                  onClick={() => {
+                    onOpenStatusModal({
+                      id: business._id,
+                      name: business.name,
+                      status: business.status,
+                    });
+                    onClose();
+                  }}
                   className="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 font-extrabold text-xs transition-all flex items-center justify-center gap-2"
                 >
                   <Settings2 className="w-3.5 h-3.5" /> Manage Status

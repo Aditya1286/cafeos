@@ -13,7 +13,8 @@ export const useBusinessHourlyHeatmap = (businessId: string | null) => {
       return;
     }
     setLoading(true);
-    superAdminAnalyticsService.getBusinessHeatmap(businessId)
+    superAdminAnalyticsService
+      .getBusinessHeatmap(businessId)
       .then((res) => setHeatmap(res?.data || null))
       .catch(() => setHeatmap(null))
       .finally(() => setLoading(false));

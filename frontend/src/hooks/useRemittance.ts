@@ -35,7 +35,7 @@ export const useRemittance = (activeTab: string) => {
     try {
       await remittanceService.markPaid(utr);
       await fetchRemittanceSummary();
-      toast.success('Thanks — we\'ll confirm receipt and update your ledger shortly.');
+      toast.success("Thanks — we'll confirm receipt and update your ledger shortly.");
     } catch (err: any) {
       toast.error(err.message || 'Could not record your payment.');
     } finally {

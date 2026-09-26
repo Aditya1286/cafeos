@@ -16,7 +16,10 @@ interface UseLongPressOptions {
  * a fill/progress indicator off it). The click that follows a successful hold is swallowed,
  * so `onShortPress` only fires for genuine short taps.
  */
-export const useLongPress = (onLongPress: () => void, { holdMs = LONG_PRESS_MS, onShortPress }: UseLongPressOptions = {}) => {
+export const useLongPress = (
+  onLongPress: () => void,
+  { holdMs = LONG_PRESS_MS, onShortPress }: UseLongPressOptions = {},
+) => {
   const [holding, setHolding] = useState(false);
   const timerRef = useRef<number | null>(null);
   const startRef = useRef<{ x: number; y: number } | null>(null);

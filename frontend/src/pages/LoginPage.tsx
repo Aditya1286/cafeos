@@ -1,13 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { 
-  Coffee, Shield, UtensilsCrossed, ArrowRight, Lock, Mail, 
-  Eye, EyeOff, CheckCircle2, Sparkles, Zap, Layers, UserCheck
+import {
+  Coffee,
+  Shield,
+  UtensilsCrossed,
+  ArrowRight,
+  Lock,
+  Eye,
+  EyeOff,
+  CheckCircle2,
+  Sparkles,
+  Zap,
+  Layers,
+  UserCheck,
 } from 'lucide-react';
 import { setAuthToken } from '../services/api';
 import authService from '../services/auth';
-import { toast } from '../utils/toast';
 import { APP_NAME, APP_SLUG } from '../constants/app';
+import { LoginIdentifierField, LoginMethod } from '@/molecules/LoginIdentifierField';
 
 interface LoginPageProps {
   onLoginSuccess: (userData: any) => void;
@@ -17,27 +27,30 @@ const carouselSlides = [
   {
     image: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=1400&q=80',
     tag: 'KITCHEN',
-    title: "Orders Go Straight to the Kitchen.",
-    subtitle: 'Every order shows up on your kitchen screen the moment it’s placed — no paper slips, no shouting.'
+    title: 'Orders Go Straight to the Kitchen.',
+    subtitle:
+      'Every order shows up on your kitchen screen the moment it’s placed — no paper slips, no shouting.',
   },
   {
     image: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=1400&q=80',
     tag: 'QR ORDERING',
     title: 'Customers Order From Their Phone.',
-    subtitle: 'They scan the QR code on the table, pick their food, and pay — no app to download.'
+    subtitle: 'They scan the QR code on the table, pick their food, and pay — no app to download.',
   },
   {
     image: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=1400&q=80',
     tag: 'MONEY',
     title: 'Know Where Your Money Goes.',
-    subtitle: 'See your sales, our fees and your stock in one place — all worked out for you.'
-  }
+    subtitle: 'See your sales, our fees and your stock in one place — all worked out for you.',
+  },
 ];
 
 export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   const navigate = useNavigate();
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [loginMethod, setLoginMethod] = useState<LoginMethod>('email');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
@@ -58,7 +71,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
     setError(null);
 
     try {
-      const res = await authService.login(email, password);
+      const res =
+        loginMethod === 'email'
+          ? await authService.login(email, password)
+          : await authService.loginWithPhone(phone, password);
       setAuthToken(res.data.token);
       onLoginSuccess(res.data);
       if (res.data.user.role === 'SUPER_ADMIN') {
@@ -67,7 +83,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
         navigate('/dashboard');
       }
     } catch (err: any) {
-      setError(err.message || 'Invalid email or password. Please try again.');
+      setError(
+        err.message ||
+          `Invalid ${loginMethod === 'email' ? 'email' : 'phone number'} or password. Please try again.`,
+      );
     } finally {
       setLoading(false);
     }
@@ -97,12 +116,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900 flex font-sans selection:bg-red-600 selection:text-white">
-      
       {/* ========================================================================= */}
       {/* LEFT COLUMN: CRISP HIGH-DEF CAROUSEL & FLOATING STATS OVERLAY (UNBLURRED) */}
       {/* ========================================================================= */}
       <div className="hidden lg:flex lg:w-[54%] relative flex-col justify-between p-12 overflow-hidden bg-slate-950">
-        
         {/* Crisp Unblurred Slides */}
         {carouselSlides.map((slide, idx) => (
           <div
@@ -130,9 +147,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-2xl font-black tracking-tight text-white">{APP_NAME}</span>
-                <span className="text-[10px] font-mono px-2 py-0.5 bg-red-600/30 text-red-300 rounded-full border border-red-500/30 font-bold">LIVE</span>
+                <span className="text-[10px] font-mono px-2 py-0.5 bg-red-600/30 text-red-300 rounded-full border border-red-500/30 font-bold">
+                  LIVE
+                </span>
               </div>
-              <span className="text-xs text-slate-300 font-semibold block">Ordering & billing for cafés</span>
+              <span className="text-xs text-slate-300 font-semibold block">
+                Ordering & billing for cafés
+              </span>
             </div>
           </Link>
 
@@ -144,7 +165,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
         {/* Bottom Floating Feature Banner & Slide Control */}
         <div className="relative z-10 space-y-6 max-w-xl">
-          
           {/* Glass Stats Badge */}
           <div className="grid grid-cols-3 gap-3 p-4 rounded-2xl bg-slate-900/80 backdrop-blur-md border border-white/10 text-white">
             <div className="text-left space-y-0.5">
@@ -188,22 +208,20 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                 onClick={() => setCurrentSlide(idx)}
                 aria-label={`Go to slide ${idx + 1}`}
                 className={`h-2 rounded-full transition-all duration-500 ${
-                  currentSlide === idx 
-                    ? 'w-10 bg-red-600 shadow-lg shadow-red-600/60' 
+                  currentSlide === idx
+                    ? 'w-10 bg-red-600 shadow-lg shadow-red-600/60'
                     : 'w-3 bg-white/30 hover:bg-white/60'
                 }`}
               />
             ))}
           </div>
         </div>
-
       </div>
 
       {/* ========================================================================= */}
       {/* RIGHT COLUMN: HIGHLY PROFESSIONAL LIGHT THEME FORM CONTAINER             */}
       {/* ========================================================================= */}
       <div className="w-full lg:w-[46%] flex flex-col justify-between p-6 sm:p-10 lg:p-14 bg-slate-50 overflow-y-auto">
-        
         {/* Top Header Mobile Brand */}
         <div className="flex justify-between items-center lg:hidden mb-6">
           <Link to="/" className="inline-flex items-center gap-2.5">
@@ -220,16 +238,17 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
         {/* Main Form Center Wrapper */}
         <div className="max-w-md w-full mx-auto my-auto space-y-6">
-          
           {/* Section Header */}
           <div className="text-left space-y-2">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-50 border border-red-200/80 text-red-700 text-[11px] font-bold">
               <Sparkles className="w-3.5 h-3.5 text-red-600" />
               <span>Business Owner Login</span>
             </div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Sign In to {APP_NAME}</h1>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight">
+              Sign In to {APP_NAME}
+            </h1>
             <p className="text-xs sm:text-sm text-slate-600 font-medium">
-              Sign in with your email and password, or try a demo account below.
+              Sign in with your email or phone number and password, or try a demo account below.
             </p>
           </div>
 
@@ -254,7 +273,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
           <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-sm space-y-2.5 text-left">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" /> 1-Click Instant Demo Profiles
+                <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" /> 1-Click Instant Demo
+                Profiles
               </span>
               <span className="text-[10px] text-slate-400 font-medium">No password needed</span>
             </div>
@@ -270,8 +290,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                     <UtensilsCrossed className="w-3 h-3" />
                   </div>
                   <div className="text-left truncate">
-                    <div className="text-[10px] font-extrabold leading-tight text-slate-900 truncate">Business #1 (Artisan)</div>
-                    <div className="text-[8px] text-slate-500 font-mono truncate">owner@artisan.com</div>
+                    <div className="text-[10px] font-extrabold leading-tight text-slate-900 truncate">
+                      Business #1 (Artisan)
+                    </div>
+                    <div className="text-[8px] text-slate-500 font-mono truncate">
+                      owner@artisan.com
+                    </div>
                   </div>
                 </div>
               </button>
@@ -286,8 +310,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                     <Coffee className="w-3 h-3" />
                   </div>
                   <div className="text-left truncate">
-                    <div className="text-[10px] font-extrabold leading-tight text-slate-900 truncate">Business #2 (Bakery)</div>
-                    <div className="text-[8px] text-slate-500 font-mono truncate">owner@beanandbutter.com</div>
+                    <div className="text-[10px] font-extrabold leading-tight text-slate-900 truncate">
+                      Business #2 (Bakery)
+                    </div>
+                    <div className="text-[8px] text-slate-500 font-mono truncate">
+                      owner@beanandbutter.com
+                    </div>
                   </div>
                 </div>
               </button>
@@ -302,8 +330,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                     <Shield className="w-3 h-3" />
                   </div>
                   <div className="text-left truncate">
-                    <div className="text-[10px] font-extrabold leading-tight text-slate-900 truncate">Super Admin</div>
-                    <div className="text-[8px] text-slate-500 font-mono truncate">admin@{APP_SLUG}.com</div>
+                    <div className="text-[10px] font-extrabold leading-tight text-slate-900 truncate">
+                      Super Admin
+                    </div>
+                    <div className="text-[8px] text-slate-500 font-mono truncate">
+                      admin@{APP_SLUG}.com
+                    </div>
                   </div>
                 </div>
               </button>
@@ -320,7 +352,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
           {/* Modern Elevated White Form Card */}
           <div className="bg-white p-7 rounded-3xl border border-slate-200/90 shadow-xl shadow-slate-200/50 space-y-5">
-            
             {error && (
               <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-800 text-xs font-semibold flex items-center gap-2 text-left">
                 <span className="w-2 h-2 rounded-full bg-red-600 flex-shrink-0" />
@@ -329,38 +360,34 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4 text-left">
-              {/* Work Email Field */}
-              <div>
-                <label className="block text-xs font-extrabold text-slate-900 mb-1.5">
-                  Work Email Address
-                </label>
-                <div className="relative">
-                  <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="owner@artisan.com"
-                    className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 border border-slate-300 focus:border-red-600 focus:bg-white focus:ring-2 focus:ring-red-600/15 text-xs text-slate-900 placeholder-slate-400 font-semibold outline-none transition-all"
-                  />
-                </div>
-              </div>
+              {/* Email or phone number */}
+              <LoginIdentifierField
+                method={loginMethod}
+                onMethodChange={(method) => {
+                  setLoginMethod(method);
+                  setError(null);
+                }}
+                email={email}
+                onEmailChange={setEmail}
+                phone={phone}
+                onPhoneChange={setPhone}
+              />
 
               {/* Password Field */}
               <div>
                 <div className="flex justify-between items-center mb-1.5">
-                  <label className="block text-xs font-extrabold text-slate-900">
-                    Password
-                  </label>
-                  <a href="#forgot" onClick={(e) => { e.preventDefault(); toast('Demo environment: Use password123 or click the instant demo buttons above.'); }} className="text-[11px] font-bold text-red-600 hover:underline">
+                  <label className="block text-xs font-extrabold text-slate-900">Password</label>
+                  <Link
+                    to="/forgot-password"
+                    className="text-[11px] font-bold text-red-600 hover:underline"
+                  >
                     Forgot password?
-                  </a>
+                  </Link>
                 </div>
                 <div className="relative">
                   <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
-                    type={showPassword ? "text" : "password"}
+                    type={showPassword ? 'text' : 'password'}
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -386,7 +413,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                     onChange={(e) => setRememberMe(e.target.checked)}
                     className="w-4 h-4 rounded text-red-600 border-slate-300 focus:ring-red-500 cursor-pointer accent-red-600"
                   />
-                  <span className="text-xs text-slate-600 font-semibold">Remember this device for 30 days</span>
+                  <span className="text-xs text-slate-600 font-semibold">
+                    Remember this device for 30 days
+                  </span>
                 </label>
               </div>
 
@@ -425,7 +454,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
             <span>•</span>
             <span>Your data is kept private</span>
           </div>
-
         </div>
 
         {/* Footer */}
@@ -433,8 +461,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
           © 2026 {APP_NAME} SaaS Platform Inc. • Empowering 500+ Hospitality Businesses Globally
         </div>
       </div>
-
     </div>
   );
 };
-

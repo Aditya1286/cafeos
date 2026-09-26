@@ -19,10 +19,19 @@ const StockStatusBadge = ({ item }: { item: any }) => (
 
 export const InventoryPanel = ({ inventoryItems, onAddIngredient }: InventoryPanelProps) => {
   const columns: ResponsiveColumn<any>[] = [
-    { header: 'Ingredient Name', render: (item) => <span className="font-black text-slate-900">{item.name}</span> },
-    { header: 'Stock', render: (item) => <span className="text-slate-900 font-bold">{item.currentStock}</span> },
+    {
+      header: 'Ingredient Name',
+      render: (item) => <span className="font-black text-slate-900">{item.name}</span>,
+    },
+    {
+      header: 'Stock',
+      render: (item) => <span className="text-slate-900 font-bold">{item.currentStock}</span>,
+    },
     { header: 'Unit', render: (item) => <span className="text-slate-500">{item.unit}</span> },
-    { header: 'Alert Below', render: (item) => <span className="text-slate-500">{item.minimumStockLevel}</span> },
+    {
+      header: 'Alert Below',
+      render: (item) => <span className="text-slate-500">{item.minimumStockLevel}</span>,
+    },
     { header: 'Cost per Unit', render: (item) => formatCurrencyPrecise(item.costPerUnitPaise) },
     { header: 'Stock Status', render: (item) => <StockStatusBadge item={item} /> },
   ];
@@ -58,21 +67,33 @@ export const InventoryPanel = ({ inventoryItems, onAddIngredient }: InventoryPan
           renderCard={(item) => (
             <div className="p-4 space-y-2.5">
               <div className="flex items-start justify-between gap-3">
-                <span className="font-black text-slate-900 text-sm min-w-0 truncate">{item.name}</span>
+                <span className="font-black text-slate-900 text-sm min-w-0 truncate">
+                  {item.name}
+                </span>
                 <StockStatusBadge item={item} />
               </div>
               <div className="grid grid-cols-3 gap-2 text-xs">
                 <div>
                   <div className="text-[10px] font-extrabold uppercase text-slate-400">Stock</div>
-                  <div className="font-bold text-slate-900">{item.currentStock} {item.unit}</div>
+                  <div className="font-bold text-slate-900">
+                    {item.currentStock} {item.unit}
+                  </div>
                 </div>
                 <div>
-                  <div className="text-[10px] font-extrabold uppercase text-slate-400">Min Level</div>
-                  <div className="font-bold text-slate-700">{item.minimumStockLevel} {item.unit}</div>
+                  <div className="text-[10px] font-extrabold uppercase text-slate-400">
+                    Min Level
+                  </div>
+                  <div className="font-bold text-slate-700">
+                    {item.minimumStockLevel} {item.unit}
+                  </div>
                 </div>
                 <div>
-                  <div className="text-[10px] font-extrabold uppercase text-slate-400">Cost per Unit</div>
-                  <div className="font-bold text-slate-700">{formatCurrencyPrecise(item.costPerUnitPaise)}</div>
+                  <div className="text-[10px] font-extrabold uppercase text-slate-400">
+                    Cost per Unit
+                  </div>
+                  <div className="font-bold text-slate-700">
+                    {formatCurrencyPrecise(item.costPerUnitPaise)}
+                  </div>
                 </div>
               </div>
             </div>

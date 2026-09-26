@@ -3,7 +3,8 @@ import { DashboardTab, HeaderViewProps } from './types';
 import { DashboardHeaderDesktop } from './DashboardHeaderDesktop';
 import { DashboardHeaderMobile } from './DashboardHeaderMobile';
 
-export type { DashboardTab } from './types';
+export type { DashboardTab, DashboardTabDef } from './types';
+export { tabsForRole } from './types';
 
 interface DashboardHeaderProps extends Omit<HeaderViewProps, 'badgeFor'> {
   lowStockCount: number;
@@ -12,7 +13,11 @@ interface DashboardHeaderProps extends Omit<HeaderViewProps, 'badgeFor'> {
 
 /** Sticky owner-dashboard header. Owns the shared derived state (tab badges) and renders both
  * the desktop and mobile views — CSS picks which one is visible at the `lg` breakpoint. */
-export const DashboardHeader = ({ lowStockCount, refundsNeededCount, ...viewProps }: DashboardHeaderProps) => {
+export const DashboardHeader = ({
+  lowStockCount,
+  refundsNeededCount,
+  ...viewProps
+}: DashboardHeaderProps) => {
   const badgeFor = (tabId: DashboardTab): number | null => {
     if (tabId === 'kds') return viewProps.activeOrdersCount || null;
     if (tabId === 'inventory') return lowStockCount || null;

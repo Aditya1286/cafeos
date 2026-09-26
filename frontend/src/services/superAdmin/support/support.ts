@@ -6,7 +6,7 @@ import {
   ListTicketsResponse,
   ResolveTicketResponse,
   TicketListQuery,
-  ToggleAvailabilityResponse
+  ToggleAvailabilityResponse,
 } from './types';
 
 const buildQuery = <T extends object>(params: T): string => {

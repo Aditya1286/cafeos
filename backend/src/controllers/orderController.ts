@@ -3,52 +3,16 @@ import { AuthRequest } from '../middleware/auth';
 import { Order, OrderStatus } from '../models/Order';
 import { Business } from '../models/Business';
 import { Table } from '../models/Table';
-import { Product } from '../models/Product';
 import { Recipe } from '../models/Recipe';
 import { InventoryItem } from '../models/InventoryItem';
 import { InventoryTransaction } from '../models/InventoryTransaction';
 import { FinancialLedger } from '../models/FinancialLedger';
 import { emitToBusiness, emitToOrder, emitToAdminOrders } from '../websocket/socketManager';
-import { toAdminLiveOrder } from '../utils/adminLiveOrder';
-import { config } from '../config';
-import { generateDailyOrderId } from '../utils/orderSequence';
 import { computeRefundInsights } from '../services/refundInsights.service';
-import { isPhoneOrderVerified, touchPhoneOrderVerification } from '../services/otp.service';
+import { prepareOrder, placeOrder, recordOrderPaymentLedger, markOrderPaid } from '../services/orderPlacement.service';
+import { handleServiceError } from '../utils/serviceError';
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
-
-// Money never flows through the platform (UPI goes to the business's own VPA, cash stays with
-// the business), so the moment an order is genuinely paid for the first time — whether that's
-// the kitchen marking it SERVED/COMPLETED or the business explicitly confirming payment — this
-// records the gross amount and the commission owed. This is what GMV/fee dashboards and
-// remittance accrual read from. Callers must guard this themselves against firing on an order
-// that was already PAID, so it never double-writes the ledger.
-const recordOrderPaymentLedger = async (order: InstanceType<typeof Order>) => {
-  const gatewayRef = `order_${order.orderId}`;
-  await FinancialLedger.create({
-    transactionId: `TXN_PAY_${uuidv4().substring(0, 10).toUpperCase()}`,
-    businessId: order.businessId,
-    orderId: order._id,
-    type: 'ORDER_PAYMENT',
-    amountPaise: order.totalAmountPaise,
-    currency: 'INR',
-    status: 'SUCCESS',
-    paymentGatewayRef: gatewayRef,
-    metadata: { orderNumber: order.orderNumber, customerName: order.customerName }
-  });
-
-  await FinancialLedger.create({
-    transactionId: `TXN_FEE_${uuidv4().substring(0, 10).toUpperCase()}`,
-    businessId: order.businessId,
-    orderId: order._id,
-    type: 'PLATFORM_FEE',
-    amountPaise: order.platformFeePaise,
-    currency: 'INR',
-    status: 'SUCCESS',
-    paymentGatewayRef: gatewayRef,
-    metadata: { orderNumber: order.orderNumber, commissionRate: '3%' }
-  });
-};
 
 // Public customer endpoints identify an order ONLY by its Mongo _id — the unguessable value
 // the tracking URL carries. The human-readable orderId (ART-250926-0001) is a per-day
@@ -58,21 +22,32 @@ const recordOrderPaymentLedger = async (order: InstanceType<typeof Order>) => {
 const findOrderByPublicId = (id: unknown) =>
   typeof id === 'string' && /^[0-9a-f]{24}$/i.test(id) ? Order.findById(id) : Promise.resolve(null);
 
-// Public: Place Order (Guest Customer scanning QR code)
+// Public: Place Order (Guest Customer scanning QR code). All checks, pricing and writes live in
+// services/orderPlacement.service.ts, shared with SMEPay checkout (which calls the same two steps
+// but only places the order once the payment is confirmed).
 export const createOrder = async (req: Request, res: Response) => {
   try {
     const { qrToken, businessSlug, customerName, customerPhone, items, paymentMethod, idempotencyKey, notes } = req.body;
 
-    if ((!qrToken && !businessSlug) || !customerName || !customerPhone || !items || !items.length) {
+    // Online checkout goes through /public/checkout, which only creates the order once SMEPay
+    // has confirmed the payment — never accept it as a plain, unpaid order here.
+    if (paymentMethod === 'CHECKOUT') {
       return res.status(400).json({
         success: false,
-        error: { code: 'VALIDATION_ERROR', message: 'A table token (or business), customer details, and at least one item are required.' }
+        error: { code: 'VALIDATION_ERROR', message: 'Online checkout orders are placed through /public/checkout.' }
       });
     }
 
-    // 1. Idempotency Check
+    // 1. Idempotency Check — a retry of the same submission carries the same phone, so the
+    // lookup is scoped to it: a key alone must never hand back someone else's order.
+    if (idempotencyKey !== undefined && typeof idempotencyKey !== 'string') {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: 'idempotencyKey must be a string.' }
+      });
+    }
     if (idempotencyKey) {
-      const existingOrder = await Order.findOne({ idempotencyKey });
+      const existingOrder = await Order.findOne({ idempotencyKey, customerPhone: String(customerPhone || '') });
       if (existingOrder) {
         return res.json({
           success: true,
@@ -82,214 +57,13 @@ export const createOrder = async (req: Request, res: Response) => {
       }
     }
 
-    // The frontend gates order submission on completing phone OTP verification, but that's
-    // only a UI convenience — without this, anyone could POST here directly and place orders
-    // under any phone number without ever verifying it. isPhoneOrderVerified checks the
-    // long-lived, reusable record otp.service sets on a successful /otp/verify call for this
-    // exact phone (see touchPhoneOrderVerification below, which slides that window forward on
-    // every order so a repeat customer doesn't need to re-verify).
-    if (!(await isPhoneOrderVerified(customerPhone))) {
-      return res.status(400).json({
-        success: false,
-        error: { code: 'PHONE_NOT_VERIFIED', message: 'Please verify your phone number with the OTP sent to it before placing an order.' }
-      });
-    }
-
-    // 2. Resolve Table (if provided) & Business
-    let table = null;
-    let business;
-
-    if (qrToken) {
-      table = await Table.findOne({ qrToken });
-      if (!table) {
-        return res.status(404).json({
-          success: false,
-          error: { code: 'TABLE_NOT_FOUND', message: 'Invalid or inactive table QR code token.' }
-        });
-      }
-      if (!table.isActive) {
-        return res.status(403).json({
-          success: false,
-          error: { code: 'TABLE_DISABLED', message: 'This table is temporarily unavailable. Please ask staff for assistance.' }
-        });
-      }
-      business = await Business.findById(table.businessId);
-    } else {
-      business = await Business.findOne({ slug: String(businessSlug).toLowerCase() });
-      if (!business) {
-        return res.status(404).json({
-          success: false,
-          error: { code: 'BUSINESS_NOT_FOUND', message: 'Business not found.' }
-        });
-      }
-      if (business.tablesEnabled) {
-        return res.status(400).json({
-          success: false,
-          error: { code: 'TABLE_REQUIRED', message: 'This business requires a table — please scan your table\'s QR code to order.' }
-        });
-      }
-    }
-
-    if (!business || business.status === 'SUSPENDED') {
-      return res.status(403).json({
-        success: false,
-        error: { code: 'BUSINESS_INACTIVE', message: 'This business is currently inactive.' }
-      });
-    }
-
-    // A table can only host one active order at a time, so the number of
-    // concurrently-occupied tables never exceeds the tables that actually
-    // exist — reject a new order on a table that's still mid-service.
-    if (table) {
-      const activeOrderOnTable = await Order.findOne({
-        tableId: table._id,
-        orderStatus: { $nin: ['COMPLETED', 'CANCELLED', 'REFUNDED'] }
-      });
-      if (activeOrderOnTable) {
-        return res.status(409).json({
-          success: false,
-          error: { code: 'TABLE_OCCUPIED', message: 'This table already has an active order in progress. Please wait for it to be completed, or ask staff for assistance.' }
-        });
-      }
-    }
-
-    // 3. Process Items and build exact snapshots
-    let subtotalPaise = 0;
-    const itemSnapshots = [];
-
-    for (const item of items) {
-      const product = await Product.findOne({ _id: item.productId, businessId: business._id });
-      if (!product || !product.isAvailable) {
-        return res.status(400).json({
-          success: false,
-          error: { code: 'PRODUCT_UNAVAILABLE', message: `Item '${item.name || 'product'}' is currently unavailable.` }
-        });
-      }
-
-      let unitPricePaise = product.pricePaise;
-
-      // Handle variant pricing if specified
-      if (item.variantName && product.variants && product.variants.length > 0) {
-        const foundVariant = product.variants.find((v) => v.name === item.variantName);
-        if (foundVariant) {
-          unitPricePaise = foundVariant.pricePaise;
-        }
-      }
-
-      // Handle addon pricing if specified
-      let addonsTotalPricePaise = 0;
-      const addonSnapshots = [];
-      if (item.addons && Array.isArray(item.addons)) {
-        for (const add of item.addons) {
-          const foundAddon = product.addons.find((a) => a.name === add.name);
-          if (foundAddon) {
-            addonsTotalPricePaise += foundAddon.pricePaise;
-            addonSnapshots.push({ name: foundAddon.name, pricePaise: foundAddon.pricePaise });
-          }
-        }
-      }
-
-      const singleItemTotalPaise = (unitPricePaise + addonsTotalPricePaise) * item.quantity;
-      subtotalPaise += singleItemTotalPaise;
-
-      itemSnapshots.push({
-        productId: product._id,
-        name: product.name,
-        pricePaise: unitPricePaise,
-        quantity: item.quantity,
-        variantName: item.variantName || '',
-        addons: addonSnapshots,
-        itemTotalPaise: singleItemTotalPaise,
-        notes: item.notes || ''
-      });
-    }
-
-    // Calculate Tax & Platform Commission
-    // `?? 0` not `|| 0` — kept nullish-coalescing (not that it matters at 0) so re-enabling
-    // GST for a business is just setting taxRatePercentage back to a nonzero value later.
-    const taxPaise = Math.round((subtotalPaise * (business.taxRatePercentage ?? 0)) / 100);
-    // Commission is charged on the pre-tax order value (discountPaise reserved for a future
-    // discount feature — always 0 today, included so commission stays correct once one ships).
-    const discountPaise = 0;
-    const commissionableAmountPaise = subtotalPaise - discountPaise;
-    const platformFeePaise = Math.round((commissionableAmountPaise * (business.commissionRatePercentage ?? 3)) / 100);
-    const totalAmountPaise = subtotalPaise + taxPaise;
-    const businessEarningsPaise = totalAmountPaise - platformFeePaise;
-
-    // 4. Generate Atomic Daily Order ID (e.g. ART-120926-0001)
-    const { orderId, dateKey, sequenceNumber } = await generateDailyOrderId(business._id);
-
-    const order = await Order.create({
-      orderId,
-      orderNumber: orderId,
-      businessId: business._id,
-      dateKey,
-      sequenceNumber,
-      tableId: table ? table._id : undefined,
-      tableName: table ? table.tableNumber : 'Counter',
-      customerName,
-      customerPhone,
-      source: table ? 'QR_TABLE' : 'TAKEAWAY',
-      items: itemSnapshots,
-      subtotalPaise,
-      taxPaise,
-      platformFeePaise,
-      totalAmountPaise,
-      businessEarningsPaise,
-      orderStatus: 'PLACED',
-      // There's no payment gateway webhook in this flow (v1), so an ONLINE order
-      // can't be trusted as paid just because the customer chose that method —
-      // it stays UNPAID until the business confirms receipt themselves (see
-      // markOrderPaidByCustomer for the customer's own "I've paid" signal, which
-      // is informational only and never flips this field).
-      paymentStatus: 'UNPAID',
+    const prepared = await prepareOrder({ qrToken, businessSlug, customerName, customerPhone, items, notes });
+    const order = await placeOrder({
+      ...prepared,
       paymentMethod: paymentMethod || 'ONLINE',
-      transactionId: '',
-      idempotencyKey,
-      notes: notes || '',
-      timeline: { placedAt: new Date() }
+      paymentStatus: 'UNPAID',
+      idempotencyKey
     });
-
-    // Update table status to occupied
-    if (table) {
-      table.status = 'OCCUPIED';
-      await table.save();
-    }
-
-    // 5. Trigger Realtime WebSocket Notification
-    emitToBusiness(business._id.toString(), 'order:new', {
-      _id: order._id,
-      orderId: order.orderId,
-      orderNumber: order.orderNumber,
-      tableId: table ? table._id : null,
-      tableName: order.tableName,
-      // Lets the owner dashboard flip this table to OCCUPIED in its own live
-      // table list without a manual refresh — see order:updated below for the
-      // matching AVAILABLE signal when the order finishes.
-      tableStatus: table ? 'OCCUPIED' : null,
-      customerName: order.customerName,
-      customerPhone: order.customerPhone,
-      items: order.items,
-      subtotalPaise: order.subtotalPaise,
-      taxPaise: order.taxPaise,
-      totalAmountPaise: order.totalAmountPaise,
-      orderStatus: order.orderStatus,
-      paymentStatus: order.paymentStatus,
-      paymentMethod: order.paymentMethod,
-      createdAt: order.createdAt
-    });
-
-    // Super Admin live feed. Demo businesses stay out of it whenever they're excluded from
-    // platform analytics, matching the overview's recentOrders the feed starts from.
-    if (!(config.excludeDemoBusinessesFromAnalytics && business.isDemo)) {
-      emitToAdminOrders('admin_order:new', toAdminLiveOrder(order, business.name));
-    }
-
-    // The order is already saved — a failure to slide the verification window must not turn
-    // that into a 500 (the customer would retry and hit the duplicate-order guard instead).
-    await touchPhoneOrderVerification(customerPhone).catch((err) =>
-      console.error('[otp] Failed to extend order verification window:', err)
-    );
 
     return res.status(201).json({
       success: true,
@@ -297,7 +71,7 @@ export const createOrder = async (req: Request, res: Response) => {
       data: order
     });
   } catch (error: any) {
-    return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
+    return handleServiceError(res, error);
   }
 };
 
@@ -653,6 +427,13 @@ export const searchOrders = async (req: AuthRequest, res: Response) => {
 // Owner/Staff: Update Order Status
 const VALID_ORDER_STATUSES: OrderStatus[] = ['PLACED', 'CONFIRMED', 'PREPARING', 'READY', 'SERVED', 'COMPLETED', 'CANCELLED', 'REFUNDED'];
 
+// Kitchen staff work orders through their lifecycle; confirming a refund was sent is money
+// handling, left to the owner/manager.
+const STAFF_FORBIDDEN_STATUSES: OrderStatus[] = ['REFUNDED'];
+const forbiddenForRole = (req: AuthRequest, status: OrderStatus) =>
+  req.user?.role === 'STAFF' && STAFF_FORBIDDEN_STATUSES.includes(status);
+
+
 interface StatusChangeResult {
   success: boolean;
   order?: InstanceType<typeof Order>;
@@ -822,6 +603,9 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
         error: { code: 'INVALID_STATUS', message: 'Invalid order status specified.' }
       });
     }
+    if (forbiddenForRole(req, status)) {
+      return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Only the owner or a manager can mark an order refunded.' } });
+    }
 
     const order = await findOrderForBusiness(id, req.businessId!.toString());
     if (!order) {
@@ -855,6 +639,9 @@ export const bulkUpdateOrderStatus = async (req: AuthRequest, res: Response) => 
 
     if (!VALID_ORDER_STATUSES.includes(status)) {
       return res.status(400).json({ success: false, error: { code: 'INVALID_STATUS', message: 'Invalid order status specified.' } });
+    }
+    if (forbiddenForRole(req, status)) {
+      return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Only the owner or a manager can mark an order refunded.' } });
     }
     if (!Array.isArray(orderIds) || orderIds.length === 0) {
       return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'orderIds must be a non-empty array.' } });
@@ -921,25 +708,14 @@ export const confirmOrderPayment = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    order.paymentStatus = 'PAID';
-    order.paymentConfirmedAt = new Date();
-    order.paymentConfirmedByUserId = req.user?._id;
-    await order.save();
+    const paidOrder = await markOrderPaid(order._id, { userId: req.user?._id });
+    if (!paidOrder) {
+      // Lost a race with another confirmation (or an SMEPay payment) — report the current state.
+      const current = await Order.findById(order._id);
+      return res.json({ success: true, message: 'This order is already marked as paid.', data: current });
+    }
 
-    await recordOrderPaymentLedger(order);
-
-    emitToOrder(order._id.toString(), 'order:status_updated', {
-      orderId: order.orderId,
-      orderStatus: order.orderStatus,
-      paymentStatus: order.paymentStatus
-    });
-    emitToBusiness(req.businessId!.toString(), 'order:updated', {
-      orderId: order.orderId,
-      orderStatus: order.orderStatus,
-      tableId: order.tableId || null
-    });
-
-    return res.json({ success: true, message: 'Payment confirmed.', data: order });
+    return res.json({ success: true, message: 'Payment confirmed.', data: paidOrder });
   } catch (error: any) {
     return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
   }

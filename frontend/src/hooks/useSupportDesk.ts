@@ -31,7 +31,7 @@ export const useSupportDesk = (enabled: boolean) => {
         page: pagination.page,
         limit: pagination.limit,
         q: debouncedQuery || undefined,
-        status: statusFilter !== 'ALL' ? statusFilter : undefined
+        status: statusFilter !== 'ALL' ? statusFilter : undefined,
       });
       if (res.success) {
         setTickets(res.data || []);
@@ -73,7 +73,7 @@ export const useSupportDesk = (enabled: boolean) => {
     joinAdminSupportRoom();
     socket.on('support_ticket:new', () => fetchTickets());
     socket.on('support_ticket:updated', (updated: any) => {
-      setTickets(prev => prev.map(t => (t._id === updated.id ? { ...t, ...updated } : t)));
+      setTickets((prev) => prev.map((t) => (t._id === updated.id ? { ...t, ...updated } : t)));
     });
     const stopResync = onReconnect(() => fetchTickets());
     return () => {
@@ -85,7 +85,7 @@ export const useSupportDesk = (enabled: boolean) => {
   }, [enabled]);
 
   const patchTicket = (ticketId: string, patch: any) => {
-    setTickets(prev => prev.map(t => (t._id === ticketId ? { ...t, ...patch } : t)));
+    setTickets((prev) => prev.map((t) => (t._id === ticketId ? { ...t, ...patch } : t)));
   };
 
   const assignToSelf = async (ticketId: string) => {
@@ -134,11 +134,22 @@ export const useSupportDesk = (enabled: boolean) => {
   };
 
   return {
-    searchQuery, setSearchQuery,
-    statusFilter, setStatusFilter,
-    tickets, pagination, setPagination, loading, needsAttentionCount,
+    searchQuery,
+    setSearchQuery,
+    statusFilter,
+    setStatusFilter,
+    tickets,
+    pagination,
+    setPagination,
+    loading,
+    needsAttentionCount,
     refresh: fetchTickets,
-    assignToSelf, escalate, resolve,
-    agents, loadingAgents, togglingAvailability, toggleMyAvailability,
+    assignToSelf,
+    escalate,
+    resolve,
+    agents,
+    loadingAgents,
+    togglingAvailability,
+    toggleMyAvailability,
   };
 };

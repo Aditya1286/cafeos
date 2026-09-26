@@ -1,4 +1,10 @@
-import { AdminAnalytics, AdminBusinessInsights, BusinessHourlyHeatmap, SuperAdminOverview, TopBusinessByRevenue } from '../../../types';
+import {
+  AdminAnalytics,
+  AdminBusinessInsights,
+  BusinessHourlyHeatmap,
+  SuperAdminOverview,
+  TopBusinessByRevenue,
+} from '../../../types';
 import { ApiResponse } from '../../apiTypes';
 
 export type GetAnalyticsResponse = ApiResponse<AdminAnalytics>;

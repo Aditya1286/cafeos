@@ -1,6 +1,10 @@
 import { Request, Response } from 'express';
 import { config } from '../config';
-import { isPhoneOrderVerified, sendOtp, verifyOtp, resendOtp, verifyWidgetAccessToken } from '../services/otp.service';
+import { isPhoneOrderVerified, sendOtp, verifyOtp, resendOtp, verifyWidgetAccessToken, OtpPurpose } from '../services/otp.service';
+
+// 'ACCOUNT' asks for a fresh, single-use verification for a sensitive account action (password
+// reset, email change); anything else is the normal order/registration verification.
+const purposeOf = (req: Request): OtpPurpose => (req.body?.purpose === 'ACCOUNT' || req.query?.purpose === 'ACCOUNT' ? 'ACCOUNT' : 'DEFAULT');
 
 const statusFor = (result: { success: boolean; code: string }) =>
   result.success ? 200 : result.code === 'RATE_LIMITED' ? 429 : 400;
@@ -15,7 +19,9 @@ const serverError = (res: Response, error: any) =>
 export const getOtpStatus = async (req: Request, res: Response) => {
   try {
     const phone = String(req.query.phone || req.body.phone || '');
-    return res.json({ success: true, verified: await isPhoneOrderVerified(phone), mode: config.otpMode });
+    // An account action always needs a fresh OTP, so it's never "already verified".
+    const verified = purposeOf(req) === 'ACCOUNT' ? false : await isPhoneOrderVerified(phone);
+    return res.json({ success: true, verified, mode: config.otpMode });
   } catch (error: any) {
     return serverError(res, error);
   }
@@ -26,7 +32,7 @@ export const getOtpStatus = async (req: Request, res: Response) => {
 // SMS credits. Disabled (returns MOCK_DISABLED) whenever otpMode is 'live'.
 export const requestOtp = async (req: Request, res: Response) => {
   try {
-    const result = await sendOtp(req.body.phone);
+    const result = await sendOtp(req.body.phone, purposeOf(req));
     return res.status(statusFor(result)).json(result);
   } catch (error: any) {
     return serverError(res, error);
@@ -35,7 +41,7 @@ export const requestOtp = async (req: Request, res: Response) => {
 
 export const resendOtpRequest = async (req: Request, res: Response) => {
   try {
-    const result = await resendOtp(req.body.phone);
+    const result = await resendOtp(req.body.phone, purposeOf(req));
     return res.status(statusFor(result)).json(result);
   } catch (error: any) {
     return serverError(res, error);
@@ -44,7 +50,7 @@ export const resendOtpRequest = async (req: Request, res: Response) => {
 
 export const confirmOtp = async (req: Request, res: Response) => {
   try {
-    const result = await verifyOtp(req.body.phone, req.body.otp);
+    const result = await verifyOtp(req.body.phone, req.body.otp, purposeOf(req));
     return res.status(statusFor(result)).json(result);
   } catch (error: any) {
     return serverError(res, error);
@@ -55,7 +61,7 @@ export const confirmOtp = async (req: Request, res: Response) => {
 // JWT the widget handed the frontend after a successful client-side verify.
 export const confirmWidgetToken = async (req: Request, res: Response) => {
   try {
-    const result = await verifyWidgetAccessToken(req.body.phone, req.body.accessToken);
+    const result = await verifyWidgetAccessToken(req.body.phone, req.body.accessToken, purposeOf(req));
     return res.status(statusFor(result)).json(result);
   } catch (error: any) {
     return serverError(res, error);

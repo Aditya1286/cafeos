@@ -8,7 +8,7 @@ import {
   OrderListQuery,
   RefundInsightsResponse,
   RefundListQuery,
-  UpdateOrderStatusResponse
+  UpdateOrderStatusResponse,
 } from './types';
 
 const buildQuery = <T extends object>(params: T): string => {
@@ -26,7 +26,8 @@ export const search = (query: OrderListQuery): Promise<ListOrdersResponse> =>
 
 export const get = (orderId: string): Promise<GetOrderResponse> => apiRequest(`/orders/${orderId}`);
 
-export const getBill = (orderId: string): Promise<GetOrderBillResponse> => apiRequest(`/orders/${orderId}/bill`);
+export const getBill = (orderId: string): Promise<GetOrderBillResponse> =>
+  apiRequest(`/orders/${orderId}/bill`);
 
 export const updateStatus = (orderId: string, status: string): Promise<UpdateOrderStatusResponse> =>
   apiRequest(`/orders/${orderId}/status`, 'PUT', { status });
@@ -34,10 +35,14 @@ export const updateStatus = (orderId: string, status: string): Promise<UpdateOrd
 export const confirmPayment = (orderId: string): Promise<ConfirmPaymentResponse> =>
   apiRequest(`/orders/${orderId}/confirm-payment`, 'PUT');
 
-export const bulkUpdateStatus = (orderIds: string[], status: string): Promise<BulkUpdateStatusResponse> =>
+export const bulkUpdateStatus = (
+  orderIds: string[],
+  status: string,
+): Promise<BulkUpdateStatusResponse> =>
   apiRequest('/orders/bulk-status', 'PUT', { orderIds, status });
 
 export const listRefunds = (query: RefundListQuery): Promise<ListOrdersResponse> =>
   apiRequest(`/orders/refunds?${buildQuery(query)}`);
 
-export const refundInsights = (): Promise<RefundInsightsResponse> => apiRequest('/orders/refunds/insights');
+export const refundInsights = (): Promise<RefundInsightsResponse> =>
+  apiRequest('/orders/refunds/insights');

@@ -13,4 +13,5 @@ export const paymentMethodColors: Record<string, string> = {
   UPI: '#3b82f6',
   CASH: '#10b981',
   CARD: '#f59e0b',
+  CHECKOUT: '#8b5cf6', // paid through the café's SMEPay online checkout
 };

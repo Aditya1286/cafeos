@@ -1,5 +1,4 @@
 import { Request, Response } from 'express';
-import jwt from 'jsonwebtoken';
 import { User, IUser } from '../models/User';
 import { Business } from '../models/Business';
 import { SubscriptionPlan } from '../models/SubscriptionPlan';
@@ -7,14 +6,11 @@ import { Subscription } from '../models/Subscription';
 import { config } from '../config';
 import { AuthRequest } from '../middleware/auth';
 import { isPhoneVerified, clearVerifiedPhone } from '../services/otp.service';
+import { signAuthToken } from '../utils/authToken';
+import { handleServiceError } from '../utils/serviceError';
+import { findUserForLogin } from '../services/auth.service';
 
-const generateToken = (user: IUser): string => {
-  return jwt.sign(
-    { id: user._id, role: user.role, businessId: user.businessId },
-    config.jwtSecret,
-    { expiresIn: '7d' }
-  );
-};
+const generateToken = (user: IUser): string => signAuthToken(user);
 
 export const register = async (req: Request, res: Response) => {
   try {
@@ -130,7 +126,8 @@ export const register = async (req: Request, res: Response) => {
           name: user.name,
           email: user.email,
           role: user.role,
-          businessId: user.businessId
+          businessId: user.businessId,
+          avatarUrl: user.avatarUrl || ''
         },
         business: {
           id: business._id,
@@ -147,37 +144,10 @@ export const register = async (req: Request, res: Response) => {
   }
 };
 
+// Email or phone number + password — see services/auth.service.ts for how the account is found.
 export const login = async (req: Request, res: Response) => {
   try {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        error: { code: 'VALIDATION_ERROR', message: 'Email and password are required.' }
-      });
-    }
-
-    const cleanEmail = email.toLowerCase().trim();
-    const user = await User.findOne({ email: cleanEmail }).select('+passwordHash');
-
-    if (!user) {
-      console.warn(`[Auth] Login failed: User not found for email '${cleanEmail}'`);
-      return res.status(401).json({
-        success: false,
-        error: { code: 'INVALID_CREDENTIALS', message: 'Invalid email or password.' }
-      });
-    }
-
-    const isMatch = await user.comparePassword(password);
-    console.log("MATCH>>>")
-    if (!isMatch) {
-      console.warn(`[Auth] Login failed: Password mismatch for email '${cleanEmail}'`);
-      return res.status(401).json({
-        success: false,
-        error: { code: 'INVALID_CREDENTIALS', message: 'Invalid email or password.' }
-      });
-    }
+    const user = await findUserForLogin(req.body || {});
 
     if (user.status !== 'ACTIVE') {
       return res.status(403).json({
@@ -215,7 +185,8 @@ export const login = async (req: Request, res: Response) => {
           name: user.name,
           email: user.email,
           role: user.role,
-          businessId: user.businessId
+          businessId: user.businessId,
+          avatarUrl: user.avatarUrl || ''
         },
         business: business ? {
           id: business._id,
@@ -227,10 +198,8 @@ export const login = async (req: Request, res: Response) => {
       }
     });
   } catch (error: any) {
-    return res.status(500).json({
-      success: false,
-      error: { code: 'SERVER_ERROR', message: error.message }
-    });
+    // ServiceErrors (bad credentials, ambiguous number) keep their own status; anything else is a 500.
+    return handleServiceError(res, error);
   }
 };
 
@@ -250,7 +219,8 @@ export const getMe = async (req: AuthRequest, res: Response) => {
           name: user?.name,
           email: user?.email,
           role: user?.role,
-          businessId: user?.businessId
+          businessId: user?.businessId,
+          avatarUrl: user?.avatarUrl || ''
         },
         business
       }

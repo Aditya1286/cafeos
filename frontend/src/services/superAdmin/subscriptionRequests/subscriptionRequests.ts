@@ -1,7 +1,14 @@
 import { apiRequest } from '../../api';
-import { ApproveRequestResponse, ListSubscriptionRequestsResponse, RejectRequestResponse, SubscriptionRequestStatus } from './types';
+import {
+  ApproveRequestResponse,
+  ListSubscriptionRequestsResponse,
+  RejectRequestResponse,
+  SubscriptionRequestStatus,
+} from './types';
 
-export const list = (status: SubscriptionRequestStatus): Promise<ListSubscriptionRequestsResponse> =>
+export const list = (
+  status: SubscriptionRequestStatus,
+): Promise<ListSubscriptionRequestsResponse> =>
   apiRequest(`/admin/subscription-requests?status=${status}`);
 
 export const approve = (id: string): Promise<ApproveRequestResponse> =>

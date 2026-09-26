@@ -18,11 +18,18 @@ interface UseOwnerDashboardDataOptions {
   onRefundRequested?: (patch: { orderId: string; refundRequestedAt: string }) => void;
   /** Fired after a reconnect re-sync, so any other order list a caller keeps can re-fetch too. */
   onResync?: () => void;
+  /**
+   * Staff only see the Kitchen tab: load just the business profile and live orders. Menu, tables,
+   * inventory and analytics are owner/manager data — their endpoints would refuse a staff login.
+   */
+  kitchenOnly?: boolean;
 }
 
 const NEW_ORDER_SOUND_URL = 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3';
 const playNewOrderSound = () => {
-  try { new Audio(NEW_ORDER_SOUND_URL).play().catch(() => {}); } catch {}
+  try {
+    new Audio(NEW_ORDER_SOUND_URL).play().catch(() => {});
+  } catch {}
 };
 
 /**
@@ -51,21 +58,26 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
       const profileRes = await authService.getMe();
       setBusiness(profileRes.data.business);
 
-      const [ordersRes, catRes, prodRes, tblRes, invRes, analRes] = await Promise.all([
-        ordersService.list(),
-        menuService.listCategories(),
-        menuService.listProducts(),
-        tablesService.list(),
-        inventoryService.list(),
-        analyticsService.getDashboard()
-      ]);
+      if (options.kitchenOnly) {
+        const ordersRes = await ordersService.list();
+        setOrders(ordersRes.data || []);
+      } else {
+        const [ordersRes, catRes, prodRes, tblRes, invRes, analRes] = await Promise.all([
+          ordersService.list(),
+          menuService.listCategories(),
+          menuService.listProducts(),
+          tablesService.list(),
+          inventoryService.list(),
+          analyticsService.getDashboard(),
+        ]);
 
-      setOrders(ordersRes.data || []);
-      setCategories(catRes.data || []);
-      setProducts(prodRes.data || []);
-      setTables(tblRes.data || []);
-      setInventoryItems(invRes.data || []);
-      setAnalytics(analRes.data || null);
+        setOrders(ordersRes.data || []);
+        setCategories(catRes.data || []);
+        setProducts(prodRes.data || []);
+        setTables(tblRes.data || []);
+        setInventoryItems(invRes.data || []);
+        setAnalytics(analRes.data || null);
+      }
 
       if (profileRes.data.business?._id) {
         joinBusinessRoom(profileRes.data.business._id);
@@ -91,36 +103,51 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
     // `tables` here. Without this, the Tables & QR tab only reflected reality after a
     // manual refresh, even though the DB and the customer-facing QR flow were already
     // correct in real time.
-    const patchTableStatus = (tableId: string | null | undefined, tableStatus: string | null | undefined) => {
+    const patchTableStatus = (
+      tableId: string | null | undefined,
+      tableStatus: string | null | undefined,
+    ) => {
       if (!tableId || !tableStatus) return;
-      setTables(prev => prev.map(t => (t._id === tableId ? { ...t, status: tableStatus } : t)));
+      setTables((prev) => prev.map((t) => (t._id === tableId ? { ...t, status: tableStatus } : t)));
     };
 
     const socket = getSocket();
     socket.on('order:new', (newOrder: any) => {
-      setOrders(prev => [newOrder, ...prev]);
+      setOrders((prev) => [newOrder, ...prev]);
       toast(`🔔 New order ${newOrder.orderNumber || newOrder.orderId} arrived!`);
       playNewOrderSound();
       const arrivedId = newOrder._id || newOrder.orderId;
       setNewlyArrivedOrderId(arrivedId);
-      setTimeout(() => setNewlyArrivedOrderId(prev => (prev === arrivedId ? null : prev)), 5000);
+      setTimeout(() => setNewlyArrivedOrderId((prev) => (prev === arrivedId ? null : prev)), 5000);
       patchTableStatus(newOrder.tableId, newOrder.tableStatus);
       callbacksRef.current.onOrderNew?.(newOrder);
     });
     socket.on('order:updated', (updated: any) => {
-      setOrders(prev => prev.map(o => ((o._id === updated.orderId || o.orderId === updated.orderId) ? { ...o, orderStatus: updated.orderStatus } : o)));
+      setOrders((prev) =>
+        prev.map((o) =>
+          o._id === updated.orderId || o.orderId === updated.orderId
+            ? { ...o, orderStatus: updated.orderStatus }
+            : o,
+        ),
+      );
       patchTableStatus(updated.tableId, updated.tableStatus);
       callbacksRef.current.onOrderUpdated?.(updated);
     });
     socket.on('order:customer_marked_paid', (updated: any) => {
-      const patch = (o: any) => ((o._id === updated.orderId || o.orderId === updated.orderId) ? { ...o, customerMarkedPaidAt: updated.customerMarkedPaidAt } : o);
-      setOrders(prev => prev.map(patch));
+      const patch = (o: any) =>
+        o._id === updated.orderId || o.orderId === updated.orderId
+          ? { ...o, customerMarkedPaidAt: updated.customerMarkedPaidAt }
+          : o;
+      setOrders((prev) => prev.map(patch));
       toast(`💳 ${updated.orderNumber || 'An order'} — customer says they've paid`);
       callbacksRef.current.onCustomerMarkedPaid?.(updated);
     });
     socket.on('order:refund_requested', (updated: any) => {
-      const patch = (o: any) => ((o._id === updated.orderId || o.orderId === updated.orderId) ? { ...o, refundRequestedAt: updated.refundRequestedAt } : o);
-      setOrders(prev => prev.map(patch));
+      const patch = (o: any) =>
+        o._id === updated.orderId || o.orderId === updated.orderId
+          ? { ...o, refundRequestedAt: updated.refundRequestedAt }
+          : o;
+      setOrders((prev) => prev.map(patch));
       toast(`💸 ${updated.orderNumber || 'A customer'} requested a refund`);
       callbacksRef.current.onRefundRequested?.(updated);
     });
@@ -130,25 +157,32 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
     // ring for any new order that came in meanwhile, since the kitchen never heard it.
     const resyncAfterReconnect = async () => {
       try {
-        const [ordersRes, tblRes, analRes] = await Promise.all([
-          ordersService.list(),
-          tablesService.list(),
-          analyticsService.getDashboard()
-        ]);
+        const ordersRes = await ordersService.list();
         const fresh: any[] = ordersRes.data || [];
         const known = new Set(ordersRef.current.map((o) => o._id));
         const missed = fresh.filter((o) => !known.has(o._id) && o.orderStatus === 'PLACED');
-
         setOrders(fresh);
-        setTables(tblRes.data || []);
-        setAnalytics(analRes.data || null);
+
+        if (!callbacksRef.current.kitchenOnly) {
+          const [tblRes, analRes] = await Promise.all([
+            tablesService.list(),
+            analyticsService.getDashboard(),
+          ]);
+          setTables(tblRes.data || []);
+          setAnalytics(analRes.data || null);
+        }
 
         if (missed.length > 0) {
-          toast(`🔔 ${missed.length} new order${missed.length === 1 ? '' : 's'} arrived while you were offline`);
+          toast(
+            `🔔 ${missed.length} new order${missed.length === 1 ? '' : 's'} arrived while you were offline`,
+          );
           playNewOrderSound();
           const arrivedId = missed[0]._id;
           setNewlyArrivedOrderId(arrivedId);
-          setTimeout(() => setNewlyArrivedOrderId(prev => (prev === arrivedId ? null : prev)), 5000);
+          setTimeout(
+            () => setNewlyArrivedOrderId((prev) => (prev === arrivedId ? null : prev)),
+            5000,
+          );
         }
         callbacksRef.current.onResync?.();
       } catch (err) {
@@ -158,7 +192,9 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
     const stopResync = onReconnect(resyncAfterReconnect);
 
     return () => {
-      socket.off('order:new'); socket.off('order:updated'); socket.off('order:customer_marked_paid');
+      socket.off('order:new');
+      socket.off('order:updated');
+      socket.off('order:customer_marked_paid');
       socket.off('order:refund_requested');
       stopResync();
     };
@@ -171,9 +207,17 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
     }
     try {
       await ordersService.updateStatus(orderId, status);
-      setOrders(prev => prev.map(o => ((o._id === orderId || o.orderId === orderId)
-        ? { ...o, orderStatus: status, ...(status === 'REFUNDED' ? { paymentStatus: 'REFUNDED' } : {}) }
-        : o)));
+      setOrders((prev) =>
+        prev.map((o) =>
+          o._id === orderId || o.orderId === orderId
+            ? {
+                ...o,
+                orderStatus: status,
+                ...(status === 'REFUNDED' ? { paymentStatus: 'REFUNDED' } : {}),
+              }
+            : o,
+        ),
+      );
       toast.success(`Order status updated to ${status}`);
     } catch (err: any) {
       toast.error(err.message);
@@ -191,7 +235,11 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
     }
     try {
       const res = await ordersService.confirmPayment(orderId);
-      setOrders(prev => prev.map(o => ((o._id === orderId || o.orderId === orderId) ? { ...o, paymentStatus: 'PAID' } : o)));
+      setOrders((prev) =>
+        prev.map((o) =>
+          o._id === orderId || o.orderId === orderId ? { ...o, paymentStatus: 'PAID' } : o,
+        ),
+      );
       toast.success(res.message || 'Payment confirmed');
     } catch (err: any) {
       toast.error(err.message || 'Could not confirm payment');
@@ -202,19 +250,28 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
   // Bulk-accept (or any other bulk transition) for the "select all in New Orders, review,
   // confirm" flow. Keeps going past individual order failures on the backend, so this reports
   // back exactly which orders updated and which didn't rather than an all-or-nothing result.
-  const handleBulkUpdateOrderStatus = async (orderIds: string[], status: string): Promise<{ updatedIds: string[]; failed: { orderId: string; message: string }[] }> => {
+  const handleBulkUpdateOrderStatus = async (
+    orderIds: string[],
+    status: string,
+  ): Promise<{ updatedIds: string[]; failed: { orderId: string; message: string }[] }> => {
     const res = await ordersService.bulkUpdateStatus(orderIds, status);
     const updated: any[] = res.data?.updated || [];
     const failed: { orderId: string; message: string }[] = res.data?.failed || [];
 
     const updatedIds = updated.map((o) => o._id || o.orderId);
-    setOrders(prev => prev.map(o => {
-      const match = updated.find((u) => u._id === o._id || u.orderId === o.orderId);
-      return match ? { ...o, orderStatus: match.orderStatus, paymentStatus: match.paymentStatus } : o;
-    }));
+    setOrders((prev) =>
+      prev.map((o) => {
+        const match = updated.find((u) => u._id === o._id || u.orderId === o.orderId);
+        return match
+          ? { ...o, orderStatus: match.orderStatus, paymentStatus: match.paymentStatus }
+          : o;
+      }),
+    );
 
-    if (updated.length > 0) toast.success(`${updated.length} order${updated.length === 1 ? '' : 's'} accepted`);
-    if (failed.length > 0) toast.error(`${failed.length} order${failed.length === 1 ? '' : 's'} could not be updated`);
+    if (updated.length > 0)
+      toast.success(`${updated.length} order${updated.length === 1 ? '' : 's'} accepted`);
+    if (failed.length > 0)
+      toast.error(`${failed.length} order${failed.length === 1 ? '' : 's'} could not be updated`);
 
     return { updatedIds, failed };
   };
@@ -239,7 +296,11 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
     try {
       await businessService.updateSettings({ taxRatePercentage });
       setBusiness((prev: any) => (prev ? { ...prev, taxRatePercentage } : prev));
-      toast.success(taxRatePercentage > 0 ? `GST enabled at ${taxRatePercentage}%` : 'GST disabled — new orders won\'t be taxed');
+      toast.success(
+        taxRatePercentage > 0
+          ? `GST enabled at ${taxRatePercentage}%`
+          : "GST disabled — new orders won't be taxed",
+      );
     } catch (err: any) {
       toast.error(err.message || 'Could not update GST setting');
     } finally {
@@ -262,11 +323,30 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
     }
   };
 
+  // The master QR (general menu link): whether it still takes counter orders while tables are on.
+  // A business saved before the setting existed counts as on, matching the backend default.
+  const [savingMasterQr, setSavingMasterQr] = useState(false);
+  const handleToggleMasterQr = async () => {
+    const next = business?.masterQrEnabled === false;
+    setSavingMasterQr(true);
+    try {
+      await businessService.updateSettings({ masterQrEnabled: next });
+      setBusiness((prev: any) => (prev ? { ...prev, masterQrEnabled: next } : prev));
+      toast.success(next ? 'Master QR now takes orders' : 'Master QR switched to menu-only');
+    } catch (err: any) {
+      toast.error(err.message || 'Could not update the master QR');
+    } finally {
+      setSavingMasterQr(false);
+    }
+  };
+
   // Disables/re-enables one table's QR without deleting it (table row + its order history stay).
   const handleToggleTableActive = async (tableId: string) => {
     try {
       const res = await tablesService.toggleActive(tableId);
-      setTables(prev => prev.map(t => (t._id === tableId ? { ...t, isActive: res.data.isActive } : t)));
+      setTables((prev) =>
+        prev.map((t) => (t._id === tableId ? { ...t, isActive: res.data.isActive } : t)),
+      );
       toast.success(res.message || 'Table updated');
     } catch (err: any) {
       toast.error(err.message || 'Could not update table');
@@ -278,7 +358,9 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
   const handleMarkTableEmpty = async (tableId: string) => {
     try {
       const res = await tablesService.markEmpty(tableId);
-      setTables(prev => prev.map(t => (t._id === tableId ? { ...t, status: res.data.status } : t)));
+      setTables((prev) =>
+        prev.map((t) => (t._id === tableId ? { ...t, status: res.data.status } : t)),
+      );
       toast.success(res.message || 'Table marked as empty');
     } catch (err: any) {
       toast.error(err.message || 'Could not update table');
@@ -288,7 +370,7 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
   const handleDeleteTable = async (tableId: string) => {
     try {
       await tablesService.remove(tableId);
-      setTables(prev => prev.filter(t => t._id !== tableId));
+      setTables((prev) => prev.filter((t) => t._id !== tableId));
       toast.success('Table deleted');
     } catch (err: any) {
       toast.error(err.message || 'Could not delete table');
@@ -301,7 +383,9 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
   const handleRemoveProduct = async (productId: string) => {
     try {
       await menuService.removeProduct(productId);
-      setProducts(prev => prev.map(p => (p._id === productId ? { ...p, isAvailable: false } : p)));
+      setProducts((prev) =>
+        prev.map((p) => (p._id === productId ? { ...p, isAvailable: false } : p)),
+      );
       toast.success('Item removed from menu');
     } catch (err: any) {
       toast.error(err.message || 'Could not remove item');
@@ -311,7 +395,9 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
   const handleRestoreProduct = async (productId: string) => {
     try {
       await menuService.restoreProduct(productId);
-      setProducts(prev => prev.map(p => (p._id === productId ? { ...p, isAvailable: true } : p)));
+      setProducts((prev) =>
+        prev.map((p) => (p._id === productId ? { ...p, isAvailable: true } : p)),
+      );
       toast.success('Item restored to menu');
     } catch (err: any) {
       toast.error(err.message || 'Could not restore item');
@@ -325,7 +411,7 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
   const handleDeleteProduct = async (productId: string) => {
     try {
       await menuService.archiveProduct(productId);
-      setProducts(prev => prev.filter(p => p._id !== productId));
+      setProducts((prev) => prev.filter((p) => p._id !== productId));
       toast.success('Item deleted');
     } catch (err: any) {
       toast.error(err.message || 'Could not delete item');
@@ -333,7 +419,8 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
   };
 
   return {
-    orders, setOrders,
+    orders,
+    setOrders,
     categories,
     products,
     tables,
@@ -346,10 +433,19 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
     handleUpdateOrderStatus,
     handleBulkUpdateOrderStatus,
     handleConfirmPayment,
-    savingUpiVpa, handleSaveUpiVpa,
-    savingTaxRate, handleSaveTaxRate,
-    savingTablesEnabled, handleToggleTablesEnabled,
-    handleToggleTableActive, handleDeleteTable, handleMarkTableEmpty,
-    handleRemoveProduct, handleRestoreProduct, handleDeleteProduct,
+    savingUpiVpa,
+    handleSaveUpiVpa,
+    savingTaxRate,
+    handleSaveTaxRate,
+    savingTablesEnabled,
+    handleToggleTablesEnabled,
+    savingMasterQr,
+    handleToggleMasterQr,
+    handleToggleTableActive,
+    handleDeleteTable,
+    handleMarkTableEmpty,
+    handleRemoveProduct,
+    handleRestoreProduct,
+    handleDeleteProduct,
   };
 };

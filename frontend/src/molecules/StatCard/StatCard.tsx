@@ -13,7 +13,16 @@ export interface StatCardProps {
   border: string;
 }
 
-export const StatCard = ({ icon: Icon, label, value, subtext, trend, color, iconBg, border }: StatCardProps) => (
+export const StatCard = ({
+  icon: Icon,
+  label,
+  value,
+  subtext,
+  trend,
+  color,
+  iconBg,
+  border,
+}: StatCardProps) => (
   <motion.div
     whileHover={{ y: -2 }}
     className={`bg-white p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border ${border} shadow-sm hover:shadow-md transition-all space-y-2 sm:space-y-3 relative overflow-hidden`}
@@ -28,7 +37,9 @@ export const StatCard = ({ icon: Icon, label, value, subtext, trend, color, icon
         </div>
       </div>
 
-      <div className={`w-8 h-8 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl ${iconBg} text-white flex items-center justify-center shadow-md shrink-0`}>
+      <div
+        className={`w-8 h-8 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl ${iconBg} text-white flex items-center justify-center shadow-md shrink-0`}
+      >
         <Icon className="w-4 h-4 sm:w-5.5 sm:h-5.5" />
       </div>
     </div>

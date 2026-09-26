@@ -3,7 +3,8 @@ import supportService from '../services/support';
 
 export type SupportWidgetMode = 'CUSTOMER' | 'BUSINESS_OWNER';
 type WidgetView = 'MENU' | 'TICKET_FLOW' | 'CALL' | 'TRACK';
-type TicketStep = 'CATEGORY' | 'SUBCATEGORY' | 'DETAILS' | 'CONTACT' | 'SUBMITTING' | 'CONFIRMATION';
+type TicketStep =
+  'CATEGORY' | 'SUBCATEGORY' | 'DETAILS' | 'CONTACT' | 'SUBMITTING' | 'CONFIRMATION';
 
 // businessId is required in CUSTOMER mode (createPublicTicket has no other way to identify
 // the business — see support.service.ts's raiseTicket) but is derived server-side from the
@@ -11,8 +12,18 @@ type TicketStep = 'CATEGORY' | 'SUBCATEGORY' | 'DETAILS' | 'CONTACT' | 'SUBMITTI
 // interface — is what makes a missing businessId a compile error at every call site instead
 // of a 400 "A valid business is required" surfacing only at submit time.
 type UseSupportWidgetArgs =
-  | { mode: 'CUSTOMER'; businessId: string; orderId?: string; prefill?: { name?: string; phone?: string } }
-  | { mode: 'BUSINESS_OWNER'; businessId?: string; orderId?: string; prefill?: { name?: string; phone?: string } };
+  | {
+      mode: 'CUSTOMER';
+      businessId: string;
+      orderId?: string;
+      prefill?: { name?: string; phone?: string };
+    }
+  | {
+      mode: 'BUSINESS_OWNER';
+      businessId?: string;
+      orderId?: string;
+      prefill?: { name?: string; phone?: string };
+    };
 
 /** Drives the floating support widget's sequential flow (category → subcategory → details →
  * contact → submit) plus the standalone "call us" and "track a ticket" side-flows. */
@@ -29,7 +40,9 @@ export const useSupportWidget = ({ mode, businessId, orderId, prefill }: UseSupp
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [ticketNumber, setTicketNumber] = useState<string | null>(null);
 
-  const [callState, setCallState] = useState<'IDLE' | 'LOADING' | 'FOUND' | 'NONE_AVAILABLE'>('IDLE');
+  const [callState, setCallState] = useState<'IDLE' | 'LOADING' | 'FOUND' | 'NONE_AVAILABLE'>(
+    'IDLE',
+  );
   const [callAgent, setCallAgent] = useState<{ name: string; phone: string } | null>(null);
 
   const [trackTicketNumber, setTrackTicketNumber] = useState('');
@@ -84,7 +97,9 @@ export const useSupportWidget = ({ mode, businessId, orderId, prefill }: UseSupp
     // or a stale prop passed from a wider `any`) could still get here — fail with a clear
     // message instead of letting the request go out and surface the backend's generic 400.
     if (mode === 'CUSTOMER' && !businessId) {
-      setSubmitError("We couldn't tell which business this is for — please refresh the page and try again.");
+      setSubmitError(
+        "We couldn't tell which business this is for — please refresh the page and try again.",
+      );
       setStep('CONTACT');
       return;
     }
@@ -101,7 +116,7 @@ export const useSupportWidget = ({ mode, businessId, orderId, prefill }: UseSupp
               businessId,
               orderId,
               customerName: contactName.trim(),
-              customerPhone: contactPhone.trim()
+              customerPhone: contactPhone.trim(),
             });
       setTicketNumber(res.data.ticketNumber);
       setStep('CONFIRMATION');
@@ -151,13 +166,40 @@ export const useSupportWidget = ({ mode, businessId, orderId, prefill }: UseSupp
   };
 
   return {
-    isOpen, openWidget, closeWidget,
-    view, goToMenu, startTicketFlow, startCallFlow, startTrackFlow,
+    isOpen,
+    openWidget,
+    closeWidget,
+    view,
+    goToMenu,
+    startTicketFlow,
+    startCallFlow,
+    startTrackFlow,
     step,
-    category, subCategory, description, setDescription, contactName, setContactName, contactPhone, setContactPhone,
-    selectCategory, selectSubCategory, submitDescription, submitContact, goToStep,
-    submitError, ticketNumber, resetTicketFlow,
-    callState, callAgent,
-    trackTicketNumber, setTrackTicketNumber, trackPhone, setTrackPhone, trackResult, trackError, trackLoading, submitTrack
+    category,
+    subCategory,
+    description,
+    setDescription,
+    contactName,
+    setContactName,
+    contactPhone,
+    setContactPhone,
+    selectCategory,
+    selectSubCategory,
+    submitDescription,
+    submitContact,
+    goToStep,
+    submitError,
+    ticketNumber,
+    resetTicketFlow,
+    callState,
+    callAgent,
+    trackTicketNumber,
+    setTrackTicketNumber,
+    trackPhone,
+    setTrackPhone,
+    trackResult,
+    trackError,
+    trackLoading,
+    submitTrack,
   };
 };

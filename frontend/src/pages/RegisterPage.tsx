@@ -1,8 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-  Coffee, Shield, UtensilsCrossed, ArrowRight, Lock, Mail,
-  User, Phone, Store, Globe, CheckCircle2, Sparkles, Zap, Layers, UserPlus, Eye, EyeOff, Clock
+  Coffee,
+  Shield,
+  UtensilsCrossed,
+  ArrowRight,
+  Lock,
+  Mail,
+  User,
+  Phone,
+  Store,
+  Globe,
+  CheckCircle2,
+  Sparkles,
+  Zap,
+  Layers,
+  UserPlus,
+  Eye,
+  EyeOff,
+  Clock,
 } from 'lucide-react';
 import { setAuthToken } from '../services/api';
 import authService from '../services/auth';
@@ -18,21 +34,22 @@ const carouselSlides = [
   {
     image: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=1400&q=80',
     tag: 'KITCHEN',
-    title: "Orders Go Straight to the Kitchen.",
-    subtitle: 'Every order shows up on your kitchen screen the moment it’s placed — no paper slips, no shouting.'
+    title: 'Orders Go Straight to the Kitchen.',
+    subtitle:
+      'Every order shows up on your kitchen screen the moment it’s placed — no paper slips, no shouting.',
   },
   {
     image: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=1400&q=80',
     tag: 'QR ORDERING',
     title: 'Customers Order From Their Phone.',
-    subtitle: 'They scan the QR code on the table, pick their food, and pay — no app to download.'
+    subtitle: 'They scan the QR code on the table, pick their food, and pay — no app to download.',
   },
   {
     image: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=1400&q=80',
     tag: 'MONEY',
     title: 'Know Where Your Money Goes.',
-    subtitle: 'See your sales, our fees and your stock in one place — all worked out for you.'
-  }
+    subtitle: 'See your sales, our fees and your stock in one place — all worked out for you.',
+  },
 ];
 
 export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess }) => {
@@ -46,7 +63,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
     password: '',
     phone: '',
     businessName: '',
-    slug: ''
+    slug: '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -64,7 +81,10 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
     const { name, value } = e.target;
     setFormData((prev) => {
       const updated = { ...prev, [name]: value };
-      if (name === 'businessName' && (!prev.slug || prev.slug === prev.businessName.toLowerCase().replace(/[^a-z0-9]/g, '-'))) {
+      if (
+        name === 'businessName' &&
+        (!prev.slug || prev.slug === prev.businessName.toLowerCase().replace(/[^a-z0-9]/g, '-'))
+      ) {
         updated.slug = value.toLowerCase().replace(/[^a-z0-9]/g, '-');
       }
       return updated;
@@ -94,12 +114,10 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
 
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900 flex font-sans selection:bg-red-600 selection:text-white">
-      
       {/* ========================================================================= */}
       {/* LEFT COLUMN: CRISP HIGH-DEF CAROUSEL & FLOATING STATS OVERLAY (UNBLURRED) */}
       {/* ========================================================================= */}
       <div className="hidden lg:flex lg:w-[54%] relative flex-col justify-between p-12 overflow-hidden bg-slate-950">
-        
         {/* Crisp Unblurred Slides */}
         {carouselSlides.map((slide, idx) => (
           <div
@@ -126,9 +144,13 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-2xl font-black tracking-tight text-white">{APP_NAME}</span>
-                <span className="text-[10px] font-mono px-2 py-0.5 bg-red-600/30 text-red-300 rounded-full border border-red-500/30 font-bold">LIVE</span>
+                <span className="text-[10px] font-mono px-2 py-0.5 bg-red-600/30 text-red-300 rounded-full border border-red-500/30 font-bold">
+                  LIVE
+                </span>
               </div>
-              <span className="text-xs text-slate-300 font-semibold block">Ordering & billing for cafés</span>
+              <span className="text-xs text-slate-300 font-semibold block">
+                Ordering & billing for cafés
+              </span>
             </div>
           </Link>
 
@@ -140,7 +162,6 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
 
         {/* Bottom Floating Feature Banner & Slide Control */}
         <div className="relative z-10 space-y-6 max-w-xl">
-          
           {/* Glass Stats Badge */}
           <div className="grid grid-cols-3 gap-3 p-4 rounded-2xl bg-slate-900/80 backdrop-blur-md border border-white/10 text-white">
             <div className="text-left space-y-0.5">
@@ -184,22 +205,20 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
                 onClick={() => setCurrentSlide(idx)}
                 aria-label={`Go to slide ${idx + 1}`}
                 className={`h-2 rounded-full transition-all duration-500 ${
-                  currentSlide === idx 
-                    ? 'w-10 bg-red-600 shadow-lg shadow-red-600/60' 
+                  currentSlide === idx
+                    ? 'w-10 bg-red-600 shadow-lg shadow-red-600/60'
                     : 'w-3 bg-white/30 hover:bg-white/60'
                 }`}
               />
             ))}
           </div>
         </div>
-
       </div>
 
       {/* ========================================================================= */}
       {/* RIGHT COLUMN: HIGHLY PROFESSIONAL LIGHT THEME SIGNUP CONTAINER          */}
       {/* ========================================================================= */}
       <div className="w-full lg:w-[46%] flex flex-col justify-between p-6 sm:p-10 lg:p-14 bg-slate-50 overflow-y-auto">
-        
         {/* Top Header Mobile Brand */}
         <div className="flex justify-between items-center lg:hidden mb-6">
           <Link to="/" className="inline-flex items-center gap-2.5">
@@ -216,14 +235,15 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
 
         {/* Main Form Center Wrapper */}
         <div className="max-w-md w-full mx-auto my-auto space-y-6">
-          
           {/* Section Header */}
           <div className="text-left space-y-2">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-50 border border-red-200/80 text-red-700 text-[11px] font-bold">
               <Sparkles className="w-3.5 h-3.5 text-red-600" />
               <span>14-Day Free Trial • Instant Setup</span>
             </div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Create Business Account</h1>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight">
+              Create Business Account
+            </h1>
             <p className="text-xs sm:text-sm text-slate-600 font-medium">
               Set up your menu, kitchen screen and billing in about 2 minutes.
             </p>
@@ -248,20 +268,31 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
 
           {/* Step Process Indicator */}
           <div className="flex items-center justify-between px-2 text-xs font-bold">
-            <div className={`flex items-center gap-2 ${step >= 1 ? 'text-red-600' : 'text-slate-400'}`}>
-              <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-extrabold ${step >= 1 ? 'bg-red-600 text-white shadow-md shadow-red-600/30' : 'bg-slate-200 text-slate-500'}`}>1</span>
+            <div
+              className={`flex items-center gap-2 ${step >= 1 ? 'text-red-600' : 'text-slate-400'}`}
+            >
+              <span
+                className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-extrabold ${step >= 1 ? 'bg-red-600 text-white shadow-md shadow-red-600/30' : 'bg-slate-200 text-slate-500'}`}
+              >
+                1
+              </span>
               <span>Your Login Details</span>
             </div>
             <div className="w-12 h-0.5 bg-slate-200" />
-            <div className={`flex items-center gap-2 ${step >= 2 ? 'text-red-600' : 'text-slate-400'}`}>
-              <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-extrabold ${step >= 2 ? 'bg-red-600 text-white shadow-md shadow-red-600/30' : 'bg-slate-200 text-slate-500'}`}>2</span>
+            <div
+              className={`flex items-center gap-2 ${step >= 2 ? 'text-red-600' : 'text-slate-400'}`}
+            >
+              <span
+                className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-extrabold ${step >= 2 ? 'bg-red-600 text-white shadow-md shadow-red-600/30' : 'bg-slate-200 text-slate-500'}`}
+              >
+                2
+              </span>
               <span>Business Setup</span>
             </div>
           </div>
 
           {/* Modern Elevated White Form Card */}
           <div className="bg-white p-7 rounded-3xl border border-slate-200/90 shadow-xl shadow-slate-200/50 space-y-5">
-            
             {error && (
               <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-800 text-xs font-semibold flex items-center gap-2 text-left">
                 <span className="w-2 h-2 rounded-full bg-red-600 flex-shrink-0" />
@@ -274,7 +305,9 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
                 <>
                   {/* Full Name */}
                   <div>
-                    <label className="block text-xs font-extrabold text-slate-900 mb-1.5">Owner Full Name</label>
+                    <label className="block text-xs font-extrabold text-slate-900 mb-1.5">
+                      Owner Full Name
+                    </label>
                     <div className="relative">
                       <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                       <input
@@ -291,7 +324,9 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
 
                   {/* Work Email */}
                   <div>
-                    <label className="block text-xs font-extrabold text-slate-900 mb-1.5">Work Email Address</label>
+                    <label className="block text-xs font-extrabold text-slate-900 mb-1.5">
+                      Work Email Address
+                    </label>
                     <div className="relative">
                       <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                       <input
@@ -308,7 +343,9 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
 
                   {/* Mobile Phone */}
                   <div>
-                    <label className="block text-xs font-extrabold text-slate-900 mb-1.5">Phone Number</label>
+                    <label className="block text-xs font-extrabold text-slate-900 mb-1.5">
+                      Phone Number
+                    </label>
                     <div className="flex gap-2">
                       <div className="relative flex-1">
                         <Phone className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -339,7 +376,8 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
 
                     {otp.otpSent && !otp.canResend && !otp.otpVerified && (
                       <span className="mt-1.5 flex items-center gap-1 text-[11px] font-bold text-slate-400 tabular-nums">
-                        <Clock className="w-3.5 h-3.5" /> Resend available in {formatTime(otp.resendSecondsLeft)}
+                        <Clock className="w-3.5 h-3.5" /> Resend available in{' '}
+                        {formatTime(otp.resendSecondsLeft)}
                       </span>
                     )}
 
@@ -351,10 +389,14 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
                     {otp.devOtp && (
                       <div className="mt-2 flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-amber-50 border border-dashed border-amber-300">
                         <span className="flex items-center gap-1.5 text-[10px] font-extrabold text-amber-700">
-                          <span className="px-1.5 py-0.5 rounded-md bg-amber-400/30 uppercase tracking-wider">Staging</span>
+                          <span className="px-1.5 py-0.5 rounded-md bg-amber-400/30 uppercase tracking-wider">
+                            Staging
+                          </span>
                           Test OTP
                         </span>
-                        <span className="text-sm font-black text-amber-800 tracking-[0.2em]">{otp.devOtp}</span>
+                        <span className="text-sm font-black text-amber-800 tracking-[0.2em]">
+                          {otp.devOtp}
+                        </span>
                       </div>
                     )}
 
@@ -371,7 +413,9 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
                           inputMode="numeric"
                           placeholder="Enter OTP"
                           value={otp.otpCode}
-                          onChange={(e) => otp.setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                          onChange={(e) =>
+                            otp.setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))
+                          }
                           className="flex-1 px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-xs text-slate-900 font-semibold outline-none focus:border-red-600 focus:bg-white focus:ring-2 focus:ring-red-600/15 transition-all"
                         />
                         <button
@@ -392,11 +436,13 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
 
                   {/* Password */}
                   <div>
-                    <label className="block text-xs font-extrabold text-slate-900 mb-1.5">Password</label>
+                    <label className="block text-xs font-extrabold text-slate-900 mb-1.5">
+                      Password
+                    </label>
                     <div className="relative">
                       <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                       <input
-                        type={showPassword ? "text" : "password"}
+                        type={showPassword ? 'text' : 'password'}
                         required
                         name="password"
                         value={formData.password}
@@ -409,7 +455,11 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none"
                       >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        {showPassword ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
                       </button>
                     </div>
                   </div>
@@ -417,7 +467,12 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
                   <button
                     type="button"
                     onClick={() => {
-                      if (!formData.name || !formData.email || !formData.phone || !formData.password) {
+                      if (
+                        !formData.name ||
+                        !formData.email ||
+                        !formData.phone ||
+                        !formData.password
+                      ) {
                         setError('Please fill in all fields before continuing.');
                         return;
                       }
@@ -438,7 +493,9 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
                 <>
                   {/* Business Name */}
                   <div>
-                    <label className="block text-xs font-extrabold text-slate-900 mb-1.5">Business Name</label>
+                    <label className="block text-xs font-extrabold text-slate-900 mb-1.5">
+                      Business Name
+                    </label>
                     <div className="relative">
                       <Store className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                       <input
@@ -455,7 +512,9 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
 
                   {/* Business Subdomain / URL Slug */}
                   <div>
-                    <label className="block text-xs font-extrabold text-slate-900 mb-1.5">Your Menu Link Name</label>
+                    <label className="block text-xs font-extrabold text-slate-900 mb-1.5">
+                      Your Menu Link Name
+                    </label>
                     <div className="relative flex items-center">
                       <Globe className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                       <input
@@ -469,7 +528,10 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
                       />
                     </div>
                     <p className="text-[10px] text-slate-500 mt-1 font-mono">
-                      Your QR menu link: <span className="text-red-600 font-bold">{APP_SLUG}.app/c/{formData.slug || 'your-slug'}</span>
+                      Your QR menu link:{' '}
+                      <span className="text-red-600 font-bold">
+                        {APP_SLUG}.app/c/{formData.slug || 'your-slug'}
+                      </span>
                     </p>
                   </div>
 
@@ -482,7 +544,11 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
                     />
                     <span className="text-[11px] text-slate-600 font-medium leading-relaxed">
                       I agree to the{' '}
-                      <Link to="/terms" target="_blank" className="text-red-600 font-bold hover:underline">
+                      <Link
+                        to="/terms"
+                        target="_blank"
+                        className="text-red-600 font-bold hover:underline"
+                      >
                         Merchant Terms of Service
                       </Link>
                       , including the commission and billing terms.
@@ -528,9 +594,14 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
 
             <p className="text-[10px] text-center text-slate-400">
               By creating an account, you agree to {APP_NAME}'s{' '}
-              <Link to="/terms" target="_blank" className="text-slate-500 font-bold hover:underline">
+              <Link
+                to="/terms"
+                target="_blank"
+                className="text-slate-500 font-bold hover:underline"
+              >
                 Merchant Terms of Service
-              </Link>.
+              </Link>
+              .
             </p>
           </div>
 
@@ -542,7 +613,6 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
             <span>•</span>
             <span>Your data is kept private</span>
           </div>
-
         </div>
 
         {/* Footer */}
@@ -550,8 +620,6 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
           © 2026 {APP_NAME} SaaS Platform Inc. • Empowering 500+ Hospitality Businesses Globally
         </div>
       </div>
-
     </div>
   );
 };
-

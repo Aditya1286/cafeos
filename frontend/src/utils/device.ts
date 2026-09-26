@@ -1,4 +1,3 @@
-
 /**
  * Custom URL schemes like upi:// only get intercepted by the OS on a
  * phone. On desktop there's nothing to hand off to, so the caller should

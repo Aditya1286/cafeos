@@ -9,18 +9,24 @@ import { DATE_PRESETS } from './types';
 /** `compact`: smaller mark and no tagline, for the single-row mobile bar. */
 export const AdminBrand = ({ compact = false }: { compact?: boolean }) => (
   <div className={`flex items-center min-w-0 ${compact ? 'gap-2.5' : 'gap-3'}`}>
-    <div className={`bg-gradient-to-tr from-red-600 via-rose-500 to-amber-500 flex items-center justify-center text-white font-black shadow-lg shadow-red-500/20 shrink-0 ${
-      compact ? 'w-8 h-8 rounded-xl text-base' : 'w-10 h-10 rounded-2xl text-xl'
-    }`}>
+    <div
+      className={`bg-gradient-to-tr from-red-600 via-rose-500 to-amber-500 flex items-center justify-center text-white font-black shadow-lg shadow-red-500/20 shrink-0 ${
+        compact ? 'w-8 h-8 rounded-xl text-base' : 'w-10 h-10 rounded-2xl text-xl'
+      }`}
+    >
       ☕
     </div>
     <div className="min-w-0">
       <div className="flex items-center gap-2 min-w-0">
-        <span className="text-base font-black tracking-tight text-slate-900 truncate">{APP_NAME}</span>
+        <span className="text-base font-black tracking-tight text-slate-900 truncate">
+          {APP_NAME}
+        </span>
         {/* On the narrowest phones the badge would crowd out the app name itself. */}
-        <span className={`px-2 py-0.5 rounded-full bg-red-50 text-red-600 text-[10px] font-extrabold border border-red-200 shrink-0 ${
-          compact ? 'hidden min-[360px]:inline' : ''
-        }`}>
+        <span
+          className={`px-2 py-0.5 rounded-full bg-red-50 text-red-600 text-[10px] font-extrabold border border-red-200 shrink-0 ${
+            compact ? 'hidden min-[360px]:inline' : ''
+          }`}
+        >
           Super Admin
         </span>
       </div>
@@ -46,7 +52,11 @@ export const useDismissOnOutsideClick = (open: boolean, onDismiss: () => void) =
 };
 
 /** Date-range picker driving every date-scoped chart. `compact` shows the short label ("7D"). */
-export const DateRangeMenu = ({ dateRange, onDateRangeChange, compact = false }: {
+export const DateRangeMenu = ({
+  dateRange,
+  onDateRangeChange,
+  compact = false,
+}: {
   dateRange: string;
   onDateRangeChange: (range: string) => void;
   compact?: boolean;
@@ -79,9 +89,14 @@ export const DateRangeMenu = ({ dateRange, onDateRangeChange, compact = false }:
             {DATE_PRESETS.map((preset) => (
               <button
                 key={preset.id}
-                onClick={() => { onDateRangeChange(preset.id); setOpen(false); }}
+                onClick={() => {
+                  onDateRangeChange(preset.id);
+                  setOpen(false);
+                }}
                 className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-left font-bold transition-colors ${
-                  dateRange === preset.id ? 'bg-red-50 text-red-600' : 'text-slate-700 hover:bg-slate-100'
+                  dateRange === preset.id
+                    ? 'bg-red-50 text-red-600'
+                    : 'text-slate-700 hover:bg-slate-100'
                 }`}
               >
                 <span>{preset.label}</span>

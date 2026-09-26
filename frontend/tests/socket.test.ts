@@ -21,11 +21,18 @@ let url: string;
 let joinAckDelayMs = 0;
 let silentJoinEvents = new Set<string>();
 
-const handleJoin = (socket: ServerSocket, event: string, allowed: boolean, room: string, ack: unknown) => {
+const handleJoin = (
+  socket: ServerSocket,
+  event: string,
+  allowed: boolean,
+  room: string,
+  ack: unknown,
+) => {
   if (silentJoinEvents.has(event)) return; // never answers — simulates a hung server
   setTimeout(() => {
     if (allowed) socket.join(room);
-    if (typeof ack === 'function') ack(allowed ? { ok: true } : { ok: false, code: 'UNAUTHORIZED' });
+    if (typeof ack === 'function')
+      ack(allowed ? { ok: true } : { ok: false, code: 'UNAUTHORIZED' });
   }, joinAckDelayMs);
 };
 
@@ -35,11 +42,19 @@ beforeAll(async () => {
   io.on('connection', (socket) => {
     const token = socket.handshake.auth?.token;
     socket.on('join_business_room', (id: string, ack: unknown) =>
-      handleJoin(socket, 'join_business_room', token === OWNER_TOKEN || token === ADMIN_TOKEN, `business:${id}`, ack)
+      handleJoin(
+        socket,
+        'join_business_room',
+        token === OWNER_TOKEN || token === ADMIN_TOKEN,
+        `business:${id}`,
+        ack,
+      ),
     );
-    socket.on('join_order_room', (id: string, ack: unknown) => handleJoin(socket, 'join_order_room', true, `order:${id}`, ack));
+    socket.on('join_order_room', (id: string, ack: unknown) =>
+      handleJoin(socket, 'join_order_room', true, `order:${id}`, ack),
+    );
     socket.on('join_admin_orders_room', (ack: unknown) =>
-      handleJoin(socket, 'join_admin_orders_room', token === ADMIN_TOKEN, 'admin:orders', ack)
+      handleJoin(socket, 'join_admin_orders_room', token === ADMIN_TOKEN, 'admin:orders', ack),
     );
   });
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
@@ -63,7 +78,7 @@ beforeEach(async () => {
   vi.stubGlobal('localStorage', {
     getItem: (k: string) => storage.get(k) ?? null,
     setItem: (k: string, v: string) => void storage.set(k, v),
-    removeItem: (k: string) => void storage.delete(k)
+    removeItem: (k: string) => void storage.delete(k),
   });
   vi.spyOn(console, 'log').mockImplementation(() => {});
   // A fresh module per test = a fresh page load (new singleton, no remembered rooms).
@@ -119,11 +134,21 @@ describe('rooms', () => {
     client.joinBusinessRoom(BUSINESS_ID);
     client.joinOrderRoom(ORDER_ID);
     client.joinAdminOrdersRoom();
-    await waitFor(() => roomSize(`business:${BUSINESS_ID}`) === 1 && roomSize(`order:${ORDER_ID}`) === 1 && roomSize('admin:orders') === 1);
+    await waitFor(
+      () =>
+        roomSize(`business:${BUSINESS_ID}`) === 1 &&
+        roomSize(`order:${ORDER_ID}`) === 1 &&
+        roomSize('admin:orders') === 1,
+    );
 
     dropAllConnections();
     await waitFor(() => roomSize(`business:${BUSINESS_ID}`) === 0);
-    await waitFor(() => roomSize(`business:${BUSINESS_ID}`) === 1 && roomSize(`order:${ORDER_ID}`) === 1 && roomSize('admin:orders') === 1);
+    await waitFor(
+      () =>
+        roomSize(`business:${BUSINESS_ID}`) === 1 &&
+        roomSize(`order:${ORDER_ID}`) === 1 &&
+        roomSize('admin:orders') === 1,
+    );
 
     const got = received('admin_order:new');
     io.to('admin:orders').emit('admin_order:new', { _id: 'x' });
@@ -167,7 +192,9 @@ describe('login token', () => {
   test('a logged-out page is refused a business room and says so', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     client.joinBusinessRoom(BUSINESS_ID);
-    await waitFor(() => warn.mock.calls.some((c) => String(c[0]).includes('join_business_room refused')));
+    await waitFor(() =>
+      warn.mock.calls.some((c) => String(c[0]).includes('join_business_room refused')),
+    );
     expect(roomSize(`business:${BUSINESS_ID}`)).toBe(0);
   });
 });

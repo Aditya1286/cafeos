@@ -9,11 +9,7 @@ interface CommandPaletteProps {
   onSelect: (type: string, id: string) => void;
 }
 
-export const CommandPalette: React.FC<CommandPaletteProps> = ({
-  isOpen,
-  onClose,
-  onSelect,
-}) => {
+export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onSelect }) => {
   const [query, setQuery] = useState('');
 
   useEffect(() => {
@@ -31,17 +27,59 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   }, [isOpen, onClose]);
 
   const mockResults = [
-    { type: 'Orders', id: 'ORD-8924', label: 'Order #ORD-8924 (Table 4) - ₹640', icon: ShoppingBag, category: 'Active Orders' },
-    { type: 'Orders', id: 'ORD-8921', label: 'Order #ORD-8921 (Table 12) - ₹1,250', icon: ShoppingBag, category: 'Active Orders' },
-    { type: 'Products', id: 'PROD-101', label: 'Iced Artisan Latte - Specialty Coffee', icon: Coffee, category: 'Products' },
-    { type: 'Products', id: 'PROD-104', label: 'Sourdough Avocado Toast - Bakery', icon: Coffee, category: 'Products' },
-    { type: 'Businesses', id: 'BUSINESS-1', label: 'The Artisan Roastery (Bandra)', icon: Store, category: 'Businesses' },
-    { type: 'Businesses', id: 'BUSINESS-2', label: 'Bean & Butter Bakery (Indiranagar)', icon: Store, category: 'Businesses' },
-    { type: 'Customers', id: 'CUST-001', label: 'Priya Sharma (VIP · 14 orders)', icon: Users, category: 'Customers' },
+    {
+      type: 'Orders',
+      id: 'ORD-8924',
+      label: 'Order #ORD-8924 (Table 4) - ₹640',
+      icon: ShoppingBag,
+      category: 'Active Orders',
+    },
+    {
+      type: 'Orders',
+      id: 'ORD-8921',
+      label: 'Order #ORD-8921 (Table 12) - ₹1,250',
+      icon: ShoppingBag,
+      category: 'Active Orders',
+    },
+    {
+      type: 'Products',
+      id: 'PROD-101',
+      label: 'Iced Artisan Latte - Specialty Coffee',
+      icon: Coffee,
+      category: 'Products',
+    },
+    {
+      type: 'Products',
+      id: 'PROD-104',
+      label: 'Sourdough Avocado Toast - Bakery',
+      icon: Coffee,
+      category: 'Products',
+    },
+    {
+      type: 'Businesses',
+      id: 'BUSINESS-1',
+      label: 'The Artisan Roastery (Bandra)',
+      icon: Store,
+      category: 'Businesses',
+    },
+    {
+      type: 'Businesses',
+      id: 'BUSINESS-2',
+      label: 'Bean & Butter Bakery (Indiranagar)',
+      icon: Store,
+      category: 'Businesses',
+    },
+    {
+      type: 'Customers',
+      id: 'CUST-001',
+      label: 'Priya Sharma (VIP · 14 orders)',
+      icon: Users,
+      category: 'Customers',
+    },
   ];
 
   const filtered = mockResults.filter((item) =>
-    item.label.toLowerCase().includes(query.toLowerCase())
+    item.label.toLowerCase().includes(query.toLowerCase()),
   );
 
   return (
@@ -103,9 +141,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                             <Icon className="w-4 h-4" />
                           </div>
                           <div>
-                            <div className="text-xs font-bold text-slate-900">
-                              {item.label}
-                            </div>
+                            <div className="text-xs font-bold text-slate-900">{item.label}</div>
                             <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
                               {item.category}
                             </div>
@@ -122,8 +158,14 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
             {/* Footer hints */}
             <div className="px-4 py-2.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-[11px] text-slate-400 font-medium">
               <div className="flex items-center gap-2">
-                <span className="px-1.5 py-0.5 rounded bg-slate-200 text-slate-600 font-mono text-[10px]">↑↓</span> to navigate
-                <span className="px-1.5 py-0.5 rounded bg-slate-200 text-slate-600 font-mono text-[10px]">ESC</span> to close
+                <span className="px-1.5 py-0.5 rounded bg-slate-200 text-slate-600 font-mono text-[10px]">
+                  ↑↓
+                </span>{' '}
+                to navigate
+                <span className="px-1.5 py-0.5 rounded bg-slate-200 text-slate-600 font-mono text-[10px]">
+                  ESC
+                </span>{' '}
+                to close
               </div>
               <div className="flex items-center gap-1">
                 <Shield className="w-3 h-3 text-red-500" /> {APP_NAME} Command

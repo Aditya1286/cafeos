@@ -60,7 +60,8 @@ export const useRemittanceQueue = (activeTab: string) => {
   };
 
   return {
-    remittanceView, setRemittanceView,
+    remittanceView,
+    setRemittanceView,
     remittanceRequests,
     loadingRemittances,
     pendingRemittancesCount,

@@ -1,14 +1,37 @@
 import React, { useState } from 'react';
-import { Search, Download, Sun, Moon, ChevronDown, FileSpreadsheet, FileText, LogOut } from 'lucide-react';
+import {
+  Search,
+  Download,
+  Sun,
+  Moon,
+  ChevronDown,
+  FileSpreadsheet,
+  FileText,
+  LogOut,
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { APP_SLUG } from '@/constants/app';
 import { NavbarAdminViewProps } from './types';
-import { AdminBrand, DateRangeMenu, UserInitial, useDismissOnOutsideClick } from './NavbarAdminParts';
+import {
+  AdminBrand,
+  DateRangeMenu,
+  UserInitial,
+  useDismissOnOutsideClick,
+} from './NavbarAdminParts';
 
 /** Desktop (`lg`+): brand, command search, date/export/theme/user controls, then the full tab row. */
 export const NavbarAdminDesktop = ({
-  activeTab, onTabChange, onOpenCommand, dateRange, onDateRangeChange,
-  darkMode, onToggleDarkMode, onExport, user, onLogout, navItems,
+  activeTab,
+  onTabChange,
+  onOpenCommand,
+  dateRange,
+  onDateRangeChange,
+  darkMode,
+  onToggleDarkMode,
+  onExport,
+  user,
+  onLogout,
+  navItems,
 }: NavbarAdminViewProps) => {
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isUserOpen, setIsUserOpen] = useState(false);
@@ -60,14 +83,20 @@ export const NavbarAdminDesktop = ({
                   className="absolute right-0 mt-2 w-48 bg-white border border-slate-200 rounded-2xl shadow-xl p-1.5 z-50 text-xs"
                 >
                   <button
-                    onClick={() => { onExport('csv'); setIsExportOpen(false); }}
+                    onClick={() => {
+                      onExport('csv');
+                      setIsExportOpen(false);
+                    }}
                     className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 font-bold hover:bg-slate-100 text-left transition-colors"
                   >
                     <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
                     <span>Download businesses (CSV)</span>
                   </button>
                   <button
-                    onClick={() => { onExport('pdf'); setIsExportOpen(false); }}
+                    onClick={() => {
+                      onExport('pdf');
+                      setIsExportOpen(false);
+                    }}
                     className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 font-bold hover:bg-slate-100 text-left transition-colors"
                   >
                     <FileText className="w-4 h-4 text-red-600" />
@@ -83,7 +112,11 @@ export const NavbarAdminDesktop = ({
             className="p-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors shadow-sm"
             title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
           >
-            {darkMode ? <Sun className="w-4 h-4 text-amber-500" /> : <Moon className="w-4 h-4 text-slate-500" />}
+            {darkMode ? (
+              <Sun className="w-4 h-4 text-amber-500" />
+            ) : (
+              <Moon className="w-4 h-4 text-slate-500" />
+            )}
           </button>
 
           <div ref={userRef} className="relative">
@@ -104,13 +137,20 @@ export const NavbarAdminDesktop = ({
                   className="absolute right-0 mt-2 w-56 bg-white border border-slate-200 rounded-2xl shadow-xl p-2 z-50 space-y-1 text-xs"
                 >
                   <div className="p-2.5 border-b border-slate-100">
-                    <div className="font-extrabold text-slate-900">{user?.name || 'Aditya Sharma'}</div>
-                    <div className="text-[10px] text-slate-400 font-medium">admin@{APP_SLUG}.com · Super Admin</div>
+                    <div className="font-extrabold text-slate-900">
+                      {user?.name || 'Aditya Sharma'}
+                    </div>
+                    <div className="text-[10px] text-slate-400 font-medium">
+                      admin@{APP_SLUG}.com · Super Admin
+                    </div>
                   </div>
 
                   {onLogout && (
                     <button
-                      onClick={() => { setIsUserOpen(false); onLogout(); }}
+                      onClick={() => {
+                        setIsUserOpen(false);
+                        onLogout();
+                      }}
                       className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-rose-600 font-bold hover:bg-rose-50 text-left transition-colors"
                     >
                       <LogOut className="w-4 h-4" />
@@ -142,9 +182,11 @@ export const NavbarAdminDesktop = ({
                 <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-slate-400'}`} />
                 <span>{item.label}</span>
                 {item.count !== undefined && (
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono ${
-                    isActive ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-600'
-                  }`}>
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-mono ${
+                      isActive ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-600'
+                    }`}
+                  >
                     {item.count}
                   </span>
                 )}

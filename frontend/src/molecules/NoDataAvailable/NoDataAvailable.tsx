@@ -14,7 +14,7 @@ interface NoDataAvailableProps {
 export const NoDataAvailable: React.FC<NoDataAvailableProps> = ({
   icon: Icon = BarChart3,
   title = 'No data available',
-  message = 'Once there\'s activity to report, it will show up here.',
+  message = "Once there's activity to report, it will show up here.",
   className = '',
 }) => (
   <div className={`p-12 text-center space-y-3 ${className}`}>

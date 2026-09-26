@@ -33,10 +33,16 @@ export const RepeatCustomerBar: React.FC<RepeatCustomerBarProps> = ({ stats }) =
           <span>{stats.totalCustomers} total</span>
         </div>
         <div className="flex h-8 rounded-xl overflow-hidden border border-slate-200">
-          <div className="bg-red-500 flex items-center justify-center text-[10px] font-black text-white" style={{ width: `${Math.max(repeatPct, repeatPct > 0 ? 6 : 0)}%` }}>
+          <div
+            className="bg-red-500 flex items-center justify-center text-[10px] font-black text-white"
+            style={{ width: `${Math.max(repeatPct, repeatPct > 0 ? 6 : 0)}%` }}
+          >
             {repeatPct > 12 ? `${repeatPct}%` : ''}
           </div>
-          <div className="bg-slate-100 flex items-center justify-center text-[10px] font-black text-slate-500" style={{ width: `${oneTimePct}%` }}>
+          <div
+            className="bg-slate-100 flex items-center justify-center text-[10px] font-black text-slate-500"
+            style={{ width: `${oneTimePct}%` }}
+          >
             {oneTimePct > 12 ? `${oneTimePct}%` : ''}
           </div>
         </div>
@@ -46,14 +52,18 @@ export const RepeatCustomerBar: React.FC<RepeatCustomerBarProps> = ({ stats }) =
         <div className="flex items-center gap-2">
           <span className="w-2.5 h-2.5 rounded-sm bg-red-500 shrink-0" />
           <div>
-            <div className="font-black text-slate-900">{repeatPct}% · {stats.repeatCustomers} customers</div>
+            <div className="font-black text-slate-900">
+              {repeatPct}% · {stats.repeatCustomers} customers
+            </div>
             <div className="text-[10px] text-slate-400 font-semibold uppercase">Repeat</div>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <span className="w-2.5 h-2.5 rounded-sm bg-slate-300 shrink-0" />
           <div>
-            <div className="font-black text-slate-900">{oneTimePct}% · {stats.oneTimeCustomers} customers</div>
+            <div className="font-black text-slate-900">
+              {oneTimePct}% · {stats.oneTimeCustomers} customers
+            </div>
             <div className="text-[10px] text-slate-400 font-semibold uppercase">One-time</div>
           </div>
         </div>
@@ -61,7 +71,9 @@ export const RepeatCustomerBar: React.FC<RepeatCustomerBarProps> = ({ stats }) =
 
       <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
         <span className="text-slate-500 font-medium">Repeat customers drive</span>
-        <span className="font-black text-slate-900">{repeatRevenuePct}% of revenue ({formatCurrency(stats.repeatRevenuePaise)})</span>
+        <span className="font-black text-slate-900">
+          {repeatRevenuePct}% of revenue ({formatCurrency(stats.repeatRevenuePaise)})
+        </span>
       </div>
     </div>
   );

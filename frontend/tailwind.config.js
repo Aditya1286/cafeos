@@ -8,10 +8,7 @@ const scaledFontSize = (name, size, lineHeight) => [
 
 /** @type {import('tailwindcss').Config} */
 export default {
-  content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
-  ],
+  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
       colors: {
@@ -29,7 +26,7 @@ export default {
           500: '#ea580c',
           600: '#c2410c',
           900: '#431407',
-        }
+        },
       },
       fontSize: {
         xs: scaledFontSize('xs', '0.75rem', '1rem'),
@@ -43,8 +40,8 @@ export default {
       },
       fontFamily: {
         sans: ['Plus Jakarta Sans', 'Inter', 'sans-serif'],
-      }
+      },
     },
   },
   plugins: [],
-}
+};

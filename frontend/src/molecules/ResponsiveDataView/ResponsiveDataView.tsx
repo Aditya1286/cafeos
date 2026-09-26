@@ -32,8 +32,9 @@ export interface UncontrolledSearchConfig<T> {
 
 export type ResponsiveDataViewSearch<T> = ControlledSearchConfig | UncontrolledSearchConfig<T>;
 
-const isControlledSearch = <T,>(search: ResponsiveDataViewSearch<T>): search is ControlledSearchConfig =>
-  'onChange' in search;
+const isControlledSearch = <T,>(
+  search: ResponsiveDataViewSearch<T>,
+): search is ControlledSearchConfig => 'onChange' in search;
 
 /** Controlled: `data` is already just the current page (e.g. a server-paginated API) — the
  * footer is just UI, and every interaction is handed back to the caller. */
@@ -52,20 +53,29 @@ export interface UncontrolledPaginationConfig {
   pageSizeOptions?: number[];
 }
 
-export type ResponsiveDataViewPagination = true | ControlledPaginationConfig | UncontrolledPaginationConfig;
+export type ResponsiveDataViewPagination =
+  true | ControlledPaginationConfig | UncontrolledPaginationConfig;
 
-const isControlledPagination = (pagination: ResponsiveDataViewPagination): pagination is ControlledPaginationConfig =>
+const isControlledPagination = (
+  pagination: ResponsiveDataViewPagination,
+): pagination is ControlledPaginationConfig =>
   typeof pagination === 'object' && 'onPageChange' in pagination;
 
 const DEFAULT_PAGE_SIZE_OPTIONS = [10, 25, 50];
 
 const getPageSizeOptions = (pagination?: ResponsiveDataViewPagination): number[] => {
-  if (pagination && pagination !== true && pagination.pageSizeOptions) return pagination.pageSizeOptions;
+  if (pagination && pagination !== true && pagination.pageSizeOptions)
+    return pagination.pageSizeOptions;
   return DEFAULT_PAGE_SIZE_OPTIONS;
 };
 
 const getDefaultPageSize = (pagination?: ResponsiveDataViewPagination): number => {
-  if (pagination && pagination !== true && !isControlledPagination(pagination) && pagination.defaultPageSize) {
+  if (
+    pagination &&
+    pagination !== true &&
+    !isControlledPagination(pagination) &&
+    pagination.defaultPageSize
+  ) {
     return pagination.defaultPageSize;
   }
   return getPageSizeOptions(pagination)[0];
@@ -120,9 +130,15 @@ export function ResponsiveDataView<T>({
   const [internalPageSize, setInternalPageSize] = useState(() => getDefaultPageSize(pagination));
 
   const searchControlled = search ? isControlledSearch(search) : false;
-  const searchTerm = search ? (searchControlled ? (search as ControlledSearchConfig).value : internalSearchTerm) : '';
+  const searchTerm = search
+    ? searchControlled
+      ? (search as ControlledSearchConfig).value
+      : internalSearchTerm
+    : '';
   const setSearchTerm = search
-    ? (searchControlled ? (search as ControlledSearchConfig).onChange : setInternalSearchTerm)
+    ? searchControlled
+      ? (search as ControlledSearchConfig).onChange
+      : setInternalSearchTerm
     : undefined;
 
   // Filter locally only in uncontrolled mode — a controlled search means the caller already
@@ -132,7 +148,13 @@ export function ResponsiveDataView<T>({
     const keys = (search as UncontrolledSearchConfig<T>).keys;
     const term = internalSearchTerm.trim().toLowerCase();
     if (!term) return data;
-    return data.filter((item) => keys.some((key) => String(item[key] ?? '').toLowerCase().includes(term)));
+    return data.filter((item) =>
+      keys.some((key) =>
+        String(item[key] ?? '')
+          .toLowerCase()
+          .includes(term),
+      ),
+    );
   }, [data, search, searchControlled, internalSearchTerm]);
 
   const paginationControlled = pagination ? isControlledPagination(pagination) : false;
@@ -143,14 +165,25 @@ export function ResponsiveDataView<T>({
     if (pagination && !paginationControlled) setInternalPage(1);
   }, [internalSearchTerm]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const page = paginationControlled ? (pagination as ControlledPaginationConfig).page : internalPage;
-  const pageSize = paginationControlled ? (pagination as ControlledPaginationConfig).pageSize : internalPageSize;
-  const total = paginationControlled ? (pagination as ControlledPaginationConfig).total : searchedData.length;
+  const page = paginationControlled
+    ? (pagination as ControlledPaginationConfig).page
+    : internalPage;
+  const pageSize = paginationControlled
+    ? (pagination as ControlledPaginationConfig).pageSize
+    : internalPageSize;
+  const total = paginationControlled
+    ? (pagination as ControlledPaginationConfig).total
+    : searchedData.length;
   const pageSizeOptions = getPageSizeOptions(pagination);
-  const onPageChange = paginationControlled ? (pagination as ControlledPaginationConfig).onPageChange : setInternalPage;
+  const onPageChange = paginationControlled
+    ? (pagination as ControlledPaginationConfig).onPageChange
+    : setInternalPage;
   const onPageSizeChange = paginationControlled
     ? (pagination as ControlledPaginationConfig).onPageSizeChange
-    : (size: number) => { setInternalPageSize(size); setInternalPage(1); };
+    : (size: number) => {
+        setInternalPageSize(size);
+        setInternalPage(1);
+      };
 
   const pageData = useMemo(() => {
     if (!pagination) return searchedData;
@@ -213,9 +246,15 @@ export function ResponsiveDataView<T>({
               </thead>
               <tbody className="divide-y divide-slate-100 font-semibold text-slate-700">
                 {pageData.map((item) => (
-                  <tr key={keyExtractor(item)} className={`hover:bg-slate-50/80 transition-colors ${rowClassName?.(item) || ''}`}>
+                  <tr
+                    key={keyExtractor(item)}
+                    className={`hover:bg-slate-50/80 transition-colors ${rowClassName?.(item) || ''}`}
+                  >
                     {columns.map((col, i) => (
-                      <td key={i} className={`px-5 py-4 ${ALIGN_CLASS[col.align || 'left']} ${col.cellClassName || ''}`}>
+                      <td
+                        key={i}
+                        className={`px-5 py-4 ${ALIGN_CLASS[col.align || 'left']} ${col.cellClassName || ''}`}
+                      >
                         {col.render(item)}
                       </td>
                     ))}
@@ -237,7 +276,9 @@ export function ResponsiveDataView<T>({
               className="px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-bold text-slate-700 outline-none focus:border-orange-500"
             >
               {pageSizeOptions.map((size: number) => (
-                <option key={size} value={size}>{size}</option>
+                <option key={size} value={size}>
+                  {size}
+                </option>
               ))}
             </select>
           </div>

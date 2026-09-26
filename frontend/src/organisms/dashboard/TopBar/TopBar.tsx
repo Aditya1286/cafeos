@@ -1,7 +1,16 @@
 import React, { useState } from 'react';
-import { 
-  Search, Bell, Calendar, Download, Sun, Moon, Check, 
-  ChevronDown, ShieldCheck, FileSpreadsheet, FileText
+import {
+  Search,
+  Bell,
+  Calendar,
+  Download,
+  Sun,
+  Moon,
+  Check,
+  ChevronDown,
+  ShieldCheck,
+  FileSpreadsheet,
+  FileText,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -37,9 +46,27 @@ export const TopBar: React.FC<TopBarProps> = ({
   ];
 
   const notifications = [
-    { id: '1', title: 'Mozzarella Stock Alert', time: '10m ago', text: 'Stock level down to 1.2 kg (threshold: 2 kg)', type: 'warning' },
-    { id: '2', title: 'New Business Signed Up', time: '1h ago', text: 'Urban Espresso Bistro subscribed to Pro Plan', type: 'success' },
-    { id: '3', title: 'High Order Volume', time: '2h ago', text: 'Table ordering peak reached 42 orders/min', type: 'info' },
+    {
+      id: '1',
+      title: 'Mozzarella Stock Alert',
+      time: '10m ago',
+      text: 'Stock level down to 1.2 kg (threshold: 2 kg)',
+      type: 'warning',
+    },
+    {
+      id: '2',
+      title: 'New Business Signed Up',
+      time: '1h ago',
+      text: 'Urban Espresso Bistro subscribed to Pro Plan',
+      type: 'success',
+    },
+    {
+      id: '3',
+      title: 'High Order Volume',
+      time: '2h ago',
+      text: 'Table ordering peak reached 42 orders/min',
+      type: 'info',
+    },
   ];
 
   return (
@@ -202,7 +229,11 @@ export const TopBar: React.FC<TopBarProps> = ({
           className="p-2 rounded-xl bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-700/50 transition-colors"
           title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
         >
-          {darkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-600" />}
+          {darkMode ? (
+            <Sun className="w-4 h-4 text-amber-400" />
+          ) : (
+            <Moon className="w-4 h-4 text-slate-600" />
+          )}
         </button>
       </div>
     </header>

@@ -1,6 +1,6 @@
 import { KDS_COLUMN_STATUSES } from '@/constants/orderStatus';
 
-export type KdsStatus = typeof KDS_COLUMN_STATUSES[number];
+export type KdsStatus = (typeof KDS_COLUMN_STATUSES)[number];
 
 export const orderKey = (order: any) => order._id || order.orderId;
 
