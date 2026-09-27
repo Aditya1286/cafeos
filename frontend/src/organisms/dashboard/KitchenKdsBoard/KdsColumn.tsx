@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FileText, X, CheckCircle2, Wallet, CheckSquare } from 'lucide-react';
-import { STATUS_CONFIG, NEXT_STATUS } from '@/constants/orderStatus';
+import { STATUS_CONFIG, NEXT_STATUS, isOrderCancellable } from '@/constants/orderStatus';
 import { formatCurrency } from '@/utils/money';
 import { KdsBoardViewProps, KdsStatus } from './types';
 import { KdsOrderTicketCompact } from './KdsOrderTicketCompact';
@@ -111,7 +111,7 @@ export const KdsColumn = ({
                   }
                   onToggleSelected={() => onToggleSelected(targetOrderId)}
                   onAdvance={() => onUpdateStatus(targetOrderId, NEXT_STATUS[status].status)}
-                  onCancel={() => onCancel(order)}
+                  onCancel={isOrderCancellable(status) ? () => onCancel(order) : undefined}
                   onViewBill={() => onViewBill(order.orderId || order._id)}
                   onConfirmPayment={() => onConfirmPayment(order)}
                 />
@@ -202,13 +202,15 @@ export const KdsColumn = ({
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => onCancel(order)}
-                      className="p-1.5 rounded-lg border border-rose-200 hover:bg-rose-50 text-rose-500 transition-colors"
-                      title="Cancel Order"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
+                    {isOrderCancellable(status) && (
+                      <button
+                        onClick={() => onCancel(order)}
+                        className="p-1.5 rounded-lg border border-rose-200 hover:bg-rose-50 text-rose-500 transition-colors"
+                        title="Cancel Order"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
 
                     <button
                       onClick={() => onViewBill(order.orderId || order._id)}

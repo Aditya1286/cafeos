@@ -95,5 +95,6 @@ export const NEXT_STATUS: Record<string, { label: string; status: string; color:
 
 export const KDS_COLUMN_STATUSES = ['PLACED', 'CONFIRMED', 'PREPARING', 'READY'] as const;
 
-export const isOrderCancellable = (status: string) =>
-  !['CANCELLED', 'COMPLETED', 'REFUNDED'].includes(status);
+// Only a new order can be cancelled — once it's accepted it's going to be made. The backend
+// enforces the same rule (orderController's applyOrderStatusChange).
+export const isOrderCancellable = (status: string) => status === 'PLACED';

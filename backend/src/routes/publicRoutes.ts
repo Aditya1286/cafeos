@@ -8,7 +8,14 @@ import { Business } from '../models/Business';
 import { config } from '../config';
 import { getOtpStatus, confirmWidgetToken, requestOtp, confirmOtp, resendOtpRequest } from '../controllers/otp.controller';
 import { createTicketPublic, getTicketStatusPublic, getCallAgentPublic } from '../controllers/supportController';
-import { startCheckoutPublic, getCheckoutPublic, retryCheckoutPublic, switchCheckoutPublic } from '../controllers/checkoutController';
+import {
+  startCheckoutPublic,
+  getCheckoutPublic,
+  retryCheckoutPublic,
+  switchCheckoutPublic,
+  checkoutCallbackRedirect,
+  checkoutCallbackWebhook
+} from '../controllers/checkoutController';
 import { isCheckoutAvailable } from '../services/checkout.service';
 
 const router = Router();
@@ -77,6 +84,9 @@ router.post('/checkout', checkoutRouteLimiter, startCheckoutPublic);
 router.get('/checkout/:id', getCheckoutPublic);
 router.post('/checkout/:id/retry', checkoutRouteLimiter, retryCheckoutPublic);
 router.post('/checkout/:id/switch', checkoutRouteLimiter, switchCheckoutPublic);
+// Every SMEPay order's callback_url: the browser redirect after paying (GET) and the webhook (POST).
+router.get('/checkout/:id/callback', checkoutCallbackRedirect);
+router.post('/checkout/:id/callback', checkoutCallbackWebhook);
 
 // Public: Subscription plans for marketing page
 router.get('/plans', async (req, res) => {

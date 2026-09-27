@@ -25,6 +25,22 @@ export const getCheckoutPublic = async (req: Request, res: Response) => {
   }
 };
 
+// SMEPay's callback_url, GET side: the customer's browser after paying → their checkout page.
+export const checkoutCallbackRedirect = async (req: Request, res: Response) => {
+  try {
+    return res.redirect(302, await checkoutService.getCheckoutReturnUrl(req.params.id));
+  } catch (error: any) {
+    return handleServiceError(res, error);
+  }
+};
+
+// SMEPay's callback_url, POST side: the webhook. Answered 200 straight away as SMEPay asks (it
+// retries only on 5xx/timeouts); the check it triggers runs afterwards and logs its own errors.
+export const checkoutCallbackWebhook = async (req: Request, res: Response) => {
+  void checkoutService.handlePaymentWebhook(req.params.id);
+  return res.json({ success: true });
+};
+
 export const retryCheckoutPublic = async (req: Request, res: Response) => {
   try {
     const data = await checkoutService.retryCheckout(req.params.id);

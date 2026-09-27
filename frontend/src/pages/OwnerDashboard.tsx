@@ -27,6 +27,7 @@ import { SettingsPanel } from '@/organisms/dashboard/SettingsPanel';
 import { readFileAsDataUrl } from '@/utils/readFileAsDataUrl';
 import { OrderDetailsDrawer } from '@/organisms/dashboard/OrderDetailsDrawer';
 import { CancelOrderModal } from '@/organisms/dashboard/CancelOrderModal';
+import { RefundOrderModal } from '@/organisms/dashboard/RefundOrderModal';
 import { SupportWidget } from '@/organisms/SupportWidget';
 import { DeleteProductModal } from '@/organisms/dashboard/DeleteProductModal';
 import { EBillModal } from '@/organisms/dashboard/EBillModal';
@@ -133,6 +134,8 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
   const [selectedOrderForBill, setSelectedOrderForBill] = useState<any | null>(null);
   const [cancelTarget, setCancelTarget] = useState<any | null>(null);
   const [cancelling, setCancelling] = useState(false);
+  const [refundTarget, setRefundTarget] = useState<any | null>(null);
+  const [refunding, setRefunding] = useState(false);
   const [deleteProductTarget, setDeleteProductTarget] = useState<any | null>(null);
   const [deletingProduct, setDeletingProduct] = useState(false);
 
@@ -224,18 +227,36 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
 
   const updateOrderStatus = async (orderId: string, status: string) => {
     try {
-      await handleUpdateOrderStatus(orderId, status);
+      const updated = await handleUpdateOrderStatus(orderId, status);
       patchOrderEverywhere(orderId, {
         orderStatus: status,
         ...(status === 'REFUNDED' ? { paymentStatus: 'REFUNDED' } : {}),
+        // Who cancelled / refunded it and when, so the drawer and refund history show it at once.
+        ...(updated
+          ? {
+              cancelledByUserId: updated.cancelledByUserId,
+              refundedByUserId: updated.refundedByUserId,
+              refundedAt: updated.refundedAt,
+              timeline: (updated as any).timeline,
+            }
+          : {}),
       });
     } catch {
       // handleUpdateOrderStatus already surfaced a toast
     }
   };
 
-  const handleMarkRefunded = (order: any) =>
-    updateOrderStatus(order._id || order.orderId, 'REFUNDED');
+  // Any role that can see the order (kitchen staff included) can mark it refunded, after a
+  // confirmation; the order records who did it.
+  const handleMarkRefunded = (order: any) => setRefundTarget(order);
+
+  const confirmRefundOrder = async () => {
+    if (!refundTarget) return;
+    setRefunding(true);
+    await updateOrderStatus(refundTarget._id || refundTarget.orderId, 'REFUNDED');
+    setRefunding(false);
+    setRefundTarget(null);
+  };
 
   const confirmPayment = async (order: any) => {
     const orderId = order._id || order.orderId;
@@ -465,7 +486,7 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
             onOpenDrawer={handleOpenOrderDrawer}
             onOpenBill={handleOpenEBillModal}
             onCancel={setCancelTarget}
-            onMarkRefunded={isStaff ? undefined : handleMarkRefunded}
+            onMarkRefunded={handleMarkRefunded}
             onConfirmPayment={confirmPayment}
           />
         )}
@@ -497,6 +518,7 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
             masterQrEnabled={business?.masterQrEnabled !== false}
             savingMasterQr={savingMasterQr}
             onToggleMasterQr={handleToggleMasterQr}
+            readOnly={isStaff}
           />
         )}
 
@@ -576,7 +598,7 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
         onClose={() => setSelectedOrderForDrawer(null)}
         onViewBill={handleOpenEBillModal}
         onCancel={setCancelTarget}
-        onMarkRefunded={isStaff ? undefined : handleMarkRefunded}
+        onMarkRefunded={handleMarkRefunded}
         onConfirmPayment={confirmPayment}
       />
 
@@ -587,6 +609,13 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
         cancelling={cancelling}
         onClose={() => setCancelTarget(null)}
         onConfirm={confirmCancelOrder}
+      />
+
+      <RefundOrderModal
+        order={refundTarget}
+        refunding={refunding}
+        onClose={() => setRefundTarget(null)}
+        onConfirm={confirmRefundOrder}
       />
 
       <DeleteProductModal

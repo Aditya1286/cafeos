@@ -2,13 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Camera, Trash2 } from 'lucide-react';
 import { inputCls } from '@/molecules/FormField';
 import { AccountProfileState } from '@/hooks/useAccountProfile';
-
-const ROLE_LABELS: Record<string, string> = {
-  OWNER: 'Owner',
-  STAFF: 'Kitchen staff',
-  MANAGER: 'Manager',
-  SUPER_ADMIN: 'Platform admin',
-};
+import { ROLE_LABELS } from '@/constants/roles';
 
 /** Picture + name — the two profile details every role can change. */
 export const AvatarCard = ({ account }: { account: AccountProfileState }) => {

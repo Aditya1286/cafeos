@@ -7,6 +7,9 @@ import { startHarness, tokenFor, businessIdFor, createOrderPlacer, Harness } fro
 import authRoutes from '../src/routes/authRoutes';
 import staffRoutes from '../src/routes/staffRoutes';
 import accountRoutes from '../src/routes/accountRoutes';
+import tableRoutes from '../src/routes/tableRoutes';
+import businessRoutes from '../src/routes/businessRoutes';
+import { Table } from '../src/models/Table';
 import { Subscription } from '../src/models/Subscription';
 import { SubscriptionPlan } from '../src/models/SubscriptionPlan';
 
@@ -22,6 +25,8 @@ before(async () => {
   h.app.use('/api/v1/auth', authRoutes);
   h.app.use('/api/v1/staff', staffRoutes);
   h.app.use('/api/v1/account', accountRoutes);
+  h.app.use('/api/v1/tables', tableRoutes);
+  h.app.use('/api/v1/business', businessRoutes);
   owner = await tokenFor('owner@artisan.com');
   otherOwner = await tokenFor('owner@beanandbutter.com');
   artisanId = await businessIdFor('artisan-cafe');
@@ -70,28 +75,66 @@ test('bad input and duplicate emails are rejected', async () => {
   assert.equal(dup.body.error.code, 'EMAIL_EXISTS');
 });
 
-test('staff can work orders, but not refunds or anything owner-only', async () => {
-  const { token } = await staffLogin();
-  const order = await placeOrder();
+test('staff can work orders, including cancelling and refunding them, but nothing owner-only', async () => {
+  const { staff, token } = await staffLogin();
+  const setStatus = (id: string, status: string) =>
+    request(h.app).put(`/api/v1/orders/${id}/status`).set('Authorization', `Bearer ${token}`).send({ status });
 
   const orders = await request(h.app).get('/api/v1/orders').set('Authorization', `Bearer ${token}`);
   assert.equal(orders.status, 200);
 
-  const accept = await request(h.app)
-    .put(`/api/v1/orders/${order._id}/status`)
-    .set('Authorization', `Bearer ${token}`)
-    .send({ status: 'CONFIRMED' });
+  const accepted = await placeOrder();
+  const accept = await setStatus(accepted._id, 'CONFIRMED');
   assert.equal(accept.status, 200, JSON.stringify(accept.body));
 
-  const refund = await request(h.app)
-    .put(`/api/v1/orders/${order._id}/status`)
-    .set('Authorization', `Bearer ${token}`)
-    .send({ status: 'REFUNDED' });
-  assert.equal(refund.status, 403);
+  // A paid new order: staff cancel it, then record the refund. Both are logged under their name.
+  const paid = await placeOrder();
+  const confirmed = await request(h.app).put(`/api/v1/orders/${paid._id}/confirm-payment`).set('Authorization', `Bearer ${token}`);
+  assert.equal(confirmed.status, 200, JSON.stringify(confirmed.body));
+  const cancel = await setStatus(paid._id, 'CANCELLED');
+  assert.equal(cancel.status, 200, JSON.stringify(cancel.body));
+  assert.deepEqual(
+    { name: cancel.body.data.cancelledByUserId.name, role: cancel.body.data.cancelledByUserId.role },
+    { name: staff.name, role: 'STAFF' }
+  );
+  const refund = await setStatus(paid._id, 'REFUNDED');
+  assert.equal(refund.status, 200, JSON.stringify(refund.body));
+  assert.equal(refund.body.data.paymentStatus, 'REFUNDED');
+  assert.deepEqual(
+    { name: refund.body.data.refundedByUserId.name, role: refund.body.data.refundedByUserId.role },
+    { name: staff.name, role: 'STAFF' }
+  );
 
   assert.equal((await request(h.app).get('/api/v1/staff').set('Authorization', `Bearer ${token}`)).status, 403);
   const menu = await request(h.app).post('/api/v1/menu/products').set('Authorization', `Bearer ${token}`).send({ name: 'x' });
   assert.equal(menu.status, 403);
+});
+
+test('staff can see the tables and their QR codes, but not change them', async () => {
+  const { token } = await staffLogin();
+  const as = (req: request.Test) => req.set('Authorization', `Bearer ${token}`);
+
+  const tables = await as(request(h.app).get('/api/v1/tables'));
+  assert.equal(tables.status, 200);
+  assert.ok(tables.body.data.length > 0);
+  const table = tables.body.data[0];
+  assert.ok(table.qrToken, 'the QR card needs the table token');
+  assert.equal((await as(request(h.app).get(`/api/v1/tables/${table._id}/qr`))).status, 200);
+
+  const writes: [string, request.Test][] = [
+    ['add table', as(request(h.app).post('/api/v1/tables').send({ tableNumber: 'Staff table', capacity: 2 }))],
+    ['disable table', as(request(h.app).put(`/api/v1/tables/${table._id}/toggle`))],
+    ['mark empty', as(request(h.app).put(`/api/v1/tables/${table._id}/mark-empty`))],
+    ['delete table', as(request(h.app).delete(`/api/v1/tables/${table._id}`))],
+    // The "uses physical tables" and master QR switches are business settings.
+    ['settings', as(request(h.app).put('/api/v1/business/settings').send({ tablesEnabled: false, masterQrEnabled: false }))]
+  ];
+  for (const [label, req] of writes) {
+    assert.equal((await req).status, 403, label);
+  }
+  const after = await Table.findById(table._id);
+  assert.ok(after, 'table was deleted');
+  assert.equal(after!.isActive, table.isActive);
 });
 
 test("an owner can't see or touch another business's staff", async () => {

@@ -924,7 +924,8 @@ export const getAdminRefundOrders = async (req: AuthRequest, res: Response) => {
     const [orders, total] = await Promise.all([
       Order.find(query)
         .populate('businessId', 'name slug')
-        .populate('refundedByUserId', 'name email')
+        .populate('cancelledByUserId', 'name role')
+        .populate('refundedByUserId', 'name role')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limitNum),

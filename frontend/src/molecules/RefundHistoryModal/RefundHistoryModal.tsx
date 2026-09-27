@@ -2,22 +2,13 @@ import React from 'react';
 import { CheckCircle2, XCircle, Undo2, MessageSquareQuote, Clock } from 'lucide-react';
 import { Modal } from '@/molecules/Modal';
 import { formatCurrency } from '@/utils/money';
+import { formatDateTime } from '@/utils/DateUtils';
+import { describeActor } from '@/constants/roles';
 
 interface RefundHistoryModalProps {
   order: any | null;
   onClose: () => void;
 }
-
-const formatDateTime = (value?: string | null) =>
-  value
-    ? new Date(value).toLocaleString('en-IN', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      })
-    : null;
 
 interface TimelineStep {
   key: string;
@@ -30,15 +21,17 @@ interface TimelineStep {
 
 /**
  * The dedicated "what happened to this order" popup — every step here reads straight off
- * fields already on the Order document (timeline.cancelledAt, refundRequestedAt/refundReason,
- * refundedAt/refundedByUserId). Nothing is inferred or fabricated; a step that never happened
- * just doesn't render.
+ * fields already on the Order document (timeline.cancelledAt/cancelledByUserId,
+ * refundRequestedAt/refundReason, refundedAt/refundedByUserId). Nothing is inferred or
+ * fabricated; a step that never happened just doesn't render.
  */
 export const RefundHistoryModal = ({ order, onClose }: RefundHistoryModalProps) => {
   if (!order) return null;
 
   const businessName = typeof order.businessId === 'object' ? order.businessId?.name : null;
   const wasPaidWhenCancelled = order.paymentStatus === 'PAID' || order.paymentStatus === 'REFUNDED';
+  const cancelledBy = describeActor(order.cancelledByUserId);
+  const refundedBy = describeActor(order.refundedByUserId);
 
   const steps: TimelineStep[] = [
     {
@@ -54,7 +47,9 @@ export const RefundHistoryModal = ({ order, onClose }: RefundHistoryModalProps) 
       label: 'Order Cancelled',
       at: order.timeline?.cancelledAt || null,
       color: 'bg-rose-500',
-      detail: order.cancellationReason ? (
+      detail: cancelledBy ? (
+        <span className="text-slate-500">by {cancelledBy}</span>
+      ) : order.cancellationReason ? (
         <span className="italic text-slate-500">"{order.cancellationReason}"</span>
       ) : undefined,
     },
@@ -83,9 +78,7 @@ export const RefundHistoryModal = ({ order, onClose }: RefundHistoryModalProps) 
       label: 'Marked Refunded',
       at: order.refundedAt || null,
       color: 'bg-violet-500',
-      detail: order.refundedByUserId?.name ? (
-        <span className="text-slate-500">by {order.refundedByUserId.name}</span>
-      ) : undefined,
+      detail: refundedBy ? <span className="text-slate-500">by {refundedBy}</span> : undefined,
     });
   }
 

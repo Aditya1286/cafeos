@@ -30,8 +30,9 @@ const GOOD_CLIENT = { clientId: 'client_artisan', clientSecret: 'secret_artisan'
 interface StubOrder {
   ref: string;
   amountPaise: number;
+  callbackUrl: string;
   status: string;
-  valid?: boolean; // override SMEPay's verdict
+  valid?: boolean; // an explicit verdict; real SMEPay (staging) usually leaves it out
 }
 
 const stub = {
@@ -56,7 +57,12 @@ const startStub = async () => {
     if (!authed(req)) return res.status(401).json({ message: 'Unauthorized' });
     stub.creates++;
     const slug = `slug_${stub.creates}`;
-    stub.orders.set(slug, { ref: req.body.order_id, amountPaise: Math.round(Number(req.body.amount) * 100), status: 'CREATED' });
+    stub.orders.set(slug, {
+      ref: req.body.order_id,
+      amountPaise: Math.round(Number(req.body.amount) * 100),
+      callbackUrl: req.body.callback_url,
+      status: 'CREATED'
+    });
     return res.json({
       status: true,
       order_id: `SME${stub.creates}`,
@@ -68,10 +74,13 @@ const startStub = async () => {
   });
   app.post('/api/wiz/external/order/validate', (req, res) => {
     if (!authed(req)) return res.status(401).json({ message: 'Unauthorized' });
+    // Answers like SMEPay staging does: an unknown slug or a wrong amount is a 404, and a match is
+    // just {status, payment_status}, with no `valid` flag unless a test sets one.
     const order = stub.orders.get(req.body.slug);
-    if (!order) return res.status(404).json({ status: false, message: 'Order not found' });
-    const amountMatches = Math.round(Number(req.body.amount) * 100) === order.amountPaise;
-    return res.json({ status: true, valid: order.valid ?? amountMatches, payment_status: order.status });
+    if (!order || Math.round(Number(req.body.amount) * 100) !== order.amountPaise) {
+      return res.status(404).json({ message: 'Not found', status: false });
+    }
+    return res.json({ payment_status: order.status, status: true, ...(order.valid === undefined ? {} : { valid: order.valid }) });
   });
   app.post('/api/partner/merchants/tsp/auth', (_req, res) => res.json({ token: 'partner_token' }));
   app.post('/api/partner/merchants/extended', (req, res) => {
@@ -143,10 +152,20 @@ const startCheckout = async () => {
     .send({ qrToken, customerName: 'Checkout Customer', customerPhone: phone, items: [{ productId, quantity: 2 }] });
   assert.equal(res.status, 201, JSON.stringify(res.body));
   const slug = String(res.body.data.paymentUrl).split('/').pop()!;
+  assert.equal(res.body.data.slug, slug); // what the frontend opens SMEPay's popup with
   return { ...res.body.data, slug } as { id: string; status: string; paymentUrl: string; amountPaise: number; slug: string };
 };
 
 const artisanOrderCount = () => Order.countDocuments({ businessId: artisanId });
+
+// For work that runs after the response has gone out (the webhook's check).
+const waitFor = async (condition: () => Promise<boolean>, ms = 3000) => {
+  const deadline = Date.now() + ms;
+  while (!(await condition())) {
+    assert.ok(Date.now() < deadline, 'timed out waiting');
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  }
+};
 
 // ── Opt-in ──────────────────────────────────────────────────────────────────
 
@@ -286,6 +305,37 @@ test('SMEPay saying valid:false never pays, whatever the status', async () => {
   assert.equal((await CheckoutSession.findById(session.id))!.status, 'PENDING');
 });
 
+test("staging's TEST_ statuses count as the real ones outside production", async () => {
+  const session = await startCheckout();
+  setPaymentStatus(session.slug, 'TEST_FAILED');
+  await sweepOnce();
+  // Stored as FAILED, so the attempt is final and the customer is offered a retry.
+  assert.equal((await CheckoutSession.findById(session.id))!.attempts[0].lastStatus, 'FAILED');
+
+  const retried = await request(h.app).post(`/api/v1/public/checkout/${session.id}/retry`);
+  assert.equal(retried.status, 200, JSON.stringify(retried.body));
+  setPaymentStatus(retried.body.data.slug, 'TEST_SUCCESS');
+  await sweepOnce();
+  assert.equal((await CheckoutSession.findById(session.id))!.status, 'PAID');
+  assert.equal(await Order.countDocuments({ checkoutSessionId: session.id }), 1);
+});
+
+test('in production a TEST_SUCCESS never pays for an order', async () => {
+  const session = await startCheckout();
+  setPaymentStatus(session.slug, 'TEST_SUCCESS');
+  const nodeEnv = config.nodeEnv;
+  config.nodeEnv = 'production';
+  try {
+    await sweepOnce();
+  } finally {
+    config.nodeEnv = nodeEnv;
+  }
+  const after = await CheckoutSession.findById(session.id);
+  assert.equal(after!.status, 'PENDING');
+  assert.equal(after!.attempts[0].lastStatus, 'TEST_SUCCESS');
+  assert.equal(await Order.countDocuments({ checkoutSessionId: session.id }), 0);
+});
+
 test('a payment that lands after the hold window still creates the order', async () => {
   const session = await startCheckout();
   await CheckoutSession.updateOne({ _id: session.id }, { $set: { expiresAt: new Date(Date.now() - 60_000) } });
@@ -339,6 +389,40 @@ test('retry opens a fresh SMEPay order, but never after the last one was paid', 
   assert.equal(await Order.countDocuments({ checkoutSessionId: session.id }), 1);
 });
 
+// ── SMEPay's callback_url: post-payment redirect (GET) + webhook (POST) ─────
+
+test("callback_url is the API, and its redirect lands on the customer's checkout page", async () => {
+  const session = await startCheckout();
+  assert.equal(
+    stub.orders.get(session.slug)!.callbackUrl,
+    `${config.frontendUrl}/api/v1/public/checkout/${session.id}/callback`
+  );
+
+  const res = await request(h.app).get(`/api/v1/public/checkout/${session.id}/callback`);
+  assert.equal(res.status, 302);
+  assert.equal(res.headers.location, `${config.frontendUrl}/c/artisan-cafe/checkout/${session.id}`);
+});
+
+test('the webhook gets a payment confirmed without anyone polling, but its body is never trusted', async () => {
+  const session = await startCheckout();
+  const webhook = (status: string) =>
+    request(h.app)
+      .post(`/api/v1/public/checkout/${session.id}/callback`)
+      .send({ ref_id: `${session.id}-1`, transaction_id: 'SME_TXN_1', status, amount: '1.00' });
+
+  // A forged SUCCESS while SMEPay itself still says CREATED: checked, and nothing is created.
+  assert.equal((await webhook('SUCCESS')).status, 200);
+  await waitFor(async () => !!(await CheckoutSession.findById(session.id))!.lastCheckedAt);
+  assert.equal(await Order.countDocuments({ checkoutSessionId: session.id }), 0);
+
+  // The real one, once SMEPay's own validate agrees (past the status-check throttle).
+  setPaymentStatus(session.slug, 'SUCCESS');
+  await CheckoutSession.updateOne({ _id: session.id }, { $unset: { lastCheckedAt: 1 } });
+  assert.equal((await webhook('SUCCESS')).status, 200);
+  await waitFor(async () => (await CheckoutSession.findById(session.id))!.status === 'PAID');
+  assert.equal(await Order.countDocuments({ checkoutSessionId: session.id }), 1);
+});
+
 // ── Guards ──────────────────────────────────────────────────────────────────
 
 test('the plain order endpoint refuses to create an unpaid CHECKOUT order', async () => {
@@ -353,6 +437,10 @@ test('junk checkout ids are a clean 404', async () => {
   for (const id of ['not-an-id', '000000000000000000000000']) {
     const res = await request(h.app).get(`/api/v1/public/checkout/${id}`);
     assert.equal(res.status, 404, `${id}: ${res.status}`);
+    const redirect = await request(h.app).get(`/api/v1/public/checkout/${id}/callback`);
+    assert.equal(redirect.status, 404, `${id} callback: ${redirect.status}`);
+    // Webhooks are always acknowledged; an unknown id just isn't checked.
+    assert.equal((await request(h.app).post(`/api/v1/public/checkout/${id}/callback`)).status, 200);
   }
 });
 

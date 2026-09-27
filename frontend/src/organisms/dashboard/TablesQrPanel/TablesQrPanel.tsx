@@ -20,6 +20,11 @@ interface TablesQrPanelProps {
   onToggleTableActive: (tableId: string) => void;
   onDeleteTable: (tableId: string) => void;
   onMarkTableEmpty: (tableId: string) => void;
+  /**
+   * Kitchen staff: see (and download/open) the master and table QR codes, but none of the
+   * controls that change them. The backend refuses those writes for staff regardless.
+   */
+  readOnly?: boolean;
 }
 
 export const TablesQrPanel = ({
@@ -36,6 +41,7 @@ export const TablesQrPanel = ({
   masterQrEnabled,
   savingMasterQr,
   onToggleMasterQr,
+  readOnly = false,
 }: TablesQrPanelProps) => {
   const [tableToDelete, setTableToDelete] = useState<any | null>(null);
   const [tableToEmpty, setTableToEmpty] = useState<any | null>(null);
@@ -58,10 +64,12 @@ export const TablesQrPanel = ({
         <div>
           <h2 className="text-lg font-black text-slate-900">Tables & QR Codes</h2>
           <p className="text-xs text-slate-500 font-medium">
-            Customers scan a table's QR code to see the menu and order
+            {readOnly
+              ? 'View only — ask the owner or a manager to add or change tables'
+              : "Customers scan a table's QR code to see the menu and order"}
           </p>
         </div>
-        {tablesEnabled && (
+        {tablesEnabled && !readOnly && (
           <button
             onClick={onAddTable}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-extrabold text-xs shadow-md shadow-orange-500/20 transition-all"
@@ -71,42 +79,44 @@ export const TablesQrPanel = ({
         )}
       </div>
 
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 flex items-center justify-between gap-4">
-        <div>
-          <div className="text-sm font-black text-slate-900">
-            This business uses physical tables
+      {!readOnly && (
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 flex items-center justify-between gap-4">
+          <div>
+            <div className="text-sm font-black text-slate-900">
+              This business uses physical tables
+            </div>
+            <p className="text-xs text-slate-500 font-medium mt-0.5">
+              Turn this off for a business with no seating (e.g. a general store) — customers order
+              directly without picking a table, and orders are never capped by table count.
+            </p>
           </div>
-          <p className="text-xs text-slate-500 font-medium mt-0.5">
-            Turn this off for a business with no seating (e.g. a general store) — customers order
-            directly without picking a table, and orders are never capped by table count.
-          </p>
-        </div>
-        <button
-          onClick={onToggleTablesEnabled}
-          disabled={savingTablesEnabled}
-          className={`shrink-0 relative w-14 h-8 rounded-full transition-colors disabled:opacity-50 ${
-            tablesEnabled ? 'bg-emerald-500' : 'bg-slate-300'
-          }`}
-          title={
-            tablesEnabled
-              ? 'Tables enabled — click to disable'
-              : 'Tables disabled — click to enable'
-          }
-        >
-          <span
-            className={`absolute top-1 left-1 w-6 h-6 rounded-full bg-white shadow-md transition-transform ${
-              tablesEnabled ? 'translate-x-6' : 'translate-x-0'
+          <button
+            onClick={onToggleTablesEnabled}
+            disabled={savingTablesEnabled}
+            className={`shrink-0 relative w-14 h-8 rounded-full transition-colors disabled:opacity-50 ${
+              tablesEnabled ? 'bg-emerald-500' : 'bg-slate-300'
             }`}
-          />
-        </button>
-      </div>
+            title={
+              tablesEnabled
+                ? 'Tables enabled — click to disable'
+                : 'Tables disabled — click to enable'
+            }
+          >
+            <span
+              className={`absolute top-1 left-1 w-6 h-6 rounded-full bg-white shadow-md transition-transform ${
+                tablesEnabled ? 'translate-x-6' : 'translate-x-0'
+              }`}
+            />
+          </button>
+        </div>
+      )}
 
       <MasterQrCard
         menuUrl={menuUrl}
         tablesEnabled={tablesEnabled}
         masterQrEnabled={masterQrEnabled}
         saving={savingMasterQr}
-        onToggle={onToggleMasterQr}
+        onToggle={readOnly ? undefined : onToggleMasterQr}
       />
 
       {!tablesEnabled ? (
@@ -117,8 +127,8 @@ export const TablesQrPanel = ({
           </h3>
           <p className="text-xs text-slate-400 max-w-md mx-auto">
             Customers ordering via your public menu link don't need to select a table, and there's
-            no limit on how many orders can come in at once. Turn tables back on above if you add
-            seating later.
+            no limit on how many orders can come in at once.
+            {!readOnly && ' Turn tables back on above if you add seating later.'}
           </p>
         </div>
       ) : (
@@ -185,7 +195,7 @@ export const TablesQrPanel = ({
                   Open this table's menu →
                 </a>
 
-                {isOccupied && (
+                {isOccupied && !readOnly && (
                   <button
                     onClick={() => setTableToEmpty(t)}
                     className="w-full py-2 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-700 text-[11px] font-extrabold transition-all flex items-center justify-center gap-1.5"
@@ -194,24 +204,26 @@ export const TablesQrPanel = ({
                   </button>
                 )}
 
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => onToggleTableActive(t._id)}
-                    className={`flex-1 py-2 rounded-xl text-[11px] font-extrabold border transition-all flex items-center justify-center gap-1.5 ${
-                      isActive
-                        ? 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-600'
-                        : 'bg-emerald-50 hover:bg-emerald-100 border-emerald-200 text-emerald-700'
-                    }`}
-                  >
-                    <Power className="w-3.5 h-3.5" /> {isActive ? 'Disable' : 'Enable'}
-                  </button>
-                  <button
-                    onClick={() => setTableToDelete(t)}
-                    className="flex-1 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 text-[11px] font-extrabold transition-all flex items-center justify-center gap-1.5"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" /> Delete
-                  </button>
-                </div>
+                {!readOnly && (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => onToggleTableActive(t._id)}
+                      className={`flex-1 py-2 rounded-xl text-[11px] font-extrabold border transition-all flex items-center justify-center gap-1.5 ${
+                        isActive
+                          ? 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-600'
+                          : 'bg-emerald-50 hover:bg-emerald-100 border-emerald-200 text-emerald-700'
+                      }`}
+                    >
+                      <Power className="w-3.5 h-3.5" /> {isActive ? 'Disable' : 'Enable'}
+                    </button>
+                    <button
+                      onClick={() => setTableToDelete(t)}
+                      className="flex-1 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 text-[11px] font-extrabold transition-all flex items-center justify-center gap-1.5"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" /> Delete
+                    </button>
+                  </div>
+                )}
               </div>
             );
           })}

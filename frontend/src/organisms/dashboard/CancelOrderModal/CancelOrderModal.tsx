@@ -1,6 +1,7 @@
 import React from 'react';
 import { X } from 'lucide-react';
 import { Modal } from '@/molecules/Modal';
+import { formatCurrency } from '@/utils/money';
 
 interface CancelOrderModalProps {
   order: any | null;
@@ -32,6 +33,13 @@ export const CancelOrderModal = ({
             For {order.customerName} · {order.tableName || 'Takeaway'}. This cannot be undone.
           </p>
         </div>
+        {order.paymentStatus === 'PAID' && (
+          <p className="text-xs font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-xl p-3">
+            This order is already paid. Cancelling it means the customer must be refunded{' '}
+            {formatCurrency(order.totalAmountPaise)}. It stays "Refund pending" until someone marks
+            it refunded.
+          </p>
+        )}
         <div className="flex gap-3">
           <button
             onClick={onClose}

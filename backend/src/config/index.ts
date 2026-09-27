@@ -62,6 +62,7 @@ nconf.defaults({
   // SMEPay Wizard Checkout — the optional per-business online checkout (services/checkout.service.ts).
   // Each café uses its own SMEPay merchant account (credentials in SmepayAccount), so money
   // settles straight to the café and never passes through the platform.
+  // SMEPAY Prod Url - https://extranet.smepay.in
   SMEPAY_BASE_URL: env === 'production' ? 'https://extranet.smepay.in' : 'https://staging.smepay.in',
   // Partner (TSP) API used to create a café's SMEPay merchant account + KYC link from the
   // owner's Settings. Onboarding is unavailable until PARTNER_CODE/EMAIL are configured.

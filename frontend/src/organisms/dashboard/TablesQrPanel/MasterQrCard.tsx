@@ -9,7 +9,8 @@ interface MasterQrCardProps {
   tablesEnabled: boolean;
   masterQrEnabled: boolean;
   saving: boolean;
-  onToggle: () => void;
+  /** Omitted for a view-only viewer (kitchen staff): the on/off switch isn't shown. */
+  onToggle?: () => void;
 }
 
 /**
@@ -81,7 +82,7 @@ export const MasterQrCard = ({
         </div>
       </div>
 
-      {tablesEnabled && (
+      {tablesEnabled && onToggle && (
         <button
           type="button"
           onClick={onToggle}

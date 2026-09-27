@@ -19,8 +19,9 @@ interface UseOwnerDashboardDataOptions {
   /** Fired after a reconnect re-sync, so any other order list a caller keeps can re-fetch too. */
   onResync?: () => void;
   /**
-   * Staff only see the Kitchen tab: load just the business profile and live orders. Menu, tables,
-   * inventory and analytics are owner/manager data — their endpoints would refuse a staff login.
+   * Staff see the Kitchen, Orders and (view-only) Tables tabs: load just the business profile,
+   * live orders and tables. Menu, inventory and analytics are owner/manager data — their
+   * endpoints would refuse a staff login.
    */
   kitchenOnly?: boolean;
 }
@@ -59,8 +60,9 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
       setBusiness(profileRes.data.business);
 
       if (options.kitchenOnly) {
-        const ordersRes = await ordersService.list();
+        const [ordersRes, tblRes] = await Promise.all([ordersService.list(), tablesService.list()]);
         setOrders(ordersRes.data || []);
+        setTables(tblRes.data || []);
       } else {
         const [ordersRes, catRes, prodRes, tblRes, invRes, analRes] = await Promise.all([
           ordersService.list(),
@@ -163,14 +165,12 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
         const missed = fresh.filter((o) => !known.has(o._id) && o.orderStatus === 'PLACED');
         setOrders(fresh);
 
-        if (!callbacksRef.current.kitchenOnly) {
-          const [tblRes, analRes] = await Promise.all([
-            tablesService.list(),
-            analyticsService.getDashboard(),
-          ]);
-          setTables(tblRes.data || []);
-          setAnalytics(analRes.data || null);
-        }
+        const [tblRes, analRes] = await Promise.all([
+          tablesService.list(),
+          callbacksRef.current.kitchenOnly ? null : analyticsService.getDashboard(),
+        ]);
+        setTables(tblRes.data || []);
+        if (analRes) setAnalytics(analRes.data || null);
 
         if (missed.length > 0) {
           toast(
@@ -206,7 +206,7 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
       return;
     }
     try {
-      await ordersService.updateStatus(orderId, status);
+      const res = await ordersService.updateStatus(orderId, status);
       setOrders((prev) =>
         prev.map((o) =>
           o._id === orderId || o.orderId === orderId
@@ -219,6 +219,7 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
         ),
       );
       toast.success(`Order status updated to ${status}`);
+      return res.data;
     } catch (err: any) {
       toast.error(err.message);
       throw err;

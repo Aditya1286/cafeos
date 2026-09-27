@@ -12,6 +12,9 @@ export interface CheckoutSession {
   amountPaise: number;
   expiresAt: string;
   orderId: string | null;
+  // The latest attempt's SMEPay order slug — opens the in-page payment popup (services/smepayWidget).
+  slug: string | null;
+  // SMEPay's hosted payment page for the same attempt — the fallback when the popup can't load.
   paymentUrl: string | null;
   // SMEPay's own payment_status for the latest attempt (CREATED, PENDING, SUCCESS, FAILED, EXPIRED…)
   paymentStatus: string | null;

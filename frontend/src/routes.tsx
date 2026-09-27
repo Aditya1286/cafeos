@@ -63,6 +63,7 @@ export const routes: AppRoute[] = [
     access: 'public',
     element: () => <CustomerOrderTrackingPage />,
   },
-  // SMEPay's hosted checkout returns the customer here (the checkout session's callback_url).
+  // Online checkout: SMEPay's payment popup opens here, and after paying SMEPay sends the
+  // customer back here too (via callback_url, an API route that redirects to this page).
   { path: '/c/:slug/checkout/:sessionId', access: 'public', element: () => <CheckoutReturnPage /> },
 ];

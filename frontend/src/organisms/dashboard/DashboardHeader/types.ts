@@ -47,9 +47,10 @@ const ALL_TABS: DashboardTabDef[] = [
   { id: 'profile', label: 'My Profile', icon: UserCircle },
 ];
 
-// Kitchen staff work orders: the live Kitchen board plus the full order list. The staff list is
-// the owner's alone. Every other role keeps the full dashboard it always had.
-const STAFF_TABS: DashboardTab[] = ['kds', 'orders'];
+// Kitchen staff work orders: the live Kitchen board plus the full order list, and can look up
+// (not change) the tables and their QR codes. The staff list is the owner's alone. Every other
+// role keeps the full dashboard it always had.
+const STAFF_TABS: DashboardTab[] = ['kds', 'orders', 'tables'];
 const OWNER_ONLY_TABS: DashboardTab[] = ['staff'];
 // Reached from the avatar's account menu rather than the tab row.
 const MENU_ONLY_TABS: DashboardTab[] = ['profile'];

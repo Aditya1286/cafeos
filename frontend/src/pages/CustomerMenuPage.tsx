@@ -164,7 +164,6 @@ export const CustomerMenuPage: React.FC = () => {
       return;
     }
     setSubmitting(true);
-    let leavingForPayment = false;
     try {
       const resolvedQrToken = qrToken || table?.qrToken;
       const payload: Record<string, any> = {
@@ -184,8 +183,8 @@ export const CustomerMenuPage: React.FC = () => {
       }
 
       if (paymentMethod === 'CHECKOUT') {
-        // No order exists until SMEPay confirms the payment — the customer pays on SMEPay's page,
-        // which sends them back to /c/:slug/checkout/:sessionId (CheckoutReturnPage).
+        // No order exists until SMEPay confirms the payment. CheckoutReturnPage opens SMEPay's
+        // payment popup over itself and waits there for the backend to confirm it.
         const checkout = await publicCheckoutService.start({
           customerName,
           customerPhone,
@@ -193,10 +192,11 @@ export const CustomerMenuPage: React.FC = () => {
           qrToken: payload.qrToken,
           businessSlug: payload.businessSlug,
         });
-        if (!checkout.data.paymentUrl)
+        if (!checkout.data.slug && !checkout.data.paymentUrl)
           throw new Error('Could not start the online payment. Please try another method.');
-        leavingForPayment = true; // keep the button busy while the browser leaves for SMEPay
-        window.location.assign(checkout.data.paymentUrl);
+        navigate(`/c/${checkout.data.businessSlug}/checkout/${checkout.data.id}`, {
+          state: { openPayment: checkout.data },
+        });
         return;
       }
 
@@ -210,7 +210,7 @@ export const CustomerMenuPage: React.FC = () => {
     } catch (err: any) {
       toast.error(err.message || 'Failed to place order.');
     } finally {
-      if (!leavingForPayment) setSubmitting(false);
+      setSubmitting(false);
     }
   };
 

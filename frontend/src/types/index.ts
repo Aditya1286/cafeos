@@ -131,6 +131,17 @@ export interface Order {
   /** ONLINE = direct UPI to the café (staff-confirmed); CHECKOUT = paid via the café's SMEPay checkout. */
   paymentMethod: 'ONLINE' | 'CASH' | 'CHECKOUT';
   createdAt: string;
+  refundedAt?: string;
+  // Populated as { name, role } on staff-facing responses; unset if nobody did it (e.g. the
+  // customer cancelled their own order).
+  cancelledByUserId?: OrderActor | string | null;
+  refundedByUserId?: OrderActor | string | null;
+}
+
+export interface OrderActor {
+  _id: string;
+  name: string;
+  role: string;
 }
 
 export interface FinancialLedger {

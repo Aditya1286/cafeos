@@ -22,6 +22,13 @@ import { v4 as uuidv4 } from 'uuid';
 const findOrderByPublicId = (id: unknown) =>
   typeof id === 'string' && /^[0-9a-f]{24}$/i.test(id) ? Order.findById(id) : Promise.resolve(null);
 
+// Who cancelled / refunded an order (name + role), for the staff-facing views only — the public
+// tracking page never gets staff names.
+const ORDER_ACTORS = [
+  { path: 'cancelledByUserId', select: 'name role' },
+  { path: 'refundedByUserId', select: 'name role' }
+];
+
 // Public: Place Order (Guest Customer scanning QR code). All checks, pricing and writes live in
 // services/orderPlacement.service.ts, shared with SMEPay checkout (which calls the same two steps
 // but only places the order once the payment is confirmed).
@@ -113,7 +120,9 @@ export const markOrderPaidByCustomer = async (req: Request, res: Response) => {
 };
 
 // Public: Customer cancels their own order — only while it's still awaiting the
-// business's acceptance, so the kitchen never loses an order mid-preparation.
+// business's acceptance, so the kitchen never loses an order mid-preparation, and only
+// before it's paid: a paid order (SMEPay checkout, or payment confirmed up front) is the
+// business's to cancel, since cancelling it means refunding it.
 export const cancelOrderByCustomer = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -128,6 +137,12 @@ export const cancelOrderByCustomer = async (req: Request, res: Response) => {
         ? 'This order is already cancelled.'
         : 'This order is already being prepared — please contact the business directly to cancel.';
       return res.status(400).json({ success: false, error: { code: 'CANNOT_CANCEL', message } });
+    }
+    if (order.paymentStatus === 'PAID') {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'CANNOT_CANCEL', message: 'This order is already paid — please ask the business to cancel it.' }
+      });
     }
 
     order.orderStatus = 'CANCELLED';
@@ -228,7 +243,7 @@ export const getOrderById = async (req: AuthRequest, res: Response) => {
     if (!order) {
       return res.status(404).json({ success: false, error: { code: 'ORDER_NOT_FOUND', message: 'Order not found' } });
     }
-    return await sendOrderDetails(res, order);
+    return await sendOrderDetails(res, await order.populate(ORDER_ACTORS));
   } catch (error: any) {
     return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
   }
@@ -315,6 +330,7 @@ export const getOrders = async (req: AuthRequest, res: Response) => {
 
     const [orders, total] = await Promise.all([
       Order.find(query)
+        .populate(ORDER_ACTORS)
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limitNum),
@@ -367,7 +383,7 @@ export const getRefundOrders = async (req: AuthRequest, res: Response) => {
 
     const [orders, total] = await Promise.all([
       Order.find(query)
-        .populate('refundedByUserId', 'name email')
+        .populate(ORDER_ACTORS)
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limitNum),
@@ -427,11 +443,8 @@ export const searchOrders = async (req: AuthRequest, res: Response) => {
 // Owner/Staff: Update Order Status
 const VALID_ORDER_STATUSES: OrderStatus[] = ['PLACED', 'CONFIRMED', 'PREPARING', 'READY', 'SERVED', 'COMPLETED', 'CANCELLED', 'REFUNDED'];
 
-// Kitchen staff work orders through their lifecycle; confirming a refund was sent is money
-// handling, left to the owner/manager.
-const STAFF_FORBIDDEN_STATUSES: OrderStatus[] = ['REFUNDED'];
-const forbiddenForRole = (req: AuthRequest, status: OrderStatus) =>
-  req.user?.role === 'STAFF' && STAFF_FORBIDDEN_STATUSES.includes(status);
+// An order is final once it reaches one of these (a cancelled one can still be refunded).
+const FINISHED_ORDER_STATUSES: OrderStatus[] = ['COMPLETED', 'CANCELLED', 'REFUNDED'];
 
 
 interface StatusChangeResult {
@@ -464,6 +477,23 @@ const applyOrderStatusChange = async (
     }
   }
 
+  // Only a new order can be cancelled: once the kitchen has accepted it, it's going to be made.
+  // Nothing moves back to New either, since that would reopen cancelling.
+  if (status === 'CANCELLED' && order.orderStatus !== 'PLACED') {
+    const errorMessage = order.orderStatus === 'CANCELLED'
+      ? 'This order is already cancelled.'
+      : 'Only a new order can be cancelled. Once an order is accepted it can no longer be cancelled.';
+    return { success: false, errorCode: 'CANNOT_CANCEL', errorMessage };
+  }
+  if (status === 'PLACED' && order.orderStatus !== 'PLACED') {
+    return { success: false, errorCode: 'INVALID_TRANSITION', errorMessage: 'An order cannot be moved back to New.' };
+  }
+  // A finished order stays finished (otherwise e.g. a refunded order marked COMPLETED would be
+  // "paid" and ledgered a second time); the one way on is refunding a cancelled order.
+  if (FINISHED_ORDER_STATUSES.includes(order.orderStatus) && !(order.orderStatus === 'CANCELLED' && status === 'REFUNDED')) {
+    return { success: false, errorCode: 'ORDER_FINISHED', errorMessage: `This order is already ${order.orderStatus.toLowerCase()}.` };
+  }
+
   const wasAlreadyPaid = order.paymentStatus === 'PAID';
 
   order.orderStatus = status;
@@ -474,6 +504,9 @@ const applyOrderStatusChange = async (
     order.paymentStatus = 'REFUNDED';
     order.refundedAt = new Date();
     order.refundedByUserId = userId as any;
+  }
+  if (status === 'CANCELLED') {
+    order.cancelledByUserId = userId as any;
   }
 
   // Update timeline timestamp
@@ -603,10 +636,6 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
         error: { code: 'INVALID_STATUS', message: 'Invalid order status specified.' }
       });
     }
-    if (forbiddenForRole(req, status)) {
-      return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Only the owner or a manager can mark an order refunded.' } });
-    }
-
     const order = await findOrderForBusiness(id, req.businessId!.toString());
     if (!order) {
       return res.status(404).json({ success: false, error: { code: 'ORDER_NOT_FOUND', message: 'Order not found.' } });
@@ -620,7 +649,7 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
     return res.json({
       success: true,
       message: `Order status updated to ${status}`,
-      data: result.order
+      data: await result.order!.populate(ORDER_ACTORS)
     });
   } catch (error: any) {
     return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
@@ -639,9 +668,6 @@ export const bulkUpdateOrderStatus = async (req: AuthRequest, res: Response) => 
 
     if (!VALID_ORDER_STATUSES.includes(status)) {
       return res.status(400).json({ success: false, error: { code: 'INVALID_STATUS', message: 'Invalid order status specified.' } });
-    }
-    if (forbiddenForRole(req, status)) {
-      return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Only the owner or a manager can mark an order refunded.' } });
     }
     if (!Array.isArray(orderIds) || orderIds.length === 0) {
       return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'orderIds must be a non-empty array.' } });

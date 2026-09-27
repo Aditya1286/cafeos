@@ -22,7 +22,8 @@ export interface RefundListQuery {
 export type ListOrdersResponse = ApiListResponse<Order>;
 export type GetOrderResponse = ApiResponse<Order>;
 export type GetOrderBillResponse = ApiResponse<any>;
-export type UpdateOrderStatusResponse = ApiMessageResponse;
+// The updated order, with who cancelled / refunded it populated.
+export type UpdateOrderStatusResponse = ApiResponse<Order>;
 export type ConfirmPaymentResponse = ApiMessageResponse;
 
 export interface BulkUpdateStatusResponse {

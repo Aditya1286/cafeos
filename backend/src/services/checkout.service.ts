@@ -31,6 +31,12 @@ const SWEEP_BATCH = 100;
 // SMEPay payment_status values after which an attempt can't turn into a payment anymore.
 const FINAL_FAILURE_STATUSES = ['FAILED', 'EXPIRED'];
 
+// SMEPay staging reports test payments as TEST_<status> (TEST_PENDING, TEST_SUCCESS…). They move
+// no real money, so outside production they count as the status they stand for; in production
+// they're kept as-is, so a test payment can never pay for a real order.
+const countedStatus = (paymentStatus: string) =>
+  config.nodeEnv !== 'production' && paymentStatus.startsWith('TEST_') ? paymentStatus.slice('TEST_'.length) : paymentStatus;
+
 type SessionDoc = ICheckoutSession;
 
 export const isCheckoutAvailable = (business: Pick<IBusiness, 'checkoutAllowed' | 'checkoutEnabled'>) =>
@@ -46,6 +52,9 @@ const toView = (session: SessionDoc) => {
     amountPaise: session.amountPaise,
     expiresAt: session.expiresAt,
     orderId: session.orderId || null,
+    // Opens SMEPay's payment popup in-page; paymentUrl is its hosted page (the fallback). The
+    // slug is already part of paymentUrl, so exposing it on its own reveals nothing new.
+    slug: latest?.slug || null,
     paymentUrl: latest?.paymentUrl || null,
     paymentStatus: latest?.lastStatus || null,
     attemptsLeft: Math.max(0, MAX_ATTEMPTS - session.attempts.length)
@@ -77,13 +86,19 @@ const plainDraft = (session: SessionDoc): ICheckoutDraft => {
   return typeof draft?.toObject === 'function' ? draft.toObject() : draft;
 };
 
+// SMEPay uses an order's callback_url twice: it sends the customer's browser there (GET) after a
+// successful payment, and POSTs its webhook there. So it points at the API (handled by
+// getCheckoutReturnUrl / handlePaymentWebhook below), not at the customer's page. The API is
+// reachable under FRONTEND_URL: nginx proxies /api/v1 in production, Vite's proxy in dev.
+const callbackUrlFor = (session: SessionDoc) => `${config.frontendUrl}/api/v1/public/checkout/${session._id}/callback`;
+
 // Opens a fresh SMEPay Wizard order for this session and extends its hold window.
 const openAttempt = async (session: SessionDoc, creds: SmepayCredentials): Promise<SessionDoc> => {
   const ref = `${session._id}-${session.attempts.length + 1}`;
   const order = await wizCreateOrder(creds, {
     ref,
     amountPaise: session.amountPaise,
-    callbackUrl: `${config.frontendUrl}/c/${session.businessSlug}/checkout/${session._id}`,
+    callbackUrl: callbackUrlFor(session),
     customer: { name: session.customerName, phone: session.customerPhone }
   });
   const attempt: ICheckoutAttempt = {
@@ -205,12 +220,13 @@ const pollProvider = async (session: SessionDoc): Promise<SessionDoc> => {
     if (FINAL_FAILURE_STATUSES.includes(attempt.lastStatus)) continue;
 
     const result = await wizValidate(creds, { slug: attempt.slug, amountPaise: session.amountPaise });
-    if (result.paymentStatus && result.paymentStatus !== attempt.lastStatus) {
-      attempt.lastStatus = result.paymentStatus;
+    const paymentStatus = countedStatus(result.paymentStatus);
+    if (paymentStatus && paymentStatus !== attempt.lastStatus) {
+      attempt.lastStatus = paymentStatus;
     }
     await sessionDao.setAttemptStatus(session._id, attempt.ref, attempt.lastStatus, checkedAt);
 
-    if (result.valid && result.paymentStatus === 'SUCCESS') {
+    if (result.valid && paymentStatus === 'SUCCESS') {
       return finalize(session, attempt);
     }
   }
@@ -274,6 +290,30 @@ export const getCheckoutStatus = async (id: string): Promise<CheckoutView> => {
     }
   }
   return toView(session);
+};
+
+/** Where SMEPay's post-payment redirect to callback_url should land: the customer's checkout page. */
+export const getCheckoutReturnUrl = async (id: string): Promise<string> => {
+  const session = await loadSession(id);
+  return `${config.frontendUrl}/c/${session.businessSlug}/checkout/${session._id}`;
+};
+
+/**
+ * SMEPay's webhook: a POST to callback_url whenever a payment changes. It isn't signed, so the
+ * body is never trusted. It only triggers the same server-side check the sweep would run within
+ * a minute (throttled like status polling), so a forged call can't do more than that. Never
+ * throws: SMEPay has already been answered by the time this runs.
+ */
+export const handlePaymentWebhook = async (id: string): Promise<void> => {
+  try {
+    const session = mongoose.Types.ObjectId.isValid(id) ? await sessionDao.findSessionById(id) : null;
+    // SWITCHED too: a late payment marks the cash/UPI order that was placed instead as paid.
+    if (!session || !['PENDING', 'EXPIRED', 'SWITCHED'].includes(session.status)) return;
+    if (session.lastCheckedAt && Date.now() - session.lastCheckedAt.getTime() < STATUS_CHECK_THROTTLE_MS) return;
+    await pollProvider(session);
+  } catch (error: any) {
+    logger.warn({ checkoutSessionId: id, err: error?.message }, '[checkout] webhook-triggered check failed');
+  }
 };
 
 export const retryCheckout = async (id: string): Promise<CheckoutView> => {

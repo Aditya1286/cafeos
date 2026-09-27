@@ -15,7 +15,8 @@ interface KdsOrderTicketCompactProps {
   onToggleExpanded: () => void;
   onToggleSelected: () => void;
   onAdvance: () => void;
-  onCancel: () => void;
+  // Omitted once the order can no longer be cancelled (anything past New).
+  onCancel?: () => void;
   onViewBill: () => void;
   onConfirmPayment: () => void;
 }
@@ -170,13 +171,15 @@ export const KdsOrderTicketCompact = ({
             >
               <FileText className="w-3.5 h-3.5" /> Bill
             </button>
-            <button
-              type="button"
-              onClick={onCancel}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border border-rose-200 text-rose-600 text-[11px] font-bold"
-            >
-              <X className="w-3.5 h-3.5" /> Cancel order
-            </button>
+            {onCancel && (
+              <button
+                type="button"
+                onClick={onCancel}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border border-rose-200 text-rose-600 text-[11px] font-bold"
+              >
+                <X className="w-3.5 h-3.5" /> Cancel order
+              </button>
+            )}
           </div>
         </div>
       )}

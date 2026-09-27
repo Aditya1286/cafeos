@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, User, FileText, Undo2, Wallet } from 'lucide-react';
 import { STATUS_CONFIG, isOrderCancellable } from '@/constants/orderStatus';
 import { formatCurrency } from '@/utils/money';
+import { formatDateTime } from '@/utils/DateUtils';
+import { describeActor } from '@/constants/roles';
 
 interface OrderDetailsDrawerProps {
   order: any | null;
@@ -10,7 +12,6 @@ interface OrderDetailsDrawerProps {
   onClose: () => void;
   onViewBill: (orderId: string) => void;
   onCancel: (order: any) => void;
-  /** Omitted for staff — confirming a refund was sent is the owner's/manager's job. */
   onMarkRefunded?: (order: any) => void;
   onConfirmPayment: (order: any) => void;
 }
@@ -192,6 +193,19 @@ export const OrderDetailsDrawer = ({
                     Customer says they've paid — verify before serving
                   </div>
                 )}
+                {(order.orderStatus === 'CANCELLED' || order.orderStatus === 'REFUNDED') && (
+                  <div className="mt-1.5 px-2.5 py-1.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-[10px] font-black">
+                    Cancelled
+                    {order.timeline?.cancelledAt
+                      ? ` on ${formatDateTime(order.timeline.cancelledAt)}`
+                      : ''}
+                    {describeActor(order.cancelledByUserId)
+                      ? ` by ${describeActor(order.cancelledByUserId)}`
+                      : order.cancellationReason
+                        ? ` — ${order.cancellationReason}`
+                        : ''}
+                  </div>
+                )}
                 {order.refundRequestedAt && order.paymentStatus === 'PAID' && (
                   <div className="mt-1.5 px-2.5 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 text-[10px] font-black">
                     Customer requested a refund on{' '}
@@ -204,12 +218,10 @@ export const OrderDetailsDrawer = ({
                 )}
                 {order.paymentStatus === 'REFUNDED' && order.refundedAt && (
                   <div className="mt-1.5 px-2.5 py-1.5 rounded-xl bg-violet-50 border border-violet-200 text-violet-700 text-[10px] font-black">
-                    Refunded on{' '}
-                    {new Date(order.refundedAt).toLocaleDateString('en-IN', {
-                      day: '2-digit',
-                      month: 'short',
-                      year: 'numeric',
-                    })}
+                    Refunded on {formatDateTime(order.refundedAt)}
+                    {describeActor(order.refundedByUserId)
+                      ? ` by ${describeActor(order.refundedByUserId)}`
+                      : ''}
                   </div>
                 )}
               </div>

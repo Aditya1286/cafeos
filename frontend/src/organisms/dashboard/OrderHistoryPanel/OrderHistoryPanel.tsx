@@ -51,7 +51,7 @@ const ACTION_BUTTON_CLASS: Record<'amber' | 'violet' | 'rose', string> = {
   rose: 'bg-rose-50 hover:bg-rose-100 border-rose-200 text-rose-700',
 };
 
-/** A paid order that's been cancelled but not yet refunded needs the owner's attention. */
+/** A paid order that's been cancelled but not yet refunded — anyone working orders can mark it. */
 const needsRefund = (o: any) => o.orderStatus === 'CANCELLED' && o.paymentStatus === 'PAID';
 
 export const OrderHistoryPanel = ({

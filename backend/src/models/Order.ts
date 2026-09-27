@@ -74,6 +74,8 @@ export interface IOrder extends Document {
   notes?: string;
   timeline?: IOrderTimeline;
   cancellationReason?: string;
+  // Staff member who cancelled it (unset when the customer cancelled it themselves).
+  cancelledByUserId?: mongoose.Types.ObjectId;
   customerMarkedPaidAt?: Date;
   // Owner/staff manually verifying a payment happened (cash handed over at the counter, or an
   // online payment the customer claims but hasn't yet been confirmed by advancing the order to
@@ -169,6 +171,7 @@ const OrderSchema = new Schema<IOrder>(
     notes: { type: String, default: '' },
     timeline: { type: TimelineSchema, default: () => ({ placedAt: new Date() }) },
     cancellationReason: { type: String, default: '' },
+    cancelledByUserId: { type: Schema.Types.ObjectId, ref: 'User' },
     customerMarkedPaidAt: { type: Date },
     paymentConfirmedAt: { type: Date },
     paymentConfirmedByUserId: { type: Schema.Types.ObjectId, ref: 'User' },

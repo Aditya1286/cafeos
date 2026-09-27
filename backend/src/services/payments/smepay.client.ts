@@ -24,7 +24,9 @@ export interface WizardOrder {
 
 export interface WizardValidation {
   valid: boolean;
-  paymentStatus: string; // CREATED | INITIATED | PENDING | SUCCESS | FAILED | EXPIRED
+  // CREATED | INITIATED | PENDING | SUCCESS | FAILED | EXPIRED — staging prefixes test payments
+  // with TEST_ (TEST_PENDING, TEST_SUCCESS…); checkout.service decides what those count as.
+  paymentStatus: string;
 }
 
 const toRupeesString = (paise: number) => (Math.round(paise) / 100).toFixed(2);
@@ -147,6 +149,11 @@ export const wizCreateOrder = async (
 /**
  * SMEPay's server-side payment check — the only thing this codebase trusts to say a checkout was
  * paid. `valid` is SMEPay's own verdict that the slug/amount pair matches a real order.
+ *
+ * SMEPay's docs show a `valid` flag in the reply, but staging answers just
+ * `{status: true, payment_status}` (seen 2026-09-27), and a slug/amount mismatch is a 404 with
+ * `status: false`. SMEPay's own WooCommerce plugin goes by `status`, so that's the fallback
+ * when `valid` is missing; an explicit `valid: false` still never counts.
  */
 export const wizValidate = async (
   creds: SmepayCredentials,
@@ -161,7 +168,7 @@ export const wizValidate = async (
     throw providerError('payment validation', status, data);
   }
   return {
-    valid: data?.valid === true,
+    valid: typeof data?.valid === 'boolean' ? data.valid : data?.status === true,
     paymentStatus: String(data?.payment_status || '').toUpperCase()
   };
 };

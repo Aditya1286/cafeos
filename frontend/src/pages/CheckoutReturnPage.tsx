@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams, Link } from 'react-router-dom';
+import { useLocation, useNavigate, useParams, Link } from 'react-router-dom';
 import {
   ArrowLeft,
   Coffee,
@@ -14,6 +14,7 @@ import {
 import publicCheckoutService from '../services/public/checkout';
 import publicMenuService from '../services/public/menu';
 import { CheckoutSession } from '../services/public/checkout/types';
+import { loadSmepayWidget, openSmepayCheckout } from '../services/smepayWidget';
 import { toast } from '@/utils/toast';
 
 // Poll fast while the customer has most likely just paid, then back off: the backend's sweep
@@ -26,18 +27,22 @@ const GIVE_UP_AFTER_MS = 20 * 60_000;
 const FAILED_PAYMENT_STATUSES = ['FAILED', 'EXPIRED'];
 
 /**
- * Where SMEPay's hosted checkout sends the customer back to. Nothing here decides whether the
+ * The online-checkout page. The menu sends the customer here right after starting a checkout,
+ * and this page opens SMEPay's payment popup over itself. After a payment SMEPay also sends the
+ * customer back here (via the API's callback redirect). Nothing here decides whether the
  * payment succeeded — the backend asks SMEPay itself — this page just waits for the order to
  * exist, and otherwise offers to try again or pay another way from the same saved cart.
  */
 export const CheckoutReturnPage: React.FC = () => {
   const { slug, sessionId } = useParams<{ slug: string; sessionId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const [session, setSession] = useState<CheckoutSession | null>(null);
   const [business, setBusiness] = useState<any>(null);
   const [notFound, setNotFound] = useState(false);
-  const [busyAction, setBusyAction] = useState<'retry' | 'CASH' | 'ONLINE' | null>(null);
+  const [busyAction, setBusyAction] = useState<'open' | 'retry' | 'CASH' | 'ONLINE' | null>(null);
   const startedAt = useRef(Date.now());
+  const openedFromMenu = useRef(false);
 
   const goToOrder = useCallback(
     (orderId: string) => navigate(`/c/${slug}/order/${orderId}`, { replace: true }),
@@ -94,14 +99,64 @@ export const CheckoutReturnPage: React.FC = () => {
     };
   }, [sessionId, applySession]);
 
+  const checkNow = useCallback(async () => {
+    if (!sessionId) return;
+    try {
+      applySession((await publicCheckoutService.getStatus(sessionId)).data);
+    } catch {
+      // The regular polling above keeps trying.
+    }
+  }, [sessionId, applySession]);
+
+  // Opens SMEPay's payment popup over this page. If it can't load (script blocked, bad network),
+  // the customer goes to SMEPay's hosted page instead, which sends them back here afterwards.
+  const openPayment = useCallback(
+    async (target: CheckoutSession) => {
+      setBusyAction('open');
+      const paymentSlug = target.slug;
+      if (paymentSlug) {
+        try {
+          await loadSmepayWidget();
+          setBusyAction(null);
+          openSmepayCheckout(paymentSlug, () => {
+            // The popup closing says nothing about the payment — ask the backend straight away,
+            // and keep polling fast for a while in case SMEPay needs a moment to confirm it.
+            startedAt.current = Date.now();
+            checkNow();
+          });
+          return;
+        } catch {
+          // Fall through to the hosted page.
+        }
+      }
+      if (target.paymentUrl) {
+        window.location.assign(target.paymentUrl); // stays busy while the browser leaves
+        return;
+      }
+      toast.error('Could not open the payment. Please try again or pay another way.');
+      setBusyAction(null);
+    },
+    [checkNow],
+  );
+
+  // Arriving straight from the menu with a just-started checkout: open its popup once, and clear
+  // that navigation state so a refresh or Back doesn't pop it open again.
+  useEffect(() => {
+    const started = (location.state as { openPayment?: CheckoutSession } | null)?.openPayment;
+    if (!started || openedFromMenu.current) return;
+    openedFromMenu.current = true;
+    navigate(location.pathname, { replace: true, state: null });
+    openPayment(started);
+  }, [location.state, location.pathname, navigate, openPayment]);
+
   const handleRetry = async () => {
     if (!sessionId) return;
     setBusyAction('retry');
     try {
       const res = await publicCheckoutService.retry(sessionId);
       if (applySession(res.data)) return; // the previous attempt had gone through after all
-      if (res.data.paymentUrl) {
-        window.location.assign(res.data.paymentUrl);
+      if (res.data.slug || res.data.paymentUrl) {
+        await openPayment(res.data);
         return;
       }
       setBusyAction(null);
@@ -207,10 +262,15 @@ export const CheckoutReturnPage: React.FC = () => {
           {!failed && (
             <p className="text-[11px] font-bold text-slate-500 text-center">
               Didn't finish paying?{' '}
-              {session.paymentUrl && (
-                <a href={session.paymentUrl} className="text-emerald-700 underline">
-                  Open the payment page again
-                </a>
+              {(session.slug || session.paymentUrl) && (
+                <button
+                  type="button"
+                  onClick={() => openPayment(session)}
+                  disabled={busy}
+                  className="text-emerald-700 underline disabled:opacity-50"
+                >
+                  {busyAction === 'open' ? 'Opening…' : 'Open the payment again'}
+                </button>
               )}
             </p>
           )}
