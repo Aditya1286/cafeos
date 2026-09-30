@@ -1,20 +1,12 @@
 import React, { useState } from 'react';
-import {
-  Search,
-  Download,
-  Sun,
-  Moon,
-  ChevronDown,
-  FileSpreadsheet,
-  FileText,
-  LogOut,
-} from 'lucide-react';
+import { Search, Download, ChevronDown, FileSpreadsheet, FileText, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { APP_SLUG } from '@/constants/app';
 import { NavbarAdminViewProps } from './types';
 import {
   AdminBrand,
   DateRangeMenu,
+  ThemeToggle,
   UserInitial,
   useDismissOnOutsideClick,
 } from './NavbarAdminParts';
@@ -107,17 +99,7 @@ export const NavbarAdminDesktop = ({
             </AnimatePresence>
           </div>
 
-          <button
-            onClick={onToggleDarkMode}
-            className="p-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors shadow-sm"
-            title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-          >
-            {darkMode ? (
-              <Sun className="w-4 h-4 text-amber-500" />
-            ) : (
-              <Moon className="w-4 h-4 text-slate-500" />
-            )}
-          </button>
+          <ThemeToggle darkMode={darkMode} onToggle={onToggleDarkMode} />
 
           <div ref={userRef} className="relative">
             <button

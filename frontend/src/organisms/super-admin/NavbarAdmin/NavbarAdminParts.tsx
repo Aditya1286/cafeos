@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Calendar, ChevronDown, Check } from 'lucide-react';
+import { Calendar, ChevronDown, Check, Sun, Moon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { APP_NAME } from '@/constants/app';
 import { DATE_PRESETS } from './types';
@@ -21,10 +21,11 @@ export const AdminBrand = ({ compact = false }: { compact?: boolean }) => (
         <span className="text-base font-black tracking-tight text-slate-900 truncate">
           {APP_NAME}
         </span>
-        {/* On the narrowest phones the badge would crowd out the app name itself. */}
+        {/* On most phones the compact bar (menu, brand, date range, theme toggle) has no room for
+            the badge without crowding out the app name itself. */}
         <span
           className={`px-2 py-0.5 rounded-full bg-red-50 text-red-600 text-[10px] font-extrabold border border-red-200 shrink-0 ${
-            compact ? 'hidden min-[360px]:inline' : ''
+            compact ? 'hidden min-[420px]:inline' : ''
           }`}
         >
           Super Admin
@@ -107,6 +108,22 @@ export const DateRangeMenu = ({
         )}
       </AnimatePresence>
     </div>
+  );
+};
+
+/** Light/dark switch for the super admin dashboard (the theme itself: styles/superAdminDark.css). */
+export const ThemeToggle = ({ darkMode, onToggle }: { darkMode: boolean; onToggle: () => void }) => {
+  const label = darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode';
+  return (
+    <button
+      onClick={onToggle}
+      title={label}
+      aria-label={label}
+      aria-pressed={darkMode}
+      className="shrink-0 p-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors shadow-sm"
+    >
+      {darkMode ? <Sun className="w-4 h-4 text-amber-500" /> : <Moon className="w-4 h-4 text-slate-500" />}
+    </button>
   );
 };
 

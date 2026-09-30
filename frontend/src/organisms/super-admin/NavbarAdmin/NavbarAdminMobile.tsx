@@ -3,16 +3,18 @@ import { createPortal } from 'react-dom';
 import { Menu, X, Search, FileSpreadsheet, FileText, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { NavbarAdminViewProps, ACTIONABLE_NAV_IDS } from './types';
-import { AdminBrand, DateRangeMenu, UserInitial } from './NavbarAdminParts';
+import { AdminBrand, DateRangeMenu, ThemeToggle, UserInitial } from './NavbarAdminParts';
 
-/** Mobile & tablet (below `lg`): one slim row — hamburger, brand, date range. Sections, search,
- * export, and sign-out live in a slide-in drawer opened from the hamburger. */
+/** Mobile & tablet (below `lg`): one slim row — hamburger, brand, date range, theme. Sections,
+ * search, export, and sign-out live in a slide-in drawer opened from the hamburger. */
 export const NavbarAdminMobile = ({
   activeTab,
   onTabChange,
   onOpenCommand,
   dateRange,
   onDateRangeChange,
+  darkMode,
+  onToggleDarkMode,
   onExport,
   user,
   onLogout,
@@ -67,6 +69,7 @@ export const NavbarAdminMobile = ({
         </div>
 
         <DateRangeMenu dateRange={dateRange} onDateRangeChange={onDateRangeChange} compact />
+        <ThemeToggle darkMode={darkMode} onToggle={onToggleDarkMode} />
       </div>
 
       {/* Portaled to <body>: the header's backdrop-blur makes it the containing block for any

@@ -40,11 +40,23 @@ import { SupportTicketsPanel } from '@/organisms/super-admin/SupportTicketsPanel
 import { RefundHistoryModal } from '@/molecules/RefundHistoryModal';
 import { useSupportDesk } from '../hooks/useSupportDesk';
 import { useAdminRefunds } from '../hooks/useAdminRefunds';
+import '@/styles/superAdminDark.css';
+
+// The super admin's theme choice, remembered per browser. Storage can be unavailable (private
+// windows, blocked site data), so it's only ever a convenience: the page works without it.
+const DARK_MODE_KEY = `${APP_SLUG}_super_admin_dark_mode`;
+const readDarkMode = () => {
+  try {
+    return localStorage.getItem(DARK_MODE_KEY) === '1';
+  } catch {
+    return false;
+  }
+};
 
 export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
   const [activeTab, setActiveTab] = useState('overview');
   const [dateRange, setDateRange] = useState('today');
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(readDarkMode);
   const [isCommandOpen, setIsCommandOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [selectedBusinessForModal, setSelectedBusinessForModal] = useState<any>(null);
@@ -56,6 +68,19 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
   useEffect(() => {
     document.documentElement.classList.remove('dark');
   }, []);
+
+  // Dark mode re-maps this dashboard's light classes (styles/superAdminDark.css). The class goes on
+  // <html> so portalled menus and modals follow it, and comes off when leaving the page.
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.toggle('super-admin-dark', darkMode);
+    try {
+      localStorage.setItem(DARK_MODE_KEY, darkMode ? '1' : '0');
+    } catch {
+      // Not remembered this time; the toggle itself still works.
+    }
+    return () => root.classList.remove('super-admin-dark');
+  }, [darkMode]);
 
   const {
     overview,

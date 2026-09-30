@@ -1,0 +1,250 @@
+/*
+ * Super admin dark theme. The super admin screens are styled with light Tailwind classes only (no
+ * dark: variants), so dark mode re-maps those classes instead: while SuperAdminDashboard has dark
+ * mode on, it puts "super-admin-dark" on <html> (so portalled menus and modals are covered too) and
+ * the rules below turn its whites, slate greys, pastel badges, borders and charts into their dark
+ * counterparts. Nothing here applies to any other page. Hover/focus variants get their own rules
+ * (one step more specific) so they still win over the re-mapped base colours.
+ *
+ * Covers the classes the admin UI actually uses; when an admin screen starts using a new light
+ * class, add its dark counterpart here.
+ */
+
+html.super-admin-dark { color-scheme: dark; }
+html.super-admin-dark body { background-color: #020617; color: #e2e8f0; }
+
+/* index.css's custom (light) scrollbars */
+html.super-admin-dark ::-webkit-scrollbar-track { background: #0f172a; }
+html.super-admin-dark ::-webkit-scrollbar-thumb { background: #334155; }
+html.super-admin-dark ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+/* Surfaces */
+html.super-admin-dark .bg-\[\#F8FAFC\] { background-color: #020617; }
+html.super-admin-dark .bg-white { background-color: #0f172a; }
+html.super-admin-dark .bg-slate-50 { background-color: #131c2e; }
+html.super-admin-dark .bg-slate-100 { background-color: #1e293b; }
+html.super-admin-dark .bg-slate-200 { background-color: #273449; }
+html.super-admin-dark .bg-slate-300 { background-color: #334155; }
+html.super-admin-dark .bg-slate-400 { background-color: #475569; }
+html.super-admin-dark .bg-slate-700 { background-color: #52607a; }
+html.super-admin-dark .bg-slate-800 { background-color: #3f4c61; }
+html.super-admin-dark .bg-slate-900 { background-color: #475569; }
+html.super-admin-dark .bg-white\/80 { background-color: rgb(15 23 42 / 0.8); }
+html.super-admin-dark .bg-white\/95 { background-color: rgb(15 23 42 / 0.95); }
+html.super-admin-dark .bg-slate-50\/70 { background-color: rgb(19 28 46 / 0.7); }
+html.super-admin-dark .bg-slate-50\/80 { background-color: rgb(19 28 46 / 0.8); }
+
+/* Text */
+html.super-admin-dark .text-black { color: #f8fafc; }
+html.super-admin-dark .text-slate-900 { color: #f1f5f9; }
+html.super-admin-dark .text-slate-800 { color: #e2e8f0; }
+html.super-admin-dark .text-slate-700 { color: #cbd5e1; }
+html.super-admin-dark .text-slate-600 { color: #b6c2d2; }
+html.super-admin-dark .text-slate-500 { color: #9aa8bb; }
+html.super-admin-dark .text-slate-400 { color: #7f8ea5; }
+html.super-admin-dark .text-slate-300 { color: #5b6b82; }
+html.super-admin-dark .placeholder\:text-slate-400::placeholder { color: #64748b; }
+
+/* Borders, dividers, rings */
+html.super-admin-dark .border-white { border-color: #0f172a; }
+html.super-admin-dark .border-slate-50 { border-color: #172033; }
+html.super-admin-dark .border-slate-100 { border-color: #1a2436; }
+html.super-admin-dark .border-slate-200 { border-color: #243044; }
+html.super-admin-dark .border-slate-200\/80 { border-color: rgb(36 48 68 / 0.8); }
+html.super-admin-dark .border-slate-300 { border-color: #334155; }
+html.super-admin-dark .border-slate-400 { border-color: #475569; }
+html.super-admin-dark .border-slate-900 { border-color: #e2e8f0; }
+html.super-admin-dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]) { border-color: #1e293b; }
+html.super-admin-dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]) { border-color: #1e293b; }
+html.super-admin-dark .ring-white { --tw-ring-color: #0f172a; }
+html.super-admin-dark .ring-slate-300 { --tw-ring-color: #334155; }
+html.super-admin-dark .ring-slate-900 { --tw-ring-color: #e2e8f0; }
+html.super-admin-dark .from-white { --tw-gradient-from: #0f172a var(--tw-gradient-from-position); --tw-gradient-to: rgb(15 23 42 / 0) var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+
+/* Hover / focus states (one step more specific than the base re-mapping above) */
+html.super-admin-dark .hover\:bg-white:hover { background-color: #131c2e; }
+html.super-admin-dark .hover\:bg-slate-50:hover { background-color: #1a2436; }
+html.super-admin-dark .hover\:bg-slate-50\/80:hover { background-color: rgb(26 36 54 / 0.8); }
+html.super-admin-dark .hover\:bg-slate-100:hover { background-color: #243044; }
+html.super-admin-dark .hover\:bg-slate-200:hover { background-color: #334155; }
+html.super-admin-dark .hover\:bg-slate-800:hover { background-color: #64748b; }
+html.super-admin-dark .hover\:text-slate-600:hover { color: #cbd5e1; }
+html.super-admin-dark .hover\:text-slate-700:hover { color: #e2e8f0; }
+html.super-admin-dark .hover\:text-slate-800:hover { color: #f1f5f9; }
+html.super-admin-dark .hover\:text-slate-900:hover { color: #ffffff; }
+html.super-admin-dark .hover\:border-slate-200:hover { border-color: #334155; }
+html.super-admin-dark .hover\:border-slate-300:hover { border-color: #475569; }
+html.super-admin-dark .focus\:bg-white:focus { background-color: #0f172a; }
+html.super-admin-dark .focus\:border-slate-400:focus { border-color: #64748b; }
+
+/* Coloured badges, pills and alerts: pale tints become translucent washes, dark text becomes light */
+html.super-admin-dark .bg-red-50 { background-color: rgb(239 68 68 / 0.12); }
+html.super-admin-dark .bg-red-100 { background-color: rgb(239 68 68 / 0.2); }
+html.super-admin-dark .bg-red-200 { background-color: rgb(239 68 68 / 0.28); }
+html.super-admin-dark .border-red-50 { border-color: rgb(239 68 68 / 0.15); }
+html.super-admin-dark .border-red-100 { border-color: rgb(239 68 68 / 0.25); }
+html.super-admin-dark .border-red-200 { border-color: rgb(239 68 68 / 0.35); }
+html.super-admin-dark .text-red-600 { color: #f87171; }
+html.super-admin-dark .text-red-700 { color: #fca5a5; }
+html.super-admin-dark .text-red-800 { color: #fecaca; }
+html.super-admin-dark .text-red-900 { color: #fee2e2; }
+html.super-admin-dark .hover\:bg-red-50:hover { background-color: rgb(239 68 68 / 0.18); }
+html.super-admin-dark .hover\:bg-red-100:hover { background-color: rgb(239 68 68 / 0.26); }
+html.super-admin-dark .bg-rose-50 { background-color: rgb(244 63 94 / 0.12); }
+html.super-admin-dark .bg-rose-100 { background-color: rgb(244 63 94 / 0.2); }
+html.super-admin-dark .bg-rose-200 { background-color: rgb(244 63 94 / 0.28); }
+html.super-admin-dark .border-rose-50 { border-color: rgb(244 63 94 / 0.15); }
+html.super-admin-dark .border-rose-100 { border-color: rgb(244 63 94 / 0.25); }
+html.super-admin-dark .border-rose-200 { border-color: rgb(244 63 94 / 0.35); }
+html.super-admin-dark .text-rose-600 { color: #fb7185; }
+html.super-admin-dark .text-rose-700 { color: #fda4af; }
+html.super-admin-dark .text-rose-800 { color: #fecdd3; }
+html.super-admin-dark .text-rose-900 { color: #ffe4e6; }
+html.super-admin-dark .hover\:bg-rose-50:hover { background-color: rgb(244 63 94 / 0.18); }
+html.super-admin-dark .hover\:bg-rose-100:hover { background-color: rgb(244 63 94 / 0.26); }
+html.super-admin-dark .bg-orange-50 { background-color: rgb(249 115 22 / 0.12); }
+html.super-admin-dark .bg-orange-100 { background-color: rgb(249 115 22 / 0.2); }
+html.super-admin-dark .bg-orange-200 { background-color: rgb(249 115 22 / 0.28); }
+html.super-admin-dark .border-orange-50 { border-color: rgb(249 115 22 / 0.15); }
+html.super-admin-dark .border-orange-100 { border-color: rgb(249 115 22 / 0.25); }
+html.super-admin-dark .border-orange-200 { border-color: rgb(249 115 22 / 0.35); }
+html.super-admin-dark .text-orange-600 { color: #fb923c; }
+html.super-admin-dark .text-orange-700 { color: #fdba74; }
+html.super-admin-dark .text-orange-800 { color: #fed7aa; }
+html.super-admin-dark .text-orange-900 { color: #ffedd5; }
+html.super-admin-dark .hover\:bg-orange-50:hover { background-color: rgb(249 115 22 / 0.18); }
+html.super-admin-dark .hover\:bg-orange-100:hover { background-color: rgb(249 115 22 / 0.26); }
+html.super-admin-dark .bg-amber-50 { background-color: rgb(245 158 11 / 0.12); }
+html.super-admin-dark .bg-amber-100 { background-color: rgb(245 158 11 / 0.2); }
+html.super-admin-dark .bg-amber-200 { background-color: rgb(245 158 11 / 0.28); }
+html.super-admin-dark .border-amber-50 { border-color: rgb(245 158 11 / 0.15); }
+html.super-admin-dark .border-amber-100 { border-color: rgb(245 158 11 / 0.25); }
+html.super-admin-dark .border-amber-200 { border-color: rgb(245 158 11 / 0.35); }
+html.super-admin-dark .text-amber-600 { color: #fbbf24; }
+html.super-admin-dark .text-amber-700 { color: #fcd34d; }
+html.super-admin-dark .text-amber-800 { color: #fde68a; }
+html.super-admin-dark .text-amber-900 { color: #fef3c7; }
+html.super-admin-dark .hover\:bg-amber-50:hover { background-color: rgb(245 158 11 / 0.18); }
+html.super-admin-dark .hover\:bg-amber-100:hover { background-color: rgb(245 158 11 / 0.26); }
+html.super-admin-dark .bg-yellow-50 { background-color: rgb(234 179 8 / 0.12); }
+html.super-admin-dark .bg-yellow-100 { background-color: rgb(234 179 8 / 0.2); }
+html.super-admin-dark .bg-yellow-200 { background-color: rgb(234 179 8 / 0.28); }
+html.super-admin-dark .border-yellow-50 { border-color: rgb(234 179 8 / 0.15); }
+html.super-admin-dark .border-yellow-100 { border-color: rgb(234 179 8 / 0.25); }
+html.super-admin-dark .border-yellow-200 { border-color: rgb(234 179 8 / 0.35); }
+html.super-admin-dark .text-yellow-600 { color: #facc15; }
+html.super-admin-dark .text-yellow-700 { color: #fde047; }
+html.super-admin-dark .text-yellow-800 { color: #fef08a; }
+html.super-admin-dark .text-yellow-900 { color: #fef9c3; }
+html.super-admin-dark .hover\:bg-yellow-50:hover { background-color: rgb(234 179 8 / 0.18); }
+html.super-admin-dark .hover\:bg-yellow-100:hover { background-color: rgb(234 179 8 / 0.26); }
+html.super-admin-dark .bg-emerald-50 { background-color: rgb(16 185 129 / 0.12); }
+html.super-admin-dark .bg-emerald-100 { background-color: rgb(16 185 129 / 0.2); }
+html.super-admin-dark .bg-emerald-200 { background-color: rgb(16 185 129 / 0.28); }
+html.super-admin-dark .border-emerald-50 { border-color: rgb(16 185 129 / 0.15); }
+html.super-admin-dark .border-emerald-100 { border-color: rgb(16 185 129 / 0.25); }
+html.super-admin-dark .border-emerald-200 { border-color: rgb(16 185 129 / 0.35); }
+html.super-admin-dark .text-emerald-600 { color: #34d399; }
+html.super-admin-dark .text-emerald-700 { color: #6ee7b7; }
+html.super-admin-dark .text-emerald-800 { color: #a7f3d0; }
+html.super-admin-dark .text-emerald-900 { color: #d1fae5; }
+html.super-admin-dark .hover\:bg-emerald-50:hover { background-color: rgb(16 185 129 / 0.18); }
+html.super-admin-dark .hover\:bg-emerald-100:hover { background-color: rgb(16 185 129 / 0.26); }
+html.super-admin-dark .bg-green-50 { background-color: rgb(34 197 94 / 0.12); }
+html.super-admin-dark .bg-green-100 { background-color: rgb(34 197 94 / 0.2); }
+html.super-admin-dark .bg-green-200 { background-color: rgb(34 197 94 / 0.28); }
+html.super-admin-dark .border-green-50 { border-color: rgb(34 197 94 / 0.15); }
+html.super-admin-dark .border-green-100 { border-color: rgb(34 197 94 / 0.25); }
+html.super-admin-dark .border-green-200 { border-color: rgb(34 197 94 / 0.35); }
+html.super-admin-dark .text-green-600 { color: #4ade80; }
+html.super-admin-dark .text-green-700 { color: #86efac; }
+html.super-admin-dark .text-green-800 { color: #bbf7d0; }
+html.super-admin-dark .text-green-900 { color: #dcfce7; }
+html.super-admin-dark .hover\:bg-green-50:hover { background-color: rgb(34 197 94 / 0.18); }
+html.super-admin-dark .hover\:bg-green-100:hover { background-color: rgb(34 197 94 / 0.26); }
+html.super-admin-dark .bg-teal-50 { background-color: rgb(20 184 166 / 0.12); }
+html.super-admin-dark .bg-teal-100 { background-color: rgb(20 184 166 / 0.2); }
+html.super-admin-dark .bg-teal-200 { background-color: rgb(20 184 166 / 0.28); }
+html.super-admin-dark .border-teal-50 { border-color: rgb(20 184 166 / 0.15); }
+html.super-admin-dark .border-teal-100 { border-color: rgb(20 184 166 / 0.25); }
+html.super-admin-dark .border-teal-200 { border-color: rgb(20 184 166 / 0.35); }
+html.super-admin-dark .text-teal-600 { color: #2dd4bf; }
+html.super-admin-dark .text-teal-700 { color: #5eead4; }
+html.super-admin-dark .text-teal-800 { color: #99f6e4; }
+html.super-admin-dark .text-teal-900 { color: #ccfbf1; }
+html.super-admin-dark .hover\:bg-teal-50:hover { background-color: rgb(20 184 166 / 0.18); }
+html.super-admin-dark .hover\:bg-teal-100:hover { background-color: rgb(20 184 166 / 0.26); }
+html.super-admin-dark .bg-sky-50 { background-color: rgb(14 165 233 / 0.12); }
+html.super-admin-dark .bg-sky-100 { background-color: rgb(14 165 233 / 0.2); }
+html.super-admin-dark .bg-sky-200 { background-color: rgb(14 165 233 / 0.28); }
+html.super-admin-dark .border-sky-50 { border-color: rgb(14 165 233 / 0.15); }
+html.super-admin-dark .border-sky-100 { border-color: rgb(14 165 233 / 0.25); }
+html.super-admin-dark .border-sky-200 { border-color: rgb(14 165 233 / 0.35); }
+html.super-admin-dark .text-sky-600 { color: #38bdf8; }
+html.super-admin-dark .text-sky-700 { color: #7dd3fc; }
+html.super-admin-dark .text-sky-800 { color: #bae6fd; }
+html.super-admin-dark .text-sky-900 { color: #e0f2fe; }
+html.super-admin-dark .hover\:bg-sky-50:hover { background-color: rgb(14 165 233 / 0.18); }
+html.super-admin-dark .hover\:bg-sky-100:hover { background-color: rgb(14 165 233 / 0.26); }
+html.super-admin-dark .bg-blue-50 { background-color: rgb(59 130 246 / 0.12); }
+html.super-admin-dark .bg-blue-100 { background-color: rgb(59 130 246 / 0.2); }
+html.super-admin-dark .bg-blue-200 { background-color: rgb(59 130 246 / 0.28); }
+html.super-admin-dark .border-blue-50 { border-color: rgb(59 130 246 / 0.15); }
+html.super-admin-dark .border-blue-100 { border-color: rgb(59 130 246 / 0.25); }
+html.super-admin-dark .border-blue-200 { border-color: rgb(59 130 246 / 0.35); }
+html.super-admin-dark .text-blue-600 { color: #60a5fa; }
+html.super-admin-dark .text-blue-700 { color: #93c5fd; }
+html.super-admin-dark .text-blue-800 { color: #bfdbfe; }
+html.super-admin-dark .text-blue-900 { color: #dbeafe; }
+html.super-admin-dark .hover\:bg-blue-50:hover { background-color: rgb(59 130 246 / 0.18); }
+html.super-admin-dark .hover\:bg-blue-100:hover { background-color: rgb(59 130 246 / 0.26); }
+html.super-admin-dark .bg-indigo-50 { background-color: rgb(99 102 241 / 0.12); }
+html.super-admin-dark .bg-indigo-100 { background-color: rgb(99 102 241 / 0.2); }
+html.super-admin-dark .bg-indigo-200 { background-color: rgb(99 102 241 / 0.28); }
+html.super-admin-dark .border-indigo-50 { border-color: rgb(99 102 241 / 0.15); }
+html.super-admin-dark .border-indigo-100 { border-color: rgb(99 102 241 / 0.25); }
+html.super-admin-dark .border-indigo-200 { border-color: rgb(99 102 241 / 0.35); }
+html.super-admin-dark .text-indigo-600 { color: #818cf8; }
+html.super-admin-dark .text-indigo-700 { color: #a5b4fc; }
+html.super-admin-dark .text-indigo-800 { color: #c7d2fe; }
+html.super-admin-dark .text-indigo-900 { color: #e0e7ff; }
+html.super-admin-dark .hover\:bg-indigo-50:hover { background-color: rgb(99 102 241 / 0.18); }
+html.super-admin-dark .hover\:bg-indigo-100:hover { background-color: rgb(99 102 241 / 0.26); }
+html.super-admin-dark .bg-violet-50 { background-color: rgb(139 92 246 / 0.12); }
+html.super-admin-dark .bg-violet-100 { background-color: rgb(139 92 246 / 0.2); }
+html.super-admin-dark .bg-violet-200 { background-color: rgb(139 92 246 / 0.28); }
+html.super-admin-dark .border-violet-50 { border-color: rgb(139 92 246 / 0.15); }
+html.super-admin-dark .border-violet-100 { border-color: rgb(139 92 246 / 0.25); }
+html.super-admin-dark .border-violet-200 { border-color: rgb(139 92 246 / 0.35); }
+html.super-admin-dark .text-violet-600 { color: #a78bfa; }
+html.super-admin-dark .text-violet-700 { color: #c4b5fd; }
+html.super-admin-dark .text-violet-800 { color: #ddd6fe; }
+html.super-admin-dark .text-violet-900 { color: #ede9fe; }
+html.super-admin-dark .hover\:bg-violet-50:hover { background-color: rgb(139 92 246 / 0.18); }
+html.super-admin-dark .hover\:bg-violet-100:hover { background-color: rgb(139 92 246 / 0.26); }
+html.super-admin-dark .bg-purple-50 { background-color: rgb(168 85 247 / 0.12); }
+html.super-admin-dark .bg-purple-100 { background-color: rgb(168 85 247 / 0.2); }
+html.super-admin-dark .bg-purple-200 { background-color: rgb(168 85 247 / 0.28); }
+html.super-admin-dark .border-purple-50 { border-color: rgb(168 85 247 / 0.15); }
+html.super-admin-dark .border-purple-100 { border-color: rgb(168 85 247 / 0.25); }
+html.super-admin-dark .border-purple-200 { border-color: rgb(168 85 247 / 0.35); }
+html.super-admin-dark .text-purple-600 { color: #c084fc; }
+html.super-admin-dark .text-purple-700 { color: #d8b4fe; }
+html.super-admin-dark .text-purple-800 { color: #e9d5ff; }
+html.super-admin-dark .text-purple-900 { color: #f3e8ff; }
+html.super-admin-dark .hover\:bg-purple-50:hover { background-color: rgb(168 85 247 / 0.18); }
+html.super-admin-dark .hover\:bg-purple-100:hover { background-color: rgb(168 85 247 / 0.26); }
+
+/* Charts (recharts): grid, axis labels, hover cursor, and the tooltip, whose light colours are set
+   inline by constants/chartTheme.ts, hence !important there. */
+html.super-admin-dark .recharts-cartesian-grid line { stroke: #1e293b; }
+html.super-admin-dark .recharts-cartesian-axis-line, html.super-admin-dark .recharts-cartesian-axis-tick-line { stroke: #334155; }
+html.super-admin-dark .recharts-cartesian-axis-tick-value, html.super-admin-dark .recharts-polar-angle-axis-tick-value, html.super-admin-dark .recharts-label { fill: #94a3b8; }
+html.super-admin-dark .recharts-tooltip-cursor { fill: rgb(148 163 184 / 0.08); }
+html.super-admin-dark .recharts-default-tooltip {
+  background-color: #0f172a !important;
+  border-color: #334155 !important;
+  color: #e2e8f0 !important;
+}
+html.super-admin-dark .recharts-legend-item-text { color: #cbd5e1 !important; }
+
