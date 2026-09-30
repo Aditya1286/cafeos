@@ -33,6 +33,7 @@ import subscriptionRoutes from './routes/subscriptionRoutes';
 import supportRoutes from './routes/supportRoutes';
 import accountRoutes from './routes/accountRoutes';
 import staffRoutes from './routes/staffRoutes';
+import demoRoutes from './demo/demo.routes';
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -91,6 +92,7 @@ app.use('/api/v1/subscriptions', subscriptionRoutes);
 app.use('/api/v1/support', supportRoutes);
 app.use('/api/v1/account', accountRoutes);
 app.use('/api/v1/staff', staffRoutes);
+app.use('/api/v1/demo', demoRoutes);
 
 // Health Check
 app.get('/health', (req, res) => {
