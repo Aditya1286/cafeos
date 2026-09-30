@@ -1,14 +1,5 @@
-import mongoose from 'mongoose';
 import { Business } from '../models/Business';
 import { Order } from '../models/Order';
-import { Table } from '../models/Table';
-import { Product } from '../models/Product';
-import { Category } from '../models/Category';
-import { User } from '../models/User';
-import { Subscription } from '../models/Subscription';
-import { FinancialLedger } from '../models/FinancialLedger';
-import { DailyOrderCounter } from '../models/DailyOrderCounter';
-import { Remittance } from '../models/Remittance';
 import { DEMO_CAFES } from './cafes';
 import { DemoSimState } from './models/DemoSimState';
 import { DemoOrderPlan } from './models/DemoOrderPlan';
@@ -55,33 +46,4 @@ export const getDemoStatus = async (now: Date = new Date()) => {
       };
     })
   );
-};
-
-/**
- * Removes every demo café and everything it produced (orders, ledger rows, fees, menu, tables,
- * logins). Only ever touches businesses flagged isDemo under the demo slugs. CLI-only.
- */
-export const resetDemoCafes = async () => {
-  const removed: string[] = [];
-  for (const cafe of DEMO_CAFES) {
-    const business = await Business.findOne({ slug: cafe.slug, isDemo: true });
-    await DemoSimState.deleteOne({ key: stateKeyOf(cafe) });
-    if (!business) continue;
-    const businessId: mongoose.Types.ObjectId = business._id;
-    await Promise.all([
-      Order.deleteMany({ businessId }),
-      FinancialLedger.deleteMany({ businessId }),
-      DailyOrderCounter.deleteMany({ businessId }),
-      Remittance.deleteMany({ businessId }),
-      DemoOrderPlan.deleteMany({ businessId }),
-      Product.deleteMany({ businessId }),
-      Category.deleteMany({ businessId }),
-      Table.deleteMany({ businessId }),
-      User.deleteMany({ businessId }),
-      Subscription.deleteMany({ businessId })
-    ]);
-    await business.deleteOne();
-    removed.push(cafe.slug);
-  }
-  return removed;
 };

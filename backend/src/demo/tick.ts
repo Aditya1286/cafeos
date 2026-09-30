@@ -5,6 +5,7 @@ import { demoConfig } from './demo.config';
 import { writeHistory } from './history';
 import { placeLiveOrder, advanceLivePlans } from './live';
 import { settleDueFees } from './fees';
+import { pruneOldDemoData, PruneResult } from './prune';
 import { arrivalsBetween } from './demand';
 import { startOfLocalDay, nextLocalMidnight, DAY_MS, MINUTE_MS } from './clock';
 
@@ -16,7 +17,8 @@ import { startOfLocalDay, nextLocalMidnight, DAY_MS, MINUTE_MS } from './clock';
 //     way, so charts never have holes);
 //  3. turn the arrivals of the last 45 minutes into live orders through the real order API;
 //  4. move live orders along in the kitchen (accept, cook, ready, complete) as their times come;
-//  5. keep the cafés' platform fees paid.
+//  5. keep the cafés' platform fees paid;
+//  6. once a day, prune data older than DEMO_KEEP_DAYS (the database is a 512 MB free cluster).
 //
 // History that doesn't fit in `budgetMs` carries over to the next tick; live orders only start
 // once a café's history has caught up.
@@ -37,6 +39,7 @@ export interface CafeTickSummary {
   historyOrders: number;
   liveOrders: number;
   feesSettled: number;
+  pruned?: PruneResult;
   simulatedUntil?: Date;
   caughtUp: boolean;
 }
@@ -125,8 +128,9 @@ export const runDemoTick = async (options: { now?: Date; budgetMs?: number; hist
         ctx.state.simulatedUntil = now;
         await ctx.state.save();
       }
-      // 5. Fees.
+      // 5. Fees. 6. Pruning.
       summary.feesSettled = await settleDueFees(ctx, now);
+      summary.pruned = await pruneOldDemoData(ctx, now);
       summary.simulatedUntil = ctx.state.simulatedUntil;
       summary.caughtUp = ctx.state.simulatedUntil! >= historyEnd;
     }

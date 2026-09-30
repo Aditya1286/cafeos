@@ -13,6 +13,8 @@ export interface IDemoSimState extends Document {
   menuVersion?: number;
   // When overdue platform fees were last settled for this café.
   lastSettledAt?: Date;
+  // When old data was last pruned for this café (see ../prune.ts).
+  lastPrunedAt?: Date;
   // The "lock" document only: a tick holds it until this instant.
   lockedUntil?: Date;
   createdAt: Date;
@@ -26,6 +28,7 @@ const DemoSimStateSchema = new Schema<IDemoSimState>(
     simulatedUntil: { type: Date },
     menuVersion: { type: Number },
     lastSettledAt: { type: Date },
+    lastPrunedAt: { type: Date },
     lockedUntil: { type: Date }
   },
   { timestamps: true }

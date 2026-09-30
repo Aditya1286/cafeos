@@ -16,9 +16,13 @@ import { runDemoTick, TickInProgressError } from '../src/demo/tick';
 import { placeLiveOrder, advanceLivePlans } from '../src/demo/live';
 import { buildBasket } from '../src/demo/demand';
 import { priceBasket } from '../src/demo/pricing';
-import { localTime, minutesOf } from '../src/demo/clock';
+import { localTime, minutesOf, startOfLocalDay, DAY_MS } from '../src/demo/clock';
 import { DemoOrderPlan } from '../src/demo/models/DemoOrderPlan';
+import { pruneOldDemoData } from '../src/demo/prune';
+import { removeDemoCafes } from '../src/demo/teardown';
+import { uploadImage } from '../src/services/storage';
 import { prepareOrder } from '../src/services/orderPlacement.service';
+import { ensureClosedRemittancePeriods } from '../src/services/remittance.service';
 import { Business } from '../src/models/Business';
 import { Product } from '../src/models/Product';
 import { Table } from '../src/models/Table';
@@ -256,6 +260,42 @@ test('a second tick creates nothing twice, and status reports the cafés', async
   assert.ok(status.body.data.every((c: any) => c.exists && c.isDemo && c.totalOrders > 0));
 });
 
+test('pruning removes old demo data whole, and leaves newer data and fee periods intact', async () => {
+  const ctx = await contextFor('chiguru-tiffin-room');
+  const businessId = ctx.business._id;
+  const artisanId = (await Business.findOne({ slug: 'artisan-cafe' }))!._id;
+  const artisanOrders = await Order.countDocuments({ businessId: artisanId });
+
+  // Pretend it's 28 days from now, keeping 35 days: the cut lands a week back, and moves to the
+  // start of that week's fee period — still well inside the 16-day history, so the older part goes.
+  const future = new Date(Date.now() + 28 * DAY_MS);
+  const keepFrom = startOfLocalDay(new Date(future.getTime() - 35 * DAY_MS));
+  const keptOrders = await Order.countDocuments({ businessId, createdAt: { $gte: keepFrom } });
+  const periodsBefore = new Map((await Remittance.find({ businessId }).lean()).map((r) => [String(r._id), r.commissionOwedPaise]));
+
+  const result = await pruneOldDemoData(ctx, future, { force: true, keepDays: 35 });
+  assert.ok(result.orders > 0 && result.ledgerRows > 0, JSON.stringify(result));
+  // Nothing newer than the keep window is lost (the cut only ever moves earlier, to a period start).
+  assert.equal(await Order.countDocuments({ businessId, createdAt: { $gte: keepFrom } }), keptOrders);
+
+  const orderIds = new Set((await Order.find({ businessId }).select('_id')).map((o) => String(o._id)));
+  const ledger = await FinancialLedger.find({ businessId, orderId: { $exists: true } }).select('orderId');
+  assert.ok(ledger.every((row) => orderIds.has(String(row.orderId))), 'no ledger row outlives its order');
+
+  // Kept fee periods come back with exactly the totals they had: none was cut in half.
+  await ensureClosedRemittancePeriods(businessId);
+  for (const period of await Remittance.find({ businessId })) {
+    if (periodsBefore.has(String(period._id))) assert.equal(period.commissionOwedPaise, periodsBefore.get(String(period._id)));
+  }
+  assert.equal(
+    await FinancialLedger.countDocuments({ businessId, type: 'BUSINESS_SETTLEMENT' }),
+    await Remittance.countDocuments({ businessId, status: 'PAID' }),
+    'settlement rows only for periods still there'
+  );
+
+  assert.equal(await Order.countDocuments({ businessId: artisanId }), artisanOrders, 'other businesses untouched');
+});
+
 test('only one tick runs at a time', async () => {
   const results = await Promise.allSettled([runDemoTick({ historyOnly: true }), runDemoTick({ historyOnly: true })]);
   assert.equal(results.filter((r) => r.status === 'fulfilled').length, 1);
@@ -274,4 +314,37 @@ test('a business that is not a demo is never touched, even under a demo slug', a
   assert.equal(entry.status, 'skipped');
   assert.equal(await Order.countDocuments({ businessId: business._id }), ordersBefore);
   assert.equal(mongoose.connection.readyState, 1);
+});
+
+test('removing the demo leaves no trace of it, and touches nothing else', async () => {
+  const [loamline, chiguru, crumbwell, artisan] = await Promise.all(
+    ['loamline-coffee', 'chiguru-tiffin-room', 'crumbwell-bakehouse', 'artisan-cafe'].map((slug) => Business.findOne({ slug }))
+  );
+  // Something an owner might add from the dashboard: a menu photo.
+  const onePixelPng =
+    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+  const { url } = await uploadImage({ dataUrl: onePixelPng, folder: 'menu', ownerId: loamline!._id.toString() });
+  await Product.updateOne({ businessId: loamline!._id }, { $set: { imageUrl: url } });
+
+  const demoIds = [loamline!._id, chiguru!._id];
+  const untouched = async () => ({
+    artisan: await Order.countDocuments({ businessId: artisan!._id }),
+    // Flagged non-demo by the previous test: a real business that happens to own a demo slug.
+    crumbwell: await Order.countDocuments({ businessId: crumbwell!._id })
+  });
+  const before = await untouched();
+
+  const report = await removeDemoCafes();
+  assert.deepEqual([...report.removedCafes].sort(), ['chiguru-tiffin-room', 'loamline-coffee']);
+  assert.deepEqual(report.skippedRealBusinesses, ['crumbwell-bakehouse']);
+
+  const db = mongoose.connection.db!;
+  const collections = (await db.listCollections().toArray()).map((c) => c.name);
+  for (const name of collections) {
+    assert.equal(await db.collection(name).countDocuments({ businessId: { $in: demoIds } }), 0, `${name} still has demo data`);
+  }
+  assert.equal(await Business.countDocuments({ _id: { $in: demoIds } }), 0);
+  assert.ok(!collections.includes('demosimstates') && !collections.includes('demoorderplans'), 'demo collections dropped');
+  assert.equal(await VerifiedPhone.countDocuments({ mobile: /^915/ }), 0);
+  assert.deepEqual(await untouched(), before);
 });

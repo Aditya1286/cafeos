@@ -21,8 +21,15 @@ Add to `config.<env>.json`:
 ```json
 "DEMO_TICK_KEY": "<48+ random characters>",
 "DEMO_ACCOUNT_PASSWORD": "<password for the demo owner/kitchen logins>",
-"DEMO_BACKFILL_DAYS": 30
+"DEMO_BACKFILL_DAYS": 30,
+"DEMO_KEEP_DAYS": 45
 ```
+
+`DEMO_KEEP_DAYS` bounds the demo's footprint on the 512 MB free cluster: once a day each tick
+deletes demo data older than that (orders, their ledger rows, fee periods, counters). 30 days of
+the three cafés measure about 18 MB of data plus ~2 MB of indexes, so 45 days sits around 30 MB.
+It can't go below 35, so every dashboard window (this week vs last week, 30-day popular items and
+kitchen speed) stays covered. Keep it at or above `DEMO_BACKFILL_DAYS`.
 
 Generate a key with `node -e "console.log(require('crypto').randomBytes(24).toString('hex'))"`.
 Without `DEMO_TICK_KEY` (or with one shorter than 24 characters) the endpoints return 404.
@@ -58,12 +65,32 @@ Everything lives in this folder; the only line outside it mounts `demo.routes.ts
 - Only businesses flagged `isDemo` under these slugs are ever touched. If a real business owns
   one of the slugs, that café is skipped.
 
+## Removing the demo
+
+In this order — the data removal needs the demo code, so it comes before deleting the code:
+
+1. **Stop the ticks** (on the laptop running the cron job):
+   `crontab -l | grep -v cafeos-demo/tick.sh | crontab - && rm -rf ~/cafeos-demo`
+2. **Delete the data** (on the server): `docker compose exec backend node dist/demo/cli.js remove --yes`
+   It removes the three cafés and everything tied to them in every collection — orders, ledger,
+   fees, menu, tables, logins, and anything an owner added (photos, tickets...) — then drops the
+   demo's own collections (`demosimstates`, `demoorderplans`). A real business that owns one of
+   the demo slugs is left alone and listed in the output. Nothing else is touched.
+3. **Delete the code** (in the repo):
+   `git rm -r -q backend/src/demo backend/tests/demo.test.ts && sed -i "/demo\/demo.routes/d; /'\/api\/v1\/demo'/d" backend/src/server.ts`
+   (those two `server.ts` lines — the import and the `app.use` — are the only trace outside this
+   folder). Then drop the `DEMO_*` keys from `config.production.json`, rebuild and deploy.
+
+To only pause it, remove `DEMO_TICK_KEY` from the config: the endpoints return 404 and nothing
+runs, while the cafés and their data stay as they are.
+
 ## Command line
 
 ```
 npx ts-node src/demo/cli.ts status        # (Docker image: node dist/demo/cli.js status)
 npx ts-node src/demo/cli.ts backfill      # create the cafés + history now, no live orders
-npx ts-node src/demo/cli.ts reset --yes   # delete the demo cafés and everything they produced
+npx ts-node src/demo/cli.ts prune         # prune now instead of waiting for the daily one
+npx ts-node src/demo/cli.ts remove --yes  # delete the demo cafés and every trace of them
 ```
 
 These use the database in `config.<NODE_ENV>.json`; check the host they print first.
