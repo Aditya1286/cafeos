@@ -13,6 +13,7 @@ export const NavbarAdmin: React.FC<NavbarAdminProps> = ({
   pendingSubscriptionRequestsCount,
   refundsNeededCount,
   openTicketsCount,
+  newDemoRequestsCount,
   ...viewProps
 }) => {
   const navItems = buildNavItems({
@@ -21,6 +22,7 @@ export const NavbarAdmin: React.FC<NavbarAdminProps> = ({
     pendingSubscriptionRequestsCount,
     refundsNeededCount,
     openTicketsCount,
+    newDemoRequestsCount,
   });
 
   return (

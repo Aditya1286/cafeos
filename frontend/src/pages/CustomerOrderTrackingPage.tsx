@@ -15,6 +15,10 @@ import publicOrdersService from '../services/public/orders';
 import { getSocket, joinOrderRoom, onReconnect } from '../services/socket';
 import { PaymentPanel } from '@/organisms/Payments/PaymentPanel';
 import { SupportWidget } from '@/organisms/SupportWidget';
+import { CUSTOMER_SUPPORT_ENABLED } from '@/constants/features';
+import { PoweredByCaos } from '@/organisms/marketing/PoweredByCaos';
+import { PrintableInvoice } from '@/organisms/invoice';
+import { invoiceFromOrder } from '@/utils/invoice';
 
 export const CustomerOrderTrackingPage: React.FC = () => {
   const { orderId } = useParams<{ orderId: string }>();
@@ -68,7 +72,7 @@ export const CustomerOrderTrackingPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 text-slate-900 flex items-center justify-center font-sans">
+      <div className="min-h-screen bg-page text-slate-900 flex items-center justify-center font-sans">
         <div className="text-center space-y-2">
           <Coffee className="w-8 h-8 text-orange-500 animate-bounce mx-auto" />
           <p className="text-xs text-slate-400 font-bold">Loading live order status...</p>
@@ -79,8 +83,7 @@ export const CustomerOrderTrackingPage: React.FC = () => {
 
   const steps = [
     { key: 'PLACED', label: 'Order Placed' },
-    { key: 'CONFIRMED', label: 'Order Confirmed' },
-    { key: 'PREPARING', label: 'Cooking in Kitchen' },
+    { key: 'PREPARING', label: 'Being Prepared' },
     { key: 'READY', label: 'Ready to Serve' },
     { key: 'COMPLETED', label: 'Served & Enjoy!' },
   ];
@@ -93,7 +96,7 @@ export const CustomerOrderTrackingPage: React.FC = () => {
   const methodLabel = order?.paymentMethod === 'CHECKOUT' ? 'ONLINE' : order?.paymentMethod;
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 p-4 max-w-md mx-auto relative border-x border-slate-200 font-sans pb-12">
+    <div className="min-h-screen bg-page text-slate-900 p-4 max-w-md mx-auto relative border-x border-slate-200 font-sans pb-12">
       {/* ── Top Header ────────────────────────────────────────── */}
       <div className="flex items-center justify-between pb-4 border-b border-slate-200 mb-6 bg-white -mx-4 px-4 pt-2">
         <Link
@@ -267,7 +270,13 @@ export const CustomerOrderTrackingPage: React.FC = () => {
         </div>
       </div>
 
-      {business && order?.businessId && (
+      <div className="mt-6">
+        <PoweredByCaos />
+      </div>
+
+      {order && <PrintableInvoice invoice={invoiceFromOrder(order, business)} />}
+
+      {CUSTOMER_SUPPORT_ENABLED && business && order?.businessId && (
         <SupportWidget
           mode="CUSTOMER"
           // orderController.getOrderById returns a hand-curated `business` object with no

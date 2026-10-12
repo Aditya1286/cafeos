@@ -20,6 +20,12 @@ export interface RefundListQuery {
 }
 
 export type ListOrdersResponse = ApiListResponse<Order>;
+/** Every order still in progress, oldest first. `truncated` means the server's hard cap cut the list. */
+export interface ListActiveOrdersResponse {
+  success: boolean;
+  data: Order[];
+  truncated: boolean;
+}
 export type GetOrderResponse = ApiResponse<Order>;
 export type GetOrderBillResponse = ApiResponse<any>;
 // The updated order, with who cancelled / refunded it populated.

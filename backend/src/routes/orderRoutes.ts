@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import {
-  getOrders, getOrderById, searchOrders, updateOrderStatus, bulkUpdateOrderStatus, confirmOrderPayment, getOrderBill,
+  getOrders, getActiveOrders, getOrderById, searchOrders, updateOrderStatus, bulkUpdateOrderStatus, confirmOrderPayment, getOrderBill,
   getRefundOrders, getRefundInsights
 } from '../controllers/orderController';
 import { protect } from '../middleware/auth';
@@ -13,6 +13,8 @@ router.use(protect, enforceBusiness);
 
 router.get('/', getOrders);
 router.get('/search', searchOrders);
+// Before the /:id catch-all, like /refunds below.
+router.get('/active', getActiveOrders);
 // Must be registered before the /:id catch-all below, or Express would match
 // "refunds" itself as an :id and this route would never be reached.
 router.get('/refunds', restrictTo('SUPER_ADMIN', 'OWNER', 'MANAGER'), getRefundOrders);

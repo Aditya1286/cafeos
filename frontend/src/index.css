@@ -2,9 +2,27 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Theme colour. brand-* utilities (tailwind.config.js) read these; red is the default. Override them
+   on <html> at runtime to re-theme the app (utils/theme.ts applyBrandPalette). The values below
+   mirror DEFAULT_BRAND_PALETTE in constants/theme.ts. */
+:root {
+  --brand-50: 254 242 242;
+  --brand-100: 254 226 226;
+  --brand-200: 254 202 202;
+  --brand-300: 252 165 165;
+  --brand-400: 248 113 113;
+  --brand-500: 239 68 68;
+  --brand-600: 220 38 38;
+  --brand-700: 185 28 28;
+  --brand-800: 153 27 27;
+  --brand-900: 127 29 29;
+  --brand-950: 69 10 10;
+  --page-bg: 253 243 240;
+}
+
 @layer base {
   body {
-    @apply bg-slate-50 text-slate-900 font-sans antialiased selection:bg-red-600 selection:text-white;
+    @apply bg-page text-slate-900 font-sans antialiased selection:bg-red-600 selection:text-white;
   }
 }
 
@@ -69,4 +87,31 @@
 .glass-card:hover {
   border-color: rgba(220, 38, 38, 0.3);
   box-shadow: 0 15px 35px -5px rgba(220, 38, 38, 0.1);
+}
+
+/* Printing: the invoice (rendered by PrintableInvoice into a portal on <body>) is the only thing
+   that prints. On screen it stays hidden; while printing, every other top-level element goes away
+   so "Print" gives a bill instead of a copy of the page. */
+.print-invoice-root {
+  display: none;
+}
+
+@media print {
+  body > *:not(.print-invoice-root) {
+    display: none !important;
+  }
+
+  .print-invoice-root {
+    display: block;
+    background: #fff;
+  }
+
+  .print-invoice-root .invoice {
+    max-width: 190mm;
+  }
+
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
 }

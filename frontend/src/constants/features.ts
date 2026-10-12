@@ -1,4 +1,4 @@
-// Frontend-only feature switches for the business owner dashboard. Turning one off hides the
+// Frontend-only feature switches (owner dashboard and customer pages). Turning one off hides the
 // feature's UI; the code, API calls, and backend behaviour stay in place, so flipping it back
 // to true restores everything.
 
@@ -12,3 +12,19 @@ export const INVENTORY_ENABLED = false;
  * only reachable from an existing checkout/order, so they're deliberately not gated.)
  */
 export const SMEPAY_CHECKOUT_ENABLED = false;
+
+/**
+ * The customer-facing support widget (raise a ticket, call us, track a ticket) on the menu and
+ * order-tracking pages. Backend, tickets and the Super Admin support desk stay in place; flip to
+ * true to show the widget again.
+ */
+export const CUSTOMER_SUPPORT_ENABLED = false;
+
+/**
+ * Everything that asks a business for fees or payment: the owner's Fees & Payments tab (the
+ * remittance cycle: what's owed, pay-by dates, "I've paid"), the fee tile and plan-upgrade payment
+ * in Settings, and on the Super Admin side the Fee Payments queue, plan-upgrade requests and the
+ * per-business fee settings and history. The backend, ledger and remittance records stay in place;
+ * flip to true to restore the screens.
+ */
+export const FEES_AND_PAYMENTS_ENABLED = false;

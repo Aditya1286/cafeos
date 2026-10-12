@@ -131,7 +131,7 @@ export const OrderHistoryPanel = ({
       header: 'Order ID & Date',
       render: (o) => (
         <>
-          <div className="font-mono text-xs font-black text-orange-600 bg-orange-50 border border-orange-200 px-2.5 py-1 rounded-xl inline-block mb-1">
+          <div className="font-mono text-xs font-black text-brand-600 bg-brand-50 border border-brand-200 px-2.5 py-1 rounded-xl inline-block mb-1">
             {o.orderId || o.orderNumber}
           </div>
           <div className="text-[11px] text-slate-400 font-medium">
@@ -252,7 +252,7 @@ export const OrderHistoryPanel = ({
           </button>
           <button
             onClick={() => onOpenBill(o.orderId || o._id)}
-            className="px-3 py-1.5 rounded-xl bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-700 text-xs font-black transition-colors flex items-center gap-1"
+            className="px-3 py-1.5 rounded-xl bg-brand-50 hover:bg-brand-100 border border-brand-200 text-brand-700 text-xs font-black transition-colors flex items-center gap-1"
           >
             <FileText className="w-3.5 h-3.5" />
             <span>Bill</span>
@@ -277,7 +277,7 @@ export const OrderHistoryPanel = ({
     <div className="p-3.5 space-y-2.5">
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
-          <div className="font-mono text-xs font-black text-orange-600 bg-orange-50 border border-orange-200 px-2 py-1 rounded-lg inline-block whitespace-nowrap">
+          <div className="font-mono text-xs font-black text-brand-600 bg-brand-50 border border-brand-200 px-2 py-1 rounded-lg inline-block whitespace-nowrap">
             {o.orderId || o.orderNumber}
           </div>
           <div className="text-[10px] text-slate-400 font-medium mt-1">
@@ -352,7 +352,7 @@ export const OrderHistoryPanel = ({
         </button>
         <button
           onClick={() => onOpenBill(o.orderId || o._id)}
-          className="px-3 py-1.5 rounded-xl bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-700 text-xs font-black transition-colors flex items-center justify-center gap-1"
+          className="px-3 py-1.5 rounded-xl bg-brand-50 hover:bg-brand-100 border border-brand-200 text-brand-700 text-xs font-black transition-colors flex items-center justify-center gap-1"
         >
           <FileText className="w-3.5 h-3.5" />
           <span>Bill</span>
@@ -376,7 +376,7 @@ export const OrderHistoryPanel = ({
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <h2 className="text-base sm:text-xl font-black text-slate-900">All Orders</h2>
-            <span className="px-2.5 py-0.5 rounded-full bg-orange-50 text-orange-600 border border-orange-200 text-[10px] font-black whitespace-nowrap">
+            <span className="px-2.5 py-0.5 rounded-full bg-brand-50 text-brand-600 border border-brand-200 text-[10px] font-black whitespace-nowrap">
               E-BILL READY
             </span>
           </div>
@@ -402,7 +402,7 @@ export const OrderHistoryPanel = ({
             className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-black transition-all flex items-center gap-1.5 shadow-sm whitespace-nowrap"
           >
             <RefreshCw
-              className={`w-3.5 h-3.5 ${loadingHistory ? 'animate-spin text-orange-400' : ''}`}
+              className={`w-3.5 h-3.5 ${loadingHistory ? 'animate-spin text-brand-400' : ''}`}
             />
             <span>Refresh</span>
           </button>
@@ -440,7 +440,7 @@ export const OrderHistoryPanel = ({
           <span className="text-[9px] sm:text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">
             Order Numbers
           </span>
-          <div className="text-base sm:text-2xl font-black text-orange-600 font-mono truncate">
+          <div className="text-base sm:text-2xl font-black text-brand-600 font-mono truncate">
             {business?.shortCode || 'ART'}-
             {new Date()
               .toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' })
@@ -476,11 +476,10 @@ export const OrderHistoryPanel = ({
             <select
               value={filters.selectedStatusFilter}
               onChange={(e) => filters.setSelectedStatusFilter(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 outline-none focus:border-orange-500"
+              className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 outline-none focus:border-brand-500"
             >
               <option value="ALL">All Statuses</option>
               <option value="PLACED">Placed</option>
-              <option value="CONFIRMED">Confirmed</option>
               <option value="PREPARING">Preparing</option>
               <option value="READY">Ready</option>
               <option value="COMPLETED">Completed</option>
@@ -496,7 +495,7 @@ export const OrderHistoryPanel = ({
             <select
               value={filters.selectedPaymentFilter}
               onChange={(e) => filters.setSelectedPaymentFilter(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 outline-none focus:border-orange-500"
+              className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 outline-none focus:border-brand-500"
             >
               <option value="ALL">All Payment Statuses</option>
               <option value="PAID">Paid</option>
@@ -512,7 +511,7 @@ export const OrderHistoryPanel = ({
             <select
               value={filters.selectedMethodFilter}
               onChange={(e) => filters.setSelectedMethodFilter(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 outline-none focus:border-orange-500"
+              className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 outline-none focus:border-brand-500"
             >
               <option value="ALL">All Payment Methods</option>
               <option value="ONLINE">
@@ -535,7 +534,7 @@ export const OrderHistoryPanel = ({
               onChange={(e) =>
                 filters.setSelectedDateFilter(e.target.value as OrderHistoryFilters['dateFilter'])
               }
-              className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 outline-none focus:border-orange-500"
+              className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 outline-none focus:border-brand-500"
             >
               <option value="ALL">All Time</option>
               <option value="TODAY">Today</option>
@@ -549,7 +548,7 @@ export const OrderHistoryPanel = ({
       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
         {loadingHistory ? (
           <div className="p-12 text-center space-y-3">
-            <RefreshCw className="w-8 h-8 text-orange-500 animate-spin mx-auto" />
+            <RefreshCw className="w-8 h-8 text-brand-500 animate-spin mx-auto" />
             <p className="text-xs font-bold text-slate-500">Searching orders…</p>
           </div>
         ) : (

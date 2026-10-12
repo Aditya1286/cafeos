@@ -132,7 +132,8 @@ export async function computeKitchenSpeed(businessId: mongoose.Types.ObjectId | 
   const orders = await Order.find({
     businessId: bizId,
     createdAt: { $gte: since },
-    'timeline.acceptedAt': { $exists: true }
+    // preparingAt is when the kitchen took the order on; orders from before the merged flow only have acceptedAt.
+    $or: [{ 'timeline.preparingAt': { $exists: true } }, { 'timeline.acceptedAt': { $exists: true } }]
   }).select('timeline').lean();
 
   let acceptTotalMs = 0, acceptCount = 0;
@@ -141,12 +142,13 @@ export async function computeKitchenSpeed(businessId: mongoose.Types.ObjectId | 
 
   for (const o of orders) {
     const t: any = o.timeline || {};
-    if (t.placedAt && t.acceptedAt) {
-      acceptTotalMs += new Date(t.acceptedAt).getTime() - new Date(t.placedAt).getTime();
+    const startedAt = t.preparingAt || t.acceptedAt;
+    if (t.placedAt && startedAt) {
+      acceptTotalMs += new Date(startedAt).getTime() - new Date(t.placedAt).getTime();
       acceptCount += 1;
     }
-    if (t.acceptedAt && t.readyAt) {
-      prepTotalMs += new Date(t.readyAt).getTime() - new Date(t.acceptedAt).getTime();
+    if (startedAt && t.readyAt) {
+      prepTotalMs += new Date(t.readyAt).getTime() - new Date(startedAt).getTime();
       prepCount += 1;
     }
     if (t.placedAt && t.completedAt) {

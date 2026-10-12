@@ -9,7 +9,6 @@ import cookieParser from 'cookie-parser';
 import { config } from './config';
 import { APP_NAME } from './config/constants';
 import { connectDB } from './database';
-import { seedDatabase } from './database/seed';
 import { backfillUserPhoneKeys } from './database/migrations/backfillUserPhoneKeys';
 import { initSocketServer } from './websocket/socketManager';
 import { errorHandler } from './middleware/errorHandler';
@@ -112,7 +111,6 @@ process.on('unhandledRejection', (reason) => {
 // Connect DB & Start Server
 const startServer = async () => {
   await connectDB();
-  await seedDatabase(false);
   // Lets accounts from before phone login sign in with their number.
   await backfillUserPhoneKeys();
   startSystemMetricsCollector();

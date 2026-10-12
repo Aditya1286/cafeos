@@ -193,11 +193,11 @@ test('status changes reach the tracking customer and the business, not other ord
   const res = await request(h.app)
     .put(`/api/v1/orders/${order._id}/status`)
     .set('Authorization', `Bearer ${artisanOwner}`)
-    .send({ status: 'CONFIRMED' });
+    .send({ status: 'PREPARING' });
   assert.equal(res.status, 200, JSON.stringify(res.body));
 
-  assert.equal((await customerGot).orderStatus, 'CONFIRMED');
-  assert.equal((await ownerGot).orderStatus, 'CONFIRMED');
+  assert.equal((await customerGot).orderStatus, 'PREPARING');
+  assert.equal((await ownerGot).orderStatus, 'PREPARING');
   assert.equal(await otherSilent, true, "another customer received this order's update");
 });
 
@@ -242,8 +242,8 @@ test('status changes and customer cancellations update the feed', async () => {
   await request(h.app)
     .put(`/api/v1/orders/${confirmed._id}/status`)
     .set('Authorization', `Bearer ${artisanOwner}`)
-    .send({ status: 'CONFIRMED' });
-  assert.deepEqual(await gotConfirm, { _id: confirmed._id, status: 'CONFIRMED' });
+    .send({ status: 'PREPARING' });
+  assert.deepEqual(await gotConfirm, { _id: confirmed._id, status: 'PREPARING' });
 
   const cancelled = await placeArtisanOrder();
   const gotCancel = nextEvent(admin, 'admin_order:updated');

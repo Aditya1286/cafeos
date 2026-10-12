@@ -7,7 +7,7 @@ import { toast } from '@/utils/toast';
 import RemittanceHistoryTable, { RemittancePeriod } from '@/molecules/RemittanceHistoryTable';
 import { CheckoutSettings } from '@/services/dashboard/checkout/types';
 import { GST_RATE_SLABS, isGstSlab } from '@/constants/gst';
-import { SMEPAY_CHECKOUT_ENABLED } from '@/constants/features';
+import { SMEPAY_CHECKOUT_ENABLED, FEES_AND_PAYMENTS_ENABLED } from '@/constants/features';
 
 interface BusinessFinanceDrawerProps {
   businessId: string | null;
@@ -203,110 +203,116 @@ export const BusinessFinanceDrawer: React.FC<BusinessFinanceDrawerProps> = ({
             ) : (
               <>
                 {/* Summary tiles */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200">
-                    <div className="text-[10px] text-slate-400 font-bold uppercase">Owed</div>
-                    <div className="text-lg font-black text-slate-900">
-                      ₹{Math.round(summary.totalUnpaidOwedPaise / 100).toLocaleString('en-IN')}
+                {FEES_AND_PAYMENTS_ENABLED && (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200">
+                      <div className="text-[10px] text-slate-400 font-bold uppercase">Owed</div>
+                      <div className="text-lg font-black text-slate-900">
+                        ₹{Math.round(summary.totalUnpaidOwedPaise / 100).toLocaleString('en-IN')}
+                      </div>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200">
+                      <div className="text-[10px] text-rose-500 font-bold uppercase flex items-center gap-1">
+                        <AlertTriangle className="w-3 h-3" /> Overdue
+                      </div>
+                      <div className="text-lg font-black text-rose-700">
+                        ₹{Math.round(summary.overdueAmountPaise / 100).toLocaleString('en-IN')}
+                      </div>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200">
+                      <div className="text-[10px] text-slate-400 font-bold uppercase">Next Due</div>
+                      <div className="text-sm font-extrabold text-slate-900">
+                        {summary.nextDueDate
+                          ? new Date(summary.nextDueDate).toLocaleDateString('en-IN', {
+                              day: '2-digit',
+                              month: 'short',
+                            })
+                          : '—'}
+                      </div>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200">
+                      <div className="text-[10px] text-slate-400 font-bold uppercase">
+                        This Billing Period
+                      </div>
+                      <div className="text-sm font-extrabold text-emerald-600">
+                        ₹
+                        {Math.round(summary.currentPeriod.commissionOwedPaise / 100).toLocaleString(
+                          'en-IN',
+                        )}
+                      </div>
                     </div>
                   </div>
-                  <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200">
-                    <div className="text-[10px] text-rose-500 font-bold uppercase flex items-center gap-1">
-                      <AlertTriangle className="w-3 h-3" /> Overdue
-                    </div>
-                    <div className="text-lg font-black text-rose-700">
-                      ₹{Math.round(summary.overdueAmountPaise / 100).toLocaleString('en-IN')}
-                    </div>
-                  </div>
-                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200">
-                    <div className="text-[10px] text-slate-400 font-bold uppercase">Next Due</div>
-                    <div className="text-sm font-extrabold text-slate-900">
-                      {summary.nextDueDate
-                        ? new Date(summary.nextDueDate).toLocaleDateString('en-IN', {
-                            day: '2-digit',
-                            month: 'short',
-                          })
-                        : '—'}
-                    </div>
-                  </div>
-                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200">
-                    <div className="text-[10px] text-slate-400 font-bold uppercase">
-                      This Billing Period
-                    </div>
-                    <div className="text-sm font-extrabold text-emerald-600">
-                      ₹
-                      {Math.round(summary.currentPeriod.commissionOwedPaise / 100).toLocaleString(
-                        'en-IN',
-                      )}
-                    </div>
-                  </div>
-                </div>
+                )}
 
                 {/* Finance settings */}
-                <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
-                  <h4 className="text-xs font-extrabold text-slate-700 uppercase">Fee Settings</h4>
-                  <div className="flex flex-wrap items-end gap-3">
-                    <label className="flex flex-col gap-1">
-                      <span className="text-[10px] font-bold text-slate-500 uppercase">
-                        Fee per Order (%)
-                      </span>
-                      <input
-                        id="commission-rate-input"
-                        type="number"
-                        min={0}
-                        max={100}
-                        step={0.1}
-                        value={commissionInput}
-                        onChange={(e) => setCommissionInput(e.target.value)}
-                        className="w-28 px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs font-semibold outline-none focus:border-slate-400"
-                      />
-                    </label>
-                    <label className="flex flex-col gap-1">
-                      <span className="text-[10px] font-bold text-slate-500 uppercase">
-                        Pay Fees Every (days)
-                      </span>
-                      <input
-                        id="remittance-cycle-input"
-                        type="number"
-                        min={1}
-                        value={cycleInput}
-                        onChange={(e) => setCycleInput(e.target.value)}
-                        className="w-28 px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs font-semibold outline-none focus:border-slate-400"
-                      />
-                    </label>
-                    <label className="flex flex-col gap-1">
-                      <span className="text-[10px] font-bold text-slate-500 uppercase">
-                        GST / Tax Rate
-                      </span>
-                      <select
-                        id="tax-rate-input"
-                        value={taxInput}
-                        onChange={(e) => setTaxInput(e.target.value)}
-                        className="w-40 px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs font-semibold outline-none focus:border-slate-400"
+                {FEES_AND_PAYMENTS_ENABLED && (
+                  <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                    <h4 className="text-xs font-extrabold text-slate-700 uppercase">
+                      Fee Settings
+                    </h4>
+                    <div className="flex flex-wrap items-end gap-3">
+                      <label className="flex flex-col gap-1">
+                        <span className="text-[10px] font-bold text-slate-500 uppercase">
+                          Fee per Order (%)
+                        </span>
+                        <input
+                          id="commission-rate-input"
+                          type="number"
+                          min={0}
+                          max={100}
+                          step={0.1}
+                          value={commissionInput}
+                          onChange={(e) => setCommissionInput(e.target.value)}
+                          className="w-28 px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs font-semibold outline-none focus:border-slate-400"
+                        />
+                      </label>
+                      <label className="flex flex-col gap-1">
+                        <span className="text-[10px] font-bold text-slate-500 uppercase">
+                          Pay Fees Every (days)
+                        </span>
+                        <input
+                          id="remittance-cycle-input"
+                          type="number"
+                          min={1}
+                          value={cycleInput}
+                          onChange={(e) => setCycleInput(e.target.value)}
+                          className="w-28 px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs font-semibold outline-none focus:border-slate-400"
+                        />
+                      </label>
+                      <label className="flex flex-col gap-1">
+                        <span className="text-[10px] font-bold text-slate-500 uppercase">
+                          GST / Tax Rate
+                        </span>
+                        <select
+                          id="tax-rate-input"
+                          value={taxInput}
+                          onChange={(e) => setTaxInput(e.target.value)}
+                          className="w-40 px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs font-semibold outline-none focus:border-slate-400"
+                        >
+                          {GST_RATE_SLABS.map((rate) => (
+                            <option key={rate} value={String(rate)}>
+                              {rate === 0 ? 'Off (0%)' : `${rate}%`}
+                            </option>
+                          ))}
+                          {/* A pre-GST-2.0 rate this business still has — shown so saving the other fields doesn't silently change it. */}
+                          {!isGstSlab(parseFloat(taxInput)) && (
+                            <option value={taxInput}>{taxInput}% (old slab)</option>
+                          )}
+                        </select>
+                      </label>
+                      <button
+                        onClick={handleSaveSettings}
+                        disabled={savingSettings}
+                        className="px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-extrabold hover:bg-slate-800 disabled:opacity-50 flex items-center gap-1.5"
                       >
-                        {GST_RATE_SLABS.map((rate) => (
-                          <option key={rate} value={String(rate)}>
-                            {rate === 0 ? 'Off (0%)' : `${rate}%`}
-                          </option>
-                        ))}
-                        {/* A pre-GST-2.0 rate this business still has — shown so saving the other fields doesn't silently change it. */}
-                        {!isGstSlab(parseFloat(taxInput)) && (
-                          <option value={taxInput}>{taxInput}% (old slab)</option>
-                        )}
-                      </select>
-                    </label>
-                    <button
-                      onClick={handleSaveSettings}
-                      disabled={savingSettings}
-                      className="px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-extrabold hover:bg-slate-800 disabled:opacity-50 flex items-center gap-1.5"
-                    >
-                      <Save className="w-3.5 h-3.5" /> {savingSettings ? 'Saving…' : 'Save'}
-                    </button>
+                        <Save className="w-3.5 h-3.5" /> {savingSettings ? 'Saving…' : 'Save'}
+                      </button>
+                    </div>
+                    <p className="text-[11px] text-slate-400">
+                      Changes apply to new orders only — past bills keep their old rate.
+                    </p>
                   </div>
-                  <p className="text-[11px] text-slate-400">
-                    Changes apply to new orders only — past bills keep their old rate.
-                  </p>
-                </div>
+                )}
 
                 {/* SMEPay online checkout */}
                 {SMEPAY_CHECKOUT_ENABLED && checkout && (
@@ -364,16 +370,24 @@ export const BusinessFinanceDrawer: React.FC<BusinessFinanceDrawerProps> = ({
                 )}
 
                 {/* Remittance history */}
-                <div>
-                  <h4 className="text-xs font-extrabold text-slate-700 uppercase mb-3">
-                    Past Fee Payments
-                  </h4>
-                  <RemittanceHistoryTable
-                    periods={summary.periods}
-                    onMarkPaid={handleMarkPaid}
-                    onUnmarkPaid={handleUnmarkPaid}
-                  />
-                </div>
+                {FEES_AND_PAYMENTS_ENABLED && (
+                  <div>
+                    <h4 className="text-xs font-extrabold text-slate-700 uppercase mb-3">
+                      Past Fee Payments
+                    </h4>
+                    <RemittanceHistoryTable
+                      periods={summary.periods}
+                      onMarkPaid={handleMarkPaid}
+                      onUnmarkPaid={handleUnmarkPaid}
+                    />
+                  </div>
+                )}
+
+                {!FEES_AND_PAYMENTS_ENABLED && !SMEPAY_CHECKOUT_ENABLED && (
+                  <p className="py-10 text-center text-xs font-semibold text-slate-400">
+                    Fee collection is switched off for now, so there is nothing to manage here.
+                  </p>
+                )}
               </>
             )}
           </div>

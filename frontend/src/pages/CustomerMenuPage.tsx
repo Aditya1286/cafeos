@@ -22,7 +22,7 @@ import confetti from 'canvas-confetti';
 import { useOtpVerification } from '@/hooks/useOtpVerification';
 import { formatTime } from '@/utils/DateUtils';
 import { toast } from '@/utils/toast';
-import { SMEPAY_CHECKOUT_ENABLED } from '@/constants/features';
+import { SMEPAY_CHECKOUT_ENABLED, CUSTOMER_SUPPORT_ENABLED } from '@/constants/features';
 import { SupportWidget } from '@/organisms/SupportWidget';
 import VegMark from '@/atoms/VegMark';
 import MenuItemCard from '@/organisms/customer-menu/MenuItemCard';
@@ -280,7 +280,7 @@ export const CustomerMenuPage: React.FC = () => {
     setDietFilter((prev) => (prev === diet ? 'ALL' : diet));
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-28 selection:bg-orange-500 selection:text-white max-w-md mx-auto relative shadow-xl border-x border-slate-200 font-sans overflow-x-clip">
+    <div className="min-h-screen bg-page text-slate-900 pb-28 selection:bg-orange-500 selection:text-white max-w-md mx-auto relative shadow-xl border-x border-slate-200 font-sans overflow-x-clip">
       {/* ── Top Hero Header (Swiggy / Zomato Aesthetic) ────────────────── */}
       <div className="relative bg-white border-b border-slate-200">
         <div className="h-44 relative overflow-hidden bg-slate-100">
@@ -696,7 +696,7 @@ export const CustomerMenuPage: React.FC = () => {
         </div>
       )}
 
-      {business && (
+      {CUSTOMER_SUPPORT_ENABLED && business && (
         <SupportWidget
           mode="CUSTOMER"
           businessId={business.id || business._id}

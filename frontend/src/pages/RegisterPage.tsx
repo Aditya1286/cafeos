@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-  Coffee,
   Shield,
   UtensilsCrossed,
   ArrowRight,
@@ -20,6 +19,7 @@ import {
   EyeOff,
   Clock,
 } from 'lucide-react';
+import { CaosLogo } from '@/molecules/CaosLogo';
 import { setAuthToken } from '../services/api';
 import authService from '../services/auth';
 import { APP_NAME, APP_SLUG } from '../constants/app';
@@ -138,9 +138,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
         {/* Top Header & Platform Operational Badge */}
         <div className="relative z-10 flex items-center justify-between">
           <Link to="/" className="inline-flex items-center gap-3 group">
-            <div className="w-11 h-11 rounded-2xl bg-red-600 flex items-center justify-center shadow-xl shadow-red-600/40 group-hover:scale-105 transition-transform duration-300">
-              <Coffee className="w-6 h-6 text-white" />
-            </div>
+            <CaosLogo className="w-11 h-11 rounded-2xl shadow-xl shadow-red-600/40 group-hover:scale-105 transition-transform duration-300" />
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-2xl font-black tracking-tight text-white">{APP_NAME}</span>
@@ -222,9 +220,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onRegisterSuccess })
         {/* Top Header Mobile Brand */}
         <div className="flex justify-between items-center lg:hidden mb-6">
           <Link to="/" className="inline-flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-red-600 text-white flex items-center justify-center font-bold shadow-md shadow-red-600/30">
-              <Coffee className="w-5 h-5" />
-            </div>
+            <CaosLogo className="w-10 h-10 rounded-xl shadow-md shadow-red-600/30" />
             <span className="text-xl font-black text-slate-900">{APP_NAME}</span>
           </Link>
 

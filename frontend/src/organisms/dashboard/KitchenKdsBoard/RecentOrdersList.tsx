@@ -19,7 +19,7 @@ export const RecentOrdersList = ({
   <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 space-y-4">
     <div className="flex flex-wrap items-center justify-between gap-2">
       <div className="flex items-center gap-2.5 min-w-0">
-        <div className="w-8 h-8 rounded-xl bg-orange-50 border border-orange-200 text-orange-600 flex items-center justify-center font-bold shrink-0">
+        <div className="w-8 h-8 rounded-xl bg-brand-50 border border-brand-200 text-brand-600 flex items-center justify-center font-bold shrink-0">
           <Clock className="w-4 h-4" />
         </div>
         <div className="min-w-0">
@@ -33,7 +33,7 @@ export const RecentOrdersList = ({
       {onViewAllOrders && (
         <button
           onClick={onViewAllOrders}
-          className="text-xs font-black text-orange-600 hover:text-orange-700 flex items-center gap-1 hover:underline shrink-0"
+          className="text-xs font-black text-brand-600 hover:text-brand-700 flex items-center gap-1 hover:underline shrink-0"
         >
           <span>View All Orders</span>
           <ArrowRight className="w-3.5 h-3.5" />

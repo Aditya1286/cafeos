@@ -1,69 +1,8 @@
-import {
-  FileText,
-  UtensilsCrossed,
-  QrCode,
-  Package,
-  BarChart3,
-  Wallet,
-  Settings,
-  Flame,
-  Undo2,
-  Users,
-  UserCircle,
-  LucideIcon,
-} from 'lucide-react';
-import { INVENTORY_ENABLED } from '@/constants/features';
+import { DashboardTab, DashboardTabDef } from '@/constants/dashboardTabs';
 
-export type DashboardTab =
-  | 'kds'
-  | 'orders'
-  | 'menu'
-  | 'tables'
-  | 'inventory'
-  | 'analytics'
-  | 'ledger'
-  | 'refunds'
-  | 'staff'
-  | 'settings'
-  | 'profile';
-
-export interface DashboardTabDef {
-  id: DashboardTab;
-  label: string;
-  icon: LucideIcon;
-}
-
-const ALL_TABS: DashboardTabDef[] = [
-  { id: 'kds', label: 'Kitchen', icon: Flame },
-  { id: 'orders', label: 'All Orders', icon: FileText },
-  { id: 'menu', label: 'Menu', icon: UtensilsCrossed },
-  { id: 'tables', label: 'Tables & QR', icon: QrCode },
-  { id: 'inventory', label: 'Inventory', icon: Package },
-  { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-  { id: 'ledger', label: 'Fees & Payments', icon: Wallet },
-  { id: 'refunds', label: 'Refunds & Cancellations', icon: Undo2 },
-  { id: 'staff', label: 'Staff', icon: Users },
-  { id: 'settings', label: 'Settings', icon: Settings },
-  { id: 'profile', label: 'My Profile', icon: UserCircle },
-];
-
-// Kitchen staff work orders: the live Kitchen board plus the full order list, and can look up
-// (not change) the tables and their QR codes. The staff list is the owner's alone. Every other
-// role keeps the full dashboard it always had.
-const STAFF_TABS: DashboardTab[] = ['kds', 'orders', 'tables'];
-const OWNER_ONLY_TABS: DashboardTab[] = ['staff'];
-// Reached from the avatar's account menu rather than the tab row.
-const MENU_ONLY_TABS: DashboardTab[] = ['profile'];
-
-/** The tab pills a given role sees — feature-flagged sections are filtered out here too, once. */
-export const tabsForRole = (role: string | undefined): DashboardTabDef[] =>
-  ALL_TABS.filter((t) => {
-    if (MENU_ONLY_TABS.includes(t.id)) return false;
-    if (t.id === 'inventory' && !INVENTORY_ENABLED) return false;
-    if (role === 'STAFF') return STAFF_TABS.includes(t.id);
-    if (OWNER_ONLY_TABS.includes(t.id)) return role === 'OWNER';
-    return true;
-  });
+// The tab list itself (names, role access, feature flags) lives in constants/dashboardTabs.ts.
+export type { DashboardTab, DashboardTabDef };
+export { tabsForRole } from '@/constants/dashboardTabs';
 
 /** Everything the desktop and mobile header views both receive from the parent `DashboardHeader`. */
 export interface HeaderViewProps {
@@ -84,4 +23,6 @@ export interface HeaderViewProps {
   onAddItem?: () => void;
   /** Opens the user's own profile settings (from the avatar's account menu). */
   onOpenProfile: () => void;
+  darkMode: boolean;
+  onToggleDarkMode: () => void;
 }

@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import request from 'supertest';
 import { startHarness, tokenFor, superAdminToken, businessIdFor, createOrderPlacer, Harness } from './helpers';
 import { Order } from '../src/models/Order';
+import { Business } from '../src/models/Business';
 
 let h: Harness;
 let artisanOwner: string;
@@ -113,4 +114,22 @@ test('staff endpoints still require a login', async () => {
   const order = await placeArtisanOrder();
   const res = await request(h.app).get(`/api/v1/orders/${order._id}`);
   assert.equal(res.status, 401);
+});
+
+test('a business GSTIN reaches the invoice data only when it has one', async () => {
+  const order = await placeArtisanOrder();
+  const publicBusiness = async () => (await request(h.app).get(`/api/v1/public/orders/${order._id}`)).body.data.business;
+  const billBusiness = async () =>
+    (await request(h.app).get(`/api/v1/orders/${order._id}/bill`).set('Authorization', `Bearer ${artisanOwner}`)).body.data.business;
+
+  assert.equal((await publicBusiness()).gstin, undefined, 'no GSTIN on file, none shown');
+
+  const business = await Business.findOne({ slug: 'artisan-cafe' });
+  business!.gstin = '29abcde1234f1z5';
+  await business!.save();
+  assert.equal((await publicBusiness()).gstin, '29ABCDE1234F1Z5');
+  assert.equal((await billBusiness()).gstin, '29ABCDE1234F1Z5');
+
+  business!.gstin = 'not-a-gstin';
+  await assert.rejects(() => business!.save(), /GSTIN must be 15 characters/);
 });

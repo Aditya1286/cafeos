@@ -87,7 +87,7 @@ export const DigitalMenuPanel = ({
         </div>
         <button
           onClick={onAddItem}
-          className="flex items-center gap-1.5 px-3.5 sm:px-4 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-extrabold text-xs shadow-md shadow-orange-500/20 transition-all shrink-0"
+          className="flex items-center gap-1.5 px-3.5 sm:px-4 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-extrabold text-xs shadow-md shadow-brand-500/20 transition-all shrink-0"
         >
           <Plus className="w-4 h-4" /> Add Item
         </button>
@@ -112,7 +112,7 @@ export const DigitalMenuPanel = ({
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search items or categories"
                 // 16px on phones: smaller inputs make iOS Safari zoom the page on focus.
-                className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-white border border-slate-200 text-base sm:text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all"
+                className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-white border border-slate-200 text-base sm:text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 transition-all"
               />
               {query && (
                 <button

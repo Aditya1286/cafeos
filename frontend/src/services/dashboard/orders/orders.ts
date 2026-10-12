@@ -4,6 +4,7 @@ import {
   ConfirmPaymentResponse,
   GetOrderBillResponse,
   GetOrderResponse,
+  ListActiveOrdersResponse,
   ListOrdersResponse,
   OrderListQuery,
   RefundInsightsResponse,
@@ -20,6 +21,10 @@ const buildQuery = <T extends object>(params: T): string => {
 };
 
 export const list = (): Promise<ListOrdersResponse> => apiRequest('/orders');
+
+/** Every order the kitchen is still working on (New, Preparing, Ready), oldest first, not paginated:
+ * the kitchen board needs all of them, not the newest 25 of any status that `list` returns. */
+export const listActive = (): Promise<ListActiveOrdersResponse> => apiRequest('/orders/active');
 
 export const search = (query: OrderListQuery): Promise<ListOrdersResponse> =>
   apiRequest(`/orders?${buildQuery(query)}`);

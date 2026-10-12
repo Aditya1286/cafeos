@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { GSTIN_PATTERN, GSTIN_ERROR_MESSAGE } from '../utils/gst';
 
 export interface IBusiness extends Document {
   _id: mongoose.Types.ObjectId;
@@ -11,6 +12,7 @@ export interface IBusiness extends Document {
   address: string;
   currency: string;
   currencySymbol: string;
+  gstin?: string; // GST registration number; optional, printed on the tax invoice when present
   taxRatePercentage: number; // 0 = GST disabled (current default); otherwise a restaurant GST slab — see utils/gst.ts
   perOrderFeePaise: number; // Legacy flat per-order fee (in paise) — superseded by commissionRatePercentage, kept for historical orders
   commissionRatePercentage: number; // e.g., 3 for 3% platform commission on the pre-tax order value
@@ -53,6 +55,14 @@ const BusinessSchema = new Schema<IBusiness>(
     address: { type: String, required: true, trim: true },
     currency: { type: String, default: 'INR' },
     currencySymbol: { type: String, default: '₹' },
+    gstin: {
+      type: String,
+      trim: true,
+      uppercase: true,
+      // Empty or absent is fine; the owner sets it in Settings (see updateBusinessSettings).
+      match: [GSTIN_PATTERN, GSTIN_ERROR_MESSAGE],
+      required: false
+    },
     taxRatePercentage: { type: Number, default: 0 },
     perOrderFeePaise: { type: Number, default: 200 }, // ₹2 (legacy, no longer used for new orders)
     commissionRatePercentage: { type: Number, default: 3 },

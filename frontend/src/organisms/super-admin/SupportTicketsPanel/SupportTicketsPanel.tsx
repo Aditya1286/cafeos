@@ -43,7 +43,7 @@ const STATUS_STYLE: Record<string, string> = {
 const PRIORITY_STYLE: Record<string, string> = {
   LOW: 'bg-slate-100 text-slate-500',
   MEDIUM: 'bg-blue-50 text-blue-700',
-  HIGH: 'bg-orange-50 text-orange-700',
+  HIGH: 'bg-brand-50 text-brand-700',
   URGENT: 'bg-rose-100 text-rose-700',
 };
 
@@ -195,7 +195,7 @@ export const SupportTicketsPanel = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
         <div>
           <h2 className="text-lg sm:text-xl font-black text-slate-900 flex items-center gap-2">
-            <LifeBuoy className="w-5 h-5 text-orange-500" /> Support Tickets
+            <LifeBuoy className="w-5 h-5 text-brand-500" /> Support Tickets
           </h2>
           <p className="text-xs text-slate-500 font-medium mt-0.5">
             Every problem raised by customers and business owners, in one list. Businesses can't see
@@ -206,7 +206,7 @@ export const SupportTicketsPanel = ({
           onClick={onRefresh}
           className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-black transition-all flex items-center gap-1.5 shadow-sm self-start"
         >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-orange-400' : ''}`} />
+          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-brand-400' : ''}`} />
           <span>Refresh</span>
         </button>
       </div>
@@ -267,7 +267,7 @@ export const SupportTicketsPanel = ({
         <select
           value={statusFilter}
           onChange={(e) => onStatusFilterChange(e.target.value)}
-          className="w-full sm:w-64 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 outline-none focus:border-orange-500"
+          className="w-full sm:w-64 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 outline-none focus:border-brand-500"
         >
           <option value="ALL">All Statuses</option>
           <option value="OPEN">Open</option>
@@ -281,7 +281,7 @@ export const SupportTicketsPanel = ({
       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
         {loading ? (
           <div className="p-12 text-center space-y-3">
-            <RefreshCw className="w-8 h-8 text-orange-500 animate-spin mx-auto" />
+            <RefreshCw className="w-8 h-8 text-brand-500 animate-spin mx-auto" />
             <p className="text-xs font-bold text-slate-500">Loading tickets...</p>
           </div>
         ) : (

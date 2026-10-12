@@ -20,7 +20,7 @@ const Section: React.FC<{ n: number; title: string; children: React.ReactNode }>
 );
 
 export const MerchantTermsPage: React.FC = () => (
-  <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans">
+  <div className="min-h-screen bg-page text-slate-900 flex flex-col font-sans">
     <Navbar />
 
     <main className="flex-1 max-w-3xl mx-auto w-full px-4 sm:px-6 py-10 space-y-8">

@@ -12,6 +12,7 @@ import {
   listTicketsAdmin, getTicketAdmin, escalateTicketAdmin, assignTicketAdmin, resolveTicketAdmin,
   listCallAgentsAdmin, toggleMyCallAvailability
 } from '../controllers/supportController';
+import { listDemoRequestsAdmin, updateDemoRequestAdmin } from '../controllers/demoRequestController';
 import { setBusinessCheckoutAllowed, getBusinessCheckoutSettings } from '../controllers/checkoutController';
 import { protect } from '../middleware/auth';
 import { restrictTo } from '../middleware/rbac';
@@ -45,6 +46,9 @@ router.put('/plans/:id', updateSubscriptionPlan);
 router.get('/subscription-requests', getSubscriptionRequests);
 router.put('/subscription-requests/:id/approve', approveSubscriptionRequest);
 router.put('/subscription-requests/:id/reject', rejectSubscriptionRequest);
+
+router.get('/demo-requests', listDemoRequestsAdmin);
+router.put('/demo-requests/:id', updateDemoRequestAdmin);
 
 router.get('/system/health', getSystemHealth);
 

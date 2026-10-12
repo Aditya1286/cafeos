@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, Plus, LogOut } from 'lucide-react';
 import { HeaderViewProps } from './types';
+import { ThemeToggle } from '@/molecules/ThemeToggle';
 import { HeaderBrand, RefreshButton, UserAvatar, logout } from './HeaderParts';
 
 /** Mobile & tablet (below `lg`) header: one slim row — hamburger, brand, refresh. Sections,
@@ -19,6 +20,8 @@ export const DashboardHeaderMobile = ({
   onRefresh,
   onAddItem,
   onOpenProfile,
+  darkMode,
+  onToggleDarkMode,
 }: HeaderViewProps) => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const closeDrawer = () => setDrawerOpen(false);
@@ -49,11 +52,11 @@ export const DashboardHeaderMobile = ({
           onClick={() => setDrawerOpen(true)}
           aria-label="Open navigation menu"
           aria-expanded={drawerOpen}
-          className="relative shrink-0 w-9 h-9 rounded-xl flex items-center justify-center text-slate-300 hover:bg-slate-900 hover:text-white transition-colors"
+          className="relative shrink-0 w-9 h-9 rounded-xl flex items-center justify-center text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
         >
           <Menu className="w-5 h-5" />
           {hasAnyBadge && (
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-orange-500 ring-2 ring-slate-950" />
+            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-brand-600 ring-2 ring-white" />
           )}
         </button>
 
@@ -66,6 +69,7 @@ export const DashboardHeaderMobile = ({
           />
         </div>
 
+        <ThemeToggle darkMode={darkMode} onToggle={onToggleDarkMode} />
         <RefreshButton loading={loading} onRefresh={onRefresh} showLabel={false} />
       </div>
 
@@ -79,7 +83,7 @@ export const DashboardHeaderMobile = ({
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
               onClick={closeDrawer}
-              className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50"
+              className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50"
             />
             <motion.nav
               key="drawer"
@@ -88,16 +92,16 @@ export const DashboardHeaderMobile = ({
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'tween', duration: 0.22, ease: 'easeOut' }}
-              className="fixed inset-y-0 left-0 z-50 w-[80%] max-w-[300px] bg-slate-950 border-r border-slate-800 shadow-2xl flex flex-col"
+              className="fixed inset-y-0 left-0 z-50 w-[80%] max-w-[300px] bg-white border-r border-slate-200 shadow-2xl flex flex-col"
             >
-              <div className="h-14 px-3 flex items-center justify-between border-b border-slate-800 shrink-0">
-                <span className="px-2 text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
+              <div className="h-14 px-3 flex items-center justify-between border-b border-slate-100 shrink-0">
+                <span className="px-2 text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
                   Menu
                 </span>
                 <button
                   onClick={closeDrawer}
                   aria-label="Close navigation menu"
-                  className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 hover:bg-slate-900 hover:text-white transition-colors"
+                  className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -118,16 +122,16 @@ export const DashboardHeaderMobile = ({
                       aria-current={active ? 'page' : undefined}
                       className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors ${
                         active
-                          ? 'bg-orange-500/15 text-white'
-                          : 'text-slate-400 hover:bg-slate-900 hover:text-white'
+                          ? 'bg-brand-50 text-brand-700'
+                          : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                       }`}
                     >
                       <Icon
-                        className={`w-4 h-4 shrink-0 ${active ? 'text-orange-400' : 'text-slate-500'}`}
+                        className={`w-4 h-4 shrink-0 ${active ? 'text-brand-600' : 'text-slate-400'}`}
                       />
                       <span className="flex-1 min-w-0 text-xs font-bold truncate">{tab.label}</span>
                       {badge !== null && badge > 0 && (
-                        <span className="px-1.5 py-0.5 rounded-full text-[10px] font-mono bg-orange-500/20 text-orange-400 shrink-0">
+                        <span className="px-1.5 py-0.5 rounded-full text-[10px] font-mono bg-brand-100 text-brand-700 shrink-0">
                           {badge}
                         </span>
                       )}
@@ -136,14 +140,14 @@ export const DashboardHeaderMobile = ({
                 })}
               </div>
 
-              <div className="p-3 border-t border-slate-800 space-y-2 shrink-0">
+              <div className="p-3 border-t border-slate-100 space-y-2 shrink-0">
                 {onAddItem && (
                   <button
                     onClick={() => {
                       onAddItem();
                       closeDrawer();
                     }}
-                    className="w-full flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-extrabold text-xs transition-colors"
+                    className="w-full flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-extrabold text-xs transition-colors"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>Add Menu Item</span>
@@ -156,21 +160,21 @@ export const DashboardHeaderMobile = ({
                       onOpenProfile();
                       closeDrawer();
                     }}
-                    className="flex-1 min-w-0 flex items-center gap-2.5 px-2 py-2 rounded-xl hover:bg-slate-900 transition-colors"
+                    className="flex-1 min-w-0 flex items-center gap-2.5 px-2 py-2 rounded-xl hover:bg-slate-100 transition-colors"
                   >
                     <UserAvatar user={user} />
                     <span className="flex-1 min-w-0 text-left">
-                      <span className="block text-xs font-bold text-slate-300 truncate">
+                      <span className="block text-xs font-bold text-slate-800 truncate">
                         {user?.name || 'Account'}
                       </span>
-                      <span className="block text-[10px] font-semibold text-slate-500">
+                      <span className="block text-[10px] font-semibold text-slate-400">
                         Profile settings
                       </span>
                     </span>
                   </button>
                   <button
                     onClick={logout}
-                    className="flex items-center gap-1 px-2.5 py-2 rounded-xl text-[11px] font-bold text-slate-500 hover:bg-slate-900 hover:text-rose-300 transition-colors shrink-0"
+                    className="flex items-center gap-1 px-2.5 py-2 rounded-xl text-[11px] font-bold text-slate-500 hover:bg-rose-50 hover:text-rose-600 transition-colors shrink-0"
                   >
                     <LogOut className="w-3.5 h-3.5" /> Log out
                   </button>

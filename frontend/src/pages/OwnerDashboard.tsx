@@ -14,7 +14,8 @@ import { useRefundsAndCancellations } from '../hooks/useRefundsAndCancellations'
 import { useStaff } from '../hooks/useStaff';
 import { useAccountProfile } from '../hooks/useAccountProfile';
 
-import { DashboardHeader, DashboardTab, tabsForRole } from '@/organisms/dashboard/DashboardHeader';
+import { DashboardHeader } from '@/organisms/dashboard/DashboardHeader';
+import { DashboardTab, tabsForRole, resolveVisibleTab } from '@/constants/dashboardTabs';
 import { KpiStatsGrid } from '@/organisms/dashboard/KpiStatsGrid';
 import { KitchenKdsBoard } from '@/organisms/dashboard/KitchenKdsBoard';
 import { OrderHistoryPanel } from '@/organisms/dashboard/OrderHistoryPanel';
@@ -38,7 +39,13 @@ import { RefundsPanel } from '@/organisms/dashboard/RefundsPanel';
 import { StaffPanel } from '@/organisms/dashboard/StaffPanel';
 import { ProfilePanel } from '@/organisms/dashboard/ProfilePanel';
 import { RefundHistoryModal } from '@/molecules/RefundHistoryModal';
-import { INVENTORY_ENABLED, SMEPAY_CHECKOUT_ENABLED } from '@/constants/features';
+import { useDashboardDarkMode } from '@/hooks/useDashboardDarkMode';
+import '@/styles/dashboardTheme.css';
+import {
+  INVENTORY_ENABLED,
+  SMEPAY_CHECKOUT_ENABLED,
+  FEES_AND_PAYMENTS_ENABLED,
+} from '@/constants/features';
 
 // Owner-side support widget is switched off for now — flip back to true to re-enable.
 const SHOW_OWNER_SUPPORT_WIDGET = false;
@@ -48,13 +55,11 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
   const isStaff = user?.role === 'STAFF';
   const tabs = tabsForRole(user?.role);
   const [activeTab, setActiveTab] = useState<DashboardTab>('kds');
-  // What's actually shown: the chosen tab if this role may open it, otherwise the Kitchen.
-  // Everything below — which panel renders and which per-tab data gets fetched — keys off this,
-  // never raw `activeTab`, so a stale or tampered tab can't render an owner-only section for
-  // staff. (The tab bar already hides those, and the backend refuses their data regardless.)
-  const visibleTab: DashboardTab =
-    activeTab === 'profile' || tabs.some((t) => t.id === activeTab) ? activeTab : 'kds';
+  // What's actually shown (see resolveVisibleTab): everything below — which panel renders and which
+  // per-tab data gets fetched — keys off this, never raw `activeTab`.
+  const visibleTab = resolveVisibleTab(user?.role, activeTab);
   const [copiedUrl, setCopiedUrl] = useState(false);
+  const { darkMode, toggleDarkMode } = useDashboardDarkMode();
 
   const orderHistoryState = useOrderHistory(visibleTab === 'orders');
 
@@ -92,6 +97,8 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
     handleConfirmPayment,
     savingUpiVpa,
     handleSaveUpiVpa,
+    savingGstin,
+    handleSaveGstin,
     savingTaxRate,
     handleSaveTaxRate,
     savingTablesEnabled,
@@ -268,9 +275,9 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
     }
   };
 
-  const bulkAcceptOrders = async (orderIds: string[]) => {
-    const { updatedIds } = await handleBulkUpdateOrderStatus(orderIds, 'CONFIRMED');
-    updatedIds.forEach((id) => patchOrderEverywhere(id, { orderStatus: 'CONFIRMED' }));
+  const bulkMoveOrders = async (orderIds: string[], status: string) => {
+    const { updatedIds } = await handleBulkUpdateOrderStatus(orderIds, status);
+    updatedIds.forEach((id) => patchOrderEverywhere(id, { orderStatus: status }));
     return updatedIds;
   };
 
@@ -427,7 +434,7 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
   };
 
   return (
-    <div className="dashboard-compact-type min-h-screen bg-[#F8FAFC] font-sans text-slate-900 selection:bg-orange-500 selection:text-white pb-12">
+    <div className="dashboard-compact-type min-h-screen bg-page font-sans text-slate-900 selection:bg-brand-500 selection:text-white pb-12">
       <DashboardHeader
         user={headerUser}
         business={business}
@@ -443,6 +450,8 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
         onRefresh={fetchDashboardData}
         onAddItem={isStaff ? undefined : handleOpenAddProduct}
         onOpenProfile={() => setActiveTab('profile')}
+        darkMode={darkMode}
+        onToggleDarkMode={toggleDarkMode}
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-7 sm:py-7 space-y-7">
@@ -466,7 +475,9 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
             onCancel={setCancelTarget}
             onViewBill={handleOpenEBillModal}
             onConfirmPayment={confirmPayment}
-            onBulkAccept={bulkAcceptOrders}
+            onBulkMove={bulkMoveOrders}
+            businessName={business?.name}
+            defaultKitchenMode={isStaff}
           />
         )}
 
@@ -531,7 +542,7 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
 
         {visibleTab === 'analytics' && <AnalyticsPanel analytics={analytics} />}
 
-        {visibleTab === 'ledger' && (
+        {FEES_AND_PAYMENTS_ENABLED && visibleTab === 'ledger' && (
           <FinancialLedgerPanel
             business={business}
             remittanceSummary={remittanceSummary}
@@ -569,6 +580,8 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
             setUpiVpaInput={setUpiVpaInput}
             savingUpiVpa={savingUpiVpa}
             onSaveUpiVpa={() => handleSaveUpiVpa(upiVpaInput.trim())}
+            savingGstin={savingGstin}
+            onSaveGstin={handleSaveGstin}
             savingTaxRate={savingTaxRate}
             onSaveTaxRate={handleSaveTaxRate}
             publicMenuUrl={publicMenuUrl}

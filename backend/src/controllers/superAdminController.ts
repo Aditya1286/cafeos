@@ -655,7 +655,7 @@ export const getSuperAdminAnalytics = async (req: AuthRequest, res: Response) =>
     // Cancellation & refund rate — the negative-signal counterpart to bestSellers/revenue above:
     // how much of the platform's order volume is failing, not just how much it's making.
     // "Terminal" orders are ones that reached a final state (COMPLETED, CANCELLED, or REFUNDED);
-    // still-in-progress orders (PLACED/CONFIRMED/PREPARING/READY/SERVED) aren't a rate yet.
+    // still-in-progress orders (PLACED/PREPARING/READY/SERVED) aren't a rate yet.
     const TERMINAL_STATUSES = ['COMPLETED', 'CANCELLED', 'REFUNDED'];
     const MIN_ORDERS_FOR_LEADERBOARD = 3;
 

@@ -28,7 +28,7 @@ export const PanelHeader = ({
     <div className="flex items-center gap-3 min-w-0">
       <div
         className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${
-          iconClassName || 'bg-orange-500/10 text-orange-600 border border-orange-200'
+          iconClassName || 'bg-brand-500/10 text-brand-600 border border-brand-200'
         }`}
       >
         <Icon className="w-5 h-5" />

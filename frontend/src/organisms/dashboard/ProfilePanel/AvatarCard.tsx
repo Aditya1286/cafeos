@@ -33,7 +33,7 @@ export const AvatarCard = ({ account }: { account: AccountProfileState }) => {
               className="w-20 h-20 rounded-2xl object-cover border border-slate-200"
             />
           ) : (
-            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-500 text-white font-black text-2xl flex items-center justify-center">
+            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-600 text-white font-black text-2xl flex items-center justify-center">
               {profile.name.charAt(0).toUpperCase()}
             </div>
           )}
@@ -59,7 +59,7 @@ export const AvatarCard = ({ account }: { account: AccountProfileState }) => {
           <h2 className="text-lg font-black text-slate-900 truncate">{profile.name}</h2>
           <p className="text-xs text-slate-500 font-semibold truncate">{profile.email}</p>
           <div className="flex flex-wrap gap-1.5">
-            <span className="px-2 py-0.5 rounded-full bg-orange-50 text-orange-700 border border-orange-200 text-[10px] font-black">
+            <span className="px-2 py-0.5 rounded-full bg-brand-50 text-brand-700 border border-brand-200 text-[10px] font-black">
               {ROLE_LABELS[profile.role] || profile.role}
             </span>
             {profile.business && (

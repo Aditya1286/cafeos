@@ -7,6 +7,7 @@ import { Table } from '../models/Table';
 import { Business } from '../models/Business';
 import { Subscription } from '../models/Subscription';
 import { getBusinessDayRange, getTrailingDayRange } from '../utils/timezone';
+import { IN_PROGRESS_STORED_STATUSES } from '../utils/orderStatus';
 import { computeRepeatCustomerStats, computeItemMargins, computeKitchenSpeed } from '../services/businessInsights.service';
 
 const sumSalesInRange = async (businessId: any, start: Date, end: Date) => {
@@ -31,7 +32,7 @@ export const getOwnerAnalytics = async (req: AuthRequest, res: Response) => {
 
     const totalOrders = await Order.countDocuments({ businessId });
     const completedOrders = await Order.countDocuments({ businessId, orderStatus: 'COMPLETED' });
-    const pendingOrders = await Order.countDocuments({ businessId, orderStatus: { $in: ['PLACED', 'CONFIRMED', 'PREPARING', 'READY'] } });
+    const pendingOrders = await Order.countDocuments({ businessId, orderStatus: { $in: IN_PROGRESS_STORED_STATUSES } });
 
     // Sales metrics (all-time)
     const salesAggregation = await Order.aggregate([

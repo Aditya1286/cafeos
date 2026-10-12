@@ -6,7 +6,7 @@ import { KdsBoardViewProps } from './types';
 /** Desktop/tablet (`sm`+): every status column visible at once, each independently scrollable
  * so they can be compared side by side. */
 export const KitchenKdsBoardDesktop = (props: KdsBoardViewProps) => (
-  <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
     {KDS_COLUMN_STATUSES.map((status) => (
       <KdsColumn key={status} {...props} status={status} scrollable />
     ))}

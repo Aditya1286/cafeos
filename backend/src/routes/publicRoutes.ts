@@ -7,6 +7,7 @@ import { SubscriptionPlan } from '../models/SubscriptionPlan';
 import { Business } from '../models/Business';
 import { config } from '../config';
 import { getOtpStatus, confirmWidgetToken, requestOtp, confirmOtp, resendOtpRequest } from '../controllers/otp.controller';
+import { submitDemoRequestPublic } from '../controllers/demoRequestController';
 import { createTicketPublic, getTicketStatusPublic, getCallAgentPublic } from '../controllers/supportController';
 import {
   startCheckoutPublic,
@@ -121,5 +122,17 @@ const supportRouteLimiter = rateLimit({
 router.post('/support/tickets', supportRouteLimiter, createTicketPublic);
 router.get('/support/tickets/:ticketNumber/status', supportRouteLimiter, getTicketStatusPublic);
 router.get('/support/call-agent', supportRouteLimiter, getCallAgentPublic);
+
+// Public: marketing-site "Request a demo / free trial" form. Tight limiter — this is an open
+// write endpoint, so keep one device from flooding the Super Admin lead list.
+const demoRequestLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many requests. Please try again in a few minutes.' } }
+});
+
+router.post('/demo-requests', demoRequestLimiter, submitDemoRequestPublic);
 
 export default router;

@@ -17,16 +17,8 @@ export const STATUS_CONFIG: Record<
     badgeText: 'text-purple-700 border-purple-200',
     dot: 'bg-purple-500',
   },
-  CONFIRMED: {
-    label: 'Confirmed',
-    color: 'text-blue-700',
-    borderAccent: 'border-t-blue-500',
-    badgeBg: 'bg-blue-50',
-    badgeText: 'text-blue-700 border-blue-200',
-    dot: 'bg-blue-500',
-  },
   PREPARING: {
-    label: 'Cooking',
+    label: 'Preparing',
     color: 'text-amber-700',
     borderAccent: 'border-t-amber-500',
     badgeBg: 'bg-amber-50',
@@ -69,16 +61,10 @@ export const STATUS_CONFIG: Record<
 
 export const NEXT_STATUS: Record<string, { label: string; status: string; color: string }> = {
   PLACED: {
-    label: 'Accept Order',
-    status: 'CONFIRMED',
-    color:
-      'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md shadow-blue-500/20',
-  },
-  CONFIRMED: {
-    label: 'Start Cooking 👨‍🍳',
+    label: 'Start Preparing 👨‍🍳',
     status: 'PREPARING',
     color:
-      'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-md shadow-amber-500/20',
+      'bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white shadow-md shadow-amber-500/20',
   },
   PREPARING: {
     label: 'Mark Ready 🔔',
@@ -93,7 +79,16 @@ export const NEXT_STATUS: Record<string, { label: string; status: string; color:
   },
 };
 
-export const KDS_COLUMN_STATUSES = ['PLACED', 'CONFIRMED', 'PREPARING', 'READY'] as const;
+// The kitchen flow: New -> Preparing -> Ready (then Complete, which takes the order off the board).
+export const KDS_COLUMN_STATUSES = ['PLACED', 'PREPARING', 'READY'] as const;
+
+// Wording for moving a whole column forward at once (the board's bulk bar and BulkMoveOrdersModal).
+// The target status is NEXT_STATUS[column].status, so it can't drift from the single-order button.
+export const BULK_MOVE: Record<string, { verb: string; button: string; progress: string }> = {
+  PLACED: { verb: 'Start preparing', button: 'Start preparing selected', progress: 'Starting…' },
+  PREPARING: { verb: 'Mark ready', button: 'Mark selected ready', progress: 'Updating…' },
+  READY: { verb: 'Complete', button: 'Complete selected', progress: 'Completing…' },
+};
 
 // Only a new order can be cancelled — once it's accepted it's going to be made. The backend
 // enforces the same rule (orderController's applyOrderStatusChange).

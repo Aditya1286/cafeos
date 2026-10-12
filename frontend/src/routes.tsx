@@ -9,6 +9,7 @@ import { CustomerMenuPage } from './pages/CustomerMenuPage';
 import { CustomerOrderTrackingPage } from './pages/CustomerOrderTrackingPage';
 import { CheckoutReturnPage } from './pages/CheckoutReturnPage';
 import { MerchantTermsPage } from './pages/MerchantTermsPage';
+import { RequestDemoPage } from './pages/RequestDemoPage';
 
 // 'public'      - anyone, regardless of auth state
 // 'guest'       - only signed-out visitors (login/register); signed-in users get bounced to their dashboard
@@ -43,6 +44,7 @@ export const routes: AppRoute[] = [
   },
   { path: '/forgot-password', access: 'guest', element: () => <ForgotPasswordPage /> },
   { path: '/terms', access: 'public', element: () => <MerchantTermsPage /> },
+  { path: '/request-demo', access: 'public', element: () => <RequestDemoPage /> },
   {
     path: '/admin/*',
     access: 'super-admin',

@@ -78,14 +78,13 @@ export const writeHistory = async (ctx: CafeContext, arrivals: Date[], now: Date
     };
 
     if (outcome === 'COMPLETED') {
-      const acceptedAt = clamp(minutesAfter(placedAt, between(0.5, 3)));
-      const preparingAt = clamp(minutesAfter(acceptedAt, between(0.5, 2)));
+      const preparingAt = clamp(minutesAfter(placedAt, between(0.5, 3)));
       const readyAt = clamp(minutesAfter(preparingAt, kitchenMinutesFor(lines)));
       const completedAt = clamp(minutesAfter(readyAt, table ? between(5, 15) : between(1, 5)));
       Object.assign(order, {
         orderStatus: 'COMPLETED',
         paymentStatus: 'PAID',
-        timeline: { placedAt, acceptedAt, preparingAt, readyAt, completedAt },
+        timeline: { placedAt, preparingAt, readyAt, completedAt },
         updatedAt: completedAt
       });
       // Most UPI payers tap "I've paid" on their tracking page while they wait.

@@ -4,6 +4,8 @@ import { Modal } from '@/molecules/Modal';
 import { APP_NAME } from '@/constants/app';
 import { toast } from '@/utils/toast';
 import { formatCurrency } from '@/utils/money';
+import { PrintableInvoice } from '@/organisms/invoice';
+import { invoiceFromBill } from '@/utils/invoice';
 
 interface EBillModalProps {
   bill: any | null;
@@ -23,10 +25,11 @@ export const EBillModal = ({ bill, onClose }: EBillModalProps) => {
       onClose={onClose}
       maxWidth="max-w-lg"
     >
-      <div className="space-y-6" id="printable-ebill">
+      <div className="space-y-6">
+        <PrintableInvoice invoice={invoiceFromBill(bill)} />
         <div className="p-6 bg-white border border-slate-300 rounded-2xl shadow-inner font-mono text-xs text-slate-800 space-y-4">
           <div className="text-center space-y-1 border-b border-dashed border-slate-300 pb-4">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-500 text-white font-black text-base flex items-center justify-center mx-auto mb-2">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-600 text-white font-black text-base flex items-center justify-center mx-auto mb-2">
               <Coffee className="w-5 h-5" />
             </div>
             <h2 className="text-base font-black uppercase text-slate-900 tracking-wider">
@@ -50,7 +53,7 @@ export const EBillModal = ({ bill, onClose }: EBillModalProps) => {
               <span className="text-slate-400 block text-[9px] uppercase font-sans font-bold">
                 Order ID
               </span>
-              <span className="font-black text-orange-600">{bill.orderId}</span>
+              <span className="font-black text-brand-600">{bill.orderId}</span>
             </div>
             <div className="text-right">
               <span className="text-slate-400 block text-[9px] uppercase font-sans font-bold">
@@ -149,7 +152,7 @@ export const EBillModal = ({ bill, onClose }: EBillModalProps) => {
 
           <button
             onClick={() => toast.success('Bill copied!')}
-            className="py-3 rounded-xl bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-700 font-black text-xs transition-all flex items-center justify-center gap-2"
+            className="py-3 rounded-xl bg-brand-50 hover:bg-brand-100 border border-brand-200 text-brand-700 font-black text-xs transition-all flex items-center justify-center gap-2"
           >
             <Share2 className="w-4 h-4" />
             <span>Share Bill</span>

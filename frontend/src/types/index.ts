@@ -22,6 +22,8 @@ export interface Business {
   currency: string;
   currencySymbol: string;
   taxRatePercentage: number;
+  /** GST registration number; optional, printed on tax invoices. */
+  gstin?: string;
   perOrderFeePaise: number;
   openingTime: string;
   closingTime: string;
@@ -98,8 +100,7 @@ export interface TableItem {
   status: 'AVAILABLE' | 'OCCUPIED' | 'RESERVED';
 }
 
-export type OrderStatus =
-  'PLACED' | 'CONFIRMED' | 'PREPARING' | 'READY' | 'SERVED' | 'COMPLETED' | 'CANCELLED';
+export type OrderStatus = 'PLACED' | 'PREPARING' | 'READY' | 'SERVED' | 'COMPLETED' | 'CANCELLED';
 
 export interface OrderItemSnapshot {
   productId: string;

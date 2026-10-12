@@ -95,7 +95,7 @@ export const AddInventoryModal = ({
         </div>
         <button
           type="submit"
-          className="w-full py-3 rounded-xl bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-black text-xs shadow-md shadow-orange-600/20 transition-all"
+          className="w-full py-3 rounded-xl bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-700 hover:to-amber-700 text-white font-black text-xs shadow-md shadow-brand-600/20 transition-all"
         >
           Add Ingredient
         </button>

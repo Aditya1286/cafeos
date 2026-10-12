@@ -84,7 +84,7 @@ export const RefundsPanel = ({
       header: 'Order',
       render: (o) => (
         <>
-          <div className="font-mono text-xs font-black text-orange-600 bg-orange-50 border border-orange-200 px-2.5 py-1 rounded-xl inline-block mb-1">
+          <div className="font-mono text-xs font-black text-brand-600 bg-brand-50 border border-brand-200 px-2.5 py-1 rounded-xl inline-block mb-1">
             {o.orderId || o.orderNumber}
           </div>
           <div className="text-[11px] text-slate-400 font-medium">{o._dateFormatted}</div>
@@ -182,7 +182,7 @@ export const RefundsPanel = ({
   const renderCard = (o: (typeof rows)[number]) => (
     <div className="p-4 space-y-3">
       <div className="flex items-center justify-between gap-2">
-        <div className="font-mono text-xs font-black text-orange-600 bg-orange-50 border border-orange-200 px-2.5 py-1 rounded-xl whitespace-nowrap">
+        <div className="font-mono text-xs font-black text-brand-600 bg-brand-50 border border-brand-200 px-2.5 py-1 rounded-xl whitespace-nowrap">
           {o.orderId || o.orderNumber}
         </div>
         <span
@@ -240,7 +240,7 @@ export const RefundsPanel = ({
           onClick={onRefresh}
           className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-black transition-all flex items-center gap-1.5 shadow-sm self-start"
         >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-orange-400' : ''}`} />
+          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-brand-400' : ''}`} />
           <span>Refresh</span>
         </button>
       </div>
@@ -317,7 +317,7 @@ export const RefundsPanel = ({
         <select
           value={paymentStatusFilter}
           onChange={(e) => onPaymentStatusFilterChange(e.target.value)}
-          className="w-full sm:w-64 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 outline-none focus:border-orange-500"
+          className="w-full sm:w-64 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 outline-none focus:border-brand-500"
         >
           <option value="ALL">All Payment Statuses</option>
           <option value="PAID">Paid (needs refund)</option>
@@ -329,7 +329,7 @@ export const RefundsPanel = ({
       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
         {loading ? (
           <div className="p-12 text-center space-y-3">
-            <RefreshCw className="w-8 h-8 text-orange-500 animate-spin mx-auto" />
+            <RefreshCw className="w-8 h-8 text-brand-500 animate-spin mx-auto" />
             <p className="text-xs font-bold text-slate-500">Loading refunds & cancellations...</p>
           </div>
         ) : (

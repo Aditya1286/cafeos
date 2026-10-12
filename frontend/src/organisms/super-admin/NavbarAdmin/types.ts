@@ -8,8 +8,10 @@ import {
   Wallet,
   Undo2,
   LifeBuoy,
+  Inbox,
   LucideIcon,
 } from 'lucide-react';
+import { FEES_AND_PAYMENTS_ENABLED } from '@/constants/features';
 
 export const DATE_PRESETS = [
   { id: 'today', label: 'Today', short: 'Today' },
@@ -42,6 +44,7 @@ export interface NavbarAdminProps {
   pendingSubscriptionRequestsCount?: number;
   refundsNeededCount?: number;
   openTicketsCount?: number;
+  newDemoRequestsCount?: number;
 }
 
 /** What the desktop and mobile navbar views receive from the parent `NavbarAdmin`. */
@@ -52,6 +55,7 @@ export type NavbarAdminViewProps = Omit<
   | 'pendingSubscriptionRequestsCount'
   | 'refundsNeededCount'
   | 'openTicketsCount'
+  | 'newDemoRequestsCount'
 > & {
   navItems: AdminNavItem[];
 };
@@ -62,6 +66,7 @@ export const buildNavItems = ({
   pendingSubscriptionRequestsCount = 0,
   refundsNeededCount = 0,
   openTicketsCount = 0,
+  newDemoRequestsCount = 0,
 }: Pick<
   NavbarAdminProps,
   | 'businessesCount'
@@ -69,15 +74,20 @@ export const buildNavItems = ({
   | 'pendingSubscriptionRequestsCount'
   | 'refundsNeededCount'
   | 'openTicketsCount'
+  | 'newDemoRequestsCount'
 >): AdminNavItem[] => [
   { id: 'overview', label: 'Overview', icon: Activity },
   { id: 'businesses', label: 'Businesses', icon: Store, count: businessesCount },
-  {
-    id: 'remittances',
-    label: 'Fee Payments',
-    icon: Wallet,
-    count: pendingRemittancesCount || undefined,
-  },
+  ...(FEES_AND_PAYMENTS_ENABLED
+    ? [
+        {
+          id: 'remittances',
+          label: 'Fee Payments',
+          icon: Wallet,
+          count: pendingRemittancesCount || undefined,
+        },
+      ]
+    : []),
   {
     id: 'refunds',
     label: 'Refunds & Cancellations',
@@ -85,6 +95,12 @@ export const buildNavItems = ({
     count: refundsNeededCount || undefined,
   },
   { id: 'support', label: 'Support Tickets', icon: LifeBuoy, count: openTicketsCount || undefined },
+  {
+    id: 'leads',
+    label: 'Demo Requests',
+    icon: Inbox,
+    count: newDemoRequestsCount || undefined,
+  },
   { id: 'analytics', label: 'Reports', icon: BarChart3 },
   { id: 'kitchen', label: 'Live Kitchens', icon: Flame },
   {
@@ -97,4 +113,4 @@ export const buildNavItems = ({
 ];
 
 /** Items whose badge means "work is waiting" — the always-on businesses total isn't one. */
-export const ACTIONABLE_NAV_IDS = new Set(['remittances', 'refunds', 'support', 'plans']);
+export const ACTIONABLE_NAV_IDS = new Set(['remittances', 'refunds', 'support', 'leads', 'plans']);

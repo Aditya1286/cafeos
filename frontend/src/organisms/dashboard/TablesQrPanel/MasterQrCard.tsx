@@ -50,7 +50,7 @@ export const MasterQrCard = ({
 
       <div className="flex-1 min-w-0 space-y-2 text-center sm:text-left">
         <div className="flex items-center justify-center sm:justify-start gap-2">
-          <QrCode className="w-4 h-4 text-orange-500" />
+          <QrCode className="w-4 h-4 text-brand-500" />
           <h3 className="text-sm font-black text-slate-900">Master QR</h3>
           <span
             className={`px-2 py-0.5 rounded-full text-[10px] font-black border ${

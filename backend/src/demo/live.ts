@@ -47,14 +47,10 @@ const planFor = (outcome: ReturnType<typeof pickOutcome>, lines: BasketLine[], p
   if (outcome === 'CUSTOMER_CANCEL') return [{ action: 'CUSTOMER_CANCEL', at: minutesAfter(now, between(1, 3)) }];
   if (outcome === 'STAFF_CANCEL') return [{ action: 'CANCELLED', at: minutesAfter(now, between(1, 4)) }];
 
-  const acceptedAt = minutesAfter(now, between(1, 3));
-  const preparingAt = minutesAfter(acceptedAt, between(1, 2));
+  const preparingAt = minutesAfter(now, between(1, 3));
   const readyAt = minutesAfter(preparingAt, kitchenMinutesFor(lines));
   const completedAt = minutesAfter(readyAt, atTable ? between(4, 12) : between(1, 4));
-  const steps: IDemoPlanStep[] = [
-    { action: 'CONFIRMED', at: acceptedAt },
-    { action: 'PREPARING', at: preparingAt }
-  ];
+  const steps: IDemoPlanStep[] = [{ action: 'PREPARING', at: preparingAt }];
   // Most UPI payers tap "I've paid" on their tracking page while they wait.
   if (paymentMethod === 'ONLINE' && chance(0.7)) steps.push({ action: 'CUSTOMER_MARK_PAID', at: minutesAfter(readyAt, -between(0, 1)) });
   steps.push({ action: 'READY', at: readyAt }, { action: 'COMPLETED', at: completedAt });

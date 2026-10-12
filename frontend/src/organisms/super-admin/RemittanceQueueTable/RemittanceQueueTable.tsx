@@ -48,7 +48,7 @@ const DueOrPaid = ({ r, view }: { r: AdminRemittanceRequest; view: 'UNPAID' | 'P
 const ClaimBadge = ({ r }: { r: AdminRemittanceRequest }) =>
   r.merchantMarkedPaidAt ? (
     <span
-      className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-orange-50 text-orange-700 text-[10px] font-extrabold border border-orange-200 whitespace-nowrap"
+      className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-brand-50 text-brand-700 text-[10px] font-extrabold border border-brand-200 whitespace-nowrap"
       title={r.merchantReportedUtr ? `UTR: ${r.merchantReportedUtr}` : 'No reference given'}
     >
       <AlertTriangle className="w-3 h-3" /> Says they paid

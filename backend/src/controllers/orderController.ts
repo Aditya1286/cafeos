@@ -11,6 +11,14 @@ import { emitToBusiness, emitToOrder, emitToAdminOrders } from '../websocket/soc
 import { computeRefundInsights } from '../services/refundInsights.service';
 import { prepareOrder, placeOrder, recordOrderPaymentLedger, markOrderPaid } from '../services/orderPlacement.service';
 import { handleServiceError } from '../utils/serviceError';
+import {
+  ACTIVE_ORDERS_LIMIT,
+  ACTIVE_ORDER_WINDOW_HOURS,
+  IN_PROGRESS_STORED_STATUSES,
+  ORDER_STATUSES,
+  normalizeOrderStatus,
+  storedStatusFilter
+} from '../utils/orderStatus';
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -281,10 +289,37 @@ const sendOrderDetails = async (res: Response, order: InstanceType<typeof Order>
         address: business.address,
         phone: business.phone,
         taxRatePercentage: business.taxRatePercentage,
+        gstin: business.gstin,
         upiVpa: business.upiVpa
       } : null
     }
   });
+};
+
+// Owner/Staff: every order the kitchen is still working on (New, Preparing, Ready), oldest first.
+// The kitchen board reads this instead of the paginated list: that one returns the newest 25 orders
+// of any status, so on a busy day older New/Preparing orders fell off the screen. Orders left open
+// past ACTIVE_ORDER_WINDOW_HOURS are abandoned rather than live and stay out (All Orders has them).
+export const getActiveOrders = async (req: AuthRequest, res: Response) => {
+  try {
+    const requested = parseInt(req.query.limit as string, 10);
+    const limit = Number.isFinite(requested) && requested > 0 ? Math.min(requested, ACTIVE_ORDERS_LIMIT) : ACTIVE_ORDERS_LIMIT;
+
+    // One extra row tells us whether the list was cut, without a second count query.
+    const rows = await Order.find({
+      businessId: req.businessId,
+      orderStatus: { $in: IN_PROGRESS_STORED_STATUSES },
+      createdAt: { $gte: new Date(Date.now() - ACTIVE_ORDER_WINDOW_HOURS * 3_600_000) }
+    })
+      .populate(ORDER_ACTORS)
+      .sort({ createdAt: 1 })
+      .limit(limit + 1);
+
+    const truncated = rows.length > limit;
+    return res.json({ success: true, data: truncated ? rows.slice(0, limit) : rows, truncated });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: error.message } });
+  }
 };
 
 // Owner/Staff: List & Search Orders with Pagination & Filtering
@@ -294,7 +329,7 @@ export const getOrders = async (req: AuthRequest, res: Response) => {
     const query: any = { businessId: req.businessId };
 
     if (status && status !== 'ALL') {
-      query.orderStatus = status;
+      query.orderStatus = typeof status === 'string' ? storedStatusFilter(status) : status;
     }
 
     if (paymentStatus && paymentStatus !== 'ALL') {
@@ -441,7 +476,7 @@ export const searchOrders = async (req: AuthRequest, res: Response) => {
 };
 
 // Owner/Staff: Update Order Status
-const VALID_ORDER_STATUSES: OrderStatus[] = ['PLACED', 'CONFIRMED', 'PREPARING', 'READY', 'SERVED', 'COMPLETED', 'CANCELLED', 'REFUNDED'];
+const VALID_ORDER_STATUSES: readonly string[] = ORDER_STATUSES;
 
 // An order is final once it reaches one of these (a cancelled one can still be refunded).
 const FINISHED_ORDER_STATUSES: OrderStatus[] = ['COMPLETED', 'CANCELLED', 'REFUNDED'];
@@ -453,6 +488,39 @@ interface StatusChangeResult {
   errorCode?: string;
   errorMessage?: string;
 }
+
+// Automatic BOM deduction: takes each ingredient in the order's recipes off the stock and logs it.
+const deductIngredientsForOrder = async (order: InstanceType<typeof Order>, businessId: string) => {
+  for (const item of order.items) {
+    const recipe = await Recipe.findOne({ productId: item.productId, businessId });
+    if (!recipe || !recipe.ingredients || recipe.ingredients.length === 0) continue;
+
+    for (const ing of recipe.ingredients) {
+      const totalQuantityNeeded = ing.quantityRequired * item.quantity;
+
+      const invItem = await InventoryItem.findById(ing.inventoryItemId);
+      if (!invItem) continue;
+
+      invItem.currentStock = Math.max(0, invItem.currentStock - totalQuantityNeeded);
+      if (invItem.currentStock <= invItem.minimumStockLevel) {
+        invItem.status = invItem.currentStock === 0 ? 'OUT_OF_STOCK' : 'LOW_STOCK';
+      } else {
+        invItem.status = 'IN_STOCK';
+      }
+      await invItem.save();
+
+      await InventoryTransaction.create({
+        businessId,
+        inventoryItemId: invItem._id,
+        type: 'USAGE_AUTO',
+        quantityChanged: -totalQuantityNeeded,
+        balanceAfter: invItem.currentStock,
+        reason: `Automatic BOM deduction for Order ${order.orderId}`,
+        referenceOrderId: order._id
+      });
+    }
+  }
+};
 
 // The full side-effect chain for one order's status transition — timeline stamps, refund
 // ledger entry, table release, payment ledger entries, automatic BOM stock deduction, and both
@@ -495,6 +563,8 @@ const applyOrderStatusChange = async (
   }
 
   const wasAlreadyPaid = order.paymentStatus === 'PAID';
+  // The stored value, not the normalized one: a legacy CONFIRMED order already had its stock deducted.
+  const previousStatus = order.get('orderStatus', null, { getters: false }) as string;
 
   order.orderStatus = status;
   if (status === 'COMPLETED' || status === 'SERVED') {
@@ -511,7 +581,6 @@ const applyOrderStatusChange = async (
 
   // Update timeline timestamp
   if (!order.timeline) order.timeline = {};
-  if (status === 'CONFIRMED') order.timeline.acceptedAt = new Date();
   if (status === 'PREPARING') order.timeline.preparingAt = new Date();
   if (status === 'READY') order.timeline.readyAt = new Date();
   if (status === 'COMPLETED') order.timeline.completedAt = new Date();
@@ -545,37 +614,9 @@ const applyOrderStatusChange = async (
     await recordOrderPaymentLedger(order);
   }
 
-  // Deduct stock if order is COMPLETED or CONFIRMED (Automatic BOM Deduction)
-  if (status === 'COMPLETED' || status === 'CONFIRMED') {
-    for (const item of order.items) {
-      const recipe = await Recipe.findOne({ productId: item.productId, businessId });
-      if (recipe && recipe.ingredients && recipe.ingredients.length > 0) {
-        for (const ing of recipe.ingredients) {
-          const totalQuantityNeeded = ing.quantityRequired * item.quantity;
-
-          const invItem = await InventoryItem.findById(ing.inventoryItemId);
-          if (invItem) {
-            invItem.currentStock = Math.max(0, invItem.currentStock - totalQuantityNeeded);
-            if (invItem.currentStock <= invItem.minimumStockLevel) {
-              invItem.status = invItem.currentStock === 0 ? 'OUT_OF_STOCK' : 'LOW_STOCK';
-            } else {
-              invItem.status = 'IN_STOCK';
-            }
-            await invItem.save();
-
-            await InventoryTransaction.create({
-              businessId,
-              inventoryItemId: invItem._id,
-              type: 'USAGE_AUTO',
-              quantityChanged: -totalQuantityNeeded,
-              balanceAfter: invItem.currentStock,
-              reason: `Automatic BOM deduction for Order ${order.orderId}`,
-              referenceOrderId: order._id
-            });
-          }
-        }
-      }
-    }
+  // Stock comes off once, when the kitchen takes the order on (it leaves New).
+  if (previousStatus === 'PLACED' && status !== 'CANCELLED') {
+    await deductIngredientsForOrder(order, businessId);
   }
 
   // Emit real-time status update
@@ -592,7 +633,7 @@ const applyOrderStatusChange = async (
     orderStatus: order.orderStatus,
     tableId: order.tableId || null,
     // Only set when this update actually freed the table — most status
-    // transitions (PLACED -> CONFIRMED -> PREPARING -> READY) leave it
+    // transitions (PLACED -> PREPARING -> READY) leave it
     // occupied, so there's nothing new to tell the dashboard about it.
     tableStatus: tableWasFreed ? 'AVAILABLE' : undefined
   });
@@ -628,7 +669,8 @@ const findOrderForBusiness = async (id: string, businessId: string) => {
 export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
+    // A tab opened before the merge may still send CONFIRMED; it means PREPARING now.
+    const status = normalizeOrderStatus(req.body.status);
 
     if (!VALID_ORDER_STATUSES.includes(status)) {
       return res.status(400).json({
@@ -656,15 +698,16 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// Owner/Staff: Bulk-accept (or otherwise bulk-transition) several orders in one request — the
-// "select all in New Orders, review, then accept" flow. Applies the exact same per-order logic
+// Owner/Staff: Bulk-move several orders to the next kitchen step in one request — the "select
+// all in a column, review, then move them" flow (New -> Preparing, Preparing -> Ready, Ready -> Served). Applies the exact same per-order logic
 // as updateOrderStatus above and keeps going past an individual order's failure so one stale or
 // already-actioned order in the batch doesn't block the rest.
 const MAX_BULK_ORDERS = 50;
 
 export const bulkUpdateOrderStatus = async (req: AuthRequest, res: Response) => {
   try {
-    const { orderIds, status } = req.body;
+    const { orderIds } = req.body;
+    const status = normalizeOrderStatus(req.body.status);
 
     if (!VALID_ORDER_STATUSES.includes(status)) {
       return res.status(400).json({ success: false, error: { code: 'INVALID_STATUS', message: 'Invalid order status specified.' } });
@@ -771,6 +814,7 @@ export const getOrderBill = async (req: AuthRequest, res: Response) => {
           address: business?.address || 'Mumbai, India',
           phone: business?.phone || '+91 9876543210',
           currencySymbol: business?.currencySymbol || '₹',
+          gstin: business?.gstin,
           taxRatePercentage: business?.taxRatePercentage ?? 0
         },
         customer: {

@@ -45,7 +45,7 @@ export const InventoryPanel = ({ inventoryItems, onAddIngredient }: InventoryPan
         actions={
           <button
             onClick={onAddIngredient}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-extrabold text-xs shadow-md shadow-orange-500/20 transition-all whitespace-nowrap"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-extrabold text-xs shadow-md shadow-brand-500/20 transition-all whitespace-nowrap"
           >
             <Plus className="w-4 h-4" /> Add Ingredient
           </button>

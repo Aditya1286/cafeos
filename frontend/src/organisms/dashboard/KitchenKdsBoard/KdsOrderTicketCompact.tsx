@@ -4,12 +4,12 @@ import { ChevronDown, FileText, Wallet, X } from 'lucide-react';
 import { NEXT_STATUS } from '@/constants/orderStatus';
 import { formatCurrency } from '@/utils/money';
 import { KdsStatus } from './types';
+import { WaitBadge } from '@/molecules/WaitBadge';
 
 interface KdsOrderTicketCompactProps {
   order: any;
   status: KdsStatus;
   isNew: boolean;
-  isSelectable: boolean;
   isSelected: boolean;
   expanded: boolean;
   onToggleExpanded: () => void;
@@ -19,6 +19,8 @@ interface KdsOrderTicketCompactProps {
   onCancel?: () => void;
   onViewBill: () => void;
   onConfirmPayment: () => void;
+  /** The board's shared clock (ms), for the waiting time. */
+  now: number;
 }
 
 /**
@@ -30,7 +32,6 @@ export const KdsOrderTicketCompact = ({
   order,
   status,
   isNew,
-  isSelectable,
   isSelected,
   expanded,
   onToggleExpanded,
@@ -39,6 +40,7 @@ export const KdsOrderTicketCompact = ({
   onCancel,
   onViewBill,
   onConfirmPayment,
+  now,
 }: KdsOrderTicketCompactProps) => {
   const next = NEXT_STATUS[status];
   const unpaid = order.paymentStatus === 'UNPAID';
@@ -56,33 +58,34 @@ export const KdsOrderTicketCompact = ({
         isSelected
           ? 'border-blue-400 ring-2 ring-blue-100'
           : isNew
-            ? 'border-orange-400 ring-2 ring-orange-100'
+            ? 'border-brand-400 ring-2 ring-brand-100'
             : 'border-slate-200'
       }`}
     >
       <div className="flex items-center gap-1.5 min-w-0">
-        {isSelectable && (
-          <input
-            type="checkbox"
-            checked={isSelected}
-            onChange={onToggleSelected}
-            aria-label={`Select order ${order.orderId || order.orderNumber}`}
-            className="w-4 h-4 rounded accent-blue-600 shrink-0"
-          />
-        )}
-        <span className="text-xs font-black text-orange-600 bg-orange-50 border border-orange-200 px-2 py-0.5 rounded-lg shrink-0">
+        <input
+          type="checkbox"
+          checked={isSelected}
+          onChange={onToggleSelected}
+          aria-label={`Select order ${order.orderId || order.orderNumber}`}
+          className="w-4 h-4 rounded accent-blue-600 shrink-0"
+        />
+        <span className="text-xs font-black text-brand-600 bg-brand-50 border border-brand-200 px-2 py-0.5 rounded-lg shrink-0">
           {order.orderId || order.orderNumber}
         </span>
         <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[10px] font-black truncate">
           {order.tableName || 'Counter'}
         </span>
         {isNew && (
-          <span className="text-[9px] font-black text-white bg-orange-500 px-1.5 py-0.5 rounded-full uppercase animate-pulse shrink-0">
+          <span className="text-[9px] font-black text-white bg-brand-500 px-1.5 py-0.5 rounded-full uppercase animate-pulse shrink-0">
             New
           </span>
         )}
-        <span className="ml-auto text-xs font-black text-emerald-600 shrink-0">
-          {formatCurrency(order.totalAmountPaise)}
+        <span className="ml-auto flex items-center gap-1.5 shrink-0">
+          <WaitBadge createdAt={order.createdAt} now={now} />
+          <span className="text-xs font-black text-emerald-600">
+            {formatCurrency(order.totalAmountPaise)}
+          </span>
         </span>
       </div>
 

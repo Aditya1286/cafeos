@@ -84,7 +84,7 @@ test('staff can work orders, including cancelling and refunding them, but nothin
   assert.equal(orders.status, 200);
 
   const accepted = await placeOrder();
-  const accept = await setStatus(accepted._id, 'CONFIRMED');
+  const accept = await setStatus(accepted._id, 'PREPARING');
   assert.equal(accept.status, 200, JSON.stringify(accept.body));
 
   // A paid new order: staff cancel it, then record the refund. Both are logged under their name.

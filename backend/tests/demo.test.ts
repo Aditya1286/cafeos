@@ -137,9 +137,9 @@ test('history orders are internally consistent, like orders the app itself produ
       const t: any = order.timeline;
       if (order.orderStatus === 'COMPLETED') {
         assert.equal(order.paymentStatus, 'PAID');
-        const stamps = [t.placedAt, t.acceptedAt, t.preparingAt, t.readyAt, t.completedAt].map((d: Date) => d.getTime());
+        const stamps = [t.placedAt, t.preparingAt, t.readyAt, t.completedAt].map((d: Date) => d.getTime());
         assert.deepEqual([...stamps].sort((a, b) => a - b), stamps, `${order.orderId} timeline in order`);
-        assert.ok(stamps[4] < now, 'nothing completed in the future');
+        assert.ok(stamps[3] < now, 'nothing completed in the future');
         assert.equal(rows.length, 2, `${order.orderId} has its two ledger rows`);
         assert.equal(rows.find((r) => r.type === 'ORDER_PAYMENT')?.amountPaise, order.totalAmountPaise);
         assert.equal(rows.find((r) => r.type === 'PLATFORM_FEE')?.amountPaise, order.platformFeePaise);
@@ -214,7 +214,7 @@ test('live orders go through the real order API and the kitchen bot sees them th
     const rows = await FinancialLedger.countDocuments({ orderId: order._id });
     if (order.orderStatus === 'COMPLETED') {
       assert.equal(order.paymentStatus, 'PAID');
-      assert.ok(order.timeline?.acceptedAt && order.timeline?.readyAt && order.timeline?.completedAt);
+      assert.ok(order.timeline?.preparingAt && order.timeline?.readyAt && order.timeline?.completedAt);
       assert.equal(rows, 2);
     } else {
       assert.equal(rows, 0);

@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { Business } from '../models/Business';
-import { isAcceptableGstRate, GST_RATE_ERROR_MESSAGE } from '../utils/gst';
+import { isAcceptableGstRate, GST_RATE_ERROR_MESSAGE, isValidGstin, GSTIN_ERROR_MESSAGE } from '../utils/gst';
 
 // Owner: Update their own business's self-service settings — the UPI VPA used
 // for the customer-facing payment QR/intent link, whether this business uses
@@ -9,10 +9,10 @@ import { isAcceptableGstRate, GST_RATE_ERROR_MESSAGE } from '../utils/gst';
 // and take unlimited counter orders), whether their master QR (the general
 // menu link) still takes counter orders while tables are on, and their GST/tax rate — one of the
 // restaurant GST slabs in utils/gst.ts (0 = no tax charged on new orders, the
-// current platform-wide default).
+// current platform-wide default), and their GSTIN (printed on tax invoices; an empty value clears it).
 export const updateBusinessSettings = async (req: AuthRequest, res: Response) => {
   try {
-    const { upiVpa, tablesEnabled, masterQrEnabled, taxRatePercentage } = req.body;
+    const { upiVpa, tablesEnabled, masterQrEnabled, taxRatePercentage, gstin } = req.body;
 
     const business = await Business.findById(req.businessId);
     if (!business) {
@@ -47,6 +47,20 @@ export const updateBusinessSettings = async (req: AuthRequest, res: Response) =>
       business.taxRatePercentage = taxRatePercentage;
     }
 
+    if (gstin !== undefined) {
+      if (typeof gstin !== 'string') {
+        return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: GSTIN_ERROR_MESSAGE } });
+      }
+      const normalized = gstin.trim().toUpperCase();
+      if (normalized === '') {
+        business.gstin = undefined;
+      } else if (!isValidGstin(normalized)) {
+        return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: GSTIN_ERROR_MESSAGE } });
+      } else {
+        business.gstin = normalized;
+      }
+    }
+
     await business.save();
 
     return res.json({
@@ -57,7 +71,8 @@ export const updateBusinessSettings = async (req: AuthRequest, res: Response) =>
         upiVpa: business.upiVpa,
         tablesEnabled: business.tablesEnabled,
         masterQrEnabled: business.masterQrEnabled,
-        taxRatePercentage: business.taxRatePercentage
+        taxRatePercentage: business.taxRatePercentage,
+        gstin: business.gstin
       }
     });
   } catch (error: any) {

@@ -205,7 +205,7 @@ export function ResponsiveDataView<T>({
             placeholder={search.placeholder || 'Search...'}
             value={searchTerm}
             onChange={(e) => setSearchTerm?.(e.target.value)}
-            className="w-full pl-9 pr-9 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-900 placeholder:text-slate-400 outline-none focus:border-orange-500 focus:bg-white focus:ring-2 focus:ring-orange-100 transition-all"
+            className="w-full pl-9 pr-9 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-900 placeholder:text-slate-400 outline-none focus:border-brand-500 focus:bg-white focus:ring-2 focus:ring-brand-100 transition-all"
           />
           {searchTerm && (
             <button
@@ -273,7 +273,7 @@ export function ResponsiveDataView<T>({
             <select
               value={pageSize}
               onChange={(e) => onPageSizeChange?.(Number(e.target.value))}
-              className="px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-bold text-slate-700 outline-none focus:border-orange-500"
+              className="px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-bold text-slate-700 outline-none focus:border-brand-500"
             >
               {pageSizeOptions.map((size: number) => (
                 <option key={size} value={size}>

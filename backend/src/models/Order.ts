@@ -1,14 +1,8 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
-export type OrderStatus = 
-  | 'PLACED' 
-  | 'CONFIRMED' 
-  | 'PREPARING' 
-  | 'READY' 
-  | 'SERVED' 
-  | 'COMPLETED' 
-  | 'CANCELLED'
-  | 'REFUNDED';
+import { STORED_ORDER_STATUSES, normalizeOrderStatus, OrderStatus } from '../utils/orderStatus';
+
+export type { OrderStatus };
 
 export type PaymentStatus = 'UNPAID' | 'PAID' | 'REFUNDED' | 'FAILED';
 // ONLINE = the customer pays the café's own UPI ID directly (confirmed by staff); CHECKOUT = paid
@@ -34,7 +28,7 @@ export interface IOrderItemSnapshot {
 
 export interface IOrderTimeline {
   placedAt?: Date;
-  acceptedAt?: Date;
+  acceptedAt?: Date; // legacy: stamped by the old CONFIRMED step; new orders only get preparingAt
   preparingAt?: Date;
   readyAt?: Date;
   completedAt?: Date;
@@ -148,8 +142,10 @@ const OrderSchema = new Schema<IOrder>(
     businessEarningsPaise: { type: Number, required: true },
     orderStatus: {
       type: String,
-      enum: ['PLACED', 'CONFIRMED', 'PREPARING', 'READY', 'SERVED', 'COMPLETED', 'CANCELLED', 'REFUNDED'],
+      // Stored values include the legacy CONFIRMED; the getter reads it as PREPARING (see utils/orderStatus).
+      enum: STORED_ORDER_STATUSES,
       default: 'PLACED',
+      get: normalizeOrderStatus,
       index: true
     },
     paymentStatus: {
@@ -180,13 +176,16 @@ const OrderSchema = new Schema<IOrder>(
     refundedAt: { type: Date },
     refundedByUserId: { type: Schema.Types.ObjectId, ref: 'User' }
   },
-  { timestamps: true }
+  // getters: true so the orderStatus getter also applies when an order is sent to a client.
+  { timestamps: true, toJSON: { getters: true }, toObject: { getters: true } }
 );
 
 // Indexes for fast multi-tenant order searching and filtering
 OrderSchema.index({ businessId: 1, orderId: 1 });
 OrderSchema.index({ businessId: 1, createdAt: -1 });
 OrderSchema.index({ businessId: 1, orderStatus: 1 });
+// The kitchen board's live list: this business's in-progress orders, oldest first, within the window.
+OrderSchema.index({ businessId: 1, orderStatus: 1, createdAt: 1 });
 OrderSchema.index({ businessId: 1, paymentStatus: 1 });
 OrderSchema.index({ businessId: 1, customerPhone: 1, createdAt: -1 });
 // Backs every "paid orders in [start, end)" aggregation for one business — owner analytics

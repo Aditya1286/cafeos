@@ -5,6 +5,7 @@ import { DemoSimState } from './models/DemoSimState';
 import { DemoOrderPlan } from './models/DemoOrderPlan';
 import { ownerEmailOf, stateKeyOf } from './provision';
 import { startOfLocalDay } from './clock';
+import { IN_PROGRESS_STORED_STATUSES } from '../utils/orderStatus';
 
 // What the demo cafés look like right now — for GET /api/v1/demo/status and the CLI.
 export const getDemoStatus = async (now: Date = new Date()) => {
@@ -28,7 +29,7 @@ export const getDemoStatus = async (now: Date = new Date()) => {
             }
           }
         ]),
-        Order.countDocuments({ businessId: business._id, orderStatus: { $in: ['PLACED', 'CONFIRMED', 'PREPARING', 'READY', 'SERVED'] } }),
+        Order.countDocuments({ businessId: business._id, orderStatus: { $in: [...IN_PROGRESS_STORED_STATUSES, 'SERVED'] } }),
         DemoOrderPlan.countDocuments({ businessId: business._id, done: false }),
         Order.countDocuments({ businessId: business._id })
       ]);

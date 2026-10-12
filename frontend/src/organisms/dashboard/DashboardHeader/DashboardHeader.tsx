@@ -26,7 +26,7 @@ export const DashboardHeader = ({
   };
 
   return (
-    <header className="bg-slate-950 text-white border-b border-slate-800 sticky top-0 z-40 shadow-xl">
+    <header className="bg-white text-slate-900 border-b border-slate-200 sticky top-0 z-40 shadow-sm">
       <div className="hidden lg:block">
         <DashboardHeaderDesktop {...viewProps} badgeFor={badgeFor} />
       </div>

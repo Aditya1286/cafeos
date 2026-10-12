@@ -122,7 +122,7 @@ const PayCommissionCard: React.FC<{
   return (
     <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
       <div className="flex items-center gap-2.5">
-        <div className="w-8 h-8 rounded-xl bg-orange-50 border border-orange-200 text-orange-600 flex items-center justify-center">
+        <div className="w-8 h-8 rounded-xl bg-brand-50 border border-brand-200 text-brand-600 flex items-center justify-center">
           <Wallet className="w-4 h-4" />
         </div>
         <div>
@@ -168,7 +168,7 @@ const PayCommissionCard: React.FC<{
             className="w-full max-w-sm bg-white rounded-3xl shadow-2xl border border-slate-200 p-6 space-y-4 text-center"
             onClick={(e) => e.stopPropagation()}
           >
-            <HelpCircle className="w-8 h-8 text-orange-500 mx-auto" />
+            <HelpCircle className="w-8 h-8 text-brand-500 mx-auto" />
             <div className="space-y-1">
               <h3 className="text-sm font-black text-slate-900">Confirm your payment</h3>
               <p className="text-[11px] text-slate-400 font-medium">
@@ -182,7 +182,7 @@ const PayCommissionCard: React.FC<{
               value={utr}
               onChange={(e) => setUtr(e.target.value)}
               placeholder="UPI reference number (optional — helps us find it faster)"
-              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 font-medium outline-none focus:border-orange-500 focus:bg-white focus:ring-2 focus:ring-orange-100 transition-all"
+              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 font-medium outline-none focus:border-brand-500 focus:bg-white focus:ring-2 focus:ring-brand-100 transition-all"
             />
 
             <div className="space-y-2 pt-1">
@@ -231,13 +231,13 @@ export const FinancialLedgerPanel = ({
       </div>
     ) : (
       <>
-        <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4 text-xs font-medium text-orange-800 flex items-start gap-2.5">
+        <div className="bg-brand-50 border border-brand-200 rounded-2xl p-4 text-xs font-medium text-brand-800 flex items-start gap-2.5">
           <Info className="w-4 h-4 shrink-0 mt-0.5" />
           <span>
             You pay a {remittanceSummary.commissionRatePercentage}% fee on completed orders,
             excluding GST. Commission accrues into {remittanceSummary.cycleDays}-day billing periods
             — settle each period with us by its due date. Full terms in the{' '}
-            <Link to="/terms" target="_blank" className="font-bold underline hover:text-orange-900">
+            <Link to="/terms" target="_blank" className="font-bold underline hover:text-brand-900">
               Merchant Terms of Service
             </Link>
             .

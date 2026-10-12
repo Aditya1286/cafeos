@@ -65,6 +65,7 @@ export const LoginIdentifierField = ({
         <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
         <input
           type="email"
+          data-mascot-field="identifier"
           required
           autoComplete="username"
           value={email}
@@ -78,6 +79,7 @@ export const LoginIdentifierField = ({
         <Phone className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
         <input
           type="tel"
+          data-mascot-field="identifier"
           required
           inputMode="tel"
           autoComplete="tel"

@@ -15,21 +15,21 @@ const comparisonFeatures: ComparisonFeature[] = [
   },
   {
     oldWay: 'Matching cash and payments by hand at the end of the day',
-    newWay: 'Sales and fees worked out for you, with a clear 3% fee',
+    newWay: 'Sales and payments worked out for you',
   },
   {
     oldWay: 'Guests waiting 10 minutes for printed paper menus',
-    newWay: 'Instant QR table ordering in under 45 seconds',
+    newWay: 'Guests scan the table QR and order from their own phone',
   },
   {
-    oldWay: 'Counting stock on spreadsheets, with no warning when it runs low',
-    newWay: 'Stock goes down on its own as orders are completed',
+    oldWay: 'Guessing which dishes make money and which only look busy',
+    newWay: 'See profit per dish and your repeat customers at a glance',
   },
 ];
 
 export const WhyChooseUs: React.FC = () => {
   return (
-    <section className="py-20 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto">
+    <section data-mascot-section="why" className="py-20 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto">
       {/* Section Title */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -54,7 +54,8 @@ export const WhyChooseUs: React.FC = () => {
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="bg-[#f4f6f9] p-7 sm:p-8 rounded-[28px] border border-slate-200/80 flex flex-col justify-between hover:shadow-md transition-shadow duration-300"
+          data-mascot-peek="why-old"
+          className="bg-[#f4f6f9] p-7 sm:p-8 rounded-[28px] border border-slate-200/80 flex flex-col justify-between relative z-10 hover:shadow-md transition-shadow duration-300"
         >
           <div>
             <div className="flex items-center gap-2.5 mb-6 pb-4 border-b border-slate-200/80 text-slate-700 font-bold text-sm sm:text-base">
@@ -82,7 +83,8 @@ export const WhyChooseUs: React.FC = () => {
           viewport={{ once: true }}
           transition={{ duration: 0.5, delay: 0.2 }}
           whileHover={{ y: -4 }}
-          className="bg-white p-7 sm:p-8 rounded-[28px] border-2 border-red-500 shadow-2xl shadow-red-500/15 flex flex-col justify-between relative overflow-hidden transition-all duration-300"
+          data-mascot-peek="why"
+          className="bg-white p-7 sm:p-8 rounded-[28px] border-2 border-red-500 shadow-2xl shadow-red-500/15 flex flex-col justify-between relative z-10 overflow-hidden transition-all duration-300"
         >
           {/* Subtle accent glow gradient */}
           <div className="absolute -top-24 -right-24 w-48 h-48 bg-red-500/5 rounded-full blur-3xl pointer-events-none" />

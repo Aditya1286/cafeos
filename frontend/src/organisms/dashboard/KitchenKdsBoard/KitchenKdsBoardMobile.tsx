@@ -5,17 +5,16 @@ import { KdsColumn } from './KdsColumn';
 import { KdsBoardViewProps, KdsStatus } from './types';
 
 // Short label for the status switcher — STATUS_CONFIG's own labels ("Ready to Serve")
-// are sized for a column header, not a 4-up segmented control on a phone.
+// are sized for a column header, not a 3-up segmented control on a phone.
 const MOBILE_STATUS_LABEL: Record<KdsStatus, string> = {
   PLACED: 'New',
-  CONFIRMED: 'Confirmed',
-  PREPARING: 'Cooking',
+  PREPARING: 'Preparing',
   READY: 'Ready',
 };
 
 const SWIPE_THRESHOLD_PX = 60;
 
-/** Mobile (below `sm`): one status at a time instead of 4 stacked full-height columns — pick a
+/** Mobile (below `sm`): one status at a time instead of 3 stacked full-height columns — pick a
  * status from the switcher, or swipe left/right to step through the queue. Orders render as
  * compact tickets so a rush still fits on a few screens. The column uses natural page height;
  * nested scroll areas are awkward to hit on a phone. */
@@ -40,7 +39,7 @@ export const KitchenKdsBoardMobile = (props: KdsBoardViewProps) => {
 
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-4 gap-1.5 p-1.5 bg-slate-100 rounded-2xl">
+      <div className="grid grid-cols-3 gap-1.5 p-1.5 bg-slate-100 rounded-2xl">
         {KDS_COLUMN_STATUSES.map((s, i) => {
           const sc = STATUS_CONFIG[s];
           const count = orders.filter((o) => o.orderStatus === s).length;

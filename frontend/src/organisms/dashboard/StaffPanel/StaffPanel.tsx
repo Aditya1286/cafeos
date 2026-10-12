@@ -4,6 +4,7 @@ import { StaffMember } from '@/services/dashboard/staff/types';
 import { StaffState } from '@/hooks/useStaff';
 import { StaffFormModal } from './StaffFormModal';
 import { ResetStaffPasswordModal } from './ResetStaffPasswordModal';
+import { FEES_AND_PAYMENTS_ENABLED } from '@/constants/features';
 
 // Which dialog is open. Kept here rather than in the page: it's pure UI state for this panel,
 // and every server change still goes through the useStaff hook passed in.
@@ -101,7 +102,7 @@ export const StaffPanel = ({ staffState }: { staffState: StaffState }) => {
     <div className="space-y-5">
       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-orange-50 text-orange-500 border border-orange-200 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-2xl bg-brand-50 text-brand-500 border border-brand-200 flex items-center justify-center">
             <Users className="w-5 h-5" />
           </div>
           <div>
@@ -119,10 +120,12 @@ export const StaffPanel = ({ staffState }: { staffState: StaffState }) => {
           disabled={atLimit}
           title={
             atLimit
-              ? 'Your plan’s staff limit is reached — deactivate someone or upgrade.'
+              ? FEES_AND_PAYMENTS_ENABLED
+                ? 'Your plan’s staff limit is reached — deactivate someone or upgrade.'
+                : 'Your plan’s staff limit is reached — deactivate someone first.'
               : undefined
           }
-          className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-extrabold text-xs disabled:opacity-40 transition-all shrink-0"
+          className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-extrabold text-xs disabled:opacity-40 transition-all shrink-0"
         >
           <Plus className="w-3.5 h-3.5" /> Add Staff
         </button>

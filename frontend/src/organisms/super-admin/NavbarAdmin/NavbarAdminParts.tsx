@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Calendar, ChevronDown, Check, Sun, Moon } from 'lucide-react';
+import { Calendar, ChevronDown, Check } from 'lucide-react';
+import { CaosLogo } from '@/molecules/CaosLogo';
 import { motion, AnimatePresence } from 'framer-motion';
 import { APP_NAME } from '@/constants/app';
 import { DATE_PRESETS } from './types';
@@ -9,13 +10,9 @@ import { DATE_PRESETS } from './types';
 /** `compact`: smaller mark and no tagline, for the single-row mobile bar. */
 export const AdminBrand = ({ compact = false }: { compact?: boolean }) => (
   <div className={`flex items-center min-w-0 ${compact ? 'gap-2.5' : 'gap-3'}`}>
-    <div
-      className={`bg-gradient-to-tr from-red-600 via-rose-500 to-amber-500 flex items-center justify-center text-white font-black shadow-lg shadow-red-500/20 shrink-0 ${
-        compact ? 'w-8 h-8 rounded-xl text-base' : 'w-10 h-10 rounded-2xl text-xl'
-      }`}
-    >
-      ☕
-    </div>
+    <CaosLogo
+      className={`shadow-lg shadow-red-500/20 ${compact ? 'w-8 h-8 rounded-xl' : 'w-10 h-10 rounded-2xl'}`}
+    />
     <div className="min-w-0">
       <div className="flex items-center gap-2 min-w-0">
         <span className="text-base font-black tracking-tight text-slate-900 truncate">
@@ -111,21 +108,7 @@ export const DateRangeMenu = ({
   );
 };
 
-/** Light/dark switch for the super admin dashboard (the theme itself: styles/superAdminDark.css). */
-export const ThemeToggle = ({ darkMode, onToggle }: { darkMode: boolean; onToggle: () => void }) => {
-  const label = darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode';
-  return (
-    <button
-      onClick={onToggle}
-      title={label}
-      aria-label={label}
-      aria-pressed={darkMode}
-      className="shrink-0 p-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors shadow-sm"
-    >
-      {darkMode ? <Sun className="w-4 h-4 text-amber-500" /> : <Moon className="w-4 h-4 text-slate-500" />}
-    </button>
-  );
-};
+export { ThemeToggle } from '@/molecules/ThemeToggle';
 
 export const UserInitial = ({ user }: { user?: any }) => (
   <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-red-500 to-rose-600 text-white font-black text-xs flex items-center justify-center shadow-sm shrink-0">

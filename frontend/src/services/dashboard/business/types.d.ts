@@ -7,6 +7,8 @@ export interface BusinessSettingsPayload {
   /** Master QR (general menu link) takes counter orders while tables are on. */
   masterQrEnabled?: boolean;
   taxRatePercentage?: number;
+  /** Seller GSTIN printed on invoices; an empty string clears it. */
+  gstin?: string;
 }
 
 export type UpdateSettingsResponse = ApiMessageResponse & { data?: Business };

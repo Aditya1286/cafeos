@@ -1,6 +1,9 @@
 import React from 'react';
-import { Coffee, Heart } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Heart } from 'lucide-react';
+import { CaosLogo } from '@/molecules/CaosLogo';
 import { APP_NAME } from '@/constants/app';
+import { DEMO_MENU_PATH } from '@/constants/demo';
 
 export const Footer: React.FC = () => {
   return (
@@ -8,14 +11,12 @@ export const Footer: React.FC = () => {
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
         <div>
           <div className="flex items-center gap-2 mb-3">
-            <div className="w-8 h-8 rounded-lg bg-red-600 text-white flex items-center justify-center font-bold shadow-md shadow-red-600/20">
-              <Coffee className="w-4 h-4" />
-            </div>
+            <CaosLogo className="w-8 h-8 rounded-lg shadow-md shadow-red-600/20" />
             <span className="text-lg font-black text-slate-900">{APP_NAME}</span>
           </div>
           <p className="text-xs text-slate-500 leading-relaxed mb-4">
             Simple ordering and billing for cafés and restaurants — QR menus, a live kitchen screen,
-            stock tracking, and clear fees.
+            and clear money tracking.
           </p>
         </div>
 
@@ -25,49 +26,46 @@ export const Footer: React.FC = () => {
           </h4>
           <ul className="space-y-2 text-xs">
             <li>
-              <a href="#features" className="hover:text-red-600 transition-colors">
+              <Link to="/#features" className="hover:text-red-600 transition-colors">
                 QR Ordering
-              </a>
+              </Link>
             </li>
             <li>
-              <a href="#features" className="hover:text-red-600 transition-colors">
+              <Link to="/#features" className="hover:text-red-600 transition-colors">
                 Live Kitchen Screen
-              </a>
+              </Link>
             </li>
             <li>
-              <a href="#features" className="hover:text-red-600 transition-colors">
-                Stock Tracking
-              </a>
+              <Link to="/#features" className="hover:text-red-600 transition-colors">
+                Refunds & Cancellations
+              </Link>
             </li>
             <li>
-              <a href="#features" className="hover:text-red-600 transition-colors">
-                Fees & Payments
-              </a>
+              <Link to="/#features" className="hover:text-red-600 transition-colors">
+                Payments & Sales
+              </Link>
             </li>
           </ul>
         </div>
 
         <div>
           <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900 mb-3">
-            Dashboards
+            Get started
           </h4>
           <ul className="space-y-2 text-xs">
             <li>
-              <a href="/admin" className="hover:text-red-600 transition-colors">
-                Admin Dashboard
+              <a href="/request-demo" className="hover:text-red-600 transition-colors">
+                Start your free trial
               </a>
             </li>
             <li>
-              <a href="/dashboard" className="hover:text-red-600 transition-colors">
-                Business Owner Dashboard
+              <a href="/login" className="hover:text-red-600 transition-colors">
+                Owner log in
               </a>
             </li>
             <li>
-              <a
-                href="/c/artisan-cafe/t/tok_artisan_tbl_01"
-                className="hover:text-red-600 transition-colors"
-              >
-                Customer Ordering (Demo)
+              <a href={DEMO_MENU_PATH} className="hover:text-red-600 transition-colors">
+                Try the guest experience
               </a>
             </li>
           </ul>
@@ -78,17 +76,15 @@ export const Footer: React.FC = () => {
             Pricing
           </h4>
           <p className="text-xs text-slate-500 leading-relaxed">
-            Plans from Free to ₹799/month, plus a 3% fee on each order — shown clearly in your
-            dashboard.
+            Plans from ₹999/month to ₹2,499/month. 2-week free trial.
           </p>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto pt-6 border-t border-slate-100 flex flex-col md:flex-row items-center justify-between text-xs text-slate-500">
-        <p>© 2026 {APP_NAME} SaaS Platform. Built for Production & High Concurrency.</p>
+        <p>© 2026 {APP_NAME}. Ordering and billing for cafés and restaurants.</p>
         <p className="flex items-center gap-1 mt-2 md:mt-0">
-          Crafted with <Heart className="w-3.5 h-3.5 text-red-600 fill-red-600" /> using pure MERN
-          Stack
+          Made with <Heart className="w-3.5 h-3.5 text-red-600 fill-red-600" /> for cafés
         </p>
       </div>
     </footer>

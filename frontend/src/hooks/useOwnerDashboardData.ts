@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import authService from '../services/auth';
 import ordersService from '../services/dashboard/orders';
+import { mergeOrders } from '../utils/kitchenOrders';
 import menuService from '../services/dashboard/menu';
 import tablesService from '../services/dashboard/tables';
 import inventoryService from '../services/dashboard/inventory';
@@ -53,6 +54,23 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
   const ordersRef = useRef<any[]>([]);
   ordersRef.current = orders;
 
+  /** The orders the dashboard shows: the newest few (history strip, payments) plus EVERY order still
+   * being worked on, so a long kitchen queue is never cut off at the newest 25. If the live list
+   * can't be read the recent list still loads, rather than a blank board. */
+  const fetchOrders = async (): Promise<any[]> => {
+    const [recent, live] = await Promise.all([
+      ordersService.list(),
+      ordersService.listActive().catch((err) => {
+        console.error('Failed to load the live kitchen orders:', err);
+        return null;
+      }),
+    ]);
+    if (live?.truncated) {
+      toast.error('Too many open orders to show them all. Showing the oldest ones.');
+    }
+    return mergeOrders<any>(recent.data || [], live?.data || []);
+  };
+
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
@@ -60,12 +78,12 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
       setBusiness(profileRes.data.business);
 
       if (options.kitchenOnly) {
-        const [ordersRes, tblRes] = await Promise.all([ordersService.list(), tablesService.list()]);
-        setOrders(ordersRes.data || []);
+        const [liveOrders, tblRes] = await Promise.all([fetchOrders(), tablesService.list()]);
+        setOrders(liveOrders);
         setTables(tblRes.data || []);
       } else {
-        const [ordersRes, catRes, prodRes, tblRes, invRes, analRes] = await Promise.all([
-          ordersService.list(),
+        const [liveOrders, catRes, prodRes, tblRes, invRes, analRes] = await Promise.all([
+          fetchOrders(),
           menuService.listCategories(),
           menuService.listProducts(),
           tablesService.list(),
@@ -73,7 +91,7 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
           analyticsService.getDashboard(),
         ]);
 
-        setOrders(ordersRes.data || []);
+        setOrders(liveOrders);
         setCategories(catRes.data || []);
         setProducts(prodRes.data || []);
         setTables(tblRes.data || []);
@@ -159,8 +177,7 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
     // ring for any new order that came in meanwhile, since the kitchen never heard it.
     const resyncAfterReconnect = async () => {
       try {
-        const ordersRes = await ordersService.list();
-        const fresh: any[] = ordersRes.data || [];
+        const fresh: any[] = await fetchOrders();
         const known = new Set(ordersRef.current.map((o) => o._id));
         const missed = fresh.filter((o) => !known.has(o._id) && o.orderStatus === 'PLACED');
         setOrders(fresh);
@@ -248,8 +265,8 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
     }
   };
 
-  // Bulk-accept (or any other bulk transition) for the "select all in New Orders, review,
-  // confirm" flow. Keeps going past individual order failures on the backend, so this reports
+  // Bulk-move for the "select orders in a column, review, confirm" flow (New -> Preparing,
+  // Preparing -> Ready, Ready -> Completed). Keeps going past individual order failures on the backend, so this reports
   // back exactly which orders updated and which didn't rather than an all-or-nothing result.
   const handleBulkUpdateOrderStatus = async (
     orderIds: string[],
@@ -270,7 +287,7 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
     );
 
     if (updated.length > 0)
-      toast.success(`${updated.length} order${updated.length === 1 ? '' : 's'} accepted`);
+      toast.success(`${updated.length} order${updated.length === 1 ? '' : 's'} updated`);
     if (failed.length > 0)
       toast.error(`${failed.length} order${failed.length === 1 ? '' : 's'} could not be updated`);
 
@@ -288,6 +305,22 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
       toast.error(err.message || 'Could not save UPI ID');
     } finally {
       setSavingUpiVpa(false);
+    }
+  };
+
+  const [savingGstin, setSavingGstin] = useState(false);
+  const handleSaveGstin = async (gstin: string): Promise<boolean> => {
+    setSavingGstin(true);
+    try {
+      await businessService.updateSettings({ gstin });
+      setBusiness((prev: any) => (prev ? { ...prev, gstin: gstin || undefined } : prev));
+      toast.success(gstin ? 'GSTIN saved' : 'GSTIN removed');
+      return true;
+    } catch (err: any) {
+      toast.error(err.message || 'Could not save GSTIN');
+      return false;
+    } finally {
+      setSavingGstin(false);
     }
   };
 
@@ -436,6 +469,8 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
     handleConfirmPayment,
     savingUpiVpa,
     handleSaveUpiVpa,
+    savingGstin,
+    handleSaveGstin,
     savingTaxRate,
     handleSaveTaxRate,
     savingTablesEnabled,

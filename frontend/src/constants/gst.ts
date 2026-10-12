@@ -10,3 +10,15 @@ export const GST_ENABLED_SLABS: { rate: number; hint: string }[] = [
 ];
 
 export const isGstSlab = (rate: number) => (GST_RATE_SLABS as readonly number[]).includes(rate);
+
+// GSTIN: 15 characters — 2-digit state code, 10-character PAN, entity number, the letter Z, and a
+// check character (e.g. 29ABCDE1234F1Z5). Mirrors backend/src/utils/gst.ts, which enforces it.
+export const GSTIN_PATTERN = /^\d{2}[A-Z]{5}\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
+
+export const normalizeGstin = (value: string) => value.trim().toUpperCase();
+
+/** Empty is valid (the field is optional); otherwise it must match the GSTIN pattern. */
+export const isValidGstinInput = (value: string) => {
+  const v = normalizeGstin(value);
+  return v === '' || GSTIN_PATTERN.test(v);
+};

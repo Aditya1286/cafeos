@@ -1,0 +1,202 @@
+/* Mascot styles. Every selector is under .caos-mascot* so nothing leaks to the rest of the app,
+   and this file is only imported by the lazily loaded mascot chunk (landing page only).
+
+   Layering: while gliding (data-mode=fixed) the host sits at z-index 20, above page cards. While
+   peeking (data-mode=doc) it drops to z-index 5, below the cards it pops up from: those carry
+   `relative z-10` and an opaque background, so they paint above it and hide its lower part. The
+   switch happens while the host is faded out. The sticky navbar (z-40) stays above everything.
+
+   Position is driven by flow.ts through inline `transform` plus these attributes on the host:
+     data-mode   fixed (gliding down the viewport) | doc (anchored to a card in the document)
+     data-phase  flow | out | rise | peek | sink | in
+     data-body   up | hidden | down   (where the body sits relative to the card it hides behind)
+     data-bx/by  which way the speech bubble opens */
+
+.caos-mascot {
+  --m-size: 280px;
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 20;
+  width: var(--m-size);
+  height: var(--m-size);
+  /* The overlay never intercepts the page: only the hide button opts back in. */
+  pointer-events: none;
+  opacity: 0;
+  will-change: transform;
+  transition: opacity 200ms ease;
+}
+.caos-mascot[data-mode='doc'] {
+  position: absolute;
+  z-index: 5;
+}
+.caos-mascot[data-visible='true'] {
+  opacity: 1;
+}
+.caos-mascot[data-phase='out'] {
+  opacity: 0;
+}
+
+.caos-mascot__body {
+  width: 100%;
+  height: 100%;
+  transform: translateY(0);
+}
+/* Rising from behind a card: starts hidden below the card's top edge, then springs up. */
+.caos-mascot[data-body='up'][data-phase='rise'] .caos-mascot__body {
+  transition: transform 650ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.caos-mascot[data-body='hidden'] .caos-mascot__body {
+  transform: translateY(82%);
+  transition: none;
+}
+.caos-mascot[data-body='down'] .caos-mascot__body {
+  transform: translateY(82%);
+  transition: transform 450ms cubic-bezier(0.55, 0, 0.9, 0.4);
+}
+.caos-mascot[data-phase='in'] .caos-mascot__body {
+  animation: caos-mascot-in 320ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.caos-mascot__stage {
+  width: 100%;
+  height: 100%;
+  /* A hairline light halo + soft shadow keep the black outline readable on dark sections. */
+  filter: drop-shadow(0 0 1px rgb(255 255 255 / 0.9)) drop-shadow(0 8px 10px rgb(0 0 0 / 0.22));
+}
+
+.caos-mascot__poster {
+  width: 100%;
+  height: 100%;
+  border-radius: 22%;
+  object-fit: cover;
+  user-select: none;
+  animation: caos-mascot-pop 650ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.caos-mascot__bubble {
+  position: absolute;
+  bottom: calc(100% - 6px);
+  left: 8px;
+  width: max-content;
+  max-width: min(250px, calc(100vw - 32px));
+  padding: 8px 12px;
+  border-radius: 14px;
+  background: #15110f;
+  color: #f6e7c8;
+  border: 1px solid rgb(255 255 255 / 0.18);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.3;
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.25);
+  opacity: 0;
+  transform: translateY(6px) scale(0.96);
+  transform-origin: bottom left;
+  transition:
+    opacity 180ms ease,
+    transform 220ms cubic-bezier(0.34, 1.4, 0.64, 1);
+  user-select: none;
+}
+.caos-mascot[data-bx='right'] .caos-mascot__bubble {
+  left: auto;
+  right: 8px;
+  transform-origin: bottom right;
+}
+.caos-mascot[data-by='below'] .caos-mascot__bubble {
+  bottom: auto;
+  top: calc(100% - 26px);
+}
+.caos-mascot__bubble[data-open='true'] {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.caos-mascot__hide {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 9999px;
+  border: 1px solid rgb(0 0 0 / 0.15);
+  background: rgb(255 255 255 / 0.92);
+  color: #15110f;
+  cursor: pointer;
+  pointer-events: auto;
+  opacity: 0.7;
+  transition: opacity 150ms ease;
+}
+.caos-mascot__hide:hover,
+.caos-mascot__hide:focus-visible {
+  opacity: 1;
+}
+.caos-mascot__hide:focus-visible,
+.caos-mascot__restore:focus-visible {
+  outline: 3px solid #dc2626;
+  outline-offset: 2px;
+}
+
+.caos-mascot__restore {
+  position: fixed;
+  right: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  z-index: 30;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 9999px;
+  border: 2px solid #fff;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 0.3);
+  cursor: pointer;
+  background: #dc2626;
+}
+.caos-mascot__restore img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+@keyframes caos-mascot-pop {
+  0% {
+    transform: scale(0.2) rotate(-8deg);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1) rotate(0);
+    opacity: 1;
+  }
+}
+@keyframes caos-mascot-in {
+  0% {
+    transform: scale(0.82);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Parked: the page has no area for the mascot to glide in (e.g. a desktop-only panel on a phone).
+   It stays invisible until it pops up from a card. */
+.caos-mascot[data-parked='true'][data-phase='flow'],
+.caos-mascot[data-parked='true'][data-phase='in'] {
+  opacity: 0;
+  visibility: hidden;
+}
+
+/* Reduced motion: flow.ts rests the mascot in one corner (no path, no peeking), so only the
+   transitions and the entrance are switched off here. */
+.caos-mascot[data-reduced='true'],
+.caos-mascot[data-reduced='true'] .caos-mascot__bubble,
+.caos-mascot[data-reduced='true'] .caos-mascot__hide {
+  transition: none;
+}
+.caos-mascot[data-reduced='true'] .caos-mascot__bubble {
+  transform: none;
+}
+.caos-mascot[data-reduced='true'] .caos-mascot__poster {
+  animation: none;
+}

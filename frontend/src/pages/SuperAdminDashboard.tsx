@@ -39,24 +39,17 @@ import { AdminRefundsPanel } from '@/organisms/super-admin/AdminRefundsPanel';
 import { SupportTicketsPanel } from '@/organisms/super-admin/SupportTicketsPanel';
 import { RefundHistoryModal } from '@/molecules/RefundHistoryModal';
 import { useSupportDesk } from '../hooks/useSupportDesk';
+import { useDemoRequests } from '../hooks/useDemoRequests';
+import { FEES_AND_PAYMENTS_ENABLED } from '@/constants/features';
+import { DemoRequestsPanel } from '@/organisms/super-admin/DemoRequestsPanel';
 import { useAdminRefunds } from '../hooks/useAdminRefunds';
-import '@/styles/superAdminDark.css';
-
-// The super admin's theme choice, remembered per browser. Storage can be unavailable (private
-// windows, blocked site data), so it's only ever a convenience: the page works without it.
-const DARK_MODE_KEY = `${APP_SLUG}_super_admin_dark_mode`;
-const readDarkMode = () => {
-  try {
-    return localStorage.getItem(DARK_MODE_KEY) === '1';
-  } catch {
-    return false;
-  }
-};
+import '@/styles/dashboardTheme.css';
+import { useDashboardDarkMode } from '../hooks/useDashboardDarkMode';
 
 export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
   const [activeTab, setActiveTab] = useState('overview');
   const [dateRange, setDateRange] = useState('today');
-  const [darkMode, setDarkMode] = useState(readDarkMode);
+  const { darkMode, toggleDarkMode } = useDashboardDarkMode();
   const [isCommandOpen, setIsCommandOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [selectedBusinessForModal, setSelectedBusinessForModal] = useState<any>(null);
@@ -68,19 +61,6 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
   useEffect(() => {
     document.documentElement.classList.remove('dark');
   }, []);
-
-  // Dark mode re-maps this dashboard's light classes (styles/superAdminDark.css). The class goes on
-  // <html> so portalled menus and modals follow it, and comes off when leaving the page.
-  useEffect(() => {
-    const root = document.documentElement;
-    root.classList.toggle('super-admin-dark', darkMode);
-    try {
-      localStorage.setItem(DARK_MODE_KEY, darkMode ? '1' : '0');
-    } catch {
-      // Not remembered this time; the toggle itself still works.
-    }
-    return () => root.classList.remove('super-admin-dark');
-  }, [darkMode]);
 
   const {
     overview,
@@ -99,6 +79,7 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
   const subscriptionRequestsQueue = useSubscriptionRequests(activeTab);
   const adminRefunds = useAdminRefunds(activeTab === 'refunds');
   const supportDesk = useSupportDesk(activeTab === 'support');
+  const demoRequests = useDemoRequests(activeTab === 'leads');
   const [refundHistoryOrder, setRefundHistoryOrder] = useState<any | null>(null);
 
   const handleExport = (format: 'csv' | 'pdf') => {
@@ -147,7 +128,7 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
   });
 
   return (
-    <div className="dashboard-compact-type min-h-screen flex flex-col bg-[#F8FAFC] text-slate-900 font-sans selection:bg-red-600 selection:text-white">
+    <div className="dashboard-compact-type min-h-screen flex flex-col bg-page text-slate-900 font-sans selection:bg-red-600 selection:text-white">
       <CommandPalette
         isOpen={isCommandOpen}
         onClose={() => setIsCommandOpen(false)}
@@ -184,7 +165,7 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
         dateRange={dateRange}
         onDateRangeChange={setDateRange}
         darkMode={darkMode}
-        onToggleDarkMode={() => setDarkMode(!darkMode)}
+        onToggleDarkMode={toggleDarkMode}
         onExport={handleExport}
         user={user}
         onLogout={() => {
@@ -198,6 +179,7 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
         }
         refundsNeededCount={adminRefunds.insights?.needsRefundCount}
         openTicketsCount={supportDesk.needsAttentionCount}
+        newDemoRequestsCount={demoRequests.newCount}
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-8 space-y-5 sm:space-y-8">
@@ -298,7 +280,7 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
           />
         )}
 
-        {activeTab === 'remittances' && (
+        {FEES_AND_PAYMENTS_ENABLED && activeTab === 'remittances' && (
           <RemittanceQueueTable
             remittanceView={remittanceQueue.remittanceView}
             onChangeView={remittanceQueue.setRemittanceView}
@@ -357,6 +339,24 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
           />
         )}
 
+        {activeTab === 'leads' && (
+          <DemoRequestsPanel
+            requests={demoRequests.requests}
+            loading={demoRequests.loading}
+            pagination={demoRequests.pagination}
+            onPageChange={(page) => demoRequests.setPagination((prev) => ({ ...prev, page }))}
+            onPageSizeChange={(limit) =>
+              demoRequests.setPagination((prev) => ({ ...prev, limit, page: 1 }))
+            }
+            searchQuery={demoRequests.searchQuery}
+            onSearchChange={demoRequests.setSearchQuery}
+            statusFilter={demoRequests.statusFilter}
+            onStatusFilterChange={demoRequests.setStatusFilter}
+            onRefresh={demoRequests.refresh}
+            onUpdate={demoRequests.updateRequest}
+          />
+        )}
+
         {activeTab === 'analytics' && (
           <PlatformAnalyticsPanel
             metrics={overview?.metrics ?? null}
@@ -374,15 +374,17 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
 
         {activeTab === 'plans' && (
           <div className="space-y-8">
-            <SubscriptionRequestsQueue
-              requestsView={subscriptionRequestsQueue.requestsView}
-              onChangeView={subscriptionRequestsQueue.setRequestsView}
-              pendingCount={subscriptionRequestsQueue.pendingSubscriptionRequestsCount}
-              requests={subscriptionRequestsQueue.subscriptionRequests}
-              loading={subscriptionRequestsQueue.loadingSubscriptionRequests}
-              onApprove={subscriptionRequestsQueue.handleApproveRequest}
-              onReject={subscriptionRequestsQueue.handleRejectRequest}
-            />
+            {FEES_AND_PAYMENTS_ENABLED && (
+              <SubscriptionRequestsQueue
+                requestsView={subscriptionRequestsQueue.requestsView}
+                onChangeView={subscriptionRequestsQueue.setRequestsView}
+                pendingCount={subscriptionRequestsQueue.pendingSubscriptionRequestsCount}
+                requests={subscriptionRequestsQueue.subscriptionRequests}
+                loading={subscriptionRequestsQueue.loadingSubscriptionRequests}
+                onApprove={subscriptionRequestsQueue.handleApproveRequest}
+                onReject={subscriptionRequestsQueue.handleRejectRequest}
+              />
+            )}
             <SubscriptionPlansPanel
               plans={overview?.plans ?? []}
               onPlansChanged={fetchDashboardData}

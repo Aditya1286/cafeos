@@ -20,3 +20,11 @@ export const isAcceptableGstRate = (rate: unknown, currentRate: number | undefin
   isValidGstRate(rate) || (typeof rate === 'number' && rate === currentRate);
 
 export const GST_RATE_ERROR_MESSAGE = `GST rate must be one of ${GST_RATE_SLABS.map((r) => `${r}%`).join(', ')} (0% turns GST off).`;
+
+// GSTIN: 15 characters — 2-digit state code, 10-character PAN, entity number, the letter Z, and a
+// check character (e.g. 29ABCDE1234F1Z5). Mirrored in frontend/src/constants/gst.ts.
+export const GSTIN_PATTERN = /^\d{2}[A-Z]{5}\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
+
+export const isValidGstin = (value: unknown): value is string => typeof value === 'string' && GSTIN_PATTERN.test(value);
+
+export const GSTIN_ERROR_MESSAGE = 'GSTIN must be 15 characters, e.g. 29ABCDE1234F1Z5.';

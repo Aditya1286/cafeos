@@ -1,9 +1,9 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
-// What the kitchen bot will do to one live demo order, and when: accept it, start cooking, mark it
+// What the kitchen bot will do to one live demo order, and when: start preparing it, mark it
 // ready, complete it — or have the customer cancel it. Each step is carried out through the
 // normal order API once its time has come (see ../live.ts).
-export type DemoPlanAction = 'CONFIRMED' | 'PREPARING' | 'READY' | 'COMPLETED' | 'CANCELLED' | 'CUSTOMER_CANCEL' | 'CUSTOMER_MARK_PAID';
+export type DemoPlanAction = 'PREPARING' | 'READY' | 'COMPLETED' | 'CANCELLED' | 'CUSTOMER_CANCEL' | 'CUSTOMER_MARK_PAID';
 
 export interface IDemoPlanStep {
   action: DemoPlanAction;

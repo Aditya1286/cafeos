@@ -47,7 +47,7 @@ const StatusBadges = ({ p }: { p: RemittancePeriod }) => {
       )}
       {p.status === 'UNPAID' && p.merchantMarkedPaidAt && (
         <span
-          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-50 text-orange-700 text-[9px] font-extrabold border border-orange-200 uppercase"
+          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-brand-50 text-brand-700 text-[9px] font-extrabold border border-brand-200 uppercase"
           title={p.merchantReportedUtr ? `UPI ref: ${p.merchantReportedUtr}` : undefined}
         >
           Business says paid · verify

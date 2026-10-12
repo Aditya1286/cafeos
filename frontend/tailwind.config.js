@@ -12,14 +12,26 @@ export default {
   theme: {
     extend: {
       colors: {
+        // The theme colour. Each shade reads a CSS variable (an "r g b" triplet set in index.css,
+        // red by default) so the whole app can be re-themed at runtime, e.g. per business, by
+        // overriding --brand-* on <html> (see utils/theme.ts). Use brand-* for anything that is
+        // "the accent colour"; keep red/rose/emerald/amber for meaning (errors, success, warnings).
         brand: {
-          50: '#f0fdf4',
-          100: '#dcfce7',
-          500: '#22c55e',
-          600: '#16a34a',
-          700: '#15803d',
-          900: '#14532d',
+          50: 'rgb(var(--brand-50) / <alpha-value>)',
+          100: 'rgb(var(--brand-100) / <alpha-value>)',
+          200: 'rgb(var(--brand-200) / <alpha-value>)',
+          300: 'rgb(var(--brand-300) / <alpha-value>)',
+          400: 'rgb(var(--brand-400) / <alpha-value>)',
+          500: 'rgb(var(--brand-500) / <alpha-value>)',
+          600: 'rgb(var(--brand-600) / <alpha-value>)',
+          700: 'rgb(var(--brand-700) / <alpha-value>)',
+          800: 'rgb(var(--brand-800) / <alpha-value>)',
+          900: 'rgb(var(--brand-900) / <alpha-value>)',
+          950: 'rgb(var(--brand-950) / <alpha-value>)',
         },
+        // The dashboards' page background: white by default, a soft charcoal in dark mode (a variable,
+        // set in index.css / styles/dashboardTheme.css, so the two modes share one class).
+        page: 'rgb(var(--page-bg) / <alpha-value>)',
         cafe: {
           50: '#fdf8f6',
           100: '#f2e8e5',

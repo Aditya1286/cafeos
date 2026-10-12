@@ -1,53 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import {
-  Coffee,
-  Shield,
-  UtensilsCrossed,
-  ArrowRight,
-  Lock,
-  Eye,
-  EyeOff,
-  CheckCircle2,
-  Sparkles,
-  Zap,
-  Layers,
-  UserCheck,
-} from 'lucide-react';
+import { Coffee, ArrowRight, Lock, Eye, EyeOff, CheckCircle2, Sparkles, Zap } from 'lucide-react';
+import { CaosLogo } from '@/molecules/CaosLogo';
 import { setAuthToken } from '../services/api';
 import authService from '../services/auth';
-import { APP_NAME, APP_SLUG } from '../constants/app';
+import { APP_NAME } from '../constants/app';
+import { DEMO_CAFE, DEMO_PATH } from '../constants/demo';
 import { LoginIdentifierField, LoginMethod } from '@/molecules/LoginIdentifierField';
+import { LoginShowcase } from '@/organisms/auth/LoginShowcase';
+import { PageMascot } from '@/mascot/PageMascot';
 
 interface LoginPageProps {
   onLoginSuccess: (userData: any) => void;
 }
 
-const carouselSlides = [
-  {
-    image: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=1400&q=80',
-    tag: 'KITCHEN',
-    title: 'Orders Go Straight to the Kitchen.',
-    subtitle:
-      'Every order shows up on your kitchen screen the moment it’s placed — no paper slips, no shouting.',
-  },
-  {
-    image: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=1400&q=80',
-    tag: 'QR ORDERING',
-    title: 'Customers Order From Their Phone.',
-    subtitle: 'They scan the QR code on the table, pick their food, and pay — no app to download.',
-  },
-  {
-    image: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=1400&q=80',
-    tag: 'MONEY',
-    title: 'Know Where Your Money Goes.',
-    subtitle: 'See your sales, our fees and your stock in one place — all worked out for you.',
-  },
-];
-
 export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   const navigate = useNavigate();
-  const [currentSlide, setCurrentSlide] = useState(0);
   const [loginMethod, setLoginMethod] = useState<LoginMethod>('email');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -56,14 +24,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Auto-advance carousel
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % carouselSlides.length);
-    }, 6000);
-    return () => clearInterval(timer);
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -115,108 +75,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-900 flex font-sans selection:bg-red-600 selection:text-white">
-      {/* ========================================================================= */}
-      {/* LEFT COLUMN: CRISP HIGH-DEF CAROUSEL & FLOATING STATS OVERLAY (UNBLURRED) */}
-      {/* ========================================================================= */}
-      <div className="hidden lg:flex lg:w-[54%] relative flex-col justify-between p-12 overflow-hidden bg-slate-950">
-        {/* Crisp Unblurred Slides */}
-        {carouselSlides.map((slide, idx) => (
-          <div
-            key={idx}
-            className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
-              currentSlide === idx ? 'opacity-100' : 'opacity-0 pointer-events-none'
-            }`}
-          >
-            <img
-              src={slide.image}
-              alt={slide.title}
-              className="w-full h-full object-cover object-center filter-none scale-100 transition-transform duration-10000"
-            />
-            {/* Multi-stage subtle dark gradient overlay for typography readability */}
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-slate-950/30" />
-          </div>
-        ))}
-
-        {/* Top Header & Platform Operational Badge */}
-        <div className="relative z-10 flex items-center justify-between">
-          <Link to="/" className="inline-flex items-center gap-3 group">
-            <div className="w-11 h-11 rounded-2xl bg-red-600 flex items-center justify-center shadow-xl shadow-red-600/40 group-hover:scale-105 transition-transform duration-300">
-              <Coffee className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-2xl font-black tracking-tight text-white">{APP_NAME}</span>
-                <span className="text-[10px] font-mono px-2 py-0.5 bg-red-600/30 text-red-300 rounded-full border border-red-500/30 font-bold">
-                  LIVE
-                </span>
-              </div>
-              <span className="text-xs text-slate-300 font-semibold block">
-                Ordering & billing for cafés
-              </span>
-            </div>
-          </Link>
-
-          <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900/80 backdrop-blur-md border border-white/10 text-white text-xs font-semibold">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>All systems working</span>
-          </div>
-        </div>
-
-        {/* Bottom Floating Feature Banner & Slide Control */}
-        <div className="relative z-10 space-y-6 max-w-xl">
-          {/* Glass Stats Badge */}
-          <div className="grid grid-cols-3 gap-3 p-4 rounded-2xl bg-slate-900/80 backdrop-blur-md border border-white/10 text-white">
-            <div className="text-left space-y-0.5">
-              <div className="text-[10px] font-bold uppercase text-slate-400 tracking-wider flex items-center gap-1">
-                <Zap className="w-3 h-3 text-red-500" /> Orders reach kitchen
-              </div>
-              <div className="text-base font-black text-white">Instantly</div>
-            </div>
-            <div className="text-left space-y-0.5 border-x border-white/10 px-3">
-              <div className="text-[10px] font-bold uppercase text-slate-400 tracking-wider flex items-center gap-1">
-                <Shield className="w-3 h-3 text-emerald-400" /> Works on
-              </div>
-              <div className="text-base font-black text-white">Any phone</div>
-            </div>
-            <div className="text-left space-y-0.5 pl-1">
-              <div className="text-[10px] font-bold uppercase text-slate-400 tracking-wider flex items-center gap-1">
-                <Layers className="w-3 h-3 text-amber-400" /> Used by
-              </div>
-              <div className="text-base font-black text-white">500+ Businesses</div>
-            </div>
-          </div>
-
-          {/* Slide Text Content */}
-          <div className="space-y-2 text-left">
-            <span className="text-[11px] font-mono font-extrabold uppercase tracking-widest text-red-400 bg-red-950/60 border border-red-800/50 px-2.5 py-1 rounded-md inline-block">
-              {carouselSlides[currentSlide].tag}
-            </span>
-            <h2 className="text-3xl lg:text-4xl font-black text-white leading-tight drop-shadow-md">
-              {carouselSlides[currentSlide].title}
-            </h2>
-            <p className="text-slate-300 text-sm leading-relaxed font-medium drop-shadow-sm">
-              {carouselSlides[currentSlide].subtitle}
-            </p>
-          </div>
-
-          {/* Interactive Slide Controls */}
-          <div className="flex items-center gap-3 pt-2">
-            {carouselSlides.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => setCurrentSlide(idx)}
-                aria-label={`Go to slide ${idx + 1}`}
-                className={`h-2 rounded-full transition-all duration-500 ${
-                  currentSlide === idx
-                    ? 'w-10 bg-red-600 shadow-lg shadow-red-600/60'
-                    : 'w-3 bg-white/30 hover:bg-white/60'
-                }`}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
+    <div
+      data-mascot-section="login"
+      className="min-h-screen bg-slate-100 text-slate-900 flex font-sans selection:bg-red-600 selection:text-white"
+    >
+      {/* LEFT: the product on a branded backdrop (also the mascot's glide area) */}
+      <LoginShowcase />
 
       {/* ========================================================================= */}
       {/* RIGHT COLUMN: HIGHLY PROFESSIONAL LIGHT THEME FORM CONTAINER             */}
@@ -225,14 +89,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
         {/* Top Header Mobile Brand */}
         <div className="flex justify-between items-center lg:hidden mb-6">
           <Link to="/" className="inline-flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-red-600 text-white flex items-center justify-center font-bold shadow-md shadow-red-600/30">
-              <Coffee className="w-5 h-5" />
-            </div>
+            <CaosLogo className="w-10 h-10 rounded-xl shadow-md shadow-red-600/30" />
             <span className="text-xl font-black text-slate-900">{APP_NAME}</span>
-          </Link>
-
-          <Link to="/register" className="text-xs font-bold text-red-600 hover:text-red-700">
-            Create Account →
           </Link>
         </div>
 
@@ -248,110 +106,57 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
               Sign In to {APP_NAME}
             </h1>
             <p className="text-xs sm:text-sm text-slate-600 font-medium">
-              Sign in with your email or phone number and password, or try a demo account below.
+              Sign in with your email or phone number and password, or look around the demo café
+              below.
             </p>
           </div>
 
-          {/* Segmented Control Switcher (Sign In vs Register) */}
-          <div className="grid grid-cols-2 p-1 bg-slate-200/70 rounded-2xl border border-slate-300/60 font-bold text-xs">
-            <button
-              type="button"
-              className="py-2.5 rounded-xl bg-white text-slate-900 shadow-sm border border-slate-200/80 flex items-center justify-center gap-2 transition-all"
-            >
-              <UserCheck className="w-4 h-4 text-red-600" /> Sign In
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/register')}
-              className="py-2.5 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100/50 flex items-center justify-center gap-2 transition-all"
-            >
-              Create Account
-            </button>
-          </div>
-
-          {/* 1-Click Instant Demo Login Selector */}
-          <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-sm space-y-2.5 text-left">
+          {/* One-click login for the seeded demo café */}
+          <div
+            data-mascot-obstacle
+            className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-sm space-y-2.5 text-left"
+          >
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" /> 1-Click Instant Demo
-                Profiles
+                <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" /> Try the demo café
               </span>
               <span className="text-[10px] text-slate-400 font-medium">No password needed</span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              <button
-                onClick={() => handleDemoLogin('owner@artisan.com')}
-                type="button"
-                className="py-2.5 px-2.5 rounded-xl bg-red-50/80 hover:bg-red-100 border border-red-200 text-red-900 font-bold text-xs flex items-center justify-between group transition-all"
-              >
-                <div className="flex items-center gap-1.5 overflow-hidden">
-                  <div className="w-6 h-6 rounded-lg bg-red-600 text-white flex-shrink-0 flex items-center justify-center">
-                    <UtensilsCrossed className="w-3 h-3" />
-                  </div>
-                  <div className="text-left truncate">
-                    <div className="text-[10px] font-extrabold leading-tight text-slate-900 truncate">
-                      Business #1 (Artisan)
-                    </div>
-                    <div className="text-[8px] text-slate-500 font-mono truncate">
-                      owner@artisan.com
-                    </div>
-                  </div>
+            <button
+              onClick={() => handleDemoLogin(DEMO_CAFE.ownerEmail)}
+              data-mascot-field="demo"
+              type="button"
+              className="w-full py-2.5 px-3 rounded-xl bg-amber-50/80 hover:bg-amber-100 border border-amber-200 text-amber-900 font-bold text-xs flex items-center gap-2 transition-all"
+            >
+              <div className="w-7 h-7 rounded-lg bg-amber-600 text-white flex-shrink-0 flex items-center justify-center">
+                <Coffee className="w-3.5 h-3.5" />
+              </div>
+              <div className="text-left truncate">
+                <div className="text-[11px] font-extrabold leading-tight text-slate-900 truncate">
+                  {DEMO_CAFE.name}
                 </div>
-              </button>
-
-              <button
-                onClick={() => handleDemoLogin('owner@beanandbutter.com')}
-                type="button"
-                className="py-2.5 px-2.5 rounded-xl bg-amber-50/80 hover:bg-amber-100 border border-amber-200 text-amber-900 font-bold text-xs flex items-center justify-between group transition-all"
-              >
-                <div className="flex items-center gap-1.5 overflow-hidden">
-                  <div className="w-6 h-6 rounded-lg bg-amber-600 text-white flex-shrink-0 flex items-center justify-center">
-                    <Coffee className="w-3 h-3" />
-                  </div>
-                  <div className="text-left truncate">
-                    <div className="text-[10px] font-extrabold leading-tight text-slate-900 truncate">
-                      Business #2 (Bakery)
-                    </div>
-                    <div className="text-[8px] text-slate-500 font-mono truncate">
-                      owner@beanandbutter.com
-                    </div>
-                  </div>
+                <div className="text-[9px] text-slate-500 font-medium truncate">
+                  Open the owner dashboard of the demo café
                 </div>
-              </button>
-
-              <button
-                onClick={() => handleDemoLogin(`admin@${APP_SLUG}.com`)}
-                type="button"
-                className="py-2.5 px-2.5 rounded-xl bg-slate-100 hover:bg-slate-200/80 border border-slate-200 text-slate-900 font-bold text-xs flex items-center justify-between group transition-all"
-              >
-                <div className="flex items-center gap-1.5 overflow-hidden">
-                  <div className="w-6 h-6 rounded-lg bg-slate-900 text-white flex-shrink-0 flex items-center justify-center">
-                    <Shield className="w-3 h-3" />
-                  </div>
-                  <div className="text-left truncate">
-                    <div className="text-[10px] font-extrabold leading-tight text-slate-900 truncate">
-                      Super Admin
-                    </div>
-                    <div className="text-[8px] text-slate-500 font-mono truncate">
-                      admin@{APP_SLUG}.com
-                    </div>
-                  </div>
-                </div>
-              </button>
-            </div>
+              </div>
+            </button>
           </div>
 
-          {/* Form Separator */}
-          <div className="relative flex items-center justify-center my-2">
-            <div className="border-t border-slate-300/80 w-full" />
-            <span className="bg-slate-50 px-3 text-[11px] font-extrabold uppercase text-slate-400 tracking-wider font-mono absolute">
+          {/* Form Separator: text first, line after, so the right end of the card below stays free
+              (the mascot pops up there). */}
+          <div className="flex items-center gap-3 py-2">
+            <span className="text-[11px] font-extrabold uppercase text-slate-400 tracking-wider font-mono whitespace-nowrap">
               or sign in with email
             </span>
+            <div className="border-t border-slate-300/80 flex-1" />
           </div>
 
           {/* Modern Elevated White Form Card */}
-          <div className="bg-white p-7 rounded-3xl border border-slate-200/90 shadow-xl shadow-slate-200/50 space-y-5">
+          <div
+            data-mascot-peek="login-form"
+            className="relative z-10 bg-white p-7 rounded-3xl border border-slate-200/90 shadow-xl shadow-slate-200/50 space-y-5"
+          >
             {error && (
               <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-800 text-xs font-semibold flex items-center gap-2 text-left">
                 <span className="w-2 h-2 rounded-full bg-red-600 flex-shrink-0" />
@@ -388,6 +193,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                   <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
                     type={showPassword ? 'text' : 'password'}
+                    data-mascot-field="password"
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -422,6 +228,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
               {/* Primary Call to Action Button */}
               <button
                 type="submit"
+                data-mascot-field="submit"
                 disabled={loading}
                 className="w-full py-3.5 rounded-xl bg-red-600 hover:bg-red-700 active:scale-[0.99] text-white font-extrabold text-xs shadow-lg shadow-red-600/30 flex items-center justify-center gap-2 transition-all disabled:opacity-50 mt-2"
               >
@@ -439,9 +246,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
             </form>
 
             <div className="text-center text-xs text-slate-600 font-medium pt-3 border-t border-slate-100">
-              Don't have a business account yet?{' '}
-              <Link to="/register" className="text-red-600 font-extrabold hover:underline">
-                Create Free Trial Account
+              New to {APP_NAME}?{' '}
+              <Link to={DEMO_PATH} className="text-red-600 font-extrabold hover:underline">
+                Start your free trial
               </Link>
             </div>
           </div>
@@ -458,9 +265,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
         {/* Footer */}
         <div className="text-center text-[11px] text-slate-500 font-medium pt-6 border-t border-slate-200/80 mt-6">
-          © 2026 {APP_NAME} SaaS Platform Inc. • Empowering 500+ Hospitality Businesses Globally
+          © 2026 {APP_NAME}. Ordering and billing for cafés and restaurants.
         </div>
       </div>
+
+      <PageMascot page="login" />
     </div>
   );
 };

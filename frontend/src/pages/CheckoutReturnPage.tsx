@@ -180,7 +180,7 @@ export const CheckoutReturnPage: React.FC = () => {
 
   if (notFound) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 font-sans">
+      <div className="min-h-screen bg-page flex items-center justify-center p-6 font-sans">
         <div className="bg-white rounded-3xl border border-slate-200 p-6 text-center space-y-3 max-w-sm w-full">
           <XCircle className="w-8 h-8 text-rose-500 mx-auto" />
           <p className="text-sm font-black text-slate-900">We couldn't find this payment</p>
@@ -197,7 +197,7 @@ export const CheckoutReturnPage: React.FC = () => {
 
   if (!session) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center font-sans">
+      <div className="min-h-screen bg-page flex items-center justify-center font-sans">
         <div className="text-center space-y-2">
           <Coffee className="w-8 h-8 text-orange-500 animate-bounce mx-auto" />
           <p className="text-xs text-slate-400 font-bold">Checking your payment…</p>
@@ -213,7 +213,7 @@ export const CheckoutReturnPage: React.FC = () => {
   const busy = busyAction !== null;
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 p-4 max-w-md mx-auto border-x border-slate-200 font-sans pb-12">
+    <div className="min-h-screen bg-page text-slate-900 p-4 max-w-md mx-auto border-x border-slate-200 font-sans pb-12">
       <div className="flex items-center justify-between pb-4 border-b border-slate-200 mb-6 bg-white -mx-4 px-4 pt-2">
         <Link
           to={`/c/${slug}`}

@@ -56,7 +56,7 @@ export const OrderDetailsDrawer = ({
                 <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider block">
                   Order Details
                 </span>
-                <div className="text-lg font-black text-orange-600 font-mono flex items-center gap-2">
+                <div className="text-lg font-black text-brand-600 font-mono flex items-center gap-2">
                   <span>{order.orderId || order.orderNumber}</span>
                   <span
                     className={`px-2.5 py-0.5 rounded-full text-[10px] font-black border ${
@@ -126,7 +126,7 @@ export const OrderDetailsDrawer = ({
                     <div key={i} className="p-3.5 flex items-center justify-between text-xs">
                       <div>
                         <div className="font-extrabold text-slate-900">
-                          <span className="text-orange-600">{it.quantity}×</span> {it.name}
+                          <span className="text-brand-600">{it.quantity}×</span> {it.name}
                         </div>
                         {it.variantName && (
                           <div className="text-[10px] font-medium text-slate-400">
@@ -243,7 +243,7 @@ export const OrderDetailsDrawer = ({
                   onClose();
                   onViewBill(idToUse);
                 }}
-                className="w-full py-3 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-black text-xs transition-all shadow-md shadow-orange-500/20 flex items-center justify-center gap-2"
+                className="w-full py-3 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-black text-xs transition-all shadow-md shadow-brand-500/20 flex items-center justify-center gap-2"
               >
                 <FileText className="w-4 h-4" />
                 <span>View & Print Bill</span>
