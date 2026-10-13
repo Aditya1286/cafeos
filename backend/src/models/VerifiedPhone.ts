@@ -8,7 +8,10 @@ import mongoose, { Schema, Document } from 'mongoose';
 // - REGISTRATION: short-lived, single-use — gates owner account registration.
 // - ACCOUNT: short-lived, single-use, and always from a fresh OTP — gates sensitive account
 //   actions (password reset, email change) that prove control of the business phone number.
-export type VerifiedPhonePurpose = 'ORDER' | 'REGISTRATION' | 'ACCOUNT';
+// - RECOVERY: short-lived, always from a fresh OTP — lets a customer who lost their tracking link
+//   prove the number and get that number's recent orders back. Never satisfied by ORDER (which is
+//   keyed by phone alone and lasts two weeks: knowing a number would otherwise be enough).
+export type VerifiedPhonePurpose = 'ORDER' | 'REGISTRATION' | 'ACCOUNT' | 'RECOVERY';
 
 export interface IVerifiedPhone extends Document {
   _id: mongoose.Types.ObjectId;
@@ -22,7 +25,7 @@ export interface IVerifiedPhone extends Document {
 const VerifiedPhoneSchema = new Schema<IVerifiedPhone>(
   {
     mobile: { type: String, required: true },
-    purpose: { type: String, enum: ['ORDER', 'REGISTRATION', 'ACCOUNT'], required: true },
+    purpose: { type: String, enum: ['ORDER', 'REGISTRATION', 'ACCOUNT', 'RECOVERY'], required: true },
     expiresAt: { type: Date, required: true }
   },
   { timestamps: true }

@@ -22,7 +22,7 @@ import { OrderHistoryPanel } from '@/organisms/dashboard/OrderHistoryPanel';
 import { DigitalMenuPanel } from '@/organisms/dashboard/DigitalMenuPanel';
 import { TablesQrPanel } from '@/organisms/dashboard/TablesQrPanel';
 import { InventoryPanel } from '@/organisms/dashboard/InventoryPanel';
-import { AnalyticsPanel } from '@/organisms/dashboard/AnalyticsPanel';
+import { AnalyticsScreen } from '@/organisms/dashboard/AnalyticsScreen';
 import { FinancialLedgerPanel } from '@/organisms/dashboard/FinancialLedgerPanel';
 import { SettingsPanel } from '@/organisms/dashboard/SettingsPanel';
 import { readFileAsDataUrl } from '@/utils/readFileAsDataUrl';
@@ -58,6 +58,8 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
   // What's actually shown (see resolveVisibleTab): everything below — which panel renders and which
   // per-tab data gets fetched — keys off this, never raw `activeTab`.
   const visibleTab = resolveVisibleTab(user?.role, activeTab);
+  // The analytics tab fits the screen exactly (no page scroll): the page becomes a fixed-height column.
+  const fitScreen = visibleTab === 'analytics';
   const [copiedUrl, setCopiedUrl] = useState(false);
   const { darkMode, toggleDarkMode } = useDashboardDarkMode();
 
@@ -434,7 +436,11 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
   };
 
   return (
-    <div className="dashboard-compact-type min-h-screen bg-page font-sans text-slate-900 selection:bg-brand-500 selection:text-white pb-12">
+    <div
+      className={`dashboard-compact-type bg-page font-sans text-slate-900 selection:bg-brand-500 selection:text-white ${
+        fitScreen ? 'flex h-dvh flex-col overflow-hidden' : 'min-h-screen pb-12'
+      }`}
+    >
       <DashboardHeader
         user={headerUser}
         business={business}
@@ -454,9 +460,16 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
         onToggleDarkMode={toggleDarkMode}
       />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-7 sm:py-7 space-y-7">
-        {/* Sales/occupancy numbers are the owner's business, not the kitchen's. */}
-        {!isStaff && (
+      <main
+        className={
+          fitScreen
+            ? 'mx-auto min-h-0 w-full max-w-7xl flex-1 px-3 py-3 sm:px-6 lg:px-8'
+            : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-7 sm:py-7 space-y-7'
+        }
+      >
+        {/* Sales/occupancy numbers are the owner's business, not the kitchen's. The analytics screen
+            has its own headline numbers and uses the whole height, so they sit this tab out. */}
+        {!isStaff && !fitScreen && (
           <KpiStatsGrid
             activeOrdersCount={activeOrders.length}
             occupiedTables={occupiedTables}
@@ -540,7 +553,9 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
           />
         )}
 
-        {visibleTab === 'analytics' && <AnalyticsPanel analytics={analytics} />}
+        {visibleTab === 'analytics' && (
+          <AnalyticsScreen businessId={String(business?._id ?? '')} categories={categories} />
+        )}
 
         {FEES_AND_PAYMENTS_ENABLED && visibleTab === 'ledger' && (
           <FinancialLedgerPanel

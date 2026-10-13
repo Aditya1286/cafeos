@@ -5,6 +5,8 @@ import {
   CreateOrderResponse,
   GetOrderResponse,
   MarkPaidResponse,
+  RecoverOrdersPayload,
+  RecoverOrdersResponse,
   RequestRefundResponse,
 } from './types';
 
@@ -22,3 +24,7 @@ export const markPaid = (orderId: string): Promise<MarkPaidResponse> =>
 
 export const cancel = (orderId: string): Promise<CancelOrderResponse> =>
   apiRequest(`/public/orders/${orderId}/cancel`, 'PUT');
+
+/** "Find my order": the phone must have just passed a fresh OTP with purpose 'RECOVERY'. */
+export const recover = (payload: RecoverOrdersPayload): Promise<RecoverOrdersResponse> =>
+  apiRequest('/public/orders/recover', 'POST', payload);

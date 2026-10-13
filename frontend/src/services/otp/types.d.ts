@@ -13,4 +13,5 @@ export interface OtpActionResponse {
 }
 
 // DEFAULT: ordering / registration. ACCOUNT: a fresh OTP for a sensitive account action.
-export type OtpPurpose = 'DEFAULT' | 'ACCOUNT';
+// RECOVERY: a fresh OTP to find a lost order (never satisfied by an earlier ordering verification).
+export type OtpPurpose = 'DEFAULT' | 'ACCOUNT' | 'RECOVERY';

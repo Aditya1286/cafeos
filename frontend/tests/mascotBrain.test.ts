@@ -1,6 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { MascotBrain } from '../src/mascot/brain';
-import { LANDING_CONFIG, LOGIN_CONFIG, TIMING, validateConfig } from '../src/mascot/config';
+import {
+  LANDING_CONFIG,
+  LOGIN_CONFIG,
+  ORDER_CONFIG,
+  TIMING,
+  validateConfig,
+} from '../src/mascot/config';
 import type { MascotConfig } from '../src/mascot/types';
 
 const make = (config: MascotConfig = LANDING_CONFIG) => new MascotBrain(config);
@@ -162,7 +168,11 @@ describe('mascot brain: hover, focus and priority', () => {
       ],
       peeks: [],
       targets: [
-        { targetId: 't', selector: '#t', hover: { expression: 'curious', message: { id: 't', text: 'T' } } },
+        {
+          targetId: 't',
+          selector: '#t',
+          hover: { expression: 'curious', message: { id: 't', text: 'T' } },
+        },
       ],
     };
     const brain = make(cfg);
@@ -316,6 +326,50 @@ describe('mascot brain: login page', () => {
     brain.hoverTarget('login-demo');
     brain.focusTarget('login-password');
     expect(brain.getState().expression).toBe('shy');
+  });
+});
+
+describe('mascot brain: order signals', () => {
+  const order = () => new MascotBrain(ORDER_CONFIG);
+
+  it('speaks when the order status changes, and again when it drifts into a long wait', () => {
+    const brain = order();
+    brain.setSignal('placed');
+    expect(brain.getState().message?.id).toBe('order.placed');
+    brain.setSignal('wait-long');
+    expect(brain.getState().message?.id).toBe('order.wait-long');
+    expect(brain.getState().expression).toBe('confident');
+    brain.setSignal('wait-longer');
+    expect(brain.getState().message?.id).toBe('order.wait-longer');
+  });
+
+  it('setting the signal it already has does not repeat it', () => {
+    const brain = order();
+    brain.setSignal('ready');
+    const first = brain.getState();
+    brain.setSignal('ready');
+    expect(brain.getState()).toBe(first);
+  });
+
+  it('a status message stays until the status changes (it is a caption, not a toast)', () => {
+    const brain = order();
+    brain.setSignal('wait-long');
+    vi.advanceTimersByTime(10 * 60_000);
+    expect(brain.getState().message?.id).toBe('order.wait-long');
+    expect(vi.getTimerCount()).toBe(0); // an unbounded message sets no expiry timer
+    brain.setSignal('ready');
+    expect(brain.getState().message?.id).toBe('order.ready');
+  });
+
+  it('a signal can repeat after something else, and ignores unknown keys and clearing', () => {
+    const brain = order();
+    brain.setSignal('placed');
+    brain.setSignal('preparing');
+    brain.setSignal('placed');
+    expect(brain.getState().message?.id).toBe('order.placed');
+    expect(brain.setSignal('nonsense')).toBe(false);
+    brain.setSignal(null);
+    expect(brain.getState().expression).toBe('idle');
   });
 });
 

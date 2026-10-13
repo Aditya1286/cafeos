@@ -6,7 +6,7 @@ import request from 'supertest';
 import { startHarness, businessIdFor, firstProductIdFor, Harness } from './helpers';
 import { VerifiedPhone } from '../src/models/VerifiedPhone';
 import { Table } from '../src/models/Table';
-import { verifyWidgetAccessToken } from '../src/services/otp.service';
+import { verifyWidgetAccessToken, sendOtp, verifyOtp } from '../src/services/otp.service';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 let h: Harness;
@@ -194,4 +194,48 @@ test('a live widget token only proves an account verification for the number it 
   } finally {
     globalThis.fetch = realFetch;
   }
+});
+
+// ── Order recovery ("find my order") ────────────────────────────────────────
+
+// Same standard as an account action: what comes back is a person's orders, so a genuine MSG91
+// token for somebody else's phone must not unlock them.
+test('a live widget token only proves a recovery verification for the number it mentions', async () => {
+  const realFetch = globalThis.fetch;
+  const msg91Says = (body: unknown) => {
+    globalThis.fetch = (async () => new Response(JSON.stringify(body), { status: 200 })) as typeof fetch;
+  };
+  try {
+    msg91Says({ type: 'success', message: '919999900000' });
+    const foreign = await verifyWidgetAccessToken('9812340006', 'opaque-token', 'RECOVERY');
+    assert.equal(foreign.success, false);
+    assert.equal(foreign.code, 'PHONE_MISMATCH');
+    assert.equal(await VerifiedPhone.countDocuments({ purpose: 'RECOVERY' }), 0);
+
+    msg91Says({ type: 'success', message: '919812340006' });
+    const own = await verifyWidgetAccessToken('9812340006', 'opaque-token', 'RECOVERY');
+    assert.equal(own.success, true);
+    const record = await VerifiedPhone.findOne({ mobile: '919812340006', purpose: 'RECOVERY' });
+    assert.ok(record);
+    // Short-lived (10 minutes), unlike the 14-day ordering record, and nothing else was unlocked.
+    assert.ok(record.expiresAt.getTime() - Date.now() <= 10 * 60_000 + 5_000);
+    assert.equal(await VerifiedPhone.countDocuments({ mobile: '919812340006', purpose: 'ORDER' }), 0);
+    assert.equal(await VerifiedPhone.countDocuments({ mobile: '919812340006', purpose: 'REGISTRATION' }), 0);
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+});
+
+test('a recovery OTP leaves the ordering verification alone', async () => {
+  // Through the service, not HTTP: this file is already close to the OTP endpoints' rate limit.
+  const sent = await sendOtp('9812340007', 'RECOVERY');
+  assert.equal(sent.code, 'OTP_SENT');
+  const done = await verifyOtp('9812340007', sent.debugOtp!, 'RECOVERY');
+  assert.equal(done.success, true);
+  assert.equal(await VerifiedPhone.countDocuments({ mobile: '919812340007', purpose: 'RECOVERY' }), 1);
+  assert.equal(
+    await VerifiedPhone.countDocuments({ mobile: '919812340007', purpose: { $in: ['ORDER', 'REGISTRATION'] } }),
+    0,
+    'proving the number to find an order does not let anyone order as it'
+  );
 });

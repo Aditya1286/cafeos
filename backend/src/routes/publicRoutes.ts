@@ -1,4 +1,5 @@
-import { Router } from 'express';
+import crypto from 'crypto';
+import { RequestHandler, Router } from 'express';
 import rateLimit from 'express-rate-limit';
 import { getTableByToken } from '../controllers/tableController';
 import { getPublicMenu, getMenuImage } from '../controllers/menuController';
@@ -7,6 +8,8 @@ import { SubscriptionPlan } from '../models/SubscriptionPlan';
 import { Business } from '../models/Business';
 import { config } from '../config';
 import { getOtpStatus, confirmWidgetToken, requestOtp, confirmOtp, resendOtpRequest } from '../controllers/otp.controller';
+import { recoverOrdersPublic } from '../controllers/orderRecoveryController';
+import { readRecoveryToken } from '../utils/recoveryToken';
 import { submitDemoRequestPublic } from '../controllers/demoRequestController';
 import { createTicketPublic, getTicketStatusPublic, getCallAgentPublic } from '../controllers/supportController';
 import {
@@ -63,7 +66,33 @@ router.get('/c/:businessId/menu', getPublicMenu);
 // Public: Serve an uploaded menu image (<img> tags can't send auth headers)
 router.get('/images/:id', getMenuImage);
 
+// Public: "find my order". It hands back order links for a phone number, so it has its own tight
+// limiter on top of the OTP it requires (a guesser can't brute-force the code through it).
+const recoverRouteLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: config.nodeEnv === 'production' ? 15 : 1000,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many attempts. Please try again in a few minutes.' } }
+});
+
+// A customer's saved "my orders" session refreshes its list now and then. Counting that against the
+// per-IP limit would lock out a café full of customers on one Wi-Fi address, so a genuine session
+// token is limited per token instead. Anything else (no token, an expired or forged one) still
+// takes the tight per-IP limit above, so spraying made-up tokens never earns the roomier one.
+const recoverSessionLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: config.nodeEnv === 'production' ? 60 : 1000,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => crypto.createHash('sha256').update(String(req.body?.recoveryToken)).digest('hex'),
+  message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many refreshes. Please try again in a few minutes.' } }
+});
+const recoverLimiter: RequestHandler = (req, res, next) =>
+  (readRecoveryToken(req.body?.recoveryToken) ? recoverSessionLimiter : recoverRouteLimiter)(req, res, next);
+
 // Public: Order endpoints
+router.post('/orders/recover', recoverLimiter, recoverOrdersPublic);
 router.post('/orders', createOrder);
 router.get('/orders/:id', getPublicOrderById);
 router.put('/orders/:id/mark-paid', markOrderPaidByCustomer);

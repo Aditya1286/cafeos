@@ -37,29 +37,71 @@ interface FacePose {
 // The smirk is baked into the mouth geometry, so no pose below can flatten it.
 const POSES: Record<Expression, FacePose> = {
   idle: {
-    browLY: 0.0, browLRot: -0.2, browRY: 0.09, browRRot: 0.1,
-    lidL: -0.62, lidR: -0.68, mouthScale: 1, mouthRoll: 0, cheek: 1, headRoll: 0.04,
+    browLY: 0.0,
+    browLRot: -0.2,
+    browRY: 0.09,
+    browRRot: 0.1,
+    lidL: -0.62,
+    lidR: -0.68,
+    mouthScale: 1,
+    mouthRoll: 0,
+    cheek: 1,
+    headRoll: 0.04,
   },
   curious: {
-    browLY: 0.02, browLRot: -0.12, browRY: 0.2, browRRot: 0.02,
-    lidL: -0.72, lidR: -0.82, mouthScale: 0.92, mouthRoll: 0.06, cheek: 1, headRoll: 0.12,
+    browLY: 0.02,
+    browLRot: -0.12,
+    browRY: 0.2,
+    browRRot: 0.02,
+    lidL: -0.72,
+    lidR: -0.82,
+    mouthScale: 0.92,
+    mouthRoll: 0.06,
+    cheek: 1,
+    headRoll: 0.12,
   },
   confident: {
-    browLY: -0.02, browLRot: -0.34, browRY: 0.0, browRRot: 0.3,
-    lidL: -0.36, lidR: -0.38, mouthScale: 1.14, mouthRoll: -0.05, cheek: 1.06, headRoll: -0.05,
+    browLY: -0.02,
+    browLRot: -0.34,
+    browRY: 0.0,
+    browRRot: 0.3,
+    lidL: -0.36,
+    lidR: -0.38,
+    mouthScale: 1.14,
+    mouthRoll: -0.05,
+    cheek: 1.06,
+    headRoll: -0.05,
   },
   excited: {
-    browLY: 0.13, browLRot: 0.05, browRY: 0.15, browRRot: -0.05,
-    lidL: -0.9, lidR: -0.9, mouthScale: 1.25, mouthRoll: -0.08, cheek: 1.12, headRoll: 0,
+    browLY: 0.13,
+    browLRot: 0.05,
+    browRY: 0.15,
+    browRRot: -0.05,
+    lidL: -0.9,
+    lidR: -0.9,
+    mouthScale: 1.25,
+    mouthRoll: -0.08,
+    cheek: 1.12,
+    headRoll: 0,
   },
   // Eyes squeezed shut, brows lifted inward: "I'm not looking" (the password field).
   shy: {
-    browLY: 0.1, browLRot: 0.22, browRY: 0.1, browRRot: -0.22,
-    lidL: 1.4, lidR: 1.4, mouthScale: 0.8, mouthRoll: 0.04, cheek: 1.1, headRoll: -0.08,
+    browLY: 0.1,
+    browLRot: 0.22,
+    browRY: 0.1,
+    browRRot: -0.22,
+    lidL: 1.4,
+    lidR: 1.4,
+    mouthScale: 0.8,
+    mouthRoll: 0.04,
+    cheek: 1.1,
+    headRoll: -0.08,
   },
 };
 
 const BLINK_MS = 140;
+/** One full ambient spin. Slow enough to feel like a gentle turn, not a spin-cycle. */
+const SPIN_MS = 3200;
 const FADE_OUT_MS = 180;
 const ENTRANCE_MS = 900;
 
@@ -103,6 +145,11 @@ export class MascotAnimator {
   private nextTwitchAt = 0;
   private twitchStartedAt = -1;
 
+  /** A slow turn for calm pages: a gentle sway plus an occasional full spin. */
+  private ambientSpin = false;
+  private spinStartedAt = -1;
+  private nextSpinAt = 0;
+
   private entranceStartedAt: number | null = null;
   private reduced = false;
   /** False while anything besides idle breathing is still moving; the loop uses it to slow down or sleep. */
@@ -115,6 +162,7 @@ export class MascotAnimator {
     this.nextBlinkAt = startAt + 1800;
     this.nextTwitchAt = startAt + 5000;
     this.nextGazeAt = startAt + 2200;
+    this.nextSpinAt = startAt + 6000;
   }
 
   setExpression(expression: Expression): void {
@@ -133,6 +181,13 @@ export class MascotAnimator {
   setLook(x: number | null, y: number | null): void {
     this.lookTargetX = x ?? 0;
     this.lookTargetY = y ?? 0;
+    this.settled = false;
+  }
+
+  setAmbientSpin(on: boolean): void {
+    this.ambientSpin = on;
+    this.spinStartedAt = -1;
+    if (!on) this.rig.group.rotation.y = 0;
     this.settled = false;
   }
 
@@ -176,7 +231,10 @@ export class MascotAnimator {
     // Look.
     this.lookX = snap ? this.lookTargetX : damp(this.lookX, this.lookTargetX, 6, dt);
     this.lookY = snap ? this.lookTargetY : damp(this.lookY, this.lookTargetY, 6, dt);
-    if (Math.abs(this.lookX - this.lookTargetX) > 0.002 || Math.abs(this.lookY - this.lookTargetY) > 0.002) {
+    if (
+      Math.abs(this.lookX - this.lookTargetX) > 0.002 ||
+      Math.abs(this.lookY - this.lookTargetY) > 0.002
+    ) {
       settled = false;
     }
 
@@ -243,8 +301,10 @@ export class MascotAnimator {
     }
 
     // Gaze follows the look target when there is one, otherwise the idle darts.
-    const gx = this.lookTargetX !== 0 || this.lookTargetY !== 0 ? this.lookTargetX : this.gazeTargetX;
-    const gy = this.lookTargetX !== 0 || this.lookTargetY !== 0 ? this.lookTargetY : this.gazeTargetY;
+    const gx =
+      this.lookTargetX !== 0 || this.lookTargetY !== 0 ? this.lookTargetX : this.gazeTargetX;
+    const gy =
+      this.lookTargetX !== 0 || this.lookTargetY !== 0 ? this.lookTargetY : this.gazeTargetY;
     this.gazeX = snap ? gx : damp(this.gazeX, gx, 14, dt);
     this.gazeY = snap ? gy : damp(this.gazeY, gy, 14, dt);
 
@@ -263,6 +323,26 @@ export class MascotAnimator {
       }
     }
 
+    // Ambient turn: a few degrees of sway all the time, and every so often one slow full spin.
+    if (this.ambientSpin && !reduced) {
+      const t = now / 1000;
+      let spin = 0;
+      if (this.spinStartedAt < 0 && now >= this.nextSpinAt) this.spinStartedAt = now;
+      if (this.spinStartedAt >= 0) {
+        const p = (now - this.spinStartedAt) / SPIN_MS;
+        if (p >= 1) {
+          this.spinStartedAt = -1;
+          this.nextSpinAt = now + 11_000 + Math.random() * 6_000;
+        } else {
+          spin = Math.PI * 2 * (p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2); // easeInOutQuad
+          settled = false;
+        }
+      }
+      this.rig.group.rotation.y = Math.sin(t * 0.5) * 0.35 + spin;
+    } else if (this.rig.group.rotation.y !== 0) {
+      this.rig.group.rotation.y = 0;
+    }
+
     this.settled = settled;
 
     this.apply(sum, { breathe, sway, blink, twitch, entrance });
@@ -276,7 +356,11 @@ export class MascotAnimator {
 
     rig.group.scale.setScalar(Math.max(0.001, idle.entrance));
     rig.bodyPivot.position.y = -1.5 + g.bodyLift;
-    rig.bodyPivot.scale.set(1 + g.bodyScale * 0.6 + idle.breathe, 1 - g.bodyScale + idle.breathe * 2, 1);
+    rig.bodyPivot.scale.set(
+      1 + g.bodyScale * 0.6 + idle.breathe,
+      1 - g.bodyScale + idle.breathe * 2,
+      1,
+    );
     rig.bodyPivot.rotation.x = g.bodyPitch + this.scrollPitch * 0.6;
     rig.bodyPivot.rotation.z = -this.lean * 0.12 - this.flowLean * 0.2;
     rig.bodyPivot.rotation.y = this.lookX * 0.12 + idle.sway * 0.5;

@@ -132,7 +132,8 @@ export const buildHamster = (): HamsterRig => {
   };
 
   const gradient = track(makeToonGradient());
-  const toon = (color: number) => track(new THREE.MeshToonMaterial({ color, gradientMap: gradient }));
+  const toon = (color: number) =>
+    track(new THREE.MeshToonMaterial({ color, gradientMap: gradient }));
   const flat = (color: number, side: THREE.Side = THREE.FrontSide) =>
     track(new THREE.MeshBasicMaterial({ color, side }));
   const inkHull = track(new THREE.MeshBasicMaterial({ color: PALETTE.ink, side: THREE.BackSide }));
@@ -209,10 +210,7 @@ export const buildHamster = (): HamsterRig => {
 
   // Dark crown: a charcoal cap hugging the top of the skull and dropping into a brow line over the
   // eyes, like the logo's dark head fur under the hat.
-  const crown = mesh(
-    new THREE.SphereGeometry(1.012, 36, 14, 0, Math.PI * 2, 0, 1.0),
-    fur,
-  );
+  const crown = mesh(new THREE.SphereGeometry(1.012, 36, 14, 0, Math.PI * 2, 0, 1.0), fur);
   crown.scale.set(1.25, 1.0, 1.05);
   crown.position.copy(skull.position);
   head.add(crown);
@@ -339,7 +337,11 @@ export const buildHamster = (): HamsterRig => {
   const mouthLine = mesh(new THREE.TubeGeometry(smirk, 24, 0.036, 8), ink);
   const dimple = mesh(
     new THREE.TubeGeometry(
-      new THREE.CatmullRomCurve3([onMuzzle(0.3, -0.04), onMuzzle(0.36, -0.08), onMuzzle(0.37, -0.15)]),
+      new THREE.CatmullRomCurve3([
+        onMuzzle(0.3, -0.04),
+        onMuzzle(0.36, -0.08),
+        onMuzzle(0.37, -0.15),
+      ]),
       8,
       0.026,
       6,
@@ -358,7 +360,10 @@ export const buildHamster = (): HamsterRig => {
   hatCrown.position.y = 0.37;
   const band = mesh(new THREE.CylinderGeometry(0.752, 0.752, 0.22, 36), red, false);
   band.position.y = 0.17;
-  const star = mesh(new THREE.ShapeGeometry(starShape(0.22, 0.075)), flat(PALETTE.cream, THREE.DoubleSide));
+  const star = mesh(
+    new THREE.ShapeGeometry(starShape(0.22, 0.075)),
+    flat(PALETTE.cream, THREE.DoubleSide),
+  );
   star.position.set(0.04, 0.5, 0.72);
   star.rotation.y = 0.12;
   hat.add(brim, hatCrown, band, star);

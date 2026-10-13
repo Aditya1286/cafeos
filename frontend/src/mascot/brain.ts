@@ -24,7 +24,13 @@ interface Layer {
   messageUntil: number | null;
 }
 
-const KIND_RANK: Record<TriggerKind, number> = { section: 0, peek: 1, hover: 2, focus: 3 };
+const KIND_RANK: Record<TriggerKind, number> = {
+  section: 0,
+  signal: 1,
+  peek: 2,
+  hover: 3,
+  focus: 4,
+};
 
 const IDLE_STATE = (): MascotState => ({
   sectionId: null,
@@ -80,7 +86,8 @@ export class MascotBrain {
     this.activate('section', sectionId, section.enter ?? {});
 
     // A section with no gesture of its own still gets a farewell from the one it left.
-    if (previous?.leave?.gesture && !section.enter?.gesture) this.fireGesture(previous.leave.gesture);
+    if (previous?.leave?.gesture && !section.enter?.gesture)
+      this.fireGesture(previous.leave.gesture);
     return true;
   }
 
@@ -89,6 +96,25 @@ export class MascotBrain {
     if (!this.layers.section) return;
     delete this.layers.section;
     this.settle();
+  }
+
+  /** The page's own state changed (e.g. the order is ready). Null clears it. Returns false for a key
+   * the config doesn't know. Setting the signal it already has does nothing. */
+  setSignal(key: string | null): boolean {
+    if (this.disposed) return false;
+    if (key === null) {
+      if (this.layers.signal) {
+        delete this.layers.signal;
+        this.settle();
+      }
+      return true;
+    }
+    const reaction = this.config.signals?.[key];
+    if (!reaction) return false;
+    if (this.layers.signal?.id === key) return true;
+    delete this.layers.signal;
+    this.activate('signal', key, reaction);
+    return true;
   }
 
   /** The mascot has popped up from behind a card. Returns false for an unknown peek id. */
@@ -203,7 +229,10 @@ export class MascotBrain {
       const now = Date.now();
       const lastGesture = this.lastActivated.get(key);
       this.lastActivated.set(key, now);
-      if (owner.reaction.gesture && (lastGesture === undefined || now - lastGesture > GESTURE_REPEAT_MS)) {
+      if (
+        owner.reaction.gesture &&
+        (lastGesture === undefined || now - lastGesture > GESTURE_REPEAT_MS)
+      ) {
         this.fireGesture(owner.reaction.gesture);
       }
       this.showMessage(owner, owner.reaction.message);
@@ -234,6 +263,9 @@ export class MascotBrain {
   private presentMessage(message: MascotMessage, durationMs: number): void {
     this.message = message;
     if (this.messageTimer) clearTimeout(this.messageTimer);
+    this.messageTimer = null;
+    // An unbounded message (the order page's status line) stays until something replaces it.
+    if (!Number.isFinite(durationMs)) return;
     this.messageTimer = setTimeout(() => {
       this.messageTimer = null;
       this.message = null;

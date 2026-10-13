@@ -179,6 +179,26 @@
   }
 }
 
+/* Slot: the mascot lives in a reserved spot in the page (position comes from flow.ts), with its
+   message beside it, in the rest of the slot's width. Nothing is covered, so the message is a quiet
+   caption rather than a floating bubble, and it stays until the status changes. */
+.caos-mascot[data-slot='true'] .caos-mascot__bubble {
+  top: 0;
+  bottom: 0;
+  left: calc(100% + 8px);
+  right: auto;
+  margin-block: auto;
+  height: fit-content;
+  width: calc(var(--slot-w, 100%) - var(--m-size) - 8px);
+  max-width: none;
+  transform: none;
+  transform-origin: center left;
+  font-size: 13px;
+}
+.caos-mascot[data-slot='true'] .caos-mascot__bubble[data-open='true'] {
+  transform: none;
+}
+
 /* Parked: the page has no area for the mascot to glide in (e.g. a desktop-only panel on a phone).
    It stays invisible until it pops up from a card. */
 .caos-mascot[data-parked='true'][data-phase='flow'],

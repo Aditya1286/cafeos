@@ -9,6 +9,8 @@ import {
   peekHeadBox,
   peekPlacement,
   firstClearAnchor,
+  isOnScreen,
+  slotPlacement,
   peekVisible,
   pickPeek,
 } from '../src/mascot/flow';
@@ -16,6 +18,7 @@ import {
   LANDING_CONFIG,
   LOGIN_CONFIG,
   MASCOT_CONFIGS,
+  ORDER_CONFIG,
   validateConfig,
 } from '../src/mascot/config';
 import { FLOW, LAYOUT, PEEK } from '../src/mascot/config';
@@ -148,8 +151,35 @@ describe('flow path inside an area (login page panel)', () => {
 
   it('flowPosition is the whole-viewport case of flowPositionIn', () => {
     expect(flowPosition(0.37, 1920, 940, 280)).toEqual(
-      flowPositionIn(0.37, { left: 0, right: 1920, top: 0, bottom: 940 }, 280, { top: 76, bottom: 0 }),
+      flowPositionIn(0.37, { left: 0, right: 1920, top: 0, bottom: 940 }, 280, {
+        top: 76,
+        bottom: 0,
+      }),
     );
+  });
+});
+
+describe('slot placement (order page)', () => {
+  it('anchors the mascot at the slot’s left edge, centred vertically, in document space', () => {
+    const rect = { top: 100, bottom: 220, left: 24, right: 324 }; // a 120px-tall slot, 300 wide
+    expect(slotPlacement(rect, 112, { x: 0, y: 0 })).toEqual({ x: 24, y: 104 });
+    // Scrolling the page moves the viewport rect up by the same amount: the answer doesn't change.
+    expect(slotPlacement({ ...rect, top: -400, bottom: -280 }, 112, { x: 0, y: 500 })).toEqual({
+      x: 24,
+      y: 104,
+    });
+  });
+
+  it('never places the mascot above the slot when the slot is shorter than it', () => {
+    const rect = { top: 50, bottom: 90, left: 0, right: 200 };
+    expect(slotPlacement(rect, 112, { x: 0, y: 0 }).y).toBe(50);
+  });
+
+  it('knows when the slot is on screen (so drawing can pause when it is not)', () => {
+    expect(isOnScreen({ top: 100, bottom: 220, left: 0, right: 1 }, 800)).toBe(true);
+    expect(isOnScreen({ top: -300, bottom: -10, left: 0, right: 1 }, 800)).toBe(false);
+    expect(isOnScreen({ top: 801, bottom: 900, left: 0, right: 1 }, 800)).toBe(false);
+    expect(isOnScreen({ top: -50, bottom: 40, left: 0, right: 1 }, 800)).toBe(true); // partly visible
   });
 });
 
@@ -269,11 +299,15 @@ describe('peek placement and selection', () => {
   });
 
   it('skips cards that peeked recently', () => {
-    expect(pickPeek([spot('a', 400), spot('b', 450)], 900, 280, null, (id) => id === 'a')).toBe('b');
+    expect(pickPeek([spot('a', 400), spot('b', 450)], 900, 280, null, (id) => id === 'a')).toBe(
+      'b',
+    );
   });
 
   it('ignores cards too short to hide a mascot behind', () => {
-    expect(pickPeek([{ id: 's', top: 400, bottom: 450, left: 0, right: 500 }], 900, 280, null)).toBeNull();
+    expect(
+      pickPeek([{ id: 's', top: 400, bottom: 450, left: 0, right: 500 }], 900, 280, null),
+    ).toBeNull();
   });
 });
 
@@ -332,13 +366,19 @@ describe('mascot route scoping', () => {
   const files = walk(srcRoot).filter((f) => /\.(ts|tsx)$/.test(f));
   const rel = (f: string) => relative(srcRoot, f).split('\\').join('/');
 
-  it('is imported only by the landing and login pages', () => {
+  it('is imported only by the landing, login and order-tracking pages', () => {
     const importers = files
       .filter((f) => !rel(f).startsWith('mascot/'))
-      .filter((f) => /from\s+['"](@\/|\.{1,2}\/)([^'"]*\/)?mascot[\/'"]/.test(readFileSync(f, 'utf8')))
+      .filter((f) =>
+        /from\s+['"](@\/|\.{1,2}\/)([^'"]*\/)?mascot[\/'"]/.test(readFileSync(f, 'utf8')),
+      )
       .map(rel)
       .sort();
-    expect(importers).toEqual(['pages/LandingPage.tsx', 'pages/LoginPage.tsx']);
+    expect(importers).toEqual([
+      'pages/CustomerOrderTrackingPage.tsx',
+      'pages/LandingPage.tsx',
+      'pages/LoginPage.tsx',
+    ]);
   });
 
   it('every page mounts it through the lazy PageMascot entry, with its own page id', () => {
@@ -346,10 +386,11 @@ describe('mascot route scoping', () => {
     const login = readFileSync(join(srcRoot, 'pages/LoginPage.tsx'), 'utf8');
     expect(landing).toMatch(/<PageMascot page="landing" \/>/);
     expect(login).toMatch(/<PageMascot page="login" \/>/);
+    const tracking = readFileSync(join(srcRoot, 'pages/CustomerOrderTrackingPage.tsx'), 'utf8');
+    expect(tracking).toMatch(/<PageMascot page="order" signal=\{mascotSignal\} \/>/);
     // The checkout, ordering, dashboard and register pages must stay mascot-free.
     for (const page of [
       'CustomerMenuPage',
-      'CustomerOrderTrackingPage',
       'CheckoutReturnPage',
       'OwnerDashboard',
       'SuperAdminDashboard',
@@ -368,7 +409,9 @@ describe('mascot route scoping', () => {
   });
 
   it('keeps three.js inside the lazily loaded engine folder', () => {
-    const users = files.filter((f) => /from\s+['"]three['"]/.test(readFileSync(f, 'utf8'))).map(rel);
+    const users = files
+      .filter((f) => /from\s+['"]three['"]/.test(readFileSync(f, 'utf8')))
+      .map(rel);
     expect(users.length).toBeGreaterThan(0);
     for (const u of users) expect(u.startsWith('mascot/engine/')).toBe(true);
   });
@@ -386,7 +429,7 @@ describe('mascot route scoping', () => {
 
 describe('page configs', () => {
   it('has a config for every page id, each valid', () => {
-    expect(Object.keys(MASCOT_CONFIGS).sort()).toEqual(['landing', 'login']);
+    expect(Object.keys(MASCOT_CONFIGS).sort()).toEqual(['landing', 'login', 'order']);
     for (const config of Object.values(MASCOT_CONFIGS)) {
       expect(validateConfig(config)).toEqual([]);
     }
@@ -430,6 +473,45 @@ describe('page configs', () => {
       const attr = /\[(data-[a-z-]+)="([^"]+)"\]/.exec(selector ?? '');
       expect(attr, `selector ${selector}`).not.toBeNull();
       expect(markup, `${selector} is in the markup`).toContain(`${attr![1]}="${attr![2]}"`);
+    }
+  });
+});
+
+describe('order page config', () => {
+  const signals = ORDER_CONFIG.signals ?? {};
+
+  it('is calm and phone-friendly: a reserved spot in the page, slow spin, nothing that moves it around', () => {
+    expect(ORDER_CONFIG.flow).toMatchObject({ mode: 'slot', ambientSpin: true, size: 112 });
+    expect(ORDER_CONFIG.flow?.slot).toBe('[data-mascot-slot="order"]');
+    expect(ORDER_CONFIG.peeks).toEqual([]);
+    expect(ORDER_CONFIG.sections).toEqual([]);
+  });
+
+  it('has a reaction for every signal orderSignal can produce', () => {
+    for (const key of [
+      'placed',
+      'preparing',
+      'ready',
+      'completed',
+      'cancelled',
+      'wait-long',
+      'wait-longer',
+    ]) {
+      expect(signals[key], key).toBeDefined();
+      expect(signals[key].message?.text.length).toBeGreaterThan(5);
+    }
+  });
+
+  it('calms first and points at the staff second, and promises nothing it cannot keep', () => {
+    expect(signals['wait-long'].message?.text).toMatch(/longer than usual/i);
+    expect(signals['wait-longer'].message?.text).toMatch(/ask the café team/i);
+    for (const r of Object.values(signals)) {
+      expect(r.message?.text).not.toMatch(/\d+\s*(min|minute)|guarantee|soon|any (second|moment)/i);
+    }
+    // The status line stays until the status changes (it is not a toast), and is read to screen readers.
+    for (const r of Object.values(signals)) {
+      expect(r.message?.durationMs).toBe(Infinity);
+      expect(r.message?.announce).toBe(true);
     }
   });
 });

@@ -17,3 +17,10 @@ export const KDS_ANIMATE_MAX = 30;
 
 /** Remembered per browser: whether the board was last used in Kitchen mode. */
 export const KDS_KITCHEN_MODE_KEY = 'caos_kds_kitchen_mode';
+
+/** How long a customer's order may take before the mascot starts to calm them down, then to point
+ * them at the staff. Minutes since the order was placed, while it is still New or Preparing. */
+export const CUSTOMER_WAIT = {
+  calmMin: 10,
+  asksMin: 20,
+} as const;

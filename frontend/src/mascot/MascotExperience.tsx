@@ -38,13 +38,17 @@ const useReducedMotion = (): boolean => {
 
 type Mode = 'loading' | '3d' | 'fallback';
 
-const ActiveMascot: React.FC<{ config: MascotConfig; onMinimize: () => void }> = ({
-  config,
-  onMinimize,
-}) => {
+const ActiveMascot: React.FC<{
+  config: MascotConfig;
+  signal?: string | null;
+  onMinimize: () => void;
+}> = ({ config, signal, onMinimize }) => {
   const reduced = useReducedMotion();
-  const scale = (config.flow?.sizeScale ?? 1) * (reduced ? REDUCED_SIZE_SCALE : 1);
-  const [size, setSize] = useState(() => sizeForWidth(window.innerWidth, scale));
+  const slotMode = config.flow?.mode === 'slot';
+  const fixedSize = config.flow?.size;
+  const scale = (config.flow?.sizeScale ?? 1) * (reduced && !slotMode ? REDUCED_SIZE_SCALE : 1);
+  const pickSize = (width: number) => fixedSize ?? sizeForWidth(width, scale);
+  const [size, setSize] = useState(() => pickSize(window.innerWidth));
   const [mode, setMode] = useState<Mode>('loading');
   const [contextLost, setContextLost] = useState(false);
   const [revealed, setRevealed] = useState(false);
@@ -60,6 +64,9 @@ const ActiveMascot: React.FC<{ config: MascotConfig; onMinimize: () => void }> =
   const stageRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<MascotEngine | null>(null);
   const scrollRef = useRef<ScrollSnapshot>({ progress: 0, velocity: 0, updatedAt: 0 });
+  const brainRef = useRef<MascotBrain | null>(null);
+  const signalRef = useRef<string | null>(signal ?? null);
+  signalRef.current = signal ?? null;
   const reducedRef = useRef(reduced);
   reducedRef.current = reduced;
   const sizeRef = useRef(size);
@@ -67,7 +74,7 @@ const ActiveMascot: React.FC<{ config: MascotConfig; onMinimize: () => void }> =
 
   // Responsive box size.
   useEffect(() => {
-    const onResize = () => setSize(sizeForWidth(window.innerWidth, scale));
+    const onResize = () => setSize(pickSize(window.innerWidth));
     onResize();
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
@@ -134,6 +141,8 @@ const ActiveMascot: React.FC<{ config: MascotConfig; onMinimize: () => void }> =
     engine?.startEntrance();
 
     const brain = new MascotBrain(config);
+    brainRef.current = brain;
+    engine?.setAmbientSpin(!!config.flow?.ambientSpin);
     const unsubscribe = brain.subscribe((state) => {
       engine?.setExpression(state.expression);
       if (state.gesture) engine?.triggerGesture(state.gesture);
@@ -151,7 +160,8 @@ const ActiveMascot: React.FC<{ config: MascotConfig; onMinimize: () => void }> =
           onPeek: (id) => (id ? brain.peek(id) : brain.unpeek()),
           onVelocity: (vx) => engine?.setFlowVelocity(vx),
           flow: config.flow,
-          staticMode: reduced,
+          staticMode: reduced || config.flow?.mode === 'static',
+          onVisible: (visible) => engine?.setVisible(visible),
         })
       : null;
 
@@ -185,7 +195,11 @@ const ActiveMascot: React.FC<{ config: MascotConfig; onMinimize: () => void }> =
       },
     });
 
+    // The page may already have a signal (the order loaded before the mascot was ready).
+    if (signalRef.current) brain.setSignal(signalRef.current);
+
     return () => {
+      brainRef.current = null;
       interactions.dispose();
       tracker.dispose();
       flow?.dispose();
@@ -206,6 +220,11 @@ const ActiveMascot: React.FC<{ config: MascotConfig; onMinimize: () => void }> =
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `config` is a constant per page
   }, [revealed, reduced]);
 
+  // Later changes to the page's signal (status moved on, the wait got long).
+  useEffect(() => {
+    brainRef.current?.setSignal(signal ?? null);
+  }, [signal]);
+
   const showPoster = mode === 'fallback' || (mode === '3d' && contextLost);
   const live3d = mode === '3d' && !contextLost;
 
@@ -217,6 +236,7 @@ const ActiveMascot: React.FC<{ config: MascotConfig; onMinimize: () => void }> =
       className="caos-mascot"
       data-visible={revealed}
       data-reduced={reduced}
+      data-slot={slotMode ? 'true' : undefined}
       style={{ ['--m-size' as string]: `${size}px` }}
     >
       <div
@@ -245,14 +265,17 @@ const ActiveMascot: React.FC<{ config: MascotConfig; onMinimize: () => void }> =
       <span className="sr-only" role="status" aria-live="polite">
         {announcement}
       </span>
-      <button
-        type="button"
-        className="caos-mascot__hide"
-        onClick={onHideClick}
-        aria-label="Hide the CAOS mascot"
-      >
-        <X size={14} aria-hidden="true" />
-      </button>
+      {/* In a slot the mascot is part of the page, not an overlay: nothing to dismiss. */}
+      {!slotMode && (
+        <button
+          type="button"
+          className="caos-mascot__hide"
+          onClick={onHideClick}
+          aria-label="Hide the CAOS mascot"
+        >
+          <X size={14} aria-hidden="true" />
+        </button>
+      )}
     </div>
   );
 };
@@ -260,7 +283,7 @@ const ActiveMascot: React.FC<{ config: MascotConfig; onMinimize: () => void }> =
 /** The mascot: a 3D hamster that glides down the page, pops up from behind cards and reacts to the
  * section in view and to hover/focus on key elements. Which page it is on picks its config. Mounted
  * only by PageMascot. */
-const MascotExperience: React.FC<{ page: PageId }> = ({ page }) => {
+const MascotExperience: React.FC<{ page: PageId; signal?: string | null }> = ({ page, signal }) => {
   const [minimized, setMinimized] = useState(readMinimized);
 
   const minimize = useCallback(() => {
@@ -272,7 +295,11 @@ const MascotExperience: React.FC<{ page: PageId }> = ({ page }) => {
     setMinimized(false);
   }, []);
 
-  if (minimized) {
+  // A slotted mascot ignores the hide preference: there is no overlay to dismiss, and hiding it
+  // would leave its reserved spot empty.
+  const slotMode = MASCOT_CONFIGS[page].flow?.mode === 'slot';
+
+  if (minimized && !slotMode) {
     return (
       <button
         type="button"
@@ -284,7 +311,7 @@ const MascotExperience: React.FC<{ page: PageId }> = ({ page }) => {
       </button>
     );
   }
-  return <ActiveMascot config={MASCOT_CONFIGS[page]} onMinimize={minimize} />;
+  return <ActiveMascot config={MASCOT_CONFIGS[page]} signal={signal} onMinimize={minimize} />;
 };
 
 export default MascotExperience;

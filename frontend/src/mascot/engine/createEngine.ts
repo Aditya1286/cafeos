@@ -15,6 +15,10 @@ export interface MascotEngine {
   setReducedMotion(reduced: boolean): void;
   /** Box size in CSS px (the canvas is square). */
   resize(sizePx: number): void;
+  /** Pause drawing while the mascot is scrolled out of view (saves a phone's battery). */
+  setVisible(visible: boolean): void;
+  /** Slow ambient sway and occasional full turn (calm pages). Ignored in reduced motion. */
+  setAmbientSpin(on: boolean): void;
   /** Pop in from nothing. Call once, when the mascot should appear. */
   startEntrance(): void;
   dispose(): void;
@@ -78,10 +82,11 @@ export const createMascotEngine = ({
   let lastGestureNonce = 0;
   let disposed = false;
   let contextLost = false;
+  let offscreen = false;
 
   const frame = (t: number) => {
     raf = 0;
-    if (disposed || contextLost || document.hidden) return;
+    if (disposed || contextLost || offscreen || document.hidden) return;
 
     const sinceLast = t - last;
     // Only idle breathing is moving: half-rate is indistinguishable and halves the cost.
@@ -102,7 +107,7 @@ export const createMascotEngine = ({
   };
 
   const wake = () => {
-    if (!raf && !disposed && !contextLost && !document.hidden) {
+    if (!raf && !disposed && !contextLost && !offscreen && !document.hidden) {
       last = performance.now();
       raf = requestAnimationFrame(frame);
     }
@@ -160,6 +165,18 @@ export const createMascotEngine = ({
     resize: (sizePx) => {
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, MAX_PIXEL_RATIO));
       renderer.setSize(sizePx, sizePx, false);
+      wake();
+    },
+    setVisible: (visible) => {
+      offscreen = !visible;
+      if (visible) wake();
+      else if (raf) {
+        cancelAnimationFrame(raf);
+        raf = 0;
+      }
+    },
+    setAmbientSpin: (on) => {
+      animator.setAmbientSpin(on);
       wake();
     },
     startEntrance: () => {

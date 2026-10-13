@@ -33,7 +33,9 @@ const useWhenIdle = (): boolean => {
     const go = () => {
       if (cancelled) return;
       if (typeof window.requestIdleCallback === 'function') {
-        idleHandle = window.requestIdleCallback(() => !cancelled && setReady(true), { timeout: 2500 });
+        idleHandle = window.requestIdleCallback(() => !cancelled && setReady(true), {
+          timeout: 2500,
+        });
       } else {
         timeout = setTimeout(() => !cancelled && setReady(true), 300);
       }
@@ -52,13 +54,18 @@ const useWhenIdle = (): boolean => {
   return ready;
 };
 
-export const PageMascot: React.FC<{ page: PageId }> = ({ page }) => {
+/** `signal` is the page's own state for the mascot to react to (a key of the page config's
+ * `signals`), e.g. the order's status on the order page. */
+export const PageMascot: React.FC<{ page: PageId; signal?: string | null }> = ({
+  page,
+  signal,
+}) => {
   const ready = useWhenIdle();
   if (!ready) return null;
   return (
     <MascotBoundary>
       <Suspense fallback={null}>
-        <MascotExperience page={page} />
+        <MascotExperience page={page} signal={signal} />
       </Suspense>
     </MascotBoundary>
   );

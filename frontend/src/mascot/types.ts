@@ -4,7 +4,7 @@
 export type Expression = 'idle' | 'curious' | 'confident' | 'excited' | 'shy';
 
 /** Pages the mascot lives on. Each has its own config (copy, reactions, flow area). */
-export type PageId = 'landing' | 'login';
+export type PageId = 'landing' | 'login' | 'order';
 
 export type Gesture = 'pop' | 'nod' | 'tilt' | 'lean' | 'tipHat' | 'wiggle' | 'wave';
 
@@ -85,6 +85,18 @@ export interface PageFlow {
   /** `scroll` (default): the path follows page scroll. `steps`: it follows `steps` below. */
   progress?: 'scroll' | 'steps';
   steps?: FlowStep[];
+  /** `static`: no gliding or peeking; the mascot rests in one corner of the area. `slot`: it lives in
+   * a reserved spot in the page itself (`slot`), scrolls with the page, covers nothing, and its
+   * message sits beside it (the order page, made for phones). */
+  mode?: 'static' | 'slot';
+  /** CSS selector of the reserved spot, for `mode: 'slot'`. */
+  slot?: string;
+  /** Fixed mascot size in px, instead of the responsive one. */
+  size?: number;
+  /** Which bottom corner a static mascot rests in (default right). */
+  corner?: 'left' | 'right';
+  /** A slow, gentle turn: a sway of a few degrees plus an occasional full spin. Off in reduced motion. */
+  ambientSpin?: boolean;
   /** Stay peeking this long, then sink and rejoin the flow. Default: until scrolled away. */
   peekHoldMs?: number;
   /** Peek from the same card again only after this long (Infinity = once per visit). */
@@ -95,10 +107,12 @@ export interface MascotConfig {
   sections: SectionConfig[];
   targets: TargetConfig[];
   peeks: PeekConfig[];
+  /** Reactions the page drives from its own data (e.g. the order's status), by key. */
+  signals?: Record<string, MascotReaction>;
   flow?: PageFlow;
 }
 
-export type TriggerKind = 'section' | 'peek' | 'hover' | 'focus';
+export type TriggerKind = 'section' | 'signal' | 'peek' | 'hover' | 'focus';
 
 export interface GestureEvent {
   name: Gesture;

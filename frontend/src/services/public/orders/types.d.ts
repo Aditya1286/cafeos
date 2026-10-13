@@ -15,3 +15,36 @@ export type GetOrderResponse = ApiResponse<{ order: Order; business: any }>;
 export type RequestRefundResponse = ApiMessageResponse;
 export type MarkPaidResponse = ApiMessageResponse;
 export type CancelOrderResponse = ApiMessageResponse;
+
+/** One order a verified phone can get back: just enough to open its tracking page. */
+export interface RecoverableOrder {
+  _id: string;
+  orderNumber: string;
+  orderStatus: string;
+  tableName?: string;
+  totalAmountPaise: number;
+  createdAt: string;
+}
+
+/**
+ * Either the table QR token they scanned or the café's slug, plus how the caller proves the number:
+ * the phone (just OTP-verified, purpose 'RECOVERY'), or the session token an earlier verification
+ * earned (then no phone is sent: the number is inside the token).
+ */
+export interface RecoverOrdersPayload {
+  qrToken?: string;
+  businessSlug?: string;
+  customerPhone?: string;
+  recoveryToken?: string;
+}
+
+/** Sent only after a fresh OTP: keeps "my orders" working on this device for 12 hours. */
+export interface RecoverySessionGrant {
+  token: string;
+  /** ISO timestamp. */
+  expiresAt: string;
+}
+
+export type RecoverOrdersResponse = ApiResponse<RecoverableOrder[]> & {
+  session?: RecoverySessionGrant;
+};

@@ -94,8 +94,24 @@ export async function touchPhoneOrderVerification(phone: string): Promise<void> 
 // Sensitive account actions (password reset, email change) need their own proof: a fresh OTP to
 // the business phone, usable once, within a few minutes. Never satisfied by a long-lived ORDER
 // record — having ordered from this phone two weeks ago proves nothing about who's here now.
-export type OtpPurpose = 'DEFAULT' | 'ACCOUNT';
+export type OtpPurpose = 'DEFAULT' | 'ACCOUNT' | 'RECOVERY';
 const ACCOUNT_VERIFIED_TTL_MS = 10 * 60 * 1000;
+
+// Order recovery ("find my order") is held to the same standard: a fresh OTP, a few minutes, and in
+// live mode the widget token must be tied to this exact number (it proves who is asking, and what
+// they get back is another person's order if it doesn't).
+export const RECOVERY_VERIFIED_TTL_MS = 10 * 60 * 1000;
+
+async function markPhoneRecoveryVerified(mobile: string): Promise<void> {
+  await upsertVerifiedPhone(mobile, 'RECOVERY', new Date(Date.now() + RECOVERY_VERIFIED_TTL_MS));
+}
+
+/** Read-only check that this phone passed a fresh recovery OTP in the last few minutes. */
+export async function isPhoneRecoveryVerified(phone: string): Promise<boolean> {
+  const mobile = toMsg91Format(phone);
+  if (!mobile) return false;
+  return !!(await findActiveVerifiedPhone(mobile, 'RECOVERY', new Date()));
+}
 
 async function markPhoneAccountVerified(mobile: string): Promise<void> {
   await upsertVerifiedPhone(mobile, 'ACCOUNT', new Date(Date.now() + ACCOUNT_VERIFIED_TTL_MS));
@@ -135,7 +151,8 @@ export async function sendOtp(phone: string, purpose: OtpPurpose = 'DEFAULT'): P
   if (!mobile) {
     return { success: false, code: 'INVALID_PHONE', message: 'Enter a valid phone number.' };
   }
-  if (purpose !== 'ACCOUNT' && (await isPhoneOrderVerified(phone))) {
+  // Only an ordinary order verification can be satisfied by the long-lived ORDER record.
+  if (purpose === 'DEFAULT' && (await isPhoneOrderVerified(phone))) {
     return { success: true, code: 'ALREADY_VERIFIED', message: 'This phone is already verified.' };
   }
 
@@ -183,14 +200,18 @@ async function recordVerification(mobile: string, purpose: OtpPurpose): Promise<
     await markPhoneAccountVerified(mobile);
     return;
   }
+  if (purpose === 'RECOVERY') {
+    await markPhoneRecoveryVerified(mobile);
+    return;
+  }
   await markPhoneVerified(mobile);
   await markPhoneOrderVerified(mobile);
 }
 
 // MSG91's verifyAccessToken only says whether a token is genuine, not (documentedly) which
 // number it verified — and the widget runs in the browser, which picks the number. For account
-// actions that's not enough: someone could verify their own phone and present that token as the
-// business's. So an ACCOUNT verification must find this exact number either in MSG91's response
+// actions and order recovery that's not enough: someone could verify their own phone and present that token as the
+// business's. So an ACCOUNT or RECOVERY verification must find this exact number either in MSG91's response
 // or in the token's own claims (trustworthy once MSG91 has confirmed the token is genuine).
 // If neither mentions it, the verification is refused rather than assumed.
 const mentionsMobile = (value: unknown, mobile: string): boolean => {
@@ -234,7 +255,7 @@ export async function verifyWidgetAccessToken(phone: string, accessToken: string
     console.log(`[otp] MSG91 verifyAccessToken -> HTTP ${response.status}`, data);
 
     if (data.type === 'success') {
-      if (purpose === 'ACCOUNT' && !mentionsMobile(data, mobile) && !mentionsMobile(decodeJwtClaims(accessToken), mobile)) {
+      if (purpose !== 'DEFAULT' && !mentionsMobile(data, mobile) && !mentionsMobile(decodeJwtClaims(accessToken), mobile)) {
         console.error(`[otp] Account verification refused: MSG91 token could not be tied to ${mobile}`);
         return { success: false, code: 'PHONE_MISMATCH', message: 'This verification could not be matched to the business phone number.' };
       }

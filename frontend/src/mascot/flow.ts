@@ -71,18 +71,16 @@ export const peekPlacement = (
 ): Point => {
   const width = card.right - card.left;
   const wanted = card.left + width * anchor - size / 2;
-  const x = width <= size ? card.left + (width - size) / 2 : clamp(wanted, card.left + 4, card.right - size - 4);
+  const x =
+    width <= size
+      ? card.left + (width - size) / 2
+      : clamp(wanted, card.left + 4, card.right - size - 4);
   return { x, y: card.top - size * peekVisible(size, visible) };
 };
 
 /** The part of the mascot box that actually shows above a card (viewport coords for a viewport
  * rect): the middle of its width, minus the canvas's empty top margin. Pure. */
-export const peekHeadBox = (
-  card: Rect,
-  size: number,
-  anchor: number,
-  visible?: number,
-): Rect => {
+export const peekHeadBox = (card: Rect, size: number, anchor: number, visible?: number): Rect => {
   const place = peekPlacement(card, size, anchor, visible);
   return {
     left: place.x + size * 0.2,
@@ -124,7 +122,12 @@ export const pickPeek = (
   const headroom = topInset + size * peekVisible(size, visible);
   if (active) {
     const current = spots.find((s) => s.id === active);
-    if (current && current.top >= topInset + size * 0.3 && current.top <= vh * 0.94 && current.bottom > 120) {
+    if (
+      current &&
+      current.top >= topInset + size * 0.3 &&
+      current.top <= vh * 0.94 &&
+      current.bottom > 120
+    ) {
       return active;
     }
   }
@@ -161,6 +164,22 @@ export const firstClearAnchor = (
   return null;
 };
 
+/** Document-space top-left for the mascot box inside a reserved slot: at the slot's left edge,
+ * centred vertically, so it scrolls natively with the page. `rect` is viewport-relative; `scroll`
+ * is the current page scroll. Pure. */
+export const slotPlacement = (
+  rect: Rect,
+  size: number,
+  scroll: { x: number; y: number },
+): Point => ({
+  x: rect.left + scroll.x,
+  y: rect.top + scroll.y + Math.max(0, (rect.bottom - rect.top - size) / 2),
+});
+
+/** Whether any part of a viewport-relative rect is on screen. Pure. */
+export const isOnScreen = (rect: Rect, viewportHeight: number): boolean =>
+  rect.bottom > 0 && rect.top < viewportHeight;
+
 type Phase = 'flow' | 'out' | 'rise' | 'peek' | 'sink' | 'in';
 
 interface FlowOptions {
@@ -176,6 +195,8 @@ interface FlowOptions {
   flow?: PageFlow;
   /** Reduced motion: rest in one corner of the area; no gliding, no peeking. */
   staticMode?: boolean;
+  /** Slot mode: whether the mascot is on screen, so the renderer can pause while it isn't. */
+  onVisible?: (visible: boolean) => void;
 }
 
 export interface FlowController {
@@ -193,7 +214,9 @@ export const createFlowController = ({
   onVelocity,
   flow,
   staticMode = false,
+  onVisible,
 }: FlowOptions): FlowController => {
+  let lastVisible: boolean | null = null;
   const insets = { top: flow?.insets?.top ?? NAV_CLEAR, bottom: flow?.insets?.bottom ?? 0 };
   const repeatMs = flow?.peekRepeatMs ?? PEEK.repeatMs;
   const visibleOverride = flow?.peekVisible;
@@ -263,7 +286,7 @@ export const createFlowController = ({
     const size = getSize();
     if (staticMode) {
       return {
-        x: area.right - size - LAYOUT.margin,
+        x: flow?.corner === 'left' ? area.left + LAYOUT.margin : area.right - size - LAYOUT.margin,
         y: area.bottom - insets.bottom - size - LAYOUT.margin,
       };
     }
@@ -360,7 +383,8 @@ export const createFlowController = ({
     const obstacles: Rect[] = [];
     const scope = el.closest('section') ?? document.body;
     for (const other of scope.querySelectorAll(OBSTACLES)) {
-      if (other === el || other.contains(el) || el.contains(other) || host.contains(other)) continue;
+      if (other === el || other.contains(el) || el.contains(other) || host.contains(other))
+        continue;
       const r = contentRect(other);
       if (r) obstacles.push(r);
     }
@@ -391,7 +415,14 @@ export const createFlowController = ({
       if (!el) continue;
       const r = el.getBoundingClientRect();
       const ready = parseFloat(getComputedStyle(el).opacity) >= 0.98;
-      out.push({ id: peek.peekId, top: r.top, bottom: r.bottom, left: r.left, right: r.right, ready });
+      out.push({
+        id: peek.peekId,
+        top: r.top,
+        bottom: r.bottom,
+        left: r.left,
+        right: r.right,
+        ready,
+      });
     }
     return out;
   };
@@ -499,6 +530,30 @@ export const createFlowController = ({
       setPhase('flow');
       applyFlow();
       placed = true;
+    }
+
+    if (flow?.mode === 'slot') {
+      // Lives in a reserved spot in the page: document-anchored (scrolls natively), message beside it.
+      const slot = flow.slot ? document.querySelector(flow.slot) : null;
+      if (!slot) {
+        host.dataset.parked = 'true';
+        return;
+      }
+      const r = slot.getBoundingClientRect();
+      const rect = { top: r.top, bottom: r.bottom, left: r.left, right: r.right };
+      delete host.dataset.parked;
+      host.dataset.mode = 'doc';
+      host.dataset.slot = 'true';
+      host.dataset.body = 'up';
+      host.style.setProperty('--slot-w', `${Math.round(r.width)}px`);
+      const p = slotPlacement(rect, size, { x: window.scrollX, y: window.scrollY });
+      place(p.x, p.y);
+      const visible = isOnScreen(rect, vh);
+      if (visible !== lastVisible) {
+        lastVisible = visible;
+        onVisible?.(visible);
+      }
+      return;
     }
 
     if (staticMode) {

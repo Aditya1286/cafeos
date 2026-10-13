@@ -28,6 +28,8 @@ import VegMark from '@/atoms/VegMark';
 import MenuItemCard from '@/organisms/customer-menu/MenuItemCard';
 import MenuSection from '@/organisms/customer-menu/MenuSection';
 import MenuJumpSheet from '@/organisms/customer-menu/MenuJumpSheet';
+import { YourOrders } from '@/organisms/customer-menu/YourOrders';
+import { rememberOrder } from '@/utils/recentOrders';
 
 type DietFilter = 'ALL' | 'VEG' | 'NON_VEG';
 
@@ -206,6 +208,16 @@ export const CustomerMenuPage: React.FC = () => {
         confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
       } catch (e) {}
 
+      // Keep the link on this phone, so closing the tab doesn't lose the tracker.
+      if (business?.slug) {
+        rememberOrder({
+          orderId: res.data._id,
+          slug: business.slug,
+          orderNumber: (res.data as any).orderNumber,
+          savedAt: Date.now(),
+        });
+      }
+
       navigate(`/c/${business?.slug}/order/${res.data._id}`);
     } catch (err: any) {
       toast.error(err.message || 'Failed to place order.');
@@ -335,6 +347,9 @@ export const CustomerMenuPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* ── This phone's open orders, and a way back for a lost one ───── */}
+      {slug && <YourOrders slug={slug} qrToken={qrToken} cafeName={business?.name} />}
 
       {/* ── Search & Diet Filters (sticky) ─────────────────────────────── */}
       <div className="sticky top-0 bg-white/95 backdrop-blur z-20 px-4 pt-3 pb-3 border-b border-slate-200 shadow-sm space-y-3">

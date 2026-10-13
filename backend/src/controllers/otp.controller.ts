@@ -3,8 +3,12 @@ import { config } from '../config';
 import { isPhoneOrderVerified, sendOtp, verifyOtp, resendOtp, verifyWidgetAccessToken, OtpPurpose } from '../services/otp.service';
 
 // 'ACCOUNT' asks for a fresh, single-use verification for a sensitive account action (password
-// reset, email change); anything else is the normal order/registration verification.
-const purposeOf = (req: Request): OtpPurpose => (req.body?.purpose === 'ACCOUNT' || req.query?.purpose === 'ACCOUNT' ? 'ACCOUNT' : 'DEFAULT');
+// reset, email change); 'RECOVERY' for finding a lost order. Both always need a fresh OTP. Anything
+// else is the normal order/registration verification.
+const purposeOf = (req: Request): OtpPurpose => {
+  const asked = req.body?.purpose ?? req.query?.purpose;
+  return asked === 'ACCOUNT' || asked === 'RECOVERY' ? asked : 'DEFAULT';
+};
 
 const statusFor = (result: { success: boolean; code: string }) =>
   result.success ? 200 : result.code === 'RATE_LIMITED' ? 429 : 400;
@@ -19,8 +23,8 @@ const serverError = (res: Response, error: any) =>
 export const getOtpStatus = async (req: Request, res: Response) => {
   try {
     const phone = String(req.query.phone || req.body.phone || '');
-    // An account action always needs a fresh OTP, so it's never "already verified".
-    const verified = purposeOf(req) === 'ACCOUNT' ? false : await isPhoneOrderVerified(phone);
+    // Account actions and order recovery always need a fresh OTP, so they're never "already verified".
+    const verified = purposeOf(req) !== 'DEFAULT' ? false : await isPhoneOrderVerified(phone);
     return res.json({ success: true, verified, mode: config.otpMode });
   } catch (error: any) {
     return serverError(res, error);

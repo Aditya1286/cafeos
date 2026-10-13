@@ -5,6 +5,7 @@ import type { MascotConfig, PageId, TriggerKind } from './types';
 
 export const DEFAULT_PRIORITY: Record<TriggerKind, number> = {
   section: 1,
+  signal: 2,
   peek: 3,
   hover: 5,
   focus: 6,
@@ -12,6 +13,8 @@ export const DEFAULT_PRIORITY: Record<TriggerKind, number> = {
 
 export const DEFAULT_COOLDOWN_MS: Record<TriggerKind, number> = {
   section: 20_000,
+  // A signal speaks every time it changes; the page only changes it when something happened.
+  signal: 0,
   peek: 45_000,
   hover: 6_000,
   focus: 6_000,
@@ -357,7 +360,11 @@ export const LOGIN_CONFIG: MascotConfig = {
         expression: 'confident',
         gesture: 'wave',
         // Short: there is no free space beside this peek, so the bubble sits over the demo card.
-        message: { id: 'login-form.hi', text: 'Hi again! Sign in whenever you’re ready.', durationMs: 3_000 },
+        message: {
+          id: 'login-form.hi',
+          text: 'Hi again! Sign in whenever you’re ready.',
+          durationMs: 3_000,
+        },
       },
     },
   ],
@@ -421,9 +428,94 @@ export const LOGIN_CONFIG: MascotConfig = {
   ],
 };
 
+// ─── Order page (the customer's live order tracker) ─────────────────────────────────────────────
+// Calm on purpose and built for a phone: it lives in a reserved spot at the top of the order card
+// (covering nothing), turns slowly, and reacts only to what happens to the order. Its message
+// stays beside it until the status changes, and is read out to screen readers. Past ten minutes it reassures; past twenty it points at the staff. Copy never
+// promises a time, only what is true.
+
+export const ORDER_CONFIG: MascotConfig = {
+  flow: {
+    mode: 'slot',
+    slot: '[data-mascot-slot="order"]',
+    size: 112,
+    ambientSpin: true,
+  },
+  sections: [],
+  targets: [],
+  peeks: [],
+  signals: {
+    placed: {
+      expression: 'excited',
+      gesture: 'wave',
+      message: {
+        id: 'order.placed',
+        text: 'Order sent! I’ll keep you posted.',
+        durationMs: Infinity,
+        announce: true,
+      },
+    },
+    preparing: {
+      expression: 'curious',
+      gesture: 'nod',
+      message: {
+        id: 'order.preparing',
+        text: 'The kitchen is making your order.',
+        durationMs: Infinity,
+        announce: true,
+      },
+    },
+    ready: {
+      expression: 'excited',
+      gesture: 'pop',
+      message: { id: 'order.ready', text: 'Ready! Enjoy.', durationMs: Infinity, announce: true },
+    },
+    completed: {
+      expression: 'confident',
+      gesture: 'tipHat',
+      message: {
+        id: 'order.completed',
+        text: 'Enjoy! Thanks for ordering.',
+        durationMs: Infinity,
+        announce: true,
+      },
+    },
+    cancelled: {
+      expression: 'idle',
+      message: {
+        id: 'order.cancelled',
+        text: 'Sorry, this order was cancelled.',
+        durationMs: Infinity,
+        announce: true,
+      },
+    },
+    'wait-long': {
+      expression: 'confident',
+      gesture: 'nod',
+      message: {
+        id: 'order.wait-long',
+        text: 'Taking a little longer than usual. Your order is still in good hands. Take a breath.',
+        durationMs: Infinity,
+        announce: true,
+      },
+    },
+    'wait-longer': {
+      expression: 'confident',
+      gesture: 'tilt',
+      message: {
+        id: 'order.wait-longer',
+        text: 'Still working on it. Feel free to ask the café team for an update.',
+        durationMs: Infinity,
+        announce: true,
+      },
+    },
+  },
+};
+
 export const MASCOT_CONFIGS: Record<PageId, MascotConfig> = {
   landing: LANDING_CONFIG,
   login: LOGIN_CONFIG,
+  order: ORDER_CONFIG,
 };
 
 /** Returns human-readable problems with a config (empty when it is sound). Cheap enough to run in
@@ -464,7 +556,11 @@ export const validateConfig = (config: MascotConfig): string[] => {
   }
   for (const step of config.flow?.steps ?? []) {
     if (!step.selector) problems.push('flow step needs a selector');
-    if (!(step.progress >= 0 && step.progress <= 1)) problems.push(`flow step ${step.selector}: progress must be 0..1`);
+    if (!(step.progress >= 0 && step.progress <= 1))
+      problems.push(`flow step ${step.selector}: progress must be 0..1`);
+  }
+  for (const [key, reaction] of Object.entries(config.signals ?? {})) {
+    checkReaction(`signal ${key}`, reaction);
   }
   for (const t of config.targets) {
     if (!t.targetId || !t.selector) problems.push('target needs targetId and selector');
