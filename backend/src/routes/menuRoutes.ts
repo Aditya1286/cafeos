@@ -10,14 +10,14 @@ import { AuthRequest } from '../middleware/auth';
 import { protect } from '../middleware/auth';
 import { enforceBusiness } from '../middleware/business';
 import { restrictTo } from '../middleware/rbac';
-import { config } from '../config';
+import { runtime } from '../config';
 
 const router = Router();
 
 // Every menu read is a paid AI call — capped per café (not per IP: staff share one café's quota).
 const menuImportLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
-  max: config.nodeEnv === 'production' ? 15 : 1000,
+  max: runtime.nodeEnv === 'production' ? 15 : 1000,
   keyGenerator: (req) => (req as AuthRequest).businessId?.toString() || 'unknown',
   standardHeaders: true,
   legacyHeaders: false,

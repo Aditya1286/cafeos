@@ -11,7 +11,7 @@ import { Order } from '../src/models/Order';
 import { Table } from '../src/models/Table';
 import { VerifiedPhone } from '../src/models/VerifiedPhone';
 import jwt from 'jsonwebtoken';
-import { config } from '../src/config';
+import { auth } from '../src/config';
 import { RECOVERY_WINDOW_HOURS } from '../src/services/orderRecovery.service';
 import { signRecoveryToken, RECOVERY_SESSION_TTL_SECONDS } from '../src/utils/recoveryToken';
 
@@ -245,9 +245,9 @@ test('expired, tampered, garbage and look-alike tokens are all refused the same 
   const [head, payload, sig] = good.split('.');
   const forgedPayload = Buffer.from(JSON.stringify({ ...JSON.parse(Buffer.from(payload, 'base64url').toString()), ten: '9999999999' })).toString('base64url');
   // A real login JWT, signed with the app's JWT secret: it must never work as a recovery token.
-  const loginJwt = jwt.sign({ id: businessId, role: 'OWNER', businessId, typ: 'order-recovery', ten, bid: businessId }, config.jwtSecret, { expiresIn: '7d' });
+  const loginJwt = jwt.sign({ id: businessId, role: 'OWNER', businessId, typ: 'order-recovery', ten, bid: businessId }, auth.jwtSecret, { expiresIn: '7d' });
   // Same secret-derived key but not meant as one of ours (no recovery claims).
-  const wrongKind = jwt.sign({ id: businessId }, config.jwtSecret, { expiresIn: '1h' });
+  const wrongKind = jwt.sign({ id: businessId }, auth.jwtSecret, { expiresIn: '1h' });
 
   for (const bad of [expired, `${head}.${forgedPayload}.${sig}`, `${good}x`, 'not-a-token', '', loginJwt, wrongKind]) {
     const res = await recover({ qrToken, recoveryToken: bad });

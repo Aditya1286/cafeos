@@ -3,7 +3,7 @@ import { User, IUser } from '../models/User';
 import { Business } from '../models/Business';
 import { SubscriptionPlan } from '../models/SubscriptionPlan';
 import { Subscription } from '../models/Subscription';
-import { config } from '../config';
+import { runtime } from '../config';
 import { AuthRequest } from '../middleware/auth';
 import { isPhoneVerified, clearVerifiedPhone } from '../services/otp.service';
 import { signAuthToken } from '../utils/authToken';
@@ -112,7 +112,7 @@ export const register = async (req: Request, res: Response) => {
 
     res.cookie('jwt', token, {
       httpOnly: true,
-      secure: config.nodeEnv === 'production',
+      secure: runtime.nodeEnv === 'production',
       maxAge: 7 * 24 * 60 * 60 * 1000
     });
 
@@ -171,7 +171,7 @@ export const login = async (req: Request, res: Response) => {
 
     res.cookie('jwt', token, {
       httpOnly: true,
-      secure: config.nodeEnv === 'production',
+      secure: runtime.nodeEnv === 'production',
       maxAge: 7 * 24 * 60 * 60 * 1000
     });
 

@@ -30,7 +30,7 @@ export interface IBusiness extends Document {
   masterQrEnabled: boolean;
   status: 'ACTIVE' | 'SUSPENDED';
   // Internal/test account (set by a super admin). Its orders, revenue, and customers are left
-  // out of platform-wide analytics when config.excludeDemoBusinessesFromAnalytics is on — the
+  // out of platform-wide analytics when analytics.excludeDemoBusinesses is on — the
   // business itself keeps working normally and still sees its own dashboard analytics.
   isDemo: boolean;
   // Optional SMEPay online checkout (services/checkout.service.ts). A super admin allows it per

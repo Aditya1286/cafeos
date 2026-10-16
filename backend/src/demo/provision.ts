@@ -150,7 +150,7 @@ export const provisionCafe = async (cafe: DemoCafe): Promise<ProvisionResult> =>
 
   const { accountPassword } = demoConfig();
   if ((!business || !owner || !kitchen) && accountPassword.length < 8) {
-    return { ok: false, reason: 'DEMO_ACCOUNT_PASSWORD (8+ characters) must be set before the demo cafés can be created.' };
+    return { ok: false, reason: 'demo.accountPassword (8+ characters) must be set before the demo cafés can be created.' };
   }
 
   let created = false;

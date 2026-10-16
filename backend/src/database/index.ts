@@ -1,17 +1,17 @@
 import mongoose from 'mongoose';
-import { config } from '../config';
+import { database, mongoUri, runtime } from '../config';
 
-if (config.nodeEnv !== 'production') {
+if (runtime.nodeEnv !== 'production') {
   mongoose.set('debug', true);
 }
 
-// When a replica set is configured (MONGO_REPLICA_SET_NAME + MONGO_REPLICA_HOSTS in
-// config/index.ts), read from secondaries where possible instead of hammering the
+// When a replica set is configured (database.mongo.replicaSetName + replicaHosts in
+// config.<env>.json), read from secondaries where possible instead of hammering the
 // primary. No-op for a single-node connection.
 const connectOptions: mongoose.ConnectOptions = {
   serverSelectionTimeoutMS: 2000,
-  ...(config.mongoReplicaSetName
-    ? { replicaSet: config.mongoReplicaSetName, readPreference: 'secondaryPreferred' }
+  ...(database.mongo.replicaSetName
+    ? { replicaSet: database.mongo.replicaSetName, readPreference: 'secondaryPreferred' }
     : {})
 };
 
@@ -30,7 +30,7 @@ export const connectDB = async (): Promise<typeof mongoose> => {
     let lastError: unknown;
     for (let attempt = 1; attempt <= CONNECT_RETRIES; attempt++) {
       try {
-        const conn = await mongoose.connect(config.mongoUri, connectOptions);
+        const conn = await mongoose.connect(mongoUri, connectOptions);
         console.log(`[Database] MongoDB Connected: ${conn.connection.host}`);
         return conn;
       } catch (error) {
@@ -43,15 +43,15 @@ export const connectDB = async (): Promise<typeof mongoose> => {
     }
     throw lastError;
   } catch (error) {
-    if (config.nodeEnv === 'production') {
+    if (runtime.nodeEnv === 'production') {
       // Never fail open into fake storage in production — an unreachable
-      // MONGO_URI must crash the process loudly (and page whoever's on call),
+      // database must crash the process loudly (and page whoever's on call),
       // not silently start serving traffic against data that vanishes on restart.
-      console.error(`[Database] Could not connect to MongoDB at ${config.mongoUri}:`, error);
+      console.error(`[Database] Could not connect to MongoDB at ${mongoUri}:`, error);
       process.exit(1);
     }
 
-    console.warn(`[Database] Local MongoDB not reachable at ${config.mongoUri}. Starting MongoMemoryServer for local dev...`);
+    console.warn(`[Database] Local MongoDB not reachable at ${mongoUri}. Starting MongoMemoryServer for local dev...`);
     try {
       // Lazy-required: mongodb-memory-server is a devDependency and must never
       // be needed outside development/test (see the production branch above).

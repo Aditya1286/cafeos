@@ -5,7 +5,7 @@ import * as menuImportDao from '../dao/menuImport.dao';
 import { NewCategoryRow, NewProductRow } from '../dao/menuImport.dao';
 import { AiMenuExtraction, AiMenuImage, extractMenu } from './ai/menuAi.client';
 import { parseImageDataUrl, uploadImage } from './storage';
-import { config } from '../config';
+import { storage } from '../config';
 import { logger } from '../utils/logger';
 import { ServiceError } from '../utils/serviceError';
 
@@ -79,7 +79,7 @@ const photoNotes = (ai: AiMenuExtraction): string[] => {
  * inline as base64 instead.
  */
 const photosForAi = async (businessId: string, images: string[]): Promise<AiMenuImage[]> => {
-  if (config.storageDriver !== 's3') return images;
+  if (storage.driver !== 's3') return images;
   try {
     const uploaded = await Promise.all(
       images.map(async (dataUrl) => ({

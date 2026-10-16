@@ -28,7 +28,7 @@ const RESEND_COOLDOWN_SECONDS = 30;
 /**
  * Self-contained OTP verification flow. In live mode this is backed by the MSG91 OTP Widget
  * (send + verify happen client-side, directly against MSG91 — our backend only checks the
- * resulting token). In mock mode (backend's config.otpMode, default outside production) it
+ * resulting token). In mock mode (backend's otp.mode in config.<env>.json) it
  * talks to our own mock REST endpoints instead, so local dev works without widget credentials
  * or spending SMS credits — which mode to use comes from the backend (/otp/status), not a
  * frontend flag, so it can never drift from what the server will actually accept.

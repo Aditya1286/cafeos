@@ -13,7 +13,7 @@ import request from 'supertest';
 import assert from 'node:assert/strict';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { io as ioClient, Socket as ClientSocket } from 'socket.io-client';
-import { config } from '../src/config';
+import { auth } from '../src/config';
 import { seedDatabase } from '../src/database/seed';
 import { initSocketServer, getIO } from '../src/websocket/socketManager';
 import publicRoutes from '../src/routes/publicRoutes';
@@ -77,7 +77,7 @@ export const startHarness = async (): Promise<Harness> => {
 export const tokenFor = async (email: string): Promise<string> => {
   const user = await User.findOne({ email });
   if (!user) throw new Error(`No seeded user ${email}`);
-  return jwt.sign({ id: user._id, role: user.role, businessId: user.businessId }, config.jwtSecret, { expiresIn: '7d' });
+  return jwt.sign({ id: user._id, role: user.role, businessId: user.businessId }, auth.jwtSecret, { expiresIn: '7d' });
 };
 
 /** By role, not email — the seeded admin's address follows APP_SLUG, which changes on rebrand. */

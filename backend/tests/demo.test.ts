@@ -4,9 +4,9 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import request from 'supertest';
-import nconf from 'nconf';
 import mongoose from 'mongoose';
 import { startHarness, Harness } from './helpers';
+import { demo } from '../src/config';
 import authRoutes from '../src/routes/authRoutes';
 import analyticsRoutes from '../src/routes/analyticsRoutes';
 import demoRoutes from '../src/demo/demo.routes';
@@ -51,12 +51,10 @@ before(async () => {
   h.app.use('/api/v1/auth', authRoutes);
   h.app.use('/api/v1/analytics', analyticsRoutes);
   h.app.use('/api/v1/demo', demoRoutes);
-  // Tests run without a config.test.json, so nconf has no writable store for the settings below
-  // until one is added (in real use they come from config.<env>.json).
-  nconf.use('memory');
-  nconf.set('DEMO_ACCOUNT_PASSWORD', PASSWORD);
-  nconf.set('DEMO_BACKFILL_DAYS', BACKFILL_DAYS);
-  nconf.set('DEMO_API_BASE_URL', `${h.url}/api/v1`);
+  // config.test.json leaves the demo switched off; the tests below turn it on.
+  demo.accountPassword = PASSWORD;
+  demo.backfillDays = BACKFILL_DAYS;
+  demo.apiBaseUrl = `${h.url}/api/v1`;
 });
 after(async () => {
   await h.stop();
@@ -65,10 +63,10 @@ after(async () => {
 test('the demo endpoints do not exist without a key, and refuse a wrong one', async () => {
   assert.equal((await tickOverHttp()).status, 404);
 
-  nconf.set('DEMO_TICK_KEY', 'too-short');
+  demo.tickKey = 'too-short';
   assert.equal((await tickOverHttp()).status, 404, 'a weak key keeps the endpoints switched off');
 
-  nconf.set('DEMO_TICK_KEY', KEY);
+  demo.tickKey = KEY;
   assert.equal((await request(h.app).post('/api/v1/demo/tick')).status, 401);
   assert.equal((await request(h.app).post('/api/v1/demo/tick').set('X-Demo-Key', `${KEY}x`)).status, 401);
 });

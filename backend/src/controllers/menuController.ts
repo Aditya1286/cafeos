@@ -197,7 +197,7 @@ export const updateProduct = async (req: AuthRequest, res: Response) => {
 };
 
 // Owner/Manager: Upload a menu image (category or product photo). Validation and where the
-// bytes end up (MongoDB or S3, per config.storageDriver) live in services/storage.
+// bytes end up (MongoDB or S3, per storage.driver) live in services/storage.
 export const uploadMenuImage = async (req: AuthRequest, res: Response) => {
   try {
     const { url } = await uploadImage({ dataUrl: req.body.image, folder: 'menu', ownerId: req.businessId?.toString() });

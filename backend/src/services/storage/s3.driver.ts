@@ -1,6 +1,6 @@
 import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { v4 as uuidv4 } from 'uuid';
-import { config } from '../../config';
+import { storage } from '../../config';
 import { ServiceError } from '../../utils/serviceError';
 import { StorageDriver } from './storage.types';
 
@@ -14,19 +14,19 @@ const EXTENSIONS: Record<string, string> = {
 };
 
 const requireBucket = () => {
-  if (!config.s3.bucket) {
-    throw new ServiceError(500, 'STORAGE_NOT_CONFIGURED', 'File storage is not configured (S3_BUCKET is empty).');
+  if (!storage.s3.bucket) {
+    throw new ServiceError(500, 'STORAGE_NOT_CONFIGURED', 'File storage is not configured (storage.s3.bucket is empty).');
   }
-  return config.s3.bucket;
+  return storage.s3.bucket;
 };
 
 const publicBaseUrl = () =>
-  (config.s3.publicBaseUrl || `https://${config.s3.bucket}.s3.${config.s3.region}.amazonaws.com`).replace(/\/+$/, '');
+  (storage.s3.publicBaseUrl || `https://${storage.s3.bucket}.s3.${storage.s3.region}.amazonaws.com`).replace(/\/+$/, '');
 
 // Rebuilt only when the S3 settings change (they're read from config at call time).
 let cached: { signature: string; client: S3Client } | null = null;
 const getClient = (): S3Client => {
-  const { region, endpoint, accessKeyId, secretAccessKey } = config.s3;
+  const { region, endpoint, accessKeyId, secretAccessKey } = storage.s3;
   const signature = [region, endpoint, accessKeyId].join('|');
   if (!cached || cached.signature !== signature) {
     cached = {
@@ -71,10 +71,10 @@ export const s3Driver: StorageDriver = {
   },
 
   async deleteByUrl(url) {
-    if (!config.s3.bucket) return false;
+    if (!storage.s3.bucket) return false;
     const base = `${publicBaseUrl()}/`;
     if (!url.startsWith(base)) return false;
-    await getClient().send(new DeleteObjectCommand({ Bucket: config.s3.bucket, Key: url.slice(base.length) }));
+    await getClient().send(new DeleteObjectCommand({ Bucket: storage.s3.bucket, Key: url.slice(base.length) }));
     return true;
   }
 };

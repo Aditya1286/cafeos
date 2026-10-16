@@ -8,7 +8,7 @@ import http from 'http';
 import { AddressInfo } from 'net';
 import request from 'supertest';
 import { startHarness, tokenFor, businessIdFor, Harness } from './helpers';
-import { config } from '../src/config';
+import { aiService, storage } from '../src/config';
 import { Category } from '../src/models/Category';
 import { Product } from '../src/models/Product';
 
@@ -75,8 +75,8 @@ before(async () => {
     });
   });
   await new Promise<void>((resolve) => ai.listen(0, '127.0.0.1', resolve));
-  config.aiService.url = `http://127.0.0.1:${(ai.address() as AddressInfo).port}`;
-  config.aiService.key = 'test-service-key';
+  aiService.url = `http://127.0.0.1:${(ai.address() as AddressInfo).port}`;
+  aiService.key = 'test-service-key';
 });
 
 after(async () => {
@@ -129,9 +129,9 @@ const withStubS3 = async (status: number, run: (puts: string[]) => Promise<void>
     });
   });
   await new Promise<void>((resolve) => s3.listen(0, '127.0.0.1', resolve));
-  const saved = { driver: config.storageDriver, s3: { ...config.s3 } };
-  config.storageDriver = 's3';
-  Object.assign(config.s3, {
+  const saved = { driver: storage.driver, s3: { ...storage.s3 } };
+  storage.driver = 's3';
+  Object.assign(storage.s3, {
     bucket: 'menu-items',
     region: 'auto',
     endpoint: `http://127.0.0.1:${(s3.address() as AddressInfo).port}`,
@@ -142,8 +142,8 @@ const withStubS3 = async (status: number, run: (puts: string[]) => Promise<void>
   try {
     await run(puts);
   } finally {
-    config.storageDriver = saved.driver;
-    Object.assign(config.s3, saved.s3);
+    storage.driver = saved.driver;
+    Object.assign(storage.s3, saved.s3);
     await new Promise<void>((resolve) => s3.close(() => resolve()));
   }
 };
@@ -192,14 +192,14 @@ test('extract maps AI failures to clear errors', async () => {
   assert.equal(res.status, 502);
   assert.equal(res.body.error.code, 'AI_UNAVAILABLE');
 
-  const realUrl = config.aiService.url;
-  config.aiService.url = 'http://127.0.0.1:1'; // nothing listens there
+  const realUrl = aiService.url;
+  aiService.url = 'http://127.0.0.1:1'; // nothing listens there
   try {
     res = await post('/extract', artisanOwner, { images: [PHOTO] });
     assert.equal(res.status, 502);
     assert.equal(res.body.error.code, 'AI_UNAVAILABLE');
   } finally {
-    config.aiService.url = realUrl;
+    aiService.url = realUrl;
   }
 });
 

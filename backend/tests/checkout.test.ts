@@ -11,7 +11,7 @@ import { Socket as ClientSocket } from 'socket.io-client';
 import {
   startHarness, tokenFor, superAdminToken, businessIdFor, firstProductIdFor, connectSocket, join, nextEvent, noEvent, Harness
 } from './helpers';
-import { config } from '../src/config';
+import { runtime, server, smepay } from '../src/config';
 import businessRoutes from '../src/routes/businessRoutes';
 import adminRoutes from '../src/routes/adminRoutes';
 import paymentRoutes from '../src/routes/paymentRoutes';
@@ -112,10 +112,10 @@ let seq = 0;
 
 before(async () => {
   await startStub();
-  config.smepayBaseUrl = stub.url;
-  config.smepayPartnerBaseUrl = stub.url;
-  config.smepayPartnerCode = 'PARTNER_TEST';
-  config.smepayPartnerEmail = 'partner@test.local';
+  smepay.baseUrl = stub.url;
+  smepay.partnerBaseUrl = stub.url;
+  smepay.partnerCode = 'PARTNER_TEST';
+  smepay.partnerEmail = 'partner@test.local';
 
   h = await startHarness();
   h.app.use('/api/v1/business', businessRoutes);
@@ -323,12 +323,12 @@ test("staging's TEST_ statuses count as the real ones outside production", async
 test('in production a TEST_SUCCESS never pays for an order', async () => {
   const session = await startCheckout();
   setPaymentStatus(session.slug, 'TEST_SUCCESS');
-  const nodeEnv = config.nodeEnv;
-  config.nodeEnv = 'production';
+  const nodeEnv = runtime.nodeEnv;
+  runtime.nodeEnv = 'production';
   try {
     await sweepOnce();
   } finally {
-    config.nodeEnv = nodeEnv;
+    runtime.nodeEnv = nodeEnv;
   }
   const after = await CheckoutSession.findById(session.id);
   assert.equal(after!.status, 'PENDING');
@@ -395,12 +395,12 @@ test("callback_url is the API, and its redirect lands on the customer's checkout
   const session = await startCheckout();
   assert.equal(
     stub.orders.get(session.slug)!.callbackUrl,
-    `${config.frontendUrl}/api/v1/public/checkout/${session.id}/callback`
+    `${server.frontendUrl}/api/v1/public/checkout/${session.id}/callback`
   );
 
   const res = await request(h.app).get(`/api/v1/public/checkout/${session.id}/callback`);
   assert.equal(res.status, 302);
-  assert.equal(res.headers.location, `${config.frontendUrl}/c/artisan-cafe/checkout/${session.id}`);
+  assert.equal(res.headers.location, `${server.frontendUrl}/c/artisan-cafe/checkout/${session.id}`);
 });
 
 test('the webhook gets a payment confirmed without anyone polling, but its body is never trusted', async () => {

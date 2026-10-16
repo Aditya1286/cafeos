@@ -1,9 +1,9 @@
 import mongoose from 'mongoose';
 import { Business } from '../models/Business';
-import { config } from '../config';
+import { analytics } from '../config';
 
 export interface AnalyticsScope {
-  /** Whether demo exclusion is switched on at all (config.excludeDemoBusinessesFromAnalytics). */
+  /** Whether demo exclusion is switched on at all (analytics.excludeDemoBusinesses). */
   enabled: boolean;
   /** Businesses left out of platform analytics — empty when `enabled` is false. */
   excludedBusinessIds: mongoose.Types.ObjectId[];
@@ -23,7 +23,7 @@ export interface AnalyticsScope {
  * those are never accidentally dropped.
  */
 export const getAnalyticsScope = async (): Promise<AnalyticsScope> => {
-  if (!config.excludeDemoBusinessesFromAnalytics) {
+  if (!analytics.excludeDemoBusinesses) {
     return { enabled: false, excludedBusinessIds: [], byBusinessId: {}, byBusinessDoc: {} };
   }
 

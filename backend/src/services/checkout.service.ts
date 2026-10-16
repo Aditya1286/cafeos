@@ -7,7 +7,7 @@
 // polling and a background sweep all just trigger a server-side validate call. That also covers a
 // customer who pays and closes the tab.
 import mongoose from 'mongoose';
-import { config } from '../config';
+import { checkout, runtime, server } from '../config';
 import { Business, IBusiness } from '../models/Business';
 import { Order } from '../models/Order';
 import { Table } from '../models/Table';
@@ -35,7 +35,7 @@ const FINAL_FAILURE_STATUSES = ['FAILED', 'EXPIRED'];
 // no real money, so outside production they count as the status they stand for; in production
 // they're kept as-is, so a test payment can never pay for a real order.
 const countedStatus = (paymentStatus: string) =>
-  config.nodeEnv !== 'production' && paymentStatus.startsWith('TEST_') ? paymentStatus.slice('TEST_'.length) : paymentStatus;
+  runtime.nodeEnv !== 'production' && paymentStatus.startsWith('TEST_') ? paymentStatus.slice('TEST_'.length) : paymentStatus;
 
 type SessionDoc = ICheckoutSession;
 
@@ -63,7 +63,7 @@ const toView = (session: SessionDoc) => {
 
 export type CheckoutView = ReturnType<typeof toView>;
 
-const ttlFromNow = () => new Date(Date.now() + config.checkoutSessionTtlMinutes * 60_000);
+const ttlFromNow = () => new Date(Date.now() + checkout.sessionTtlMinutes * 60_000);
 
 const getCredentials = async (businessId: mongoose.Types.ObjectId): Promise<SmepayCredentials> => {
   const account = await accountDao.findAccountWithSecret(businessId);
@@ -89,8 +89,8 @@ const plainDraft = (session: SessionDoc): ICheckoutDraft => {
 // SMEPay uses an order's callback_url twice: it sends the customer's browser there (GET) after a
 // successful payment, and POSTs its webhook there. So it points at the API (handled by
 // getCheckoutReturnUrl / handlePaymentWebhook below), not at the customer's page. The API is
-// reachable under FRONTEND_URL: nginx proxies /api/v1 in production, Vite's proxy in dev.
-const callbackUrlFor = (session: SessionDoc) => `${config.frontendUrl}/api/v1/public/checkout/${session._id}/callback`;
+// reachable under server.frontendUrl: nginx proxies /api/v1 in production, Vite's proxy in dev.
+const callbackUrlFor = (session: SessionDoc) => `${server.frontendUrl}/api/v1/public/checkout/${session._id}/callback`;
 
 // Opens a fresh SMEPay Wizard order for this session and extends its hold window.
 const openAttempt = async (session: SessionDoc, creds: SmepayCredentials): Promise<SessionDoc> => {
@@ -295,7 +295,7 @@ export const getCheckoutStatus = async (id: string): Promise<CheckoutView> => {
 /** Where SMEPay's post-payment redirect to callback_url should land: the customer's checkout page. */
 export const getCheckoutReturnUrl = async (id: string): Promise<string> => {
   const session = await loadSession(id);
-  return `${config.frontendUrl}/c/${session.businessSlug}/checkout/${session._id}`;
+  return `${server.frontendUrl}/c/${session.businessSlug}/checkout/${session._id}`;
 };
 
 /**
@@ -408,7 +408,7 @@ export const switchPaymentMethod = async (id: string, paymentMethod: unknown): P
 export const sweepOnce = async (): Promise<void> => {
   const now = Date.now();
   const sessions = await sessionDao.findSessionsToSweep(
-    new Date(now - config.checkoutLateGraceMinutes * 60_000),
+    new Date(now - checkout.lateGraceMinutes * 60_000),
     new Date(now - STALE_CLAIM_MS),
     SWEEP_BATCH
   );

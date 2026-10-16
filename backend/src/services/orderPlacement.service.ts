@@ -17,7 +17,7 @@ import { emitToBusiness, emitToOrder, emitToAdminOrders } from '../websocket/soc
 import { toAdminLiveOrder } from '../utils/adminLiveOrder';
 import { generateDailyOrderId } from '../utils/orderSequence';
 import { ServiceError } from '../utils/serviceError';
-import { config } from '../config';
+import { analytics } from '../config';
 import { isPhoneOrderVerified, touchPhoneOrderVerification } from './otp.service';
 
 type BusinessDoc = mongoose.HydratedDocument<IBusiness>;
@@ -315,7 +315,7 @@ export const placeOrder = async (params: PlaceOrderParams): Promise<OrderDoc> =>
 
   // Super Admin live feed. Demo businesses stay out of it whenever they're excluded from
   // platform analytics, matching the overview's recentOrders the feed starts from.
-  if (!(config.excludeDemoBusinessesFromAnalytics && business.isDemo)) {
+  if (!(analytics.excludeDemoBusinesses && business.isDemo)) {
     emitToAdminOrders('admin_order:new', toAdminLiveOrder(order, business.name));
   }
 

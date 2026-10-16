@@ -1,7 +1,7 @@
 // Thin HTTP client for the AI service's menu reader (musicFck: POST /api/v1/menu/extract) — no
 // business rules here, those live in ../menuImport.service.ts. Every way the call can fail is
 // turned into a ServiceError with an owner-readable message.
-import { config } from '../../config';
+import { aiService } from '../../config';
 import { ServiceError } from '../../utils/serviceError';
 
 export interface AiPricedOption {
@@ -56,7 +56,7 @@ export interface ExtractMenuInput {
 }
 
 export const extractMenu = async (input: ExtractMenuInput): Promise<AiMenuExtraction> => {
-  const { url, key, menuTimeoutMs } = config.aiService;
+  const { url, key, menuTimeoutMs } = aiService;
   if (!url) {
     throw new ServiceError(503, 'AI_UNAVAILABLE', 'Menu upload is not set up yet. Please add your items manually.');
   }

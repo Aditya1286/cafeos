@@ -7,7 +7,7 @@ import { runDemoTick, TickInProgressError } from './tick';
 import { getDemoStatus } from './status';
 
 // The demo endpoints are for the operator's cron job, not for users: they need the X-Demo-Key
-// header to match DEMO_TICK_KEY, and don't exist at all (404) while no key is configured.
+// header to match demo.tickKey, and don't exist at all (404) while no key is configured.
 export const requireDemoKey = (req: Request, res: Response, next: NextFunction) => {
   if (!isDemoEnabled()) {
     return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Not found.' } });

@@ -6,7 +6,7 @@ import { getPublicMenu, getMenuImage } from '../controllers/menuController';
 import { createOrder, getPublicOrderById, markOrderPaidByCustomer, cancelOrderByCustomer, requestOrderRefund } from '../controllers/orderController';
 import { SubscriptionPlan } from '../models/SubscriptionPlan';
 import { Business } from '../models/Business';
-import { config } from '../config';
+import { runtime } from '../config';
 import { getOtpStatus, confirmWidgetToken, requestOtp, confirmOtp, resendOtpRequest } from '../controllers/otp.controller';
 import { recoverOrdersPublic } from '../controllers/orderRecoveryController';
 import { readRecoveryToken } from '../utils/recoveryToken';
@@ -70,7 +70,7 @@ router.get('/images/:id', getMenuImage);
 // limiter on top of the OTP it requires (a guesser can't brute-force the code through it).
 const recoverRouteLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
-  max: config.nodeEnv === 'production' ? 15 : 1000,
+  max: runtime.nodeEnv === 'production' ? 15 : 1000,
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many attempts. Please try again in a few minutes.' } }
@@ -82,7 +82,7 @@ const recoverRouteLimiter = rateLimit({
 // takes the tight per-IP limit above, so spraying made-up tokens never earns the roomier one.
 const recoverSessionLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
-  max: config.nodeEnv === 'production' ? 60 : 1000,
+  max: runtime.nodeEnv === 'production' ? 60 : 1000,
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req) => crypto.createHash('sha256').update(String(req.body?.recoveryToken)).digest('hex'),
@@ -104,7 +104,7 @@ router.put('/orders/:id/request-refund', requestOrderRefund);
 // a paid SMEPay order, so they get their own limiter; status polling rides the default one.
 const checkoutRouteLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
-  max: config.nodeEnv === 'production' ? 20 : 1000,
+  max: runtime.nodeEnv === 'production' ? 20 : 1000,
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many payment attempts. Please try again later.' } }

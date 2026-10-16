@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import http from 'http';
 import { AddressInfo } from 'net';
 import express from 'express';
-import { config } from '../src/config';
+import { storage } from '../src/config';
 import { uploadImage, deleteFile } from '../src/services/storage';
 
 const PNG_BYTES = Buffer.from(
@@ -28,16 +28,16 @@ before(async () => {
   server = http.createServer(app);
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
 
-  config.storageDriver = 's3';
-  config.s3.bucket = 'cafeos-media';
-  config.s3.region = 'ap-south-1';
-  config.s3.endpoint = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
-  config.s3.accessKeyId = 'test-key';
-  config.s3.secretAccessKey = 'test-secret';
-  config.s3.publicBaseUrl = 'https://cdn.example.test/';
+  storage.driver = 's3';
+  storage.s3.bucket = 'cafeos-media';
+  storage.s3.region = 'ap-south-1';
+  storage.s3.endpoint = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+  storage.s3.accessKeyId = 'test-key';
+  storage.s3.secretAccessKey = 'test-secret';
+  storage.s3.publicBaseUrl = 'https://cdn.example.test/';
 });
 after(async () => {
-  config.storageDriver = 'mongo';
+  storage.driver = 'mongo';
   await new Promise<void>((resolve) => server.close(() => resolve()));
 });
 
@@ -66,11 +66,11 @@ test('deleting by URL removes exactly that object; foreign URLs are ignored', as
 });
 
 test('a missing bucket is a clear configuration error, not a crash', async () => {
-  const bucket = config.s3.bucket;
-  config.s3.bucket = '';
+  const bucket = storage.s3.bucket;
+  storage.s3.bucket = '';
   try {
     await assert.rejects(uploadImage({ dataUrl: PNG_DATA_URL, folder: 'menu' }), { code: 'STORAGE_NOT_CONFIGURED' });
   } finally {
-    config.s3.bucket = bucket;
+    storage.s3.bucket = bucket;
   }
 });

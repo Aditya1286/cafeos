@@ -1,7 +1,7 @@
 import pino from 'pino';
-import { config } from '../config';
+import { runtime, server } from '../config';
 
 export const logger = pino({
-  level: process.env.LOG_LEVEL || (config.nodeEnv === 'production' ? 'info' : 'debug'),
-  transport: config.nodeEnv === 'production' ? undefined : { target: 'pino-pretty', options: { colorize: true } }
+  level: server.logLevel,
+  transport: runtime.nodeEnv === 'production' ? undefined : { target: 'pino-pretty', options: { colorize: true } }
 });

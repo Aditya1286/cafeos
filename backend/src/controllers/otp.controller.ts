@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { config } from '../config';
+import { otp } from '../config';
 import { isPhoneOrderVerified, sendOtp, verifyOtp, resendOtp, verifyWidgetAccessToken, OtpPurpose } from '../services/otp.service';
 
 // 'ACCOUNT' asks for a fresh, single-use verification for a sensitive account action (password
@@ -25,15 +25,15 @@ export const getOtpStatus = async (req: Request, res: Response) => {
     const phone = String(req.query.phone || req.body.phone || '');
     // Account actions and order recovery always need a fresh OTP, so they're never "already verified".
     const verified = purposeOf(req) !== 'DEFAULT' ? false : await isPhoneOrderVerified(phone);
-    return res.json({ success: true, verified, mode: config.otpMode });
+    return res.json({ success: true, verified, mode: otp.mode });
   } catch (error: any) {
     return serverError(res, error);
   }
 };
 
-// Public: mock-mode only (config.otpMode === 'mock') — simulates the widget's send/verify
+// Public: mock-mode only (otp.mode === 'mock') — simulates the widget's send/verify
 // round trip locally for local dev/debugging, without needing widget credentials or spending
-// SMS credits. Disabled (returns MOCK_DISABLED) whenever otpMode is 'live'.
+// SMS credits. Disabled (returns MOCK_DISABLED) whenever otp.mode is 'live'.
 export const requestOtp = async (req: Request, res: Response) => {
   try {
     const result = await sendOtp(req.body.phone, purposeOf(req));
