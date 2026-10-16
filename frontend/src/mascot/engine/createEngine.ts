@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+import { AmbientLight, DirectionalLight, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
 import type { EngineOptions, MascotEngine } from '../renderer';
 import { MascotAnimator } from './animator';
 import { buildHamster } from './model';
@@ -22,7 +22,7 @@ export const createMascotEngine = ({
   reducedMotion,
   onContextChange,
 }: EngineOptions): MascotEngine => {
-  const renderer = new THREE.WebGLRenderer({
+  const renderer = new WebGLRenderer({
     antialias: true,
     alpha: true,
     powerPreference: 'low-power',
@@ -32,15 +32,15 @@ export const createMascotEngine = ({
   renderer.domElement.style.cssText = 'display:block;width:100%;height:100%;';
   container.appendChild(renderer.domElement);
 
-  const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(CAMERA.fov, 1, 0.1, 50);
+  const scene = new Scene();
+  const camera = new PerspectiveCamera(CAMERA.fov, 1, 0.1, 50);
   camera.position.set(0, CAMERA.lookY + 0.2, CAMERA.distance);
   camera.lookAt(0, CAMERA.lookY, 0);
 
-  const ambient = new THREE.AmbientLight(0xfff1e0, 1.5);
-  const key = new THREE.DirectionalLight(0xffffff, 2.4);
+  const ambient = new AmbientLight(0xfff1e0, 1.5);
+  const key = new DirectionalLight(0xffffff, 2.4);
   key.position.set(-3, 5, 7);
-  const rim = new THREE.DirectionalLight(0xffc9a8, 0.9);
+  const rim = new DirectionalLight(0xffc9a8, 0.9);
   rim.position.set(4, 1, -3);
   scene.add(ambient, key, rim);
 
