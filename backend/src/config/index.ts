@@ -6,6 +6,7 @@ import type {
   IAiService,
   IAnalytics,
   IAuth,
+  ICafeIdentity,
   ICheckout,
   IDatabase,
   IDemo,
@@ -54,6 +55,7 @@ const assertOneOf = (keyPath: string, allowed: readonly string[]) => {
 };
 assertOneOf('otp:mode', ['mock', 'live']);
 assertOneOf('storage:driver', ['mongo', 's3']);
+assertOneOf('cafeIdentity:mascotRendering', ['heavy', 'light']);
 
 // Anyone who knows the JWT secret can mint a token for any user — including SUPER_ADMIN — so
 // production refuses to boot with a weak one. The "_super_secret_jwt_key_2026_production_ready"
@@ -88,6 +90,7 @@ export const analytics = nconf.get('analytics') as IAnalytics;
 export const storage = nconf.get('storage') as IStorage;
 export const aiService = nconf.get('aiService') as IAiService;
 export const demo = nconf.get('demo') as IDemo;
+export const cafeIdentity = nconf.get('cafeIdentity') as ICafeIdentity;
 
 aiService.url = aiService.url.replace(/\/+$/, '');
 

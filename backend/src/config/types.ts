@@ -129,3 +129,11 @@ export interface IDemo {
   /** Where the kitchen bot reaches this backend's own API. Empty = http://127.0.0.1:<port>/api/v1 */
   apiBaseUrl: string;
 }
+
+/** Café identity (themes, mascot, guest recognition) — see services/cafeIdentity.service.ts. */
+export interface ICafeIdentity {
+  /** Platform master switch. Off = the feature is dark for every café, whatever each one chose. */
+  enabled: boolean;
+  /** 'light' = the static (CSS/SVG) mascot only; 'heavy' also allows the 3D engine on capable devices. */
+  mascotRendering: 'heavy' | 'light';
+}

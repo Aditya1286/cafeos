@@ -64,5 +64,9 @@
     "backfillDays": 30,
     "keepDays": 45,
     "apiBaseUrl": ""
+  },
+  "cafeIdentity": {
+    "enabled": true,
+    "mascotRendering": "light"
   }
 }
