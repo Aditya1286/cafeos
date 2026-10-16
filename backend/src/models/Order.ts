@@ -26,6 +26,15 @@ export interface IOrderItemSnapshot {
   notes?: string;
 }
 
+// One add-on to an order already placed (e.g. a pairing the guest tapped while waiting). The order's
+// own `items` and totals already include these lines; this list records what was added, when and from where.
+export interface IOrderAmendment {
+  at: Date;
+  source: 'pairing' | 'staff';
+  items: IOrderItemSnapshot[];
+  amountPaise: number; // what this amendment added to the order's total, in paise
+}
+
 export interface IOrderTimeline {
   placedAt?: Date;
   acceptedAt?: Date; // legacy: stamped by the old CONFIRMED step; new orders only get preparingAt
@@ -49,6 +58,7 @@ export interface IOrder extends Document {
   customerEmail?: string;
   source: OrderSource;
   items: IOrderItemSnapshot[];
+  amendments: IOrderAmendment[];
   subtotalPaise: number;
   discountPaise: number;
   taxPaise: number;
@@ -106,6 +116,16 @@ const OrderItemSchema = new Schema<IOrderItemSnapshot>({
   notes: { type: String, default: '' }
 });
 
+const OrderAmendmentSchema = new Schema<IOrderAmendment>(
+  {
+    at: { type: Date, required: true, default: Date.now },
+    source: { type: String, enum: ['pairing', 'staff'], required: true },
+    items: { type: [OrderItemSchema], default: [] },
+    amountPaise: { type: Number, required: true }
+  },
+  { _id: false }
+);
+
 const TimelineSchema = new Schema<IOrderTimeline>({
   placedAt: { type: Date, default: Date.now },
   acceptedAt: { type: Date },
@@ -133,6 +153,7 @@ const OrderSchema = new Schema<IOrder>(
       default: 'QR_TABLE'
     },
     items: [OrderItemSchema],
+    amendments: { type: [OrderAmendmentSchema], default: [] },
     subtotalPaise: { type: Number, required: true },
     discountPaise: { type: Number, default: 0 },
     taxPaise: { type: Number, required: true, default: 0 },

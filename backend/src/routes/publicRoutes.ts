@@ -21,6 +21,7 @@ import {
   checkoutCallbackWebhook
 } from '../controllers/checkoutController';
 import { isCheckoutAvailable } from '../services/checkout.service';
+import { toPublicIdentity } from '../services/cafeIdentity.service';
 
 const router = Router();
 
@@ -53,7 +54,13 @@ router.get('/c/:slug', async (req, res) => {
     }
     // checkoutAvailable: whether the menu should offer SMEPay online checkout. Credentials live
     // in SmepayAccount, never on this document.
-    return res.json({ success: true, data: { ...business.toJSON(), checkoutAvailable: isCheckoutAvailable(business) } });
+    // identity: the raw stored record (enabledAt, appliedAt, stored ids) stays private; guests get
+    // only the public block, which is inert when the platform or the café has identity off.
+    const { identity: _storedIdentity, ...publicBusiness } = business.toJSON();
+    return res.json({
+      success: true,
+      data: { ...publicBusiness, checkoutAvailable: isCheckoutAvailable(business), identity: toPublicIdentity(business) }
+    });
   } catch (error: any) {
     return res
       .status(500)

@@ -10,6 +10,7 @@ import { FinancialLedger } from '../models/FinancialLedger';
 import { emitToBusiness, emitToOrder, emitToAdminOrders } from '../websocket/socketManager';
 import { computeRefundInsights } from '../services/refundInsights.service';
 import { prepareOrder, placeOrder, recordOrderPaymentLedger, markOrderPaid } from '../services/orderPlacement.service';
+import { toPublicIdentity } from '../services/cafeIdentity.service';
 import { handleServiceError } from '../utils/serviceError';
 import {
   ACTIVE_ORDERS_LIMIT,
@@ -290,7 +291,8 @@ const sendOrderDetails = async (res: Response, order: InstanceType<typeof Order>
         phone: business.phone,
         taxRatePercentage: business.taxRatePercentage,
         gstin: business.gstin,
-        upiVpa: business.upiVpa
+        upiVpa: business.upiVpa,
+        identity: toPublicIdentity(business)
       } : null
     }
   });
