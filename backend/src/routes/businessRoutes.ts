@@ -6,6 +6,7 @@ import {
   saveMyCheckoutCredentials,
   setMyCheckoutEnabled
 } from '../controllers/checkoutController';
+import { updateMyIdentity } from '../controllers/cafeIdentity.controller';
 import { protect } from '../middleware/auth';
 import { enforceBusiness } from '../middleware/business';
 import { restrictTo } from '../middleware/rbac';
@@ -15,6 +16,9 @@ const router = Router();
 router.use(protect, enforceBusiness);
 
 router.put('/settings', restrictTo('OWNER'), updateBusinessSettings);
+
+// The owner's "Café look" (services/cafeIdentity.service.ts). Switching identity on is a super admin's call.
+router.put('/identity', restrictTo('OWNER'), updateMyIdentity);
 
 // SMEPay online checkout setup (services/checkoutSettings.service.ts)
 router.get('/checkout', restrictTo('OWNER'), getMyCheckoutSettings);

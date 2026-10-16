@@ -5,6 +5,7 @@ import {
   getProducts, createProduct, updateProduct, deleteProduct, archiveProduct,
   uploadMenuImage
 } from '../controllers/menuController';
+import { setProductHouseSpecial } from '../controllers/cafeIdentity.controller';
 import { extractMenuImport, commitMenuImport } from '../controllers/menuImportController';
 import { AuthRequest } from '../middleware/auth';
 import { protect } from '../middleware/auth';
@@ -44,6 +45,8 @@ router.post('/products', restrictTo('SUPER_ADMIN', 'OWNER', 'MANAGER'), createPr
 router.put('/products/:id', restrictTo('SUPER_ADMIN', 'OWNER', 'MANAGER'), updateProduct);
 router.delete('/products/:id', restrictTo('SUPER_ADMIN', 'OWNER', 'MANAGER'), deleteProduct);
 router.put('/products/:id/archive', restrictTo('SUPER_ADMIN', 'OWNER', 'MANAGER'), archiveProduct);
+// House specials (at most HOUSE_SPECIAL_MAX per café); not part of the general product update on purpose.
+router.put('/products/:id/house-special', restrictTo('OWNER', 'MANAGER'), setProductHouseSpecial);
 
 // Upload Menu (AI import): read photos into a draft, then save the reviewed draft
 router.post('/import/extract', restrictTo('SUPER_ADMIN', 'OWNER', 'MANAGER'), menuImportLimiter, extractMenuImport);

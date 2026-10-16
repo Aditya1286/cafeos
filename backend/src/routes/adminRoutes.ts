@@ -14,6 +14,7 @@ import {
 } from '../controllers/supportController';
 import { listDemoRequestsAdmin, updateDemoRequestAdmin } from '../controllers/demoRequestController';
 import { setBusinessCheckoutAllowed, getBusinessCheckoutSettings } from '../controllers/checkoutController';
+import { setBusinessIdentityAdmin } from '../controllers/cafeIdentity.controller';
 import { protect } from '../middleware/auth';
 import { restrictTo } from '../middleware/rbac';
 
@@ -31,6 +32,7 @@ router.put('/businesses/:id/status', toggleBusinessStatus);
 router.put('/businesses/:id/demo', setBusinessDemoStatus);
 router.put('/businesses/:id/finance-settings', updateBusinessFinanceSettings);
 router.put('/businesses/:id/plan', changeBusinessPlan);
+router.put('/businesses/:id/identity', setBusinessIdentityAdmin);
 router.get('/businesses/:id/checkout', getBusinessCheckoutSettings);
 router.put('/businesses/:id/checkout', setBusinessCheckoutAllowed);
 router.get('/businesses/:id/remittances', getBusinessRemittances);
