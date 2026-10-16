@@ -10,6 +10,7 @@
 <clipPath id="caosl-eyl"><ellipse cx="78" cy="96" rx="14" ry="16"/></clipPath>
 <clipPath id="caosl-eyr"><ellipse cx="122" cy="96" rx="14" ry="16"/></clipPath>
 </defs>
+<g class="caosl-enter">
 <g class="caosl-fig">
 <g class="caosl-sway">
 <g class="caosl-breath">
@@ -43,6 +44,7 @@
 </g>
 <g transform="rotate(-5 100 170)"><rect x="83" y="152" width="34" height="34" rx="3" fill="#fff" stroke="#15110f" stroke-width="3"/><path fill="#15110f" transform="translate(86 155) scale(1.87)" d="M0 0h7v1h-7zM8 0h7v1h-7zM0 1h1v1h-1zM6 1h1v1h-1zM8 1h1v1h-1zM14 1h1v1h-1zM0 2h1v1h-1zM2 2h3v1h-3zM6 2h1v1h-1zM8 2h1v1h-1zM10 2h3v1h-3zM14 2h1v1h-1zM0 3h1v1h-1zM2 3h3v1h-3zM6 3h1v1h-1zM8 3h1v1h-1zM10 3h3v1h-3zM14 3h1v1h-1zM0 4h1v1h-1zM2 4h3v1h-3zM6 4h1v1h-1zM8 4h1v1h-1zM10 4h3v1h-3zM14 4h1v1h-1zM0 5h1v1h-1zM6 5h1v1h-1zM8 5h1v1h-1zM14 5h1v1h-1zM0 6h7v1h-7zM8 6h7v1h-7zM0 8h7v1h-7zM11 8h2v1h-2zM14 8h1v1h-1zM0 9h1v1h-1zM6 9h1v1h-1zM8 9h5v1h-5zM0 10h1v1h-1zM2 10h3v1h-3zM6 10h1v1h-1zM8 10h1v1h-1zM10 10h1v1h-1zM12 10h3v1h-3zM0 11h1v1h-1zM2 11h3v1h-3zM6 11h1v1h-1zM8 11h1v1h-1zM10 11h1v1h-1zM12 11h1v1h-1zM14 11h1v1h-1zM0 12h1v1h-1zM2 12h3v1h-3zM6 12h1v1h-1zM8 12h1v1h-1zM10 12h2v1h-2zM0 13h1v1h-1zM6 13h1v1h-1zM8 13h3v1h-3zM13 13h1v1h-1zM0 14h7v1h-7zM12 14h3v1h-3z"/></g>
 <g fill="#f6e7c8" stroke="#15110f" stroke-width="3"><ellipse cx="84" cy="186" rx="10.5" ry="8"/><ellipse class="caosl-pawr" cx="117" cy="184" rx="10.5" ry="8"/></g>
+</g>
 </g>
 </g>
 </g>

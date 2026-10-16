@@ -153,6 +153,46 @@ describe('mascot bubble actions', () => {
     expect(actionButtons(container).map((b) => b.textContent)).toEqual(['First', 'Second']);
   });
 
+  it('moves keyboard focus to the hide button after an action closes the bubble', async () => {
+    const onAction = vi.fn();
+    render(
+      <MascotExperience
+        page="menu"
+        rendering="light"
+        reactions={welcome}
+        signal="welcome"
+        onAction={onAction}
+      />,
+    );
+    const add = await screen.findByRole('button', { name: 'Add' }, SHOWN);
+    add.focus();
+    expect(document.activeElement).toBe(add);
+    fireEvent.click(add);
+    expect(onAction).toHaveBeenCalledWith('add-usual');
+    expect(document.activeElement).toBe(
+      screen.getByRole('button', { name: 'Hide the CAOS mascot' }),
+    );
+  });
+
+  it('leaves focus alone when the page moved it during onAction', async () => {
+    const elsewhere = document.createElement('button');
+    document.body.appendChild(elsewhere);
+    render(
+      <MascotExperience
+        page="menu"
+        rendering="light"
+        reactions={welcome}
+        signal="welcome"
+        onAction={() => elsewhere.focus()}
+      />,
+    );
+    const add = await screen.findByRole('button', { name: 'Add' }, SHOWN);
+    add.focus();
+    fireEvent.click(add);
+    expect(document.activeElement).toBe(elsewhere);
+    elsewhere.remove();
+  });
+
   it('drops the action when the signal moves to a message without one', async () => {
     const { container, rerender } = render(
       <MascotExperience page="menu" rendering="light" reactions={welcome} signal="welcome" />,

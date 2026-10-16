@@ -40,6 +40,8 @@ export const createLiteEngine = ({ container, reducedMotion }: EngineOptions): M
   svg.setAttribute('data-expression', 'idle');
 
   // A gesture or the entrance clears itself when its animation ends, so the next one can replay.
+  // They animate different elements (.caosl-fig vs .caosl-enter, see lite.css), so a gesture
+  // during the entrance never cancels it.
   const onAnimationEnd = (event: AnimationEvent) => {
     if (event.animationName.startsWith('caosl-g-')) svg.removeAttribute('data-g');
     else if (event.animationName === 'caosl-in') flag('data-in', false);

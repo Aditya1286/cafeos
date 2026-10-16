@@ -101,6 +101,8 @@ const ActiveMascot: React.FC<
   }, [message]);
 
   const hostRef = useRef<HTMLDivElement>(null);
+  const actionsRef = useRef<HTMLSpanElement>(null);
+  const hideRef = useRef<HTMLButtonElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<MascotEngine | null>(null);
   const scrollRef = useRef<ScrollSnapshot>({ progress: 0, velocity: 0, updatedAt: 0 });
@@ -332,6 +334,14 @@ const ActiveMascot: React.FC<
   const onActionClick = useCallback((id: string) => {
     onActionRef.current?.(id);
     brainRef.current?.dismissMessage();
+    // The bubble is closing and its buttons become aria-hidden: don't strand keyboard focus there.
+    // Unless the page already moved focus somewhere itself, it goes to the hide button (or, in a
+    // slot, where there is none, back to the page).
+    const active = document.activeElement;
+    if (active instanceof HTMLElement && actionsRef.current?.contains(active)) {
+      if (hideRef.current) hideRef.current.focus();
+      else active.blur();
+    }
   }, []);
 
   const hostStyle: Record<string, string> = { '--m-size': `${size}px` };
@@ -356,6 +366,7 @@ const ActiveMascot: React.FC<
           // The only part of the bubble that takes taps. Named by the bubble's text, so a screen
           // reader hears what "Add" is about.
           <span
+            ref={actionsRef}
             className="caos-mascot__actions"
             role="group"
             aria-label={bubbleText}
@@ -399,6 +410,7 @@ const ActiveMascot: React.FC<
       {!slotMode && (
         <button
           type="button"
+          ref={hideRef}
           className="caos-mascot__hide"
           onClick={onHideClick}
           aria-label="Hide the CAOS mascot"

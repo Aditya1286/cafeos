@@ -82,17 +82,24 @@
   transform-box: fill-box;
 }
 
-/* Whole figure: entrance, lean into the path, and the body gestures. Pivots at the feet. */
+/* The entrance has an element of its own (.caosl-enter), outside the one the body gestures animate
+   (.caosl-fig). If they shared one, a gesture fired during the entrance (the menu welcome does
+   that) would replace the entrance animation, which would then never end and replay afterwards. */
+.caosl-enter {
+  transform-origin: 50% 100%;
+}
+.caosl[data-pending] .caosl-enter {
+  opacity: 0;
+}
+.caosl[data-in] .caosl-enter {
+  animation: caosl-in 650ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* Whole figure: lean into the path, and the body gestures. Pivots at the feet. */
 .caosl-fig {
   transform-origin: 50% 100%;
   rotate: var(--lean);
   transition: rotate 300ms ease-out;
-}
-.caosl[data-pending] .caosl-fig {
-  opacity: 0;
-}
-.caosl[data-in] .caosl-fig {
-  animation: caosl-in 650ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 .caosl-breath {
   transform-origin: 50% 100%;
