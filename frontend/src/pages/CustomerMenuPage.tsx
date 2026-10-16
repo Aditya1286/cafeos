@@ -30,6 +30,7 @@ import MenuSection from '@/organisms/customer-menu/MenuSection';
 import MenuJumpSheet from '@/organisms/customer-menu/MenuJumpSheet';
 import { YourOrders } from '@/organisms/customer-menu/YourOrders';
 import { rememberOrder } from '@/utils/recentOrders';
+import { readGuestPass, saveGuestPass } from '@/utils/guestPass';
 
 type DietFilter = 'ALL' | 'VEG' | 'NON_VEG';
 
@@ -202,7 +203,17 @@ export const CustomerMenuPage: React.FC = () => {
         return;
       }
 
-      const res = await publicOrdersService.create(payload as any);
+      // Proof of who is ordering, so the café can recognise this guest next time: the device proof
+      // from a fresh OTP, and/or this café's stored pass. Either is optional; without them the
+      // order goes through exactly as before.
+      const businessId: string | undefined = business?._id ?? business?.id;
+      if (otp.deviceProof) payload.deviceProof = otp.deviceProof;
+      const res = await publicOrdersService.create(payload as any, {
+        guestToken: businessId ? readGuestPass(businessId) : null,
+      });
+      if (businessId && res.data.guestToken && res.data.guestTokenExpiresAt) {
+        saveGuestPass(businessId, res.data.guestToken, res.data.guestTokenExpiresAt);
+      }
 
       try {
         confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });

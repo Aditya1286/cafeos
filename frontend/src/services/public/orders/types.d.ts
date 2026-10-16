@@ -8,9 +8,18 @@ export interface CreateOrderPayload {
   items: { productId: string; quantity: number; name: string }[];
   qrToken?: string;
   businessSlug?: string;
+  /** From the last fresh OTP on this device: lets the server issue a guest pass with the order. */
+  deviceProof?: string;
 }
 
-export type CreateOrderResponse = ApiResponse<Order>;
+/** The guest pass the server issues (or renews) with an order that came with proof. Absent otherwise. */
+export interface GuestPassGrant {
+  guestToken?: string;
+  /** ISO timestamp. */
+  guestTokenExpiresAt?: string;
+}
+
+export type CreateOrderResponse = ApiResponse<Order & GuestPassGrant>;
 export type GetOrderResponse = ApiResponse<{ order: Order; business: any }>;
 export type RequestRefundResponse = ApiMessageResponse;
 export type MarkPaidResponse = ApiMessageResponse;
