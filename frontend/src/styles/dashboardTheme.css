@@ -138,6 +138,10 @@ html.dashboard-dark .text-brand-800 { color: rgb(var(--brand-200)); }
 html.dashboard-dark .text-brand-900 { color: rgb(var(--brand-100)); }
 html.dashboard-dark .hover\:bg-brand-50:hover { background-color: rgb(var(--brand-500) / 0.18); }
 html.dashboard-dark .hover\:bg-brand-100:hover { background-color: rgb(var(--brand-500) / 0.26); }
+html.dashboard-dark .ring-brand-100 { --tw-ring-color: rgb(var(--brand-500) / 0.3); }
+html.dashboard-dark .bg-brand-50\/40 { background-color: rgb(var(--brand-500) / 0.08); }
+/* After the border re-mapping above, so a side accent survives a re-mapped border-slate-* on the same element */
+html.dashboard-dark .border-t-brand-500 { border-top-color: rgb(var(--brand-500)); }
 html.dashboard-dark .bg-amber-50 { background-color: rgb(245 158 11 / 0.10); }
 html.dashboard-dark .bg-amber-100 { background-color: rgb(245 158 11 / 0.16); }
 html.dashboard-dark .bg-amber-200 { background-color: rgb(245 158 11 / 0.22); }

@@ -77,7 +77,7 @@ export const RefundHistoryModal = ({ order, onClose }: RefundHistoryModalProps) 
       icon: Undo2,
       label: 'Marked Refunded',
       at: order.refundedAt || null,
-      color: 'bg-violet-500',
+      color: 'bg-slate-400',
       detail: refundedBy ? <span className="text-slate-500">by {refundedBy}</span> : undefined,
     });
   }

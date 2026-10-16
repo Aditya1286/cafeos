@@ -7,6 +7,9 @@ import { INVENTORY_ENABLED } from '@/constants/features';
 import { KpiStatsGridDesktop } from './KpiStatsGridDesktop';
 import { KpiStatsGridMobile } from './KpiStatsGridMobile';
 
+// Every card shares the accent tile; colour is reserved for status (see the Running Low card).
+const BRAND_TILE = 'bg-gradient-to-br from-brand-500 to-brand-600';
+
 interface KpiStatsGridProps {
   activeOrdersCount: number;
   occupiedTables: number;
@@ -38,9 +41,9 @@ export const KpiStatsGrid = ({
       value: activeOrdersCount,
       subtext: 'Being prepared now',
       trend: todayOrders > 0 ? `${activeOrdersCount} of ${todayOrders} today` : 'No orders yet',
-      color: 'text-purple-600',
-      iconBg: 'bg-gradient-to-br from-purple-500 to-indigo-600',
-      border: 'border-purple-200/80',
+      color: 'text-slate-900',
+      iconBg: BRAND_TILE,
+      border: 'border-slate-200/80',
     },
     {
       icon: DollarSign,
@@ -48,9 +51,9 @@ export const KpiStatsGrid = ({
       value: formatCurrency(metrics?.todaySalesPaise),
       subtext: `${todayOrders} order${todayOrders === 1 ? '' : 's'} today`,
       trend: `${formatPercentage(metrics?.salesTrendPercentage ?? null)} vs last week`,
-      color: 'text-emerald-600',
-      iconBg: 'bg-gradient-to-br from-emerald-500 to-teal-600',
-      border: 'border-emerald-200/80',
+      color: 'text-slate-900',
+      iconBg: BRAND_TILE,
+      border: 'border-slate-200/80',
     },
     {
       icon: Users,
@@ -58,9 +61,9 @@ export const KpiStatsGrid = ({
       value: `${occupiedTables} / ${totalTables}`,
       subtext: `${occupancyPct}% of tables taken`,
       trend: `${occupiedTables} table${occupiedTables === 1 ? '' : 's'} busy`,
-      color: 'text-blue-600',
-      iconBg: 'bg-gradient-to-br from-blue-500 to-cyan-600',
-      border: 'border-blue-200/80',
+      color: 'text-slate-900',
+      iconBg: BRAND_TILE,
+      border: 'border-slate-200/80',
     },
     {
       icon: AlertTriangle,
@@ -68,12 +71,10 @@ export const KpiStatsGrid = ({
       value: lowStockCount,
       subtext: lowStockCount > 0 ? 'Some ingredients need restocking' : 'Stock looks fine',
       trend: lowStockCount > 0 ? 'Restock soon' : 'All good',
-      color: lowStockCount > 0 ? 'text-rose-600' : 'text-slate-600',
-      iconBg:
-        lowStockCount > 0
-          ? 'bg-gradient-to-br from-rose-500 to-red-600'
-          : 'bg-gradient-to-br from-slate-600 to-slate-700',
-      border: lowStockCount > 0 ? 'border-rose-200/80' : 'border-slate-200/80',
+      // The one card that turns amber: running low is a warning, not just a number.
+      color: lowStockCount > 0 ? 'text-amber-600' : 'text-slate-900',
+      iconBg: lowStockCount > 0 ? 'bg-gradient-to-br from-amber-400 to-amber-500' : BRAND_TILE,
+      border: lowStockCount > 0 ? 'border-amber-200' : 'border-slate-200/80',
     },
   ];
   const cards = INVENTORY_ENABLED ? allCards : allCards.filter((c) => c.label !== 'Running Low');

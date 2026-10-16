@@ -190,7 +190,7 @@ const PayCommissionCard: React.FC<{
                 type="button"
                 onClick={handleConfirm}
                 disabled={markingPaid}
-                className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-lg shadow-emerald-600/30 transition-all disabled:opacity-50"
+                className="w-full py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-black text-xs shadow-lg shadow-brand-600/30 transition-all disabled:opacity-50"
               >
                 Yes, I've paid {formatCurrency(remittanceSummary.totalUnpaidOwedPaise)}
               </button>
@@ -274,7 +274,7 @@ export const FinancialLedgerPanel = ({
             <div className="text-[10px] text-slate-400 font-bold uppercase">
               This Billing Period
             </div>
-            <div className="text-sm font-extrabold text-emerald-600">
+            <div className="text-sm font-extrabold text-slate-900">
               {formatCurrency(remittanceSummary.currentPeriod.commissionOwedPaise)}
             </div>
             <div className="text-[10px] text-slate-400 font-medium mt-0.5">

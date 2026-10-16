@@ -56,7 +56,7 @@ export const KdsOrderTicketCompact = ({
       exit={{ opacity: 0, scale: 0.97 }}
       className={`bg-white rounded-2xl border shadow-sm p-3 space-y-2 ${
         isSelected
-          ? 'border-blue-400 ring-2 ring-blue-100'
+          ? 'border-brand-400 ring-2 ring-brand-100'
           : isNew
             ? 'border-brand-400 ring-2 ring-brand-100'
             : 'border-slate-200'
@@ -68,7 +68,7 @@ export const KdsOrderTicketCompact = ({
           checked={isSelected}
           onChange={onToggleSelected}
           aria-label={`Select order ${order.orderId || order.orderNumber}`}
-          className="w-4 h-4 rounded accent-blue-600 shrink-0"
+          className="w-4 h-4 rounded accent-brand-600 shrink-0"
         />
         <span className="text-xs font-black text-brand-600 bg-brand-50 border border-brand-200 px-2 py-0.5 rounded-lg shrink-0">
           {order.orderId || order.orderNumber}
@@ -83,7 +83,7 @@ export const KdsOrderTicketCompact = ({
         )}
         <span className="ml-auto flex items-center gap-1.5 shrink-0">
           <WaitBadge createdAt={order.createdAt} now={now} />
-          <span className="text-xs font-black text-emerald-600">
+          <span className="text-xs font-black text-slate-900">
             {formatCurrency(order.totalAmountPaise)}
           </span>
         </span>

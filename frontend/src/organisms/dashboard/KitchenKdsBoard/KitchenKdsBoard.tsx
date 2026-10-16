@@ -163,8 +163,8 @@ export const KitchenKdsBoard = ({
               <span>Kitchen mode</span>
             </button>
 
-            <div className="px-3.5 py-1.5 rounded-full bg-purple-50 border border-purple-200 text-purple-700 text-xs font-black items-center gap-1.5 hidden sm:flex">
-              <Sparkles className="w-3.5 h-3.5 text-purple-500 animate-pulse" />
+            <div className="px-3.5 py-1.5 rounded-full bg-brand-50 border border-brand-200 text-brand-700 text-xs font-black items-center gap-1.5 hidden sm:flex">
+              <Sparkles className="w-3.5 h-3.5 text-brand-500 animate-pulse" />
               <span>Updating live</span>
             </div>
           </>

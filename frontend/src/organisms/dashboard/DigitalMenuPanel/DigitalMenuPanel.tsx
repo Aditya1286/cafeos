@@ -291,7 +291,7 @@ const MenuManageRow = ({ product: p, onEdit, onToggle, onDelete }: MenuManageRow
           onClick={onToggle}
           aria-label={`Show ${p.name} on the menu again`}
           title="Show on menu"
-          className={`${iconBtn} text-emerald-600 hover:bg-emerald-50`}
+          className={`${iconBtn} text-brand-600 hover:bg-brand-50`}
         >
           <RotateCcw className="w-4 h-4" />
         </button>

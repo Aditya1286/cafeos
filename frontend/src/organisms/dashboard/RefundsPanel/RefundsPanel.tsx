@@ -166,7 +166,7 @@ export const RefundsPanel = ({
           {needsRefund(o) && (
             <button
               onClick={() => onMarkRefunded(o)}
-              className="px-3 py-1.5 rounded-xl bg-violet-50 hover:bg-violet-100 border border-violet-200 text-violet-700 text-xs font-black transition-colors flex items-center gap-1"
+              className="px-3 py-1.5 rounded-xl bg-brand-50 hover:bg-brand-100 border border-brand-200 text-brand-700 text-xs font-black transition-colors flex items-center gap-1"
             >
               <Undo2 className="w-3.5 h-3.5" />
               <span>Mark Refunded</span>
@@ -217,7 +217,7 @@ export const RefundsPanel = ({
         {needsRefund(o) && (
           <button
             onClick={() => onMarkRefunded(o)}
-            className="px-3 py-1.5 rounded-xl bg-violet-50 hover:bg-violet-100 border border-violet-200 text-violet-700 text-xs font-black transition-colors flex items-center gap-1 whitespace-nowrap"
+            className="px-3 py-1.5 rounded-xl bg-brand-50 hover:bg-brand-100 border border-brand-200 text-brand-700 text-xs font-black transition-colors flex items-center gap-1 whitespace-nowrap"
           >
             <Undo2 className="w-3.5 h-3.5" />
             <span>Mark Refunded</span>
@@ -254,23 +254,23 @@ export const RefundsPanel = ({
               value={insights.totalCancellations}
               subtext={`${insights.unpaidCancellationsCount} never paid`}
               color="text-slate-900"
-              iconBg="bg-slate-700"
+              iconBg="bg-brand-600"
             />
             <InsightCard
               icon={AlertTriangle}
               label="Needs Refund Now"
               value={insights.needsRefundCount}
               subtext={`${insights.refundRequestedCount} requested by customer`}
-              color={insights.needsRefundCount > 0 ? 'text-amber-600' : 'text-emerald-600'}
-              iconBg={insights.needsRefundCount > 0 ? 'bg-amber-500' : 'bg-emerald-500'}
+              color={insights.needsRefundCount > 0 ? 'text-amber-600' : 'text-slate-900'}
+              iconBg={insights.needsRefundCount > 0 ? 'bg-amber-500' : 'bg-brand-600'}
             />
             <InsightCard
               icon={IndianRupee}
               label="Total Refunded"
               value={formatCurrency(insights.totalRefundedAmountPaise)}
               subtext={`${insights.totalRefundedCount} orders`}
-              color="text-violet-600"
-              iconBg="bg-violet-500"
+              color="text-slate-900"
+              iconBg="bg-brand-600"
             />
             <InsightCard
               icon={Clock}
@@ -282,7 +282,7 @@ export const RefundsPanel = ({
               }
               subtext="Request → confirmed"
               color="text-slate-900"
-              iconBg="bg-slate-700"
+              iconBg="bg-brand-600"
             />
           </div>
 

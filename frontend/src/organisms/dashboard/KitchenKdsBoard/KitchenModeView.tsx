@@ -110,7 +110,7 @@ export const KitchenModeView = ({
             return (
               <li
                 key={status}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-black ${sc.badgeBg} ${sc.badgeText}`}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-black bg-white border-slate-200 text-slate-700`}
               >
                 <span className={`w-2 h-2 rounded-full ${sc.dot}`} aria-hidden="true" />
                 {sc.label}

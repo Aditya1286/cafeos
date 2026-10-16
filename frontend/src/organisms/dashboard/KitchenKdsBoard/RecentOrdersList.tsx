@@ -66,7 +66,7 @@ export const RecentOrdersList = ({
 
           <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4">
             <div className="text-right shrink-0">
-              <div className="text-xs font-black text-emerald-600">
+              <div className="text-xs font-black text-slate-900">
                 {formatCurrency(o.totalAmountPaise)}
               </div>
               <span className="text-[10px] font-bold text-slate-400 uppercase">

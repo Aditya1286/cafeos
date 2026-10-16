@@ -143,7 +143,7 @@ const PickPhotos = ({ importer }: { importer: MenuImportState }) => {
         type="button"
         onClick={importer.readMenu}
         disabled={photos.length === 0 || preparingPhotos}
-        className="w-full py-3 rounded-xl bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-700 hover:to-amber-700 text-white font-black text-xs shadow-md shadow-brand-600/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full py-3 rounded-xl bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-700 hover:to-brand-800 text-white font-black text-xs shadow-md shadow-brand-600/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {photos.length > 1 ? `Read menu (${photos.length} pages)` : 'Read menu'}
       </button>
@@ -257,7 +257,7 @@ const Review = ({ importer, onSave }: { importer: MenuImportState; onSave: () =>
             type="button"
             onClick={onSave}
             disabled={blocked || saving}
-            className="flex-1 py-3 rounded-xl bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-700 hover:to-amber-700 text-white font-black text-xs shadow-md shadow-brand-600/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+            className="flex-1 py-3 rounded-xl bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-700 hover:to-brand-800 text-white font-black text-xs shadow-md shadow-brand-600/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
           >
             {saving ? (
               <>

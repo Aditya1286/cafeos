@@ -48,7 +48,7 @@ export const CheckoutSettingsCard = ({
   const header = (
     <div className="flex items-center justify-between pb-3 border-b border-slate-100">
       <div className="flex items-center gap-2.5">
-        <CreditCard className="w-5 h-5 text-emerald-600" />
+        <CreditCard className="w-5 h-5 text-brand-600" />
         <h3 className="text-sm font-black text-slate-900">Online Checkout (SMEPay)</h3>
       </div>
       {settings?.checkoutAvailable && (
@@ -119,7 +119,7 @@ export const CheckoutSettingsCard = ({
               href={account.kycUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-700 underline"
+              className="inline-flex items-center gap-1.5 text-[11px] font-bold text-brand-700 underline"
             >
               Open KYC page <ExternalLink className="w-3 h-3" />
             </a>
@@ -197,7 +197,7 @@ export const CheckoutSettingsCard = ({
             onClick={() => onSetEnabled(!settings.checkoutEnabled)}
             disabled={togglingEnabled || (!connected && !settings.checkoutEnabled)}
             className={`shrink-0 relative w-14 h-8 rounded-full transition-colors disabled:opacity-50 ${
-              settings.checkoutEnabled ? 'bg-emerald-500' : 'bg-slate-300'
+              settings.checkoutEnabled ? 'bg-brand-600' : 'bg-slate-300'
             }`}
             title={
               settings.checkoutEnabled

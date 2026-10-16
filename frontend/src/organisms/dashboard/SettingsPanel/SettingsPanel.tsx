@@ -155,7 +155,7 @@ export const SettingsPanel = ({
                 onClick={handleToggleTax}
                 disabled={savingTaxRate}
                 className={`shrink-0 relative w-14 h-8 rounded-full transition-colors disabled:opacity-50 ${
-                  taxEnabled ? 'bg-emerald-500' : 'bg-slate-300'
+                  taxEnabled ? 'bg-brand-600' : 'bg-slate-300'
                 }`}
                 title={
                   taxEnabled ? 'GST enabled — click to disable' : 'GST disabled — click to enable'
@@ -180,12 +180,12 @@ export const SettingsPanel = ({
                       disabled={savingTaxRate}
                       className={`p-3 rounded-xl border text-left transition-all disabled:opacity-50 ${
                         rate === currentTaxRate
-                          ? 'bg-emerald-50 border-emerald-400 shadow-sm'
+                          ? 'bg-brand-50 border-brand-400 shadow-sm'
                           : 'bg-slate-50 border-slate-200 hover:bg-slate-100'
                       }`}
                     >
                       <div
-                        className={`text-sm font-black ${rate === currentTaxRate ? 'text-emerald-700' : 'text-slate-800'}`}
+                        className={`text-sm font-black ${rate === currentTaxRate ? 'text-brand-700' : 'text-slate-800'}`}
                       >
                         {rate}%
                       </div>

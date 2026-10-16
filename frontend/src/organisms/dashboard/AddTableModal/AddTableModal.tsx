@@ -48,7 +48,7 @@ export const AddTableModal = ({
         </FormField>
         <button
           type="submit"
-          className="w-full py-3 rounded-xl bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-700 hover:to-amber-700 text-white font-black text-xs shadow-md shadow-brand-600/20 transition-all"
+          className="w-full py-3 rounded-xl bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-700 hover:to-brand-800 text-white font-black text-xs shadow-md shadow-brand-600/20 transition-all"
         >
           Create Table & QR Code
         </button>

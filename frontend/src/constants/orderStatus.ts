@@ -11,11 +11,11 @@ export const STATUS_CONFIG: Record<
 > = {
   PLACED: {
     label: 'New Order',
-    color: 'text-purple-700',
-    borderAccent: 'border-t-purple-500',
-    badgeBg: 'bg-purple-50',
-    badgeText: 'text-purple-700 border-purple-200',
-    dot: 'bg-purple-500',
+    color: 'text-brand-700',
+    borderAccent: 'border-t-brand-500',
+    badgeBg: 'bg-brand-50',
+    badgeText: 'text-brand-700 border-brand-200',
+    dot: 'bg-brand-500',
   },
   PREPARING: {
     label: 'Preparing',
@@ -51,11 +51,11 @@ export const STATUS_CONFIG: Record<
   },
   REFUNDED: {
     label: 'Refunded',
-    color: 'text-violet-700',
-    borderAccent: 'border-t-violet-500',
-    badgeBg: 'bg-violet-50',
-    badgeText: 'text-violet-700 border-violet-200',
-    dot: 'bg-violet-500',
+    color: 'text-slate-600',
+    borderAccent: 'border-t-slate-400',
+    badgeBg: 'bg-slate-50',
+    badgeText: 'text-slate-600 border-slate-200',
+    dot: 'bg-slate-400',
   },
 };
 
@@ -64,13 +64,13 @@ export const NEXT_STATUS: Record<string, { label: string; status: string; color:
     label: 'Start Preparing 👨‍🍳',
     status: 'PREPARING',
     color:
-      'bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white shadow-md shadow-amber-500/20',
+      'bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white shadow-md shadow-brand-500/20',
   },
   PREPARING: {
     label: 'Mark Ready 🔔',
     status: 'READY',
     color:
-      'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-md shadow-emerald-500/20',
+      'bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white shadow-md shadow-brand-500/20',
   },
   READY: {
     label: 'Complete Order 🎉',

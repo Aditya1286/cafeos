@@ -31,7 +31,7 @@ export const HeaderBrand = ({
       <div className="text-base font-black text-slate-900 leading-tight flex items-center gap-2 min-w-0">
         <span className="truncate">{business?.name || 'The Artisan Roastery'}</span>
         {!compact && (
-          <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold shrink-0">
+          <span className="px-2 py-0.5 rounded-full bg-brand-50 text-brand-700 border border-brand-200 text-[10px] font-bold shrink-0">
             PRO BUSINESS
           </span>
         )}
