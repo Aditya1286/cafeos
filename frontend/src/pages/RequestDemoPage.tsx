@@ -6,6 +6,7 @@ import { Footer } from '@/organisms/marketing/Footer';
 import { APP_NAME } from '@/constants/app';
 import { BUSINESS_TYPES, DEMO_MENU_PATH } from '@/constants/demo';
 import demoRequestsService from '@/services/public/demoRequests';
+import { PageMascot } from '@/mascot/PageMascot';
 
 interface DemoForm {
   name: string;
@@ -43,10 +44,17 @@ export const RequestDemoPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const interestedPlan = searchParams.get('plan') || undefined;
 
+  const update = (patch: Partial<DemoForm>) => {
+    setError('');
+    setForm((prev) => ({ ...prev, ...patch }));
+  };
   const set =
     (key: keyof DemoForm) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
-      setForm((prev) => ({ ...prev, [key]: e.target.value }));
+      update({ [key]: e.target.value });
+
+  // What the mascot reacts to (keys of DEMO_CONFIG.signals in mascot/config.ts).
+  const mascotSignal = sent ? 'sent' : submitting ? 'submitting' : error ? 'error' : null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,9 +95,9 @@ export const RequestDemoPage: React.FC = () => {
     <div className="min-h-screen bg-page text-slate-900 flex flex-col font-sans">
       <Navbar />
 
-      <main className="flex-1 px-4 lg:px-8 py-14 md:py-20">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-5 gap-10 lg:gap-14 items-start">
-          <div className="lg:col-span-2 space-y-8">
+      <main data-mascot-section="demo" className="flex-1 px-4 lg:px-8 py-8 md:py-16 lg:py-20">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-5 gap-6 md:gap-8 lg:gap-14 items-start">
+          <div className="md:col-span-2 space-y-5 md:space-y-8">
             <Link
               to="/"
               className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-red-600 transition-colors"
@@ -98,16 +106,16 @@ export const RequestDemoPage: React.FC = () => {
             </Link>
 
             <div>
-              <h1 className="text-4xl md:text-5xl font-black tracking-tight leading-[1.1] mb-4">
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-black tracking-tight leading-[1.1] mb-3 md:mb-4">
                 See {APP_NAME} running in <span className="text-red-600">your café.</span>
               </h1>
-              <p className="text-slate-600 font-medium leading-relaxed">
+              <p className="text-sm md:text-base text-slate-600 font-medium leading-relaxed">
                 Tell us about your café and your 2-week free trial starts. We'll call you, show you
                 the product, and set up your menu and QR codes with you.
               </p>
             </div>
 
-            <ul className="space-y-5">
+            <ul className="space-y-3 md:space-y-5">
               {[
                 {
                   icon: Gift,
@@ -125,9 +133,9 @@ export const RequestDemoPage: React.FC = () => {
                   body: 'We go through your menu, your tables and how your team works.',
                 },
               ].map(({ icon: Icon, title, body }) => (
-                <li key={title} className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-red-50 border border-red-200 text-red-600 flex items-center justify-center shrink-0">
-                    <Icon className="w-5 h-5" />
+                <li key={title} className="flex items-start gap-3 md:gap-4">
+                  <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-red-50 border border-red-200 text-red-600 flex items-center justify-center shrink-0">
+                    <Icon className="w-4 h-4 md:w-5 md:h-5" />
                   </div>
                   <div>
                     <p className="font-bold text-sm text-slate-900">{title}</p>
@@ -136,9 +144,38 @@ export const RequestDemoPage: React.FC = () => {
                 </li>
               ))}
             </ul>
+
+            {/* The mascot's stage (tablet and up): it moves across this as the form is filled in.
+                Decorative only; on phones the mascot sits in the slot at the top of the form. */}
+            <div
+              data-mascot-bounds="demo"
+              aria-hidden="true"
+              className="hidden md:block relative h-[260px] lg:h-[300px] rounded-3xl border border-red-100 bg-gradient-to-br from-red-50/80 via-white to-orange-50/60 overflow-hidden"
+            >
+              <div
+                className="absolute inset-0 opacity-60"
+                style={{
+                  backgroundImage: 'radial-gradient(rgba(220,38,38,0.12) 1px, transparent 1px)',
+                  backgroundSize: '22px 22px',
+                }}
+              />
+            </div>
           </div>
 
-          <div className="lg:col-span-3 bg-white rounded-3xl border border-slate-200 shadow-xl p-6 sm:p-8">
+          {/* From md up the mascot pops up from behind this card, so it must paint above the mascot
+              layer (relative z-10, opaque). On phones it must not: the mascot's slot is inside it. */}
+          <div
+            data-mascot-peek="demo-form"
+            className="md:col-span-3 md:relative md:z-10 bg-white rounded-3xl border border-slate-200 shadow-xl p-5 sm:p-8"
+          >
+            {/* Phones: the mascot's reserved spot, with its message beside it. Until it speaks, the
+                line below shows through. */}
+            <div
+              data-mascot-slot="demo"
+              className="md:hidden h-[84px] -mt-1 mb-3 flex items-center pl-[96px] text-xs font-semibold text-slate-500"
+            >
+              {sent ? null : 'I’m Caos. I’ll keep you company while you fill this in.'}
+            </div>
             {sent ? (
               <div className="text-center py-10 space-y-4">
                 <div className="w-14 h-14 mx-auto rounded-full bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center">
@@ -173,13 +210,14 @@ export const RequestDemoPage: React.FC = () => {
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-2 gap-4">
                   <div>
                     <label className={labelClass} htmlFor="demo-name">
                       Your name
                     </label>
                     <input
                       id="demo-name"
+                      data-mascot-field="demo-name"
                       required
                       maxLength={100}
                       autoComplete="name"
@@ -195,6 +233,7 @@ export const RequestDemoPage: React.FC = () => {
                     </label>
                     <input
                       id="demo-brand"
+                      data-mascot-field="demo-brand"
                       required
                       maxLength={120}
                       autoComplete="organization"
@@ -214,6 +253,7 @@ export const RequestDemoPage: React.FC = () => {
                       </span>
                       <input
                         id="demo-phone"
+                        data-mascot-field="demo-phone"
                         required
                         type="tel"
                         inputMode="numeric"
@@ -221,9 +261,7 @@ export const RequestDemoPage: React.FC = () => {
                         maxLength={10}
                         className={`${inputClass} rounded-l-none`}
                         value={form.phone}
-                        onChange={(e) =>
-                          setForm((p) => ({ ...p, phone: e.target.value.replace(/\D/g, '') }))
-                        }
+                        onChange={(e) => update({ phone: e.target.value.replace(/\D/g, '') })}
                         placeholder="98765 43210"
                       />
                     </div>
@@ -234,6 +272,7 @@ export const RequestDemoPage: React.FC = () => {
                     </label>
                     <input
                       id="demo-city"
+                      data-mascot-field="demo-city"
                       required
                       maxLength={80}
                       autoComplete="address-level2"
@@ -249,6 +288,7 @@ export const RequestDemoPage: React.FC = () => {
                     </label>
                     <input
                       id="demo-email"
+                      data-mascot-field="demo-email"
                       type="email"
                       maxLength={160}
                       autoComplete="email"
@@ -264,6 +304,7 @@ export const RequestDemoPage: React.FC = () => {
                     </label>
                     <select
                       id="demo-type"
+                      data-mascot-field="demo-type"
                       className={inputClass}
                       value={form.businessType}
                       onChange={set('businessType')}
@@ -285,6 +326,7 @@ export const RequestDemoPage: React.FC = () => {
                   </label>
                   <textarea
                     id="demo-message"
+                    data-mascot-field="demo-message"
                     rows={3}
                     maxLength={1000}
                     className={inputClass}
@@ -308,8 +350,9 @@ export const RequestDemoPage: React.FC = () => {
                 <label className="flex items-start gap-3 text-xs text-slate-600 font-medium cursor-pointer">
                   <input
                     type="checkbox"
+                    data-mascot-field="demo-consent"
                     checked={form.consent}
-                    onChange={(e) => setForm((p) => ({ ...p, consent: e.target.checked }))}
+                    onChange={(e) => update({ consent: e.target.checked })}
                     className="mt-0.5 w-4 h-4 accent-red-600 shrink-0"
                   />
                   <span>
@@ -326,6 +369,7 @@ export const RequestDemoPage: React.FC = () => {
 
                 <button
                   type="submit"
+                  data-mascot-field="demo-submit"
                   disabled={submitting}
                   className="w-full py-3.5 rounded-xl bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white font-extrabold text-sm shadow-lg shadow-red-600/25 transition-all"
                 >
@@ -338,6 +382,8 @@ export const RequestDemoPage: React.FC = () => {
       </main>
 
       <Footer />
+
+      <PageMascot page="demo" signal={mascotSignal} />
     </div>
   );
 };

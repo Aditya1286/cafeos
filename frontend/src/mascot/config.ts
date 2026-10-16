@@ -1,4 +1,4 @@
-import type { MascotConfig, PageId, TriggerKind } from './types';
+import type { MascotConfig, PageFlow, PageId, TriggerKind } from './types';
 
 // ─── Behaviour tuning ──────────────────────────────────────────────────────────────────────────
 // Everything numeric that shapes how the mascot feels lives here, not in the engine or hooks.
@@ -37,6 +37,8 @@ export const TIMING = {
 /** Viewport widths (px) where the mascot changes size, and the rendered box size at each. */
 export const LAYOUT = {
   margin: 12,
+  /** Viewports at most this wide (px) use a page's `phoneFlow` overrides (Tailwind's `md` minus 1). */
+  phoneMaxWidth: 767,
   sizes: [
     { minWidth: 1024, px: 280 },
     { minWidth: 640, px: 210 },
@@ -99,6 +101,9 @@ export const ACTIVE_LINE = 0.45;
 // guests); no guaranteed-savings or profit claims.
 
 export const LANDING_CONFIG: MascotConfig = {
+  // On a phone the S-curve would sweep across the text: dock small in the corner instead, and keep
+  // popping up from the cards (the phone-only peeks below).
+  phoneFlow: { mode: 'dock', sizeScale: 0.78 },
   peeks: [
     {
       peekId: 'tour',
@@ -512,11 +517,187 @@ export const ORDER_CONFIG: MascotConfig = {
   },
 };
 
+// ─── Request-a-demo page ───────────────────────────────────────────────────────────────────────
+// A form page. On desktop the mascot has its own stage under the benefits list and moves across it
+// as the visitor works down the form, reacting to each field; it pops up from the form card once to
+// say hi. On phones it lives in a reserved spot at the top of the form card (so it never covers a
+// field you're typing into), with its message beside it. The page drives three signals from the
+// submit: `submitting`, `error` and `sent`. They outrank field focus, because focus is usually still
+// on the submit button when the answer comes back.
+
+const field = (name: string) => `[data-mascot-field="demo-${name}"]`;
+
+export const DEMO_CONFIG: MascotConfig = {
+  flow: {
+    bounds: '[data-mascot-bounds="demo"]',
+    insets: { top: 12, bottom: 12 },
+    sizeScale: 0.75,
+    peekVisible: 0.46,
+    progress: 'steps',
+    steps: [
+      { selector: field('name'), progress: 0.12 },
+      { selector: field('brand'), progress: 0.26 },
+      { selector: field('phone'), progress: 0.4 },
+      { selector: field('city'), progress: 0.52 },
+      { selector: field('email'), progress: 0.62 },
+      { selector: field('type'), progress: 0.72 },
+      { selector: field('message'), progress: 0.82 },
+      { selector: field('consent'), progress: 0.92 },
+      { selector: field('submit'), progress: 1 },
+    ],
+    peekHoldMs: 5_000,
+    peekRepeatMs: Infinity,
+  },
+  phoneFlow: { mode: 'slot', slot: '[data-mascot-slot="demo"]', size: 84 },
+  peeks: [
+    {
+      peekId: 'demo-form',
+      selector: '[data-mascot-peek="demo-form"]',
+      anchor: 0.86,
+      // Phones use the slot instead (the card's top edge sits right under the benefits list there).
+      minViewportWidth: LAYOUT.phoneMaxWidth + 1,
+      greet: {
+        expression: 'excited',
+        gesture: 'wave',
+        message: { id: 'demo-form.hi', text: 'Hi! I’m Caos. Let’s get you started.' },
+      },
+    },
+  ],
+  sections: [
+    {
+      sectionId: 'demo',
+      selector: '[data-mascot-section="demo"]',
+      enter: {
+        expression: 'confident',
+        gesture: 'tipHat',
+        message: { id: 'demo.enter', text: 'Two weeks free, and we set it up with you.' },
+      },
+    },
+  ],
+  targets: [
+    {
+      targetId: 'demo-name',
+      selector: field('name'),
+      focus: {
+        expression: 'excited',
+        gesture: 'wave',
+        message: { id: 'demo-name.focus', text: 'Hi! Nice to meet you.' },
+      },
+    },
+    {
+      targetId: 'demo-brand',
+      selector: field('brand'),
+      focus: {
+        expression: 'curious',
+        gesture: 'lean',
+        message: { id: 'demo-brand.focus', text: 'Ooh, what’s your café called?' },
+      },
+    },
+    {
+      targetId: 'demo-phone',
+      selector: field('phone'),
+      focus: {
+        expression: 'confident',
+        gesture: 'nod',
+        message: { id: 'demo-phone.focus', text: 'We’ll call this number about your trial.' },
+      },
+    },
+    {
+      targetId: 'demo-city',
+      selector: field('city'),
+      focus: {
+        expression: 'curious',
+        gesture: 'tilt',
+        message: { id: 'demo-city.focus', text: 'Where’s your café?' },
+      },
+    },
+    {
+      targetId: 'demo-email',
+      selector: field('email'),
+      focus: {
+        expression: 'curious',
+        gesture: 'nod',
+        message: { id: 'demo-email.focus', text: 'Optional. Skip it if you like.' },
+      },
+    },
+    {
+      targetId: 'demo-type',
+      selector: field('type'),
+      focus: {
+        expression: 'curious',
+        gesture: 'lean',
+        message: { id: 'demo-type.focus', text: 'Optional. Pick whatever fits best.' },
+      },
+    },
+    {
+      targetId: 'demo-message',
+      selector: field('message'),
+      focus: {
+        expression: 'curious',
+        gesture: 'tilt',
+        message: { id: 'demo-message.focus', text: 'Menus, timings, questions. Anything helps.' },
+      },
+    },
+    {
+      targetId: 'demo-consent',
+      selector: field('consent'),
+      focus: {
+        expression: 'confident',
+        gesture: 'nod',
+        message: { id: 'demo-consent.focus', text: 'Only about your trial. Never shared.' },
+      },
+    },
+    {
+      targetId: 'demo-submit',
+      selector: field('submit'),
+      hover: {
+        expression: 'excited',
+        gesture: 'wiggle',
+        message: { id: 'demo-submit.hover', text: 'Two weeks free. Let’s go!' },
+      },
+      focus: {
+        expression: 'excited',
+        gesture: 'wiggle',
+        message: { id: 'demo-submit.focus', text: 'Two weeks free. Let’s go!' },
+      },
+    },
+  ],
+  signals: {
+    submitting: {
+      expression: 'curious',
+      gesture: 'nod',
+      priority: 7,
+      message: { id: 'demo.submitting', text: 'Sending it over…', durationMs: Infinity },
+    },
+    error: {
+      expression: 'curious',
+      gesture: 'tilt',
+      priority: 7,
+      message: {
+        id: 'demo.error',
+        text: 'Almost there. Check the note above the button.',
+        durationMs: 6_000,
+      },
+    },
+    sent: {
+      expression: 'excited',
+      gesture: 'pop',
+      priority: 7,
+      message: { id: 'demo.sent', text: 'You’re in! We’ll give you a call.', durationMs: Infinity },
+    },
+  },
+};
+
 export const MASCOT_CONFIGS: Record<PageId, MascotConfig> = {
   landing: LANDING_CONFIG,
   login: LOGIN_CONFIG,
   order: ORDER_CONFIG,
+  demo: DEMO_CONFIG,
 };
+
+/** The flow a page uses at this viewport: `flow`, with `phoneFlow` merged over it on phones. Pure. */
+export const resolveFlow = (config: MascotConfig, isPhone: boolean): PageFlow | undefined =>
+  isPhone && config.phoneFlow ? { ...config.flow, ...config.phoneFlow } : config.flow;
 
 /** Returns human-readable problems with a config (empty when it is sound). Cheap enough to run in
  * dev on every mount; tests run it against MASCOT_CONFIG. */
@@ -554,10 +735,13 @@ export const validateConfig = (config: MascotConfig): string[] => {
     if (!(p.anchor >= 0 && p.anchor <= 1)) problems.push(`peek ${p.peekId}: anchor must be 0..1`);
     checkReaction(`peek ${p.peekId}`, p.greet);
   }
-  for (const step of config.flow?.steps ?? []) {
+  for (const step of [...(config.flow?.steps ?? []), ...(config.phoneFlow?.steps ?? [])]) {
     if (!step.selector) problems.push('flow step needs a selector');
     if (!(step.progress >= 0 && step.progress <= 1))
       problems.push(`flow step ${step.selector}: progress must be 0..1`);
+  }
+  for (const flow of [config.flow, config.phoneFlow]) {
+    if (flow?.mode === 'slot' && !flow.slot) problems.push('slot mode needs a slot selector');
   }
   for (const [key, reaction] of Object.entries(config.signals ?? {})) {
     checkReaction(`signal ${key}`, reaction);

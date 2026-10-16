@@ -1,14 +1,14 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Check } from 'lucide-react';
 import { DEMO_PATH } from '@/constants/demo';
 import type { PricingPlan } from '@/constants/pricing';
+import { PricingFeatureList } from './PricingFeatureList';
 
 export const PricingCard: React.FC<{ plan: PricingPlan }> = ({ plan }) => (
   <div
     data-mascot-target={plan.popular ? 'pricing-popular' : 'pricing-plan'}
     data-mascot-peek={plan.popular ? 'pricing' : 'pricing-essential'}
-    className={`relative z-10 rounded-3xl p-7 flex flex-col border ${
+    className={`relative z-10 rounded-3xl p-6 sm:p-7 flex flex-col border ${
       plan.popular
         ? 'bg-red-50 border-red-300 shadow-xl shadow-red-600/10'
         : 'bg-white border-slate-200 shadow-sm'
@@ -23,11 +23,11 @@ export const PricingCard: React.FC<{ plan: PricingPlan }> = ({ plan }) => (
     <h3 className="text-xl font-bold text-slate-900">{plan.name}</h3>
 
     <div className="flex items-baseline mt-4 mb-3">
-      <span className="text-5xl font-extrabold text-slate-900 tracking-tight">₹{plan.price}</span>
+      <span className="text-4xl sm:text-5xl font-extrabold text-slate-900 tracking-tight">₹{plan.price}</span>
       <span className="text-sm text-slate-500 ml-1.5">/mo</span>
     </div>
 
-    <p className="text-sm text-slate-600 leading-relaxed min-h-[44px]">{plan.tagline}</p>
+    <p className="text-sm text-slate-600 leading-relaxed sm:min-h-[44px]">{plan.tagline}</p>
 
     <Link
       to={`${DEMO_PATH}?plan=${encodeURIComponent(plan.name)}`}
@@ -40,16 +40,9 @@ export const PricingCard: React.FC<{ plan: PricingPlan }> = ({ plan }) => (
       Start your free trial
     </Link>
 
-    <div className="my-6 border-t border-slate-200" />
+    <div className="my-5 sm:my-6 border-t border-slate-200" />
 
     <p className="text-xs font-bold text-slate-800 mb-4">{plan.includesLabel}</p>
-    <ul className="space-y-3 text-sm text-slate-700">
-      {plan.items.map((item) => (
-        <li key={item} className="flex items-start gap-2.5">
-          <Check className="w-4 h-4 text-red-600 shrink-0 mt-0.5 stroke-[2.5]" />
-          <span>{item}</span>
-        </li>
-      ))}
-    </ul>
+    <PricingFeatureList items={plan.items} />
   </div>
 );

@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import logo from '@/assets/caos-logo.png';
 import { MascotBrain } from './brain';
-import { LAYOUT, MASCOT_CONFIGS, TIMING, validateConfig } from './config';
+import { LAYOUT, MASCOT_CONFIGS, TIMING, resolveFlow, validateConfig } from './config';
 import { createInteractionController } from './interactions';
 import { readMinimized, writeMinimized } from './preference';
 import { createSectionTracker, type ScrollSnapshot } from './sections';
@@ -36,6 +36,20 @@ const useReducedMotion = (): boolean => {
   return reduced;
 };
 
+const PHONE_QUERY = `(max-width: ${LAYOUT.phoneMaxWidth}px)`;
+
+/** Whether the viewport is phone-sized (the page's `phoneFlow` applies), tracked live (rotation). */
+const useIsPhone = (): boolean => {
+  const [phone, setPhone] = useState(() => window.matchMedia(PHONE_QUERY).matches);
+  useEffect(() => {
+    const query = window.matchMedia(PHONE_QUERY);
+    const onChange = () => setPhone(query.matches);
+    query.addEventListener('change', onChange);
+    return () => query.removeEventListener('change', onChange);
+  }, []);
+  return phone;
+};
+
 type Mode = 'loading' | '3d' | 'fallback';
 
 const ActiveMascot: React.FC<{
@@ -44,9 +58,12 @@ const ActiveMascot: React.FC<{
   onMinimize: () => void;
 }> = ({ config, signal, onMinimize }) => {
   const reduced = useReducedMotion();
-  const slotMode = config.flow?.mode === 'slot';
-  const fixedSize = config.flow?.size;
-  const scale = (config.flow?.sizeScale ?? 1) * (reduced && !slotMode ? REDUCED_SIZE_SCALE : 1);
+  const isPhone = useIsPhone();
+  // The page's flow for this viewport; everything below reads this, never `config.flow` directly.
+  const flow = resolveFlow(config, isPhone);
+  const slotMode = flow?.mode === 'slot';
+  const fixedSize = flow?.size;
+  const scale = (flow?.sizeScale ?? 1) * (reduced && !slotMode ? REDUCED_SIZE_SCALE : 1);
   const pickSize = (width: number) => fixedSize ?? sizeForWidth(width, scale);
   const [size, setSize] = useState(() => pickSize(window.innerWidth));
   const [mode, setMode] = useState<Mode>('loading');
@@ -78,7 +95,8 @@ const ActiveMascot: React.FC<{
     onResize();
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
-  }, [scale]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- pickSize only reads these two
+  }, [scale, fixedSize]);
 
   // Load the 3D engine (separate chunk). Any failure (no WebGL, chunk 404, shader error) drops to
   // the static logo; the brain, bubble and positioning keep working either way.
@@ -142,7 +160,7 @@ const ActiveMascot: React.FC<{
 
     const brain = new MascotBrain(config);
     brainRef.current = brain;
-    engine?.setAmbientSpin(!!config.flow?.ambientSpin);
+    engine?.setAmbientSpin(!!flow?.ambientSpin);
     const unsubscribe = brain.subscribe((state) => {
       engine?.setExpression(state.expression);
       if (state.gesture) engine?.triggerGesture(state.gesture);
@@ -151,7 +169,8 @@ const ActiveMascot: React.FC<{
     });
 
     const host = hostRef.current;
-    const flow = host
+    // Places the host on the page (path, dock, slot or peek); `flow` is the page's settings for it.
+    const mover = host
       ? createFlowController({
           host,
           peeks: config.peeks,
@@ -159,8 +178,8 @@ const ActiveMascot: React.FC<{
           getSize: () => sizeRef.current,
           onPeek: (id) => (id ? brain.peek(id) : brain.unpeek()),
           onVelocity: (vx) => engine?.setFlowVelocity(vx),
-          flow: config.flow,
-          staticMode: reduced || config.flow?.mode === 'static',
+          flow,
+          staticMode: reduced || flow?.mode === 'static',
           onVisible: (visible) => engine?.setVisible(visible),
         })
       : null;
@@ -170,8 +189,8 @@ const ActiveMascot: React.FC<{
       // The engine holds this same object and reads it per frame, so scrolling never re-renders.
       scroll: scrollRef.current,
       // Pages whose path follows form steps (not scroll) set progress themselves, below.
-      trackProgress: config.flow?.progress !== 'steps',
-      onFrame: () => flow?.update(),
+      trackProgress: flow?.progress !== 'steps',
+      onFrame: () => mover?.update(),
       onActiveChange: (id) => (id ? brain.enterSection(id) : brain.clearSection()),
     });
 
@@ -180,7 +199,7 @@ const ActiveMascot: React.FC<{
       brain,
       onStep: (progress) => {
         scrollRef.current.progress = progress;
-        flow?.update();
+        mover?.update();
       },
       onLook: (rect) => {
         if (!rect) return engine?.setLook(null, null);
@@ -202,7 +221,7 @@ const ActiveMascot: React.FC<{
       brainRef.current = null;
       interactions.dispose();
       tracker.dispose();
-      flow?.dispose();
+      mover?.dispose();
       unsubscribe();
       brain.dispose();
       // Leave the host in a neutral state for the next run (reduced-motion toggle, remount).
@@ -218,7 +237,7 @@ const ActiveMascot: React.FC<{
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `config` is a constant per page
-  }, [revealed, reduced]);
+  }, [revealed, reduced, isPhone]);
 
   // Later changes to the page's signal (status moved on, the wait got long).
   useEffect(() => {
@@ -285,6 +304,7 @@ const ActiveMascot: React.FC<{
  * only by PageMascot. */
 const MascotExperience: React.FC<{ page: PageId; signal?: string | null }> = ({ page, signal }) => {
   const [minimized, setMinimized] = useState(readMinimized);
+  const isPhone = useIsPhone();
 
   const minimize = useCallback(() => {
     writeMinimized(true);
@@ -297,7 +317,7 @@ const MascotExperience: React.FC<{ page: PageId; signal?: string | null }> = ({ 
 
   // A slotted mascot ignores the hide preference: there is no overlay to dismiss, and hiding it
   // would leave its reserved spot empty.
-  const slotMode = MASCOT_CONFIGS[page].flow?.mode === 'slot';
+  const slotMode = resolveFlow(MASCOT_CONFIGS[page], isPhone)?.mode === 'slot';
 
   if (minimized && !slotMode) {
     return (

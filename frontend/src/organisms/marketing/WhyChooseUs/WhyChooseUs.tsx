@@ -29,16 +29,20 @@ const comparisonFeatures: ComparisonFeature[] = [
 
 export const WhyChooseUs: React.FC = () => {
   return (
-    <section data-mascot-section="why" className="py-20 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto">
+    <section
+      data-mascot-section="why"
+      // Clip sideways only: the cards slide in from ±20px, which would otherwise make a phone scroll.
+      className="py-14 sm:py-20 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto overflow-x-clip"
+    >
       {/* Section Title */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.5 }}
-        className="text-center mb-14"
+        className="text-center mb-8 sm:mb-14"
       >
-        <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mb-3">
+        <h2 className="text-[1.7rem] sm:text-4xl font-extrabold text-slate-900 tracking-tight mb-3">
           Why Businesses Choose {APP_NAME}
         </h2>
         <p className="text-sm sm:text-base text-slate-500 font-medium max-w-xl mx-auto">
@@ -55,7 +59,7 @@ export const WhyChooseUs: React.FC = () => {
           viewport={{ once: true }}
           transition={{ duration: 0.5, delay: 0.1 }}
           data-mascot-peek="why-old"
-          className="bg-[#f4f6f9] p-7 sm:p-8 rounded-[28px] border border-slate-200/80 flex flex-col justify-between relative z-10 hover:shadow-md transition-shadow duration-300"
+          className="bg-[#f4f6f9] p-5 sm:p-8 rounded-[28px] border border-slate-200/80 flex flex-col justify-between relative z-10 hover:shadow-md transition-shadow duration-300"
         >
           <div>
             <div className="flex items-center gap-2.5 mb-6 pb-4 border-b border-slate-200/80 text-slate-700 font-bold text-sm sm:text-base">
@@ -84,7 +88,7 @@ export const WhyChooseUs: React.FC = () => {
           transition={{ duration: 0.5, delay: 0.2 }}
           whileHover={{ y: -4 }}
           data-mascot-peek="why"
-          className="bg-white p-7 sm:p-8 rounded-[28px] border-2 border-red-500 shadow-2xl shadow-red-500/15 flex flex-col justify-between relative z-10 overflow-hidden transition-all duration-300"
+          className="bg-white p-5 sm:p-8 rounded-[28px] border-2 border-red-500 shadow-2xl shadow-red-500/15 flex flex-col justify-between relative z-10 overflow-hidden transition-all duration-300"
         >
           {/* Subtle accent glow gradient */}
           <div className="absolute -top-24 -right-24 w-48 h-48 bg-red-500/5 rounded-full blur-3xl pointer-events-none" />

@@ -4,7 +4,7 @@
 export type Expression = 'idle' | 'curious' | 'confident' | 'excited' | 'shy';
 
 /** Pages the mascot lives on. Each has its own config (copy, reactions, flow area). */
-export type PageId = 'landing' | 'login' | 'order';
+export type PageId = 'landing' | 'login' | 'order' | 'demo';
 
 export type Gesture = 'pop' | 'nod' | 'tilt' | 'lean' | 'tipHat' | 'wiggle' | 'wave';
 
@@ -85,15 +85,18 @@ export interface PageFlow {
   /** `scroll` (default): the path follows page scroll. `steps`: it follows `steps` below. */
   progress?: 'scroll' | 'steps';
   steps?: FlowStep[];
-  /** `static`: no gliding or peeking; the mascot rests in one corner of the area. `slot`: it lives in
-   * a reserved spot in the page itself (`slot`), scrolls with the page, covers nothing, and its
-   * message sits beside it (the order page, made for phones). */
-  mode?: 'static' | 'slot';
+  /** How the mascot is placed (default: glide along the path):
+   *  - `static`: no gliding or peeking; it rests in one corner of the area.
+   *  - `dock`: rests small in one corner of the area, but still pops up from cards. Made for phones,
+   *    where a path across the screen would sit on top of the text.
+   *  - `slot`: lives in a reserved spot in the page itself (`slot`), scrolls with the page, covers
+   *    nothing, and its message sits beside it (the order page, made for phones). */
+  mode?: 'static' | 'dock' | 'slot';
   /** CSS selector of the reserved spot, for `mode: 'slot'`. */
   slot?: string;
   /** Fixed mascot size in px, instead of the responsive one. */
   size?: number;
-  /** Which bottom corner a static mascot rests in (default right). */
+  /** Which bottom corner a static or docked mascot rests in (default right). */
   corner?: 'left' | 'right';
   /** A slow, gentle turn: a sway of a few degrees plus an occasional full spin. Off in reduced motion. */
   ambientSpin?: boolean;
@@ -110,6 +113,10 @@ export interface MascotConfig {
   /** Reactions the page drives from its own data (e.g. the order's status), by key. */
   signals?: Record<string, MascotReaction>;
   flow?: PageFlow;
+  /** Overrides merged over `flow` on phone-sized viewports (see LAYOUT.phoneMaxWidth), so a page can
+   * move the mascot differently on a phone (dock it, or give it a slot) without a second config.
+   * Set a key to `undefined` to drop it there, e.g. `bounds: undefined` for the whole viewport. */
+  phoneFlow?: Partial<PageFlow>;
 }
 
 export type TriggerKind = 'section' | 'signal' | 'peek' | 'hover' | 'focus';

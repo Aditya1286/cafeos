@@ -15,10 +15,13 @@ import {
   pickPeek,
 } from '../src/mascot/flow';
 import {
+  DEFAULT_PRIORITY,
+  DEMO_CONFIG,
   LANDING_CONFIG,
   LOGIN_CONFIG,
   MASCOT_CONFIGS,
   ORDER_CONFIG,
+  resolveFlow,
   validateConfig,
 } from '../src/mascot/config';
 import { FLOW, LAYOUT, PEEK } from '../src/mascot/config';
@@ -366,7 +369,7 @@ describe('mascot route scoping', () => {
   const files = walk(srcRoot).filter((f) => /\.(ts|tsx)$/.test(f));
   const rel = (f: string) => relative(srcRoot, f).split('\\').join('/');
 
-  it('is imported only by the landing, login and order-tracking pages', () => {
+  it('is imported only by the landing, login, request-demo and order-tracking pages', () => {
     const importers = files
       .filter((f) => !rel(f).startsWith('mascot/'))
       .filter((f) =>
@@ -378,6 +381,7 @@ describe('mascot route scoping', () => {
       'pages/CustomerOrderTrackingPage.tsx',
       'pages/LandingPage.tsx',
       'pages/LoginPage.tsx',
+      'pages/RequestDemoPage.tsx',
     ]);
   });
 
@@ -388,6 +392,8 @@ describe('mascot route scoping', () => {
     expect(login).toMatch(/<PageMascot page="login" \/>/);
     const tracking = readFileSync(join(srcRoot, 'pages/CustomerOrderTrackingPage.tsx'), 'utf8');
     expect(tracking).toMatch(/<PageMascot page="order" signal=\{mascotSignal\} \/>/);
+    const demo = readFileSync(join(srcRoot, 'pages/RequestDemoPage.tsx'), 'utf8');
+    expect(demo).toMatch(/<PageMascot page="demo" signal=\{mascotSignal\} \/>/);
     // The checkout, ordering, dashboard and register pages must stay mascot-free.
     for (const page of [
       'CustomerMenuPage',
@@ -429,7 +435,7 @@ describe('mascot route scoping', () => {
 
 describe('page configs', () => {
   it('has a config for every page id, each valid', () => {
-    expect(Object.keys(MASCOT_CONFIGS).sort()).toEqual(['landing', 'login', 'order']);
+    expect(Object.keys(MASCOT_CONFIGS).sort()).toEqual(['demo', 'landing', 'login', 'order']);
     for (const config of Object.values(MASCOT_CONFIGS)) {
       expect(validateConfig(config)).toEqual([]);
     }
@@ -513,5 +519,70 @@ describe('order page config', () => {
       expect(r.message?.durationMs).toBe(Infinity);
       expect(r.message?.announce).toBe(true);
     }
+  });
+});
+
+describe('phone overrides (phoneFlow)', () => {
+  it('merges phoneFlow over flow on phones only', () => {
+    expect(resolveFlow(DEMO_CONFIG, false)).toBe(DEMO_CONFIG.flow);
+    const phone = resolveFlow(DEMO_CONFIG, true);
+    expect(phone).toMatchObject({ mode: 'slot', slot: '[data-mascot-slot="demo"]', size: 84 });
+    // Keys the override doesn't name are kept.
+    expect(phone?.steps).toEqual(DEMO_CONFIG.flow?.steps);
+  });
+
+  it('pages without phoneFlow get the same flow everywhere', () => {
+    expect(resolveFlow(LOGIN_CONFIG, true)).toBe(LOGIN_CONFIG.flow);
+    expect(resolveFlow(ORDER_CONFIG, true)).toBe(ORDER_CONFIG.flow);
+  });
+
+  it('landing: docks in the corner on phones instead of sweeping across the text', () => {
+    expect(resolveFlow(LANDING_CONFIG, true)).toMatchObject({ mode: 'dock' });
+    expect(resolveFlow(LANDING_CONFIG, false)?.mode).toBeUndefined();
+  });
+});
+
+describe('request-demo page config', () => {
+  const srcRoot = join(__dirname, '..', 'src');
+  const markup = readFileSync(join(srcRoot, 'pages/RequestDemoPage.tsx'), 'utf8');
+
+  it('moves down its stage in form order, ending on the submit button', () => {
+    const steps = DEMO_CONFIG.flow?.steps ?? [];
+    expect(DEMO_CONFIG.flow?.progress).toBe('steps');
+    const progress = steps.map((s) => s.progress);
+    expect([...progress].sort((a, b) => a - b)).toEqual(progress);
+    expect(steps[steps.length - 1]).toEqual({
+      selector: '[data-mascot-field="demo-submit"]',
+      progress: 1,
+    });
+    // Every step is also a field the mascot reacts to.
+    const targets = new Set(DEMO_CONFIG.targets.map((t) => t.selector));
+    for (const step of steps) expect(targets.has(step.selector), step.selector).toBe(true);
+  });
+
+  it('every page-markup hook it names exists', () => {
+    const names = [
+      DEMO_CONFIG.flow?.bounds,
+      DEMO_CONFIG.phoneFlow?.slot,
+      ...DEMO_CONFIG.sections.map((s) => s.selector),
+      ...DEMO_CONFIG.peeks.map((p) => p.selector),
+      ...DEMO_CONFIG.targets.map((t) => t.selector),
+    ];
+    for (const selector of names) {
+      const attr = /\[(data-[a-z-]+)="([^"]+)"\]/.exec(selector ?? '');
+      expect(attr, `selector ${selector}`).not.toBeNull();
+      expect(markup, `${selector} is in the markup`).toContain(`${attr![1]}="${attr![2]}"`);
+    }
+  });
+
+  it('submit outcomes outrank field focus (focus is still on the button when they arrive)', () => {
+    for (const key of ['submitting', 'error', 'sent']) {
+      const reaction = DEMO_CONFIG.signals?.[key];
+      expect(reaction, key).toBeDefined();
+      expect(reaction!.priority!).toBeGreaterThan(DEFAULT_PRIORITY.focus);
+    }
+    expect(markup).toMatch(
+      /mascotSignal = sent \? 'sent' : submitting \? 'submitting' : error \? 'error' : null/,
+    );
   });
 });
