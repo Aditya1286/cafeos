@@ -1,0 +1,344 @@
+/* The light mascot: one SVG (assets/hamster.svg) whose parts are moved by CSS only. No canvas, no
+   WebGL, no animation loop in JS. Everything is scoped under .caosl.
+
+   Attributes on the <svg> (set by createLiteEngine.ts):
+     data-expression  idle | curious | confident | excited | shy   (the held face, via variables)
+     data-g           the one-shot gesture playing now (cleared on animationend)
+     data-pending     not yet entered: hidden until startEntrance()
+     data-in          the entrance is playing
+     data-ambient     a slow sway (calm pages)
+     data-paused      scrolled off screen or tab hidden: every animation is paused
+     data-reduced     prefers-reduced-motion: no animation at all, poses still change
+   Variables: --caosl-band (hat band), --lx/--ly (look, -1..1), --lean (deg, from flow velocity). */
+
+.caosl {
+  --caosl-band: #dc2626;
+  --lx: 0;
+  --ly: 0;
+  --lean: 0deg;
+  /* The face, per expression (idle by default). */
+  --lid-l: 0.2;
+  --lid-r: 0.16;
+  --bl-rot: 14deg;
+  --bl-y: 0px;
+  --br-rot: -8deg;
+  --br-y: -3px;
+  --mouth: 1;
+  --roll: -2deg;
+  --blush: 0;
+  --grin: 0;
+  --shut: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  user-select: none;
+}
+.caosl[data-expression='curious'] {
+  --lid-l: 0.08;
+  --lid-r: 0.03;
+  --bl-rot: 8deg;
+  --bl-y: -1px;
+  --br-rot: -2deg;
+  --br-y: -9px;
+  --mouth: 0.9;
+  --roll: -7deg;
+}
+.caosl[data-expression='confident'] {
+  --lid-l: 0.45;
+  --lid-r: 0.42;
+  --bl-rot: 20deg;
+  --bl-y: 1px;
+  --br-rot: -18deg;
+  --br-y: 0px;
+  --mouth: 1.12;
+  --roll: 3deg;
+}
+.caosl[data-expression='excited'] {
+  --lid-l: 0;
+  --lid-r: 0;
+  --bl-rot: -3deg;
+  --bl-y: -6px;
+  --br-rot: 3deg;
+  --br-y: -7px;
+  --roll: 0deg;
+  --blush: 0.75;
+  --grin: 1;
+}
+.caosl[data-expression='shy'] {
+  --lid-l: 1;
+  --lid-r: 1;
+  --bl-rot: -12deg;
+  --bl-y: -5px;
+  --br-rot: 12deg;
+  --br-y: -5px;
+  --mouth: 0.85;
+  --roll: 4deg;
+  --blush: 1;
+  --shut: 1;
+}
+
+.caosl * {
+  transform-box: fill-box;
+}
+
+/* Whole figure: entrance, lean into the path, and the body gestures. Pivots at the feet. */
+.caosl-fig {
+  transform-origin: 50% 100%;
+  rotate: var(--lean);
+  transition: rotate 300ms ease-out;
+}
+.caosl[data-pending] .caosl-fig {
+  opacity: 0;
+}
+.caosl[data-in] .caosl-fig {
+  animation: caosl-in 650ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.caosl-breath {
+  transform-origin: 50% 100%;
+  animation: caosl-breathe 3.4s ease-in-out infinite;
+}
+.caosl-sway {
+  transform-origin: 50% 100%;
+}
+.caosl[data-ambient] .caosl-sway {
+  animation: caosl-sway 7s ease-in-out infinite;
+}
+
+/* Head: held roll per expression plus a small shift toward what the visitor is pointing at. */
+.caosl-head {
+  transform-origin: 50% 90%;
+  rotate: var(--roll);
+  translate: calc(var(--lx) * 3px) calc(var(--ly) * 2px);
+  transition:
+    rotate 260ms ease-out,
+    translate 200ms ease-out;
+}
+.caosl-eyes {
+  translate: calc(var(--lx) * 3.5px) calc(var(--ly) * 3px);
+  transition: translate 160ms ease-out;
+}
+.caosl-lid {
+  transform-origin: 50% 0;
+  transition: scale 180ms ease-out;
+}
+.caosl-lidl {
+  scale: 1 var(--lid-l);
+}
+.caosl-lidr {
+  scale: 1 var(--lid-r);
+}
+.caosl-blink {
+  transform-origin: 50% 0;
+  transform: scaleY(0);
+  animation: caosl-blink 4.6s infinite;
+}
+.caosl-bl,
+.caosl-br {
+  transform-origin: 50% 50%;
+  transition:
+    rotate 220ms ease-out,
+    translate 220ms ease-out;
+}
+.caosl-bl {
+  rotate: var(--bl-rot);
+  translate: 0 var(--bl-y);
+}
+.caosl-br {
+  rotate: var(--br-rot);
+  translate: 0 var(--br-y);
+}
+.caosl-shut {
+  opacity: var(--shut);
+  transition: opacity 150ms ease;
+}
+.caosl-blush {
+  opacity: var(--blush);
+  transition: opacity 250ms ease;
+}
+.caosl-mouth {
+  transform-origin: 50% 40%;
+  scale: var(--mouth);
+  transition: scale 220ms ease-out;
+}
+.caosl-smirk {
+  opacity: calc(1 - var(--grin));
+}
+.caosl-grin {
+  opacity: var(--grin);
+}
+.caosl-band {
+  fill: var(--caosl-band);
+  transition: fill 300ms ease;
+}
+.caosl-hat {
+  transform-origin: 20% 100%;
+}
+.caosl-pawr {
+  transform-origin: 30% 30%;
+}
+
+/* One-shot gestures. Each animates `transform` only, so it adds to the held `rotate`/`translate`
+   above instead of replacing it. */
+.caosl[data-g='pop'] .caosl-fig {
+  animation: caosl-g-pop 600ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.caosl[data-g='lean'] .caosl-fig {
+  animation: caosl-g-lean 900ms ease-in-out;
+}
+.caosl[data-g='wiggle'] .caosl-fig {
+  animation: caosl-g-wiggle 700ms ease-in-out;
+}
+.caosl[data-g='nod'] .caosl-head {
+  animation: caosl-g-nod 650ms ease-in-out;
+}
+.caosl[data-g='tilt'] .caosl-head {
+  animation: caosl-g-tilt 900ms ease-in-out;
+}
+.caosl[data-g='tipHat'] .caosl-hat {
+  animation: caosl-g-tiphat 900ms ease-in-out;
+}
+.caosl[data-g='wave'] .caosl-pawr {
+  animation: caosl-g-wave 1100ms ease-in-out;
+}
+
+.caosl[data-paused] *,
+.caosl[data-paused] {
+  animation-play-state: paused !important;
+}
+.caosl[data-reduced] *,
+.caosl[data-reduced] {
+  animation: none !important;
+  transition: none !important;
+}
+
+@keyframes caosl-in {
+  0% {
+    transform: scale(0.2) rotate(-8deg);
+    opacity: 0;
+  }
+  100% {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes caosl-breathe {
+  0%,
+  100% {
+    transform: none;
+  }
+  50% {
+    transform: scale(1.012, 1.025);
+  }
+}
+@keyframes caosl-sway {
+  0%,
+  100% {
+    transform: rotate(-2.5deg);
+  }
+  50% {
+    transform: rotate(2.5deg);
+  }
+}
+@keyframes caosl-blink {
+  0%,
+  94%,
+  100% {
+    transform: scaleY(0);
+  }
+  97% {
+    transform: scaleY(1);
+  }
+}
+@keyframes caosl-g-pop {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.12, 0.92) translateY(-4px);
+  }
+  100% {
+    transform: none;
+  }
+}
+@keyframes caosl-g-lean {
+  0%,
+  100% {
+    transform: none;
+  }
+  40%,
+  60% {
+    transform: rotate(-7deg) translateY(2px);
+  }
+}
+@keyframes caosl-g-wiggle {
+  0%,
+  100% {
+    transform: none;
+  }
+  20% {
+    transform: rotate(-6deg);
+  }
+  40% {
+    transform: rotate(6deg);
+  }
+  60% {
+    transform: rotate(-4deg);
+  }
+  80% {
+    transform: rotate(3deg);
+  }
+}
+@keyframes caosl-g-nod {
+  0%,
+  100% {
+    transform: none;
+  }
+  30% {
+    transform: translateY(5px) scaleY(0.97);
+  }
+  60% {
+    transform: translateY(-1px);
+  }
+  80% {
+    transform: translateY(3px);
+  }
+}
+@keyframes caosl-g-tilt {
+  0%,
+  100% {
+    transform: none;
+  }
+  35%,
+  65% {
+    transform: rotate(11deg);
+  }
+}
+@keyframes caosl-g-tiphat {
+  0%,
+  100% {
+    transform: none;
+  }
+  35%,
+  60% {
+    transform: translateY(-12px) rotate(-14deg);
+  }
+}
+@keyframes caosl-g-wave {
+  0%,
+  100% {
+    transform: none;
+  }
+  20% {
+    transform: translate(14px, -46px) rotate(-20deg);
+  }
+  40% {
+    transform: translate(14px, -46px) rotate(15deg);
+  }
+  60% {
+    transform: translate(14px, -46px) rotate(-20deg);
+  }
+  80% {
+    transform: translate(14px, -46px) rotate(10deg);
+  }
+}

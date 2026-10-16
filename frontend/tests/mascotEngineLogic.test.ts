@@ -20,6 +20,7 @@ import {
   LANDING_CONFIG,
   LOGIN_CONFIG,
   MASCOT_CONFIGS,
+  MENU_CONFIG,
   ORDER_CONFIG,
   resolveFlow,
   validateConfig,
@@ -369,7 +370,7 @@ describe('mascot route scoping', () => {
   const files = walk(srcRoot).filter((f) => /\.(ts|tsx)$/.test(f));
   const rel = (f: string) => relative(srcRoot, f).split('\\').join('/');
 
-  it('is imported only by the landing, login, request-demo and order-tracking pages', () => {
+  it('is imported only by the landing, login, request-demo, menu and order-tracking pages', () => {
     const importers = files
       .filter((f) => !rel(f).startsWith('mascot/'))
       .filter((f) =>
@@ -377,12 +378,16 @@ describe('mascot route scoping', () => {
       )
       .map(rel)
       .sort();
-    expect(importers).toEqual([
+    // The customer menu is allowed (its mascot lands in a later task) but not required yet.
+    const required = [
       'pages/CustomerOrderTrackingPage.tsx',
       'pages/LandingPage.tsx',
       'pages/LoginPage.tsx',
       'pages/RequestDemoPage.tsx',
-    ]);
+    ];
+    const allowed = [...required, 'pages/CustomerMenuPage.tsx'];
+    for (const page of required) expect(importers).toContain(page);
+    for (const importer of importers) expect(allowed).toContain(importer);
   });
 
   it('every page mounts it through the lazy PageMascot entry, with its own page id', () => {
@@ -396,7 +401,6 @@ describe('mascot route scoping', () => {
     expect(demo).toMatch(/<PageMascot page="demo" signal=\{mascotSignal\} \/>/);
     // The checkout, ordering, dashboard and register pages must stay mascot-free.
     for (const page of [
-      'CustomerMenuPage',
       'CheckoutReturnPage',
       'OwnerDashboard',
       'SuperAdminDashboard',
@@ -422,6 +426,28 @@ describe('mascot route scoping', () => {
     for (const u of users) expect(u.startsWith('mascot/engine/')).toBe(true);
   });
 
+  it('keeps the light renderer free of the engine folder (so it never pulls three.js)', () => {
+    const lite = files.filter((f) => rel(f).startsWith('mascot/lite/'));
+    expect(lite.map(rel)).toContain('mascot/lite/createLiteEngine.ts');
+    for (const f of lite) {
+      const source = readFileSync(f, 'utf8');
+      expect(source, rel(f)).not.toMatch(/(from\s+|import\(\s*)['"][^'"]*\/engine(\/|['"])/);
+      expect(source, rel(f)).not.toMatch(/from\s+['"]three['"]/);
+    }
+  });
+
+  it('loads the light renderer only through a dynamic import', () => {
+    const shell = readFileSync(join(srcRoot, 'mascot/MascotExperience.tsx'), 'utf8');
+    expect(shell).toMatch(/import\('\.\/lite\/createLiteEngine'\)/);
+    expect(shell).not.toMatch(/^import (?!type\b).*from '\.\/lite\/createLiteEngine'/m);
+    // Nothing else outside the lite folder pulls it in statically.
+    for (const f of files.filter((x) => !rel(x).startsWith('mascot/lite/'))) {
+      expect(readFileSync(f, 'utf8'), rel(f)).not.toMatch(
+        /^import (?!type\b).*from ['"][^'"]*lite\/createLiteEngine['"]/m,
+      );
+    }
+  });
+
   it('loads the experience and the engine only through dynamic imports', () => {
     const landing = readFileSync(join(srcRoot, 'mascot/PageMascot.tsx'), 'utf8');
     expect(landing).toMatch(/lazy\(\(\) => import\('\.\/MascotExperience'\)\)/);
@@ -435,7 +461,13 @@ describe('mascot route scoping', () => {
 
 describe('page configs', () => {
   it('has a config for every page id, each valid', () => {
-    expect(Object.keys(MASCOT_CONFIGS).sort()).toEqual(['demo', 'landing', 'login', 'order']);
+    expect(Object.keys(MASCOT_CONFIGS).sort()).toEqual([
+      'demo',
+      'landing',
+      'login',
+      'menu',
+      'order',
+    ]);
     for (const config of Object.values(MASCOT_CONFIGS)) {
       expect(validateConfig(config)).toEqual([]);
     }
@@ -584,5 +616,19 @@ describe('request-demo page config', () => {
     expect(markup).toMatch(
       /mascotSignal = sent \? 'sent' : submitting \? 'submitting' : error \? 'error' : null/,
     );
+  });
+});
+
+describe('menu page config', () => {
+  it('docks on every viewport and reacts only to what the page passes at runtime', () => {
+    expect(validateConfig(MENU_CONFIG)).toEqual([]);
+    expect(MENU_CONFIG.flow).toEqual({ mode: 'dock' });
+    expect(MENU_CONFIG.phoneFlow).toEqual({ mode: 'dock' });
+    expect(resolveFlow(MENU_CONFIG, true)?.mode).toBe('dock');
+    expect(resolveFlow(MENU_CONFIG, false)?.mode).toBe('dock');
+    expect(MENU_CONFIG.sections).toEqual([]);
+    expect(MENU_CONFIG.targets).toEqual([]);
+    expect(MENU_CONFIG.peeks).toEqual([]);
+    expect(MENU_CONFIG.signals).toBeUndefined();
   });
 });

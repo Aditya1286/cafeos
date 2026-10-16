@@ -38,6 +38,8 @@ export interface HamsterRig {
   pawL: THREE.Mesh;
   pawR: THREE.Mesh;
   qr: THREE.Group;
+  /** The hat band; its material's colour is the café theme's `mascotBand` (default brand red). */
+  band: THREE.Mesh<THREE.BufferGeometry, THREE.MeshToonMaterial>;
   mouth: THREE.Group;
   cheekL: THREE.Mesh;
   cheekR: THREE.Mesh;
@@ -145,7 +147,6 @@ export const buildHamster = (): HamsterRig => {
   const noseMat = toon(PALETTE.nose);
   const pink = toon(PALETTE.pink);
   const ink = toon(PALETTE.ink);
-  const red = toon(PALETTE.red);
 
   const mesh = (geometry: THREE.BufferGeometry, material: THREE.Material, outlined = false) => {
     track(geometry);
@@ -358,7 +359,14 @@ export const buildHamster = (): HamsterRig => {
   const brim = mesh(new THREE.CylinderGeometry(1.08, 1.12, 0.1, 40), ink, false);
   const hatCrown = mesh(new THREE.CylinderGeometry(0.7, 0.74, 0.64, 36), ink, true);
   hatCrown.position.y = 0.37;
-  const band = mesh(new THREE.CylinderGeometry(0.752, 0.752, 0.22, 36), red, false);
+  // The band is the only part using this material, so a café's tint (setBandColor) touches
+  // nothing else.
+  const bandMat = toon(PALETTE.red);
+  const band = mesh(
+    new THREE.CylinderGeometry(0.752, 0.752, 0.22, 36),
+    bandMat,
+    false,
+  ) as THREE.Mesh<THREE.BufferGeometry, THREE.MeshToonMaterial>;
   band.position.y = 0.17;
   const star = mesh(
     new THREE.ShapeGeometry(starShape(0.22, 0.075)),
@@ -387,6 +395,7 @@ export const buildHamster = (): HamsterRig => {
     pawL,
     pawR,
     qr,
+    band,
     mouth,
     cheekL,
     cheekR,

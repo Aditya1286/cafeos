@@ -1,36 +1,10 @@
 import * as THREE from 'three';
-import type { Expression, GestureEvent } from '../types';
-import type { ScrollSnapshot } from '../sections';
+import type { EngineOptions, MascotEngine } from '../renderer';
 import { MascotAnimator } from './animator';
 import { buildHamster } from './model';
 
-export interface MascotEngine {
-  /** Push the brain's latest expression/gesture. Cheap; call on every state change. */
-  setExpression(expression: Expression): void;
-  triggerGesture(gesture: GestureEvent): void;
-  /** Direction to glance (-1..1 each axis), or null to look straight ahead. */
-  setLook(x: number | null, y: number | null): void;
-  /** Horizontal speed along the path (px/s), so the mascot leans into the curve. */
-  setFlowVelocity(vx: number): void;
-  setReducedMotion(reduced: boolean): void;
-  /** Box size in CSS px (the canvas is square). */
-  resize(sizePx: number): void;
-  /** Pause drawing while the mascot is scrolled out of view (saves a phone's battery). */
-  setVisible(visible: boolean): void;
-  /** Slow ambient sway and occasional full turn (calm pages). Ignored in reduced motion. */
-  setAmbientSpin(on: boolean): void;
-  /** Pop in from nothing. Call once, when the mascot should appear. */
-  startEntrance(): void;
-  dispose(): void;
-}
-
-interface EngineOptions {
-  container: HTMLElement;
-  scroll: ScrollSnapshot;
-  reducedMotion: boolean;
-  /** WebGL context lost / restored: the shell swaps to its fallback while lost. */
-  onContextChange: (lost: boolean) => void;
-}
+// The interface is shared with the light renderer (lite/createLiteEngine.ts) through ../renderer.
+export type { EngineOptions, MascotEngine } from '../renderer';
 
 const CAMERA = { fov: 26, distance: 10.5, lookY: 0.15 } as const;
 /** Cap on the pixel ratio: the mascot is small, so 2x is plenty and 3x is wasted fill. */
@@ -181,6 +155,12 @@ export const createMascotEngine = ({
     },
     startEntrance: () => {
       animator.startEntrance(performance.now());
+      wake();
+    },
+    setBandColor: (hex) => {
+      // An unparsable value would turn the band black; keep the current colour instead.
+      if (!/^#(?:[0-9a-f]{3}){1,2}$/i.test(hex)) return;
+      rig.band.material.color.set(hex);
       wake();
     },
     dispose: () => {

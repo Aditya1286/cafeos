@@ -688,11 +688,25 @@ export const DEMO_CONFIG: MascotConfig = {
   },
 };
 
+// ─── Customer menu page ────────────────────────────────────────────────────────────────────────
+// A café's own menu. The mascot rests small in a corner on every viewport and says nothing of its
+// own: everything it says (the returning-guest welcome, category tips) comes from the café's data,
+// which the page hands over at runtime as `reactions` and drives with `signal`.
+
+export const MENU_CONFIG: MascotConfig = {
+  flow: { mode: 'dock' },
+  phoneFlow: { mode: 'dock' },
+  sections: [],
+  targets: [],
+  peeks: [],
+};
+
 export const MASCOT_CONFIGS: Record<PageId, MascotConfig> = {
   landing: LANDING_CONFIG,
   login: LOGIN_CONFIG,
   order: ORDER_CONFIG,
   demo: DEMO_CONFIG,
+  menu: MENU_CONFIG,
 };
 
 /** The flow a page uses at this viewport: `flow`, with `phoneFlow` merged over it on phones. Pure. */

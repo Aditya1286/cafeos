@@ -56,6 +56,8 @@ export class MascotBrain {
   private message: MascotMessage | null = null;
   private state: MascotState;
   private disposed = false;
+  /** Signals the page supplies at runtime (built from its own data), next to the config's. */
+  private reactions: Record<string, MascotReaction> = {};
 
   constructor(private readonly config: MascotConfig) {
     this.state = IDLE_STATE();
@@ -98,8 +100,23 @@ export class MascotBrain {
     this.settle();
   }
 
+  /** Replace the page's runtime reactions (e.g. a menu's welcome and category tips, built from the
+   * café's data). They act as extra signals: `setSignal(key)` looks a key up in the config's
+   * signals first, then here. Keys that are gone stop working, and an active signal whose key is
+   * gone is dropped; one whose key stays is left as it is (no repeat). */
+  setReactions(map: Record<string, MascotReaction>): void {
+    if (this.disposed) return;
+    this.reactions = { ...map };
+    const active = this.layers.signal;
+    if (active && !this.signalReaction(active.id)) {
+      delete this.layers.signal;
+      this.settle();
+    }
+  }
+
   /** The page's own state changed (e.g. the order is ready). Null clears it. Returns false for a key
-   * the config doesn't know. Setting the signal it already has does nothing. */
+   * neither the config's signals nor the page's reactions know. Setting the signal it already has
+   * does nothing. */
   setSignal(key: string | null): boolean {
     if (this.disposed) return false;
     if (key === null) {
@@ -109,7 +126,7 @@ export class MascotBrain {
       }
       return true;
     }
-    const reaction = this.config.signals?.[key];
+    const reaction = this.signalReaction(key);
     if (!reaction) return false;
     if (this.layers.signal?.id === key) return true;
     delete this.layers.signal;
@@ -166,6 +183,13 @@ export class MascotBrain {
   }
 
   // ─── internals ───────────────────────────────────────────────────────────────────────────────
+
+  /** A signal key's reaction: the config's own signals first, then the page's runtime reactions. */
+  private signalReaction(key: string): MascotReaction | undefined {
+    const own = (map: Record<string, MascotReaction> | undefined) =>
+      map && Object.prototype.hasOwnProperty.call(map, key) ? map[key] : undefined;
+    return own(this.config.signals) ?? own(this.reactions);
+  }
 
   private activateTarget(kind: 'hover' | 'focus', targetId: string): boolean {
     const target = this.config.targets.find((t) => t.targetId === targetId);

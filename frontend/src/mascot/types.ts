@@ -4,7 +4,7 @@
 export type Expression = 'idle' | 'curious' | 'confident' | 'excited' | 'shy';
 
 /** Pages the mascot lives on. Each has its own config (copy, reactions, flow area). */
-export type PageId = 'landing' | 'login' | 'order' | 'demo';
+export type PageId = 'landing' | 'login' | 'order' | 'demo' | 'menu';
 
 export type Gesture = 'pop' | 'nod' | 'tilt' | 'lean' | 'tipHat' | 'wiggle' | 'wave';
 
@@ -16,6 +16,16 @@ export interface MascotMessage {
   durationMs?: number;
   /** Also announce to screen readers. Off by default: the page already carries the same content. */
   announce?: boolean;
+  /** Buttons in the bubble (at most 2 are shown), e.g. "Add" for a returning guest's usual. A click
+   * calls the page's `onAction(id)` and closes the bubble. These and the hide button are the only
+   * parts of the mascot that take taps. */
+  actions?: MascotAction[];
+}
+
+export interface MascotAction {
+  /** What the page receives in `onAction`, e.g. `add-usual`. */
+  id: string;
+  label: string;
 }
 
 export interface MascotReaction {
@@ -135,4 +145,31 @@ export interface MascotState {
   /** Priority of whatever currently owns the expression (0 = idle). */
   priority: number;
   source: 'idle' | TriggerKind;
+}
+
+/** Which renderer draws the mascot. `heavy` is the 3D engine; `light` never downloads three.js. */
+export type MascotRendering = 'heavy' | 'light';
+
+/** A café theme's dressing for the mascot (theme tokens `mascotBand` and `bubble*`). */
+export interface MascotDress {
+  /** Hat band colour. */
+  band: string;
+  bubbleBg: string;
+  bubbleFg: string;
+  bubbleBorder: string;
+}
+
+/** What a page passes to `<PageMascot>` besides its id. */
+export interface MascotPageProps {
+  /** The page's own state for the mascot to react to: a key of the config's `signals` or of
+   * `reactions`. */
+  signal?: string | null;
+  /** `heavy` (default) is the 3D engine; `light` is the flat SVG renderer and never loads three.js. */
+  rendering?: MascotRendering;
+  /** Extra signals built from the page's data at runtime (e.g. the menu's welcome and tips). */
+  reactions?: Record<string, MascotReaction>;
+  /** A café theme's hat band and bubble colours. Without it the mascot wears the CAOS colours. */
+  dress?: MascotDress;
+  /** A bubble action was tapped (its `id`). The bubble closes afterwards. */
+  onAction?: (id: string) => void;
 }

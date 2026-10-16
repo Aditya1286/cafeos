@@ -6,15 +6,25 @@ import { LAYOUT, MASCOT_CONFIGS, TIMING, resolveFlow, validateConfig } from './c
 import { createInteractionController } from './interactions';
 import { readMinimized, writeMinimized } from './preference';
 import { createSectionTracker, type ScrollSnapshot } from './sections';
-import type { MascotEngine } from './engine/createEngine';
+import type { EngineOptions, MascotEngine } from './renderer';
 import { createFlowController } from './flow';
-import type { MascotConfig, MascotMessage, PageId } from './types';
+import type {
+  MascotAction,
+  MascotConfig,
+  MascotMessage,
+  MascotPageProps,
+  MascotRendering,
+  PageId,
+} from './types';
 import './mascot.css';
 
 const REDUCED_QUERY = '(prefers-reduced-motion: reduce)';
 
 /** Reduced motion rests the mascot in one place, a little smaller. */
 const REDUCED_SIZE_SCALE = 0.7;
+
+/** The bubble shows at most this many action buttons. */
+const MAX_ACTIONS = 2;
 
 const sizeForWidth = (width: number, scale: number): number =>
   Math.round(
@@ -50,13 +60,21 @@ const useIsPhone = (): boolean => {
   return phone;
 };
 
-type Mode = 'loading' | '3d' | 'fallback';
+/** `live`: a renderer (3D or light) is drawing. `fallback`: both failed, the static logo shows. */
+type Mode = 'loading' | 'live' | 'fallback';
 
-const ActiveMascot: React.FC<{
-  config: MascotConfig;
-  signal?: string | null;
-  onMinimize: () => void;
-}> = ({ config, signal, onMinimize }) => {
+/** Each renderer is its own chunk, fetched only when chosen. The light one never touches three.js. */
+const loadRenderer = (kind: MascotRendering): Promise<(opts: EngineOptions) => MascotEngine> =>
+  kind === 'light'
+    ? import('./lite/createLiteEngine').then((m) => m.createLiteEngine)
+    : import('./engine/createEngine').then((m) => m.createMascotEngine);
+
+const ActiveMascot: React.FC<
+  MascotPageProps & {
+    config: MascotConfig;
+    onMinimize: () => void;
+  }
+> = ({ config, signal, rendering, reactions, dress, onAction, onMinimize }) => {
   const reduced = useReducedMotion();
   const isPhone = useIsPhone();
   // The page's flow for this viewport; everything below reads this, never `config.flow` directly.
@@ -67,14 +85,19 @@ const ActiveMascot: React.FC<{
   const pickSize = (width: number) => fixedSize ?? sizeForWidth(width, scale);
   const [size, setSize] = useState(() => pickSize(window.innerWidth));
   const [mode, setMode] = useState<Mode>('loading');
-  const [contextLost, setContextLost] = useState(false);
+  // Which renderer is drawing. Starts as the page asked; a failing 3D engine drops to `light`.
+  const [renderer, setRenderer] = useState<MascotRendering>(rendering ?? 'heavy');
   const [revealed, setRevealed] = useState(false);
   const [message, setMessage] = useState<MascotMessage | null>(null);
   const [announcement, setAnnouncement] = useState('');
-  // The bubble keeps its last text while it fades out, so it never collapses to an empty pill.
+  // The bubble keeps its last text (and buttons) while it fades out, so it never collapses to an
+  // empty pill.
   const [bubbleText, setBubbleText] = useState('');
+  const [bubbleActions, setBubbleActions] = useState<MascotAction[]>([]);
   useEffect(() => {
-    if (message) setBubbleText(message.text);
+    if (!message) return;
+    setBubbleText(message.text);
+    setBubbleActions(message.actions?.slice(0, MAX_ACTIONS) ?? []);
   }, [message]);
 
   const hostRef = useRef<HTMLDivElement>(null);
@@ -84,6 +107,14 @@ const ActiveMascot: React.FC<{
   const brainRef = useRef<MascotBrain | null>(null);
   const signalRef = useRef<string | null>(signal ?? null);
   signalRef.current = signal ?? null;
+  const reactionsRef = useRef(reactions);
+  reactionsRef.current = reactions;
+  const bandRef = useRef(dress?.band);
+  bandRef.current = dress?.band;
+  const onActionRef = useRef(onAction);
+  onActionRef.current = onAction;
+  const flowRef = useRef(flow);
+  flowRef.current = flow;
   const reducedRef = useRef(reduced);
   reducedRef.current = reduced;
   const sizeRef = useRef(size);
@@ -98,43 +129,75 @@ const ActiveMascot: React.FC<{
     // eslint-disable-next-line react-hooks/exhaustive-deps -- pickSize only reads these two
   }, [scale, fixedSize]);
 
-  // Load the 3D engine (separate chunk). Any failure (no WebGL, chunk 404, shader error) drops to
-  // the static logo; the brain, bubble and positioning keep working either way.
   useEffect(() => {
-    let cancelled = false;
-    let engine: MascotEngine | null = null;
-
     if (import.meta.env.DEV) {
       const problems = validateConfig(config);
       if (problems.length) console.warn('[mascot] invalid config:', problems);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `config` is a constant per page
+  }, []);
 
+  // The page switched rendering (the café's setting arrived or changed).
+  useEffect(() => {
+    setRenderer(rendering ?? 'heavy');
+  }, [rendering]);
+
+  // Load the chosen renderer (each is a separate chunk). If the 3D engine fails (no WebGL, chunk
+  // 404, shader error) or later loses its WebGL context, the light renderer takes over; only if
+  // that fails too does the static logo show. The brain, bubble and positioning keep working
+  // throughout.
+  useEffect(() => {
+    let cancelled = false;
+    let engine: MascotEngine | null = null;
     const stage = stageRef.current;
-    import('./engine/createEngine')
-      .then(({ createMascotEngine }) => {
+    const dropToLight = () => {
+      if (cancelled) return;
+      setMode('loading');
+      setRenderer('light');
+    };
+
+    loadRenderer(renderer)
+      .then((create) => {
         if (cancelled || !stage) return;
-        engine = createMascotEngine({
+        engine = create({
           container: stage,
           scroll: scrollRef.current,
           reducedMotion: reducedRef.current,
-          onContextChange: (lost) => setContextLost(lost),
+          onContextChange: (lost) => {
+            if (!lost) return;
+            console.warn('[mascot] WebGL context lost, switching to the light mascot');
+            dropToLight();
+          },
         });
         engine.resize(sizeRef.current);
+        if (bandRef.current) engine.setBandColor(bandRef.current);
         engineRef.current = engine;
-        setMode('3d');
+        // Swapped in after the mascot had already appeared: catch up with what it is doing.
+        const brain = brainRef.current;
+        if (brain) {
+          engine.setAmbientSpin(!!flowRef.current?.ambientSpin);
+          engine.setExpression(brain.getState().expression);
+          engine.startEntrance();
+        }
+        setMode('live');
       })
       .catch((err: unknown) => {
-        console.warn('[mascot] 3D unavailable, using the static logo:', err);
-        if (!cancelled) setMode('fallback');
+        if (cancelled) return;
+        if (renderer === 'heavy') {
+          console.warn('[mascot] 3D unavailable, using the light mascot:', err);
+          dropToLight();
+        } else {
+          console.warn('[mascot] light mascot unavailable, using the static logo:', err);
+          setMode('fallback');
+        }
       });
 
     return () => {
       cancelled = true;
-      engineRef.current = null;
+      if (engineRef.current === engine) engineRef.current = null;
       engine?.dispose();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- the engine is created once per mount
-  }, []);
+  }, [renderer]);
 
   useEffect(() => {
     engineRef.current?.resize(size);
@@ -144,7 +207,11 @@ const ActiveMascot: React.FC<{
     engineRef.current?.setReducedMotion(reduced);
   }, [reduced, mode]);
 
-  // Reveal once the mascot is ready (3D or fallback) and the hero has had its moment.
+  useEffect(() => {
+    if (dress?.band) engineRef.current?.setBandColor(dress.band);
+  }, [dress?.band, mode]);
+
+  // Reveal once the mascot is ready (a renderer or the fallback) and the hero has had its moment.
   useEffect(() => {
     if (mode === 'loading') return;
     const timer = setTimeout(() => setRevealed(true), TIMING.entranceDelayMs);
@@ -152,16 +219,17 @@ const ActiveMascot: React.FC<{
   }, [mode]);
 
   // Once revealed: start the entrance and wire scroll, hover, focus and the flow path to the brain
-  // and engine. Reduced motion skips the flow entirely: the mascot rests in a fixed corner.
+  // and engine. Reduced motion skips the flow entirely: the mascot rests in a fixed corner. The
+  // engine is always read through engineRef, because the renderer can be swapped later.
   useEffect(() => {
     if (!revealed) return;
-    const engine = engineRef.current;
-    engine?.startEntrance();
+    engineRef.current?.startEntrance();
 
     const brain = new MascotBrain(config);
     brainRef.current = brain;
-    engine?.setAmbientSpin(!!flow?.ambientSpin);
+    engineRef.current?.setAmbientSpin(!!flow?.ambientSpin);
     const unsubscribe = brain.subscribe((state) => {
+      const engine = engineRef.current;
       engine?.setExpression(state.expression);
       if (state.gesture) engine?.triggerGesture(state.gesture);
       setMessage(state.message);
@@ -177,10 +245,10 @@ const ActiveMascot: React.FC<{
           scroll: scrollRef.current,
           getSize: () => sizeRef.current,
           onPeek: (id) => (id ? brain.peek(id) : brain.unpeek()),
-          onVelocity: (vx) => engine?.setFlowVelocity(vx),
+          onVelocity: (vx) => engineRef.current?.setFlowVelocity(vx),
           flow,
           staticMode: reduced || flow?.mode === 'static',
-          onVisible: (visible) => engine?.setVisible(visible),
+          onVisible: (visible) => engineRef.current?.setVisible(visible),
         })
       : null;
 
@@ -202,6 +270,7 @@ const ActiveMascot: React.FC<{
         mover?.update();
       },
       onLook: (rect) => {
+        const engine = engineRef.current;
         if (!rect) return engine?.setLook(null, null);
         const box = hostRef.current?.getBoundingClientRect();
         if (!box) return;
@@ -214,7 +283,9 @@ const ActiveMascot: React.FC<{
       },
     });
 
-    // The page may already have a signal (the order loaded before the mascot was ready).
+    // The page may already have reactions and a signal (its data loaded before the mascot was
+    // ready). Reactions first: the signal may be one of their keys.
+    brain.setReactions(reactionsRef.current ?? {});
     if (signalRef.current) brain.setSignal(signalRef.current);
 
     return () => {
@@ -239,15 +310,36 @@ const ActiveMascot: React.FC<{
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `config` is a constant per page
   }, [revealed, reduced, isPhone]);
 
+  // The page's runtime reactions changed (its data arrived or moved on). Re-apply the signal
+  // afterwards: it may name a key that only exists now.
+  useEffect(() => {
+    const brain = brainRef.current;
+    if (!brain) return;
+    brain.setReactions(reactions ?? {});
+    brain.setSignal(signalRef.current);
+  }, [reactions]);
+
   // Later changes to the page's signal (status moved on, the wait got long).
   useEffect(() => {
     brainRef.current?.setSignal(signal ?? null);
   }, [signal]);
 
-  const showPoster = mode === 'fallback' || (mode === '3d' && contextLost);
-  const live3d = mode === '3d' && !contextLost;
+  const showPoster = mode === 'fallback';
+  const live = mode === 'live';
+  const bubbleOpen = revealed && message !== null;
 
   const onHideClick = useCallback(() => onMinimize(), [onMinimize]);
+  const onActionClick = useCallback((id: string) => {
+    onActionRef.current?.(id);
+    brainRef.current?.dismissMessage();
+  }, []);
+
+  const hostStyle: Record<string, string> = { '--m-size': `${size}px` };
+  if (dress) {
+    hostStyle['--m-bubble-bg'] = dress.bubbleBg;
+    hostStyle['--m-bubble-fg'] = dress.bubbleFg;
+    hostStyle['--m-bubble-border'] = dress.bubbleBorder;
+  }
 
   return (
     <div
@@ -256,20 +348,39 @@ const ActiveMascot: React.FC<{
       data-visible={revealed}
       data-reduced={reduced}
       data-slot={slotMode ? 'true' : undefined}
-      style={{ ['--m-size' as string]: `${size}px` }}
+      style={hostStyle as React.CSSProperties}
     >
-      <div
-        className="caos-mascot__bubble"
-        data-open={revealed && message !== null}
-        aria-hidden="true"
-      >
-        {bubbleText}
+      <div className="caos-mascot__bubble" data-open={bubbleOpen}>
+        <span aria-hidden="true">{bubbleText}</span>
+        {bubbleActions.length > 0 && (
+          // The only part of the bubble that takes taps. Named by the bubble's text, so a screen
+          // reader hears what "Add" is about.
+          <span
+            className="caos-mascot__actions"
+            role="group"
+            aria-label={bubbleText}
+            aria-hidden={!bubbleOpen}
+          >
+            {bubbleActions.map((action) => (
+              <button
+                key={action.id}
+                type="button"
+                className="caos-mascot__action"
+                tabIndex={bubbleOpen ? 0 : -1}
+                onClick={() => onActionClick(action.id)}
+              >
+                {action.label}
+              </button>
+            ))}
+          </span>
+        )}
       </div>
       <div className="caos-mascot__body">
         <div
           ref={stageRef}
           className="caos-mascot__stage"
-          style={{ display: live3d ? 'block' : 'none' }}
+          data-renderer={renderer}
+          style={{ display: live ? 'block' : 'none' }}
         />
         {showPoster && (
           <img
@@ -299,10 +410,10 @@ const ActiveMascot: React.FC<{
   );
 };
 
-/** The mascot: a 3D hamster that glides down the page, pops up from behind cards and reacts to the
- * section in view and to hover/focus on key elements. Which page it is on picks its config. Mounted
- * only by PageMascot. */
-const MascotExperience: React.FC<{ page: PageId; signal?: string | null }> = ({ page, signal }) => {
+/** The mascot: a hamster (3D, or flat in light rendering) that glides down the page, pops up from
+ * behind cards and reacts to the section in view, to hover/focus on key elements and to the page's
+ * own signals. Which page it is on picks its config. Mounted only by PageMascot. */
+const MascotExperience: React.FC<MascotPageProps & { page: PageId }> = ({ page, ...props }) => {
   const [minimized, setMinimized] = useState(readMinimized);
   const isPhone = useIsPhone();
 
@@ -331,7 +442,7 @@ const MascotExperience: React.FC<{ page: PageId; signal?: string | null }> = ({ 
       </button>
     );
   }
-  return <ActiveMascot config={MASCOT_CONFIGS[page]} signal={signal} onMinimize={minimize} />;
+  return <ActiveMascot config={MASCOT_CONFIGS[page]} {...props} onMinimize={minimize} />;
 };
 
 export default MascotExperience;

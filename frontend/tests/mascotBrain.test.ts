@@ -3,6 +3,7 @@ import { MascotBrain } from '../src/mascot/brain';
 import {
   LANDING_CONFIG,
   LOGIN_CONFIG,
+  MENU_CONFIG,
   ORDER_CONFIG,
   TIMING,
   validateConfig,
@@ -373,10 +374,77 @@ describe('mascot brain: order signals', () => {
   });
 });
 
+describe('mascot brain: page reactions (runtime signals)', () => {
+  const menu = () => new MascotBrain(MENU_CONFIG);
+  const tip = (id: string, text: string) => ({
+    expression: 'curious' as const,
+    gesture: 'lean' as const,
+    message: { id, text },
+  });
+
+  it('a key from setReactions works with setSignal like a config signal', () => {
+    const brain = menu();
+    expect(brain.setSignal('tip:c1')).toBe(false);
+    brain.setReactions({ 'tip:c1': tip('tip.c1', 'Snacks? The fries are the most ordered here.') });
+    expect(brain.setSignal('tip:c1')).toBe(true);
+    const s = brain.getState();
+    expect(s.message?.id).toBe('tip.c1');
+    expect(s.message?.text).toBe('Snacks? The fries are the most ordered here.');
+    expect(s.expression).toBe('curious');
+    expect(s.gesture?.name).toBe('lean');
+    expect(s.source).toBe('signal');
+  });
+
+  it('replacing the reactions removes the old keys', () => {
+    const brain = menu();
+    brain.setReactions({ 'tip:c1': tip('tip.c1', 'One') });
+    brain.setReactions({ 'tip:c2': tip('tip.c2', 'Two') });
+    expect(brain.setSignal('tip:c1')).toBe(false);
+    expect(brain.setSignal('tip:c2')).toBe(true);
+    expect(brain.getState().message?.id).toBe('tip.c2');
+  });
+
+  it('an active signal whose key was removed is dropped; one that stays is left alone', () => {
+    const brain = menu();
+    brain.setReactions({ a: tip('a', 'A'), b: tip('b', 'B') });
+    brain.setSignal('a');
+    const before = brain.getState();
+    brain.setReactions({ a: tip('a', 'A'), c: tip('c', 'C') });
+    expect(brain.getState()).toBe(before);
+    brain.setReactions({ c: tip('c', 'C') });
+    expect(brain.getState().message).toBeNull();
+    expect(brain.getState().source).toBe('idle');
+  });
+
+  it('config signals are looked up before page reactions', () => {
+    const brain = new MascotBrain(ORDER_CONFIG);
+    brain.setReactions({ placed: tip('override', 'Not me') });
+    brain.setSignal('placed');
+    expect(brain.getState().message?.id).toBe('order.placed');
+  });
+
+  it('carries message actions through to the state', () => {
+    const brain = menu();
+    brain.setReactions({
+      welcome: {
+        expression: 'excited',
+        message: {
+          id: 'welcome',
+          text: 'Welcome back, Asha!',
+          actions: [{ id: 'add-usual', label: 'Add' }],
+        },
+      },
+    });
+    brain.setSignal('welcome');
+    expect(brain.getState().message?.actions).toEqual([{ id: 'add-usual', label: 'Add' }]);
+  });
+});
+
 describe('mascot config', () => {
   it('ships valid configs', () => {
     expect(validateConfig(LOGIN_CONFIG)).toEqual([]);
     expect(validateConfig(LANDING_CONFIG)).toEqual([]);
+    expect(validateConfig(MENU_CONFIG)).toEqual([]);
   });
 
   it('reports duplicates and malformed entries instead of throwing', () => {
