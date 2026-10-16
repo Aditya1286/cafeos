@@ -91,7 +91,14 @@ nconf.defaults({
   // Public base URL objects are served from (a CloudFront/CDN domain, or the bucket's own URL).
   // Defaults to https://<bucket>.s3.<region>.amazonaws.com. The bucket (or CDN) must allow
   // public reads, since <img> tags can't sign requests.
-  S3_PUBLIC_BASE_URL: ''
+  S3_PUBLIC_BASE_URL: '',
+  // The AI service (musicFck repo) that reads menu photos into categories + items for the
+  // owner's "Upload Menu" import (services/menuImport.service.ts). AI_SERVICE_KEY must match
+  // its SERVICE_API_KEY. Reading a multi-page menu can take a minute or two, hence the long
+  // timeout — keep it a little above the AI service's own MENU_PIPELINE_TIMEOUT_SECONDS.
+  AI_SERVICE_URL: 'http://localhost:3066',
+  AI_SERVICE_KEY: '',
+  AI_MENU_TIMEOUT_MS: 190_000
 });
 
 // Anyone who knows the JWT secret can mint a token for any user — including SUPER_ADMIN — so
@@ -162,5 +169,10 @@ export const config = {
     secretAccessKey: (nconf.get('S3_SECRET_ACCESS_KEY') as string) || '',
     endpoint: (nconf.get('S3_ENDPOINT') as string) || '',
     publicBaseUrl: (nconf.get('S3_PUBLIC_BASE_URL') as string) || ''
+  },
+  aiService: {
+    url: String(nconf.get('AI_SERVICE_URL') || '').replace(/\/+$/, ''),
+    key: (nconf.get('AI_SERVICE_KEY') as string) || '',
+    menuTimeoutMs: Number(nconf.get('AI_MENU_TIMEOUT_MS')) || 190_000
   }
 };

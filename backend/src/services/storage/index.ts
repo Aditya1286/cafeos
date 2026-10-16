@@ -19,7 +19,7 @@ export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 // Raster formats only — an SVG could carry script, and it's served from our own origin.
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
-const parseImageDataUrl = (dataUrl: unknown): { contentType: string; data: Buffer } => {
+export const parseImageDataUrl = (dataUrl: unknown): { contentType: string; data: Buffer } => {
   if (typeof dataUrl !== 'string' || !dataUrl) {
     throw new ServiceError(400, 'VALIDATION_ERROR', 'An image is required.');
   }

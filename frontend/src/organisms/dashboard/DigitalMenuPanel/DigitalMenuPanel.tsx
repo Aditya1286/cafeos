@@ -1,5 +1,15 @@
 import { useMemo, useState } from 'react';
-import { Plus, EyeOff, RotateCcw, Pencil, Trash2, Search, UtensilsCrossed, X } from 'lucide-react';
+import {
+  Plus,
+  EyeOff,
+  RotateCcw,
+  Pencil,
+  Trash2,
+  Search,
+  UtensilsCrossed,
+  X,
+  ScanText,
+} from 'lucide-react';
 import { formatCurrency } from '@/utils/money';
 import VegMark from '@/atoms/VegMark';
 import EmptyState from '@/atoms/EmptyState';
@@ -8,6 +18,8 @@ interface DigitalMenuPanelProps {
   products: any[];
   categories: any[];
   onAddItem: () => void;
+  /** Opens "Upload Menu" — read a photographed printed menu into categories + items. */
+  onUploadMenu: () => void;
   onEditItem: (product: any) => void;
   onRemoveItem: (productId: string) => void;
   onRestoreItem: (productId: string) => void;
@@ -29,6 +41,7 @@ export const DigitalMenuPanel = ({
   products,
   categories,
   onAddItem,
+  onUploadMenu,
   onEditItem,
   onRemoveItem,
   onRestoreItem,
@@ -85,21 +98,29 @@ export const DigitalMenuPanel = ({
           <h2 className="text-lg font-black text-slate-900">Your Menu</h2>
           <p className="text-xs text-slate-500 font-medium">{summary}</p>
         </div>
-        <button
-          onClick={onAddItem}
-          className="flex items-center gap-1.5 px-3.5 sm:px-4 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-extrabold text-xs shadow-md shadow-brand-500/20 transition-all shrink-0"
-        >
-          <Plus className="w-4 h-4" /> Add Item
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={onUploadMenu}
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 font-extrabold text-xs shadow-sm transition-all"
+          >
+            <ScanText className="w-4 h-4" /> Upload Menu
+          </button>
+          <button
+            onClick={onAddItem}
+            className="flex items-center gap-1.5 px-3.5 sm:px-4 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-extrabold text-xs shadow-md shadow-brand-500/20 transition-all"
+          >
+            <Plus className="w-4 h-4" /> Add Item
+          </button>
+        </div>
       </div>
 
       {products.length === 0 ? (
         <EmptyState
           icon={<UtensilsCrossed className="w-6 h-6" />}
           title="Your menu is empty"
-          description="Add your first dish — customers see it as soon as you save."
-          actionLabel="Add Menu Item"
-          onAction={onAddItem}
+          description="Already have a printed menu? Upload a photo of it and we'll fill in your sections, dishes and prices — or add dishes one by one."
+          actionLabel="Upload Menu Photo"
+          onAction={onUploadMenu}
         />
       ) : (
         <>
