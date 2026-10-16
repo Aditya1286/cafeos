@@ -14,6 +14,7 @@ The design has four parts, plus two platform switches:
 4. **The mascot's memory.** It remembers each guest's answers and usual order *per café*. The next welcome is built from them, so it is different every visit.
 5. **Platform switches, owned by the Caos team:**
    - a **master switch** that turns all of the above off, so every café falls back to exactly today's experience
+   - a **per-café switch**, so the team turns café identity on café by café
    - a **mascot rendering switch**: heavy (3D) or light (flat)
 
 ## 2. Why
@@ -71,6 +72,10 @@ Most café owners don't have design taste ("most owners dont have taste tbh"). S
 | D9 | The mascot **remembers answers** and uses them dynamically on later visits. |
 | D10 | Ideas 4, 5 and 6 (shareable bill, stamp card, WhatsApp nudge) are **out**. |
 | D11 | Code must be **modular, extensible and readable** (the owner's words). |
+| D12 | **Recognition needs real proof.** Only a **fresh OTP completed on this device** earns a guest pass. A device that already holds a valid pass renews it without another SMS (§10.4). |
+| D13 | **"Add" on a pairing adds items to the existing order** (a new "amend order" flow), not a second order (§9.1, §10.7). |
+| D14 | **Two levels of switch:** the global master switch, plus a **per-café on/off** controlled by the Caos team in super admin. A café gets café identity only when both are on (§7). |
+| D15 | **The production mascot (heavy or light) is decided by a stress test** against fixed limits on a cheap-phone profile (§8.5). |
 
 ## 5. The guest journey (what it should feel like)
 
@@ -150,7 +155,8 @@ Two settings, owned by the Caos team, live in the backend config introduced earl
 }
 ```
 
-- `cafeIdentity.enabled` is the **master switch**. When `false`:
+- **Per-café switch:** `Business.identity.enabled` (boolean, default `false`), set only by super admin, with `identity.enabledAt` recorded when it is turned on. **A café gets café identity only when the global switch and its own switch are both on.** That covers the theme, the owner's Café look card, the menu mascot, the welcome, tips, tracker extras, guest passes and memory. It works whether or not the café has picked a theme yet: guest features run on the default look until it does. One helper (`isIdentityOnFor(business)`) owns this check, and every service and the frontend's `identity.enabled` flag use it.
+- `cafeIdentity.enabled` is the **master switch**. When `false`, it overrides every café's switch:
   - every café renders the default "Caos" look
   - the mascot does not appear on the menu
   - the tracker shows no pairings and no question
@@ -194,6 +200,50 @@ Baseline measured on 2026-10-17: the 3D engine chunk (`createEngine-*.js`) is **
 - On the menu, the heavy engine is fetched only after idle **and** after the first meaningful paint of the menu. Its download must not compete with dish images above the fold (use idle-time prefetch).
 - Light mode payload target: **≤ 30 KB gzip**, assets included.
 
+### 8.5 Stress test: which mascot goes to production (D15)
+Production rendering is **decided by measurement, not by preference**. Both modes run the same stress test. **Heavy ships only if it passes every limit below. Otherwise light ships**, and heavy waits for another round of optimisation. Light must pass too: it is the fallback, so if light fails, the failure is fixed before launch.
+
+**Test conditions (cheap-phone profile):**
+- **Emulated:** Chrome mobile emulation at 390×844, DPR 2, **4× CPU slowdown**, network **"Slow 4G"** (≈1.6 Mbps down, 150 ms RTT), and a cold cache.
+- **Real device:** at least one low-end Android phone (≈₹8–12k class, 3–4 GB RAM), Chrome, over mobile data. Heavy must pass here too, not only in emulation.
+- **Data:** a themed café (each of the three themes) with a realistic menu: **8 categories, 60 dishes, 40 with photos**, category tips present, and a returning guest so the welcome shows.
+- **Baseline:** the same runs with the mascot **off**. Every limit below is a *difference from baseline* unless it says otherwise.
+
+**Scenarios:**
+1. **Cold open:** scan → menu interactive → the welcome appears.
+2. **Scroll storm:** 30 s of continuous fling-scrolling through all categories, so category tips fire, with 10 add-to-cart taps spread through it.
+3. **Tracker soak:** the order tracker left open for 10 minutes while the order moves PLACED → PREPARING → READY, with the daily question answered once.
+4. **Navigation churn:** 20 round trips menu ↔ tracker without a reload.
+
+**Limits (all must pass):**
+
+| What | Limit |
+|---|---|
+| Menu becomes usable (first "Add" works) | ≤ **+100 ms** vs baseline |
+| Largest Contentful Paint on the menu | ≤ **+100 ms** vs baseline |
+| Mascot download starts | only **after** the menu is usable; never competes with above-the-fold images |
+| Mascot download size | heavy ≤ **100 KB gzip**; light ≤ **30 KB gzip** (§8.4) |
+| Scrolling during the scroll storm | median ≥ **50 fps**; ≤ **5 %** of frames longer than 50 ms |
+| Long tasks caused by the mascot | none longer than **100 ms** |
+| Add-to-cart responsiveness (INP, p75) | ≤ **200 ms**, and ≤ **+30 ms** vs baseline |
+| Extra memory (JS heap + GPU estimate) | ≤ **40 MB** |
+| Memory drift over the 10-min tracker soak | ≤ **5 MB** (no leak) |
+| Main-thread CPU while the mascot idles (tracker) | ≤ **5 %** averaged over 60 s |
+| Navigation churn | **0** WebGL context losses or errors over the 20 round trips; and if a context is lost on purpose, the light fallback appears within 1 s |
+
+**How it is run:**
+- A scripted harness drives headless Chrome over the DevTools protocol, the same way the screenshots in this project were taken. It applies the throttling, runs the four scenarios for each mode and theme, and writes a pass/fail report with the measured numbers.
+- The harness lives outside the app bundle, e.g. `frontend/perf/mascot-stress/` with an npm script. Its numbers come from performance traces (frames, long tasks, LCP, INP via the web-vitals approach) and from `performance.measureUserAgentSpecificMemory` or heap snapshots.
+- The real-device pass is done by hand with remote debugging, using the same scenarios, and recorded in the report.
+- The report is checked in next to the harness, so the decision and its evidence stay together.
+- The limits live in one config file in the harness, so tightening them later is a one-line change.
+
+**Decision rule:**
+1. Heavy passes everything, emulated and real device → production uses **heavy**.
+2. Heavy fails anything → production uses **light**. The report says which limits failed and by how much. Heavy is re-tested after optimisation.
+3. Light fails anything → launch is blocked until light passes.
+4. Re-run the test whenever the mascot engine, the light renderer or the menu page changes in a way that could affect these numbers. Rendering can be switched with `cafeIdentity.mascotRendering` at any time without code changes (§7).
+
 ## 9. Part D: the order tracker as the café's stage
 
 The tracker page (`CustomerOrderTrackingPage.tsx`) keeps its current structure: status first, with the mascot's status line (existing `ORDER_CONFIG` signals). Two new, optional blocks go **below the status**, under a small "While you wait" heading. They are shown only while the order is **PLACED or PREPARING**, and hidden once it is READY, COMPLETED or CANCELLED.
@@ -201,7 +251,8 @@ The tracker page (`CustomerOrderTrackingPage.tsx`) keeps its current structure: 
 ### 9.1 "Goes well with your order" (pairings)
 - **What:** 1 or 2 dishes from the same café that guests most often order **together with** the items in this order, over the last 30 days. Minimum support: the pair appeared together in ≥ 5 orders (my call, mirroring `POPULAR_MIN_ORDERS`). The dish must be currently available and not already in the order.
 - **Copy:** "Goes well with your masala chai: Bun Maska". A proportion such as "7 in 10 add it" may be shown **only if computed from real data** and only at ≥ 20 qualifying orders (my call). Otherwise there is no number.
-- **Action:** **Add** places a new order for the same table, prefilled with that dish. The existing order flow is used (the guest's phone is already verified, so no new OTP within the existing verification window). The builder decides whether this is an in-page mini cart or a deep link back to the menu with the item in the cart. Either way it is at most two taps and the tracker stays reachable.
+- **Action:** **Add** adds the dish (quantity 1, adjustable before confirming) **to this same order** through the amend flow (§10.7). The guest sees a small confirm sheet on the tracker with the dish, the price and the new order total, and taps **Add to my order**. The tracker never navigates away.
+- **When Add is offered:** only while the order is PLACED or PREPARING, **unpaid**, and not an online-checkout (SMEPay) order. For a paid or checkout order, the pairing is shown with "Ask your server to add it" and no button (my call: amending a paid order would need a second payment, which is out of scope).
 - **Fallback:** no qualifying pairings means the block is not shown. A house special is not used here.
 
 ### 9.2 The daily question
@@ -236,7 +287,8 @@ The tracker page (`CustomerOrderTrackingPage.tsx`) keeps its current structure: 
 Follow the codebase's intended layering for new features (`routes → controllers → services → dao → models`, `ServiceError` for business errors, the standard response shape). Use the sectioned config (§7). Keep each concern in its own module so themes, questions and copy can be extended without touching logic.
 
 ### 10.1 Data model changes
-- **Business:** add `identity: { themeId?: string; variantId?: string; tagline?: string }` (all optional; absent = default look).
+- **Business:** add `identity: { enabled: boolean (default false; super admin only); enabledAt?: Date; themeId?: string; variantId?: string; tagline?: string; appliedAt?: Date }`. No theme = default look.
+- **Order:** add `amendments: [{ at, source: 'pairing' | 'staff', items: [{ productId, name, pricePaise, quantity, itemTotalPaise }], amountPaise }]` (default empty). The order's own `items` and totals include amended items (§10.7). The list records what was added, when and from where.
 - **Product:** add `isHouseSpecial: boolean` (default `false`).
 - **New collection `GuestProfile`:** `{ businessId, phone (normalised to its last 10 digits; note that `Order.customerPhone` is stored as typed, so orders are matched by pattern as order recovery already does), firstName, answers: { [questionId]: { optionId, answeredAt } }, askedQuestionIds[], lastWelcomeTemplateId?, lastVisitAt, expireAt }`.
   - unique index `{ businessId: 1, phone: 1 }`
@@ -266,19 +318,27 @@ Follow the codebase's intended layering for new features (`routes → controller
 - `GET /public/c/:businessId/welcome`: header `X-Guest-Token` → `{ line, usualProductId? }`, or `204` when the token is missing, invalid or expired, or memory is empty. Never returns the phone number.
 - `GET /public/orders/:id/while-you-wait`: by order Mongo `_id` only (existing public-order rule) → `{ pairings[], question? }`.
 - `POST /public/orders/:id/answer`: body `{ questionId, optionId }` → `{ reply, gesture }`. It records to the GuestProfile of the order's phone and café.
+- `POST /public/orders/:id/add-items`: body `{ items: [{ productId, quantity }], source: 'pairing' }` → the updated public order. By order Mongo `_id` only. Requires the guest pass for this order's phone and café (`X-Guest-Token`), so only the device that placed it can add to it. Subject to the rules in §9.1 and §10.7.
 - `POST /public/identity-events`: fire-and-forget measurement events (rate-limited).
 
 **Order placement (existing `POST /public/orders`):** when identity is enabled, the response also carries `guestToken`, and the GuestProfile is upserted (firstName, lastVisitAt, expireAt), subject to the proof rule in §10.4. Orders paid through online checkout are created later, when the payment is confirmed, so their token is delivered with the checkout result or the tracker's first load instead (builder's choice of channel).
 
 **Owner (protected):** `PUT /business/identity` with `{ themeId, variantId, tagline }`, OWNER only and validated against the allow-list. The `isHouseSpecial` toggle goes through the existing product update, with the max-3 rule enforced in the service.
 
-**Super admin:** set or clear a business's identity; read the measurement summary (§11).
+**Super admin:** turn a café's identity on or off (`identity.enabled`); set or clear its theme and variant; read the measurement summary (§11).
 
 **Rate limits:** the new public endpoints use limiters in the style of the existing ones in `publicRoutes.ts`.
 
 ### 10.4 Guest recognition and privacy
 - Recognition works **only** through a **guest token** that the guest's own device received when it placed a verified order. **It never works from a phone number.** Knowing a phone number must not reveal a name, an answer or a usual order. This follows the existing stance on `VerifiedPhone` / RECOVERY in the codebase.
 - The token is stateless and HMAC-signed with a key derived from the JWT secret, in the same way as `utils/recoveryToken.ts`, with its own `typ` (`guest`). It carries the phone and the businessId. It is **valid only at that one café** and lasts 180 days (my call).
+- **Proof rule (D12).** A pass is issued only for an order placed with one of these two proofs:
+  - **(i) fresh-OTP proof from this device.** When the guest completes an OTP in this browser (`/otp/verify` or `/otp/confirm-token`), the response also carries a short-lived **device proof**: a signed token with its own `typ`, valid about 30 minutes, for that phone. The order request sends it, and the order response returns a guest pass.
+  - **(ii) a valid guest pass** for the same phone and café. The pass is **renewed** with a fresh 180-day expiry. No SMS is sent.
+  
+  An order placed **without** either proof is accepted exactly as today (inside the existing 14-day verification window). It **gets no pass and changes no memory**: no `firstName` update, no answers, no visit refresh. So knowing someone's number never earns their greeting, and never lets anyone rewrite their memory.
+- **No extra SMS.** OTPs are only sent when the existing flow already asks for one (my call). A new device inside someone's 14-day window simply isn't recognised until that guest next completes a fresh OTP there.
+- Every write to a GuestProfile (order upsert, question answers) requires one of the two proofs. Answers posted with a pass for a different phone or café are rejected.
 - The frontend stores tokens per café in localStorage, using a small module like `utils/recentOrders.ts` (guarded, never throws, private windows just mean "not recognised").
 - **"Not you?"** A small link in the welcome bubble forgets this café's token on this device, and the welcome becomes generic. This covers shared phones.
 - The welcome shows the **first name only**.
@@ -308,16 +368,31 @@ Follow the codebase's intended layering for new features (`routes → controller
 - **A new question or line of copy:** edit the backend copy bank. No frontend change.
 - **Signature (exclusive) themes later:** the allow-list entry can carry `exclusiveTo?: businessId[]`, which the service enforces. The registry is unchanged.
 
+### 10.7 The amend-order flow (D13)
+A new capability of the order system, used by pairings now and by staff later (`source: 'staff'` is reserved, with no UI in this project). It must follow the same money rules as order placement. Build it next to `orderPlacement.service.ts`, reusing its pricing helpers rather than copying them.
+- **Allowed when:**
+  - the order is PLACED or PREPARING
+  - `paymentStatus` is UNPAID
+  - it is not a checkout (SMEPay) order
+  - the café's identity is on (for `source: 'pairing'`)
+  - every product is available and belongs to the café
+  
+  Otherwise the request is rejected with a `ServiceError` and a clear code (e.g. `ORDER_NOT_AMENDABLE`).
+- **Money:** recompute subtotal, GST (the café's current `taxRatePercentage`, as at placement), commission/platform fee and `businessEarningsPaise` for the whole order, in integer paise. Update the financial ledger exactly as placement would have for the final totals. Use a transaction or an atomic update guarded on status, so a concurrent status change (e.g. the kitchen marking it READY) can't race an amendment in.
+- **Kitchen:** emit the updated order to the business and order rooms (the mutate-then-emit pattern). The kitchen board and the order details show amended items clearly, e.g. an **"Added"** marker with the time on each amended line, so cooks notice them on a ticket already in progress.
+- **Bill:** the e-bill and order totals show the amended items like any other line. The `amendments` list stays for audit.
+- **Limits:** at most 3 amendments per order and 10 added units in total (my call), plus a rate limit on the endpoint.
+
 ## 11. Measurement: "be sure from our end"
 
-- **Primary metric:** the **30-day return rate** per café. This is the share of guests (by phone) with an order whose next order at the same café comes within 30 days. It is computed from existing orders, with no new tracking. It is compared before and after the café adopted a theme (theme adoption date stored as `identity.appliedAt`).
+- **Primary metric:** the **30-day return rate** per café. This is the share of guests (by phone) with an order whose next order at the same café comes within 30 days. It is computed from existing orders, with no new tracking. It is compared before and after the café's identity was switched on (`identity.enabledAt`). Theme adoption (`identity.appliedAt`) is shown alongside.
 - **Engagement events** (`IdentityEvent`):
   - `welcome_shown`
   - `welcome_usual_added`
   - `tip_shown`
   - `pairing_shown`
   - `pairing_added`
-  - `pairing_ordered`
+  - `pairing_ordered` (an amendment with `source: 'pairing'`)
   - `question_shown`
   - `question_answered`
   - `not_you_clicked`
@@ -339,21 +414,26 @@ Follow the codebase's intended layering for new features (`routes → controller
 - **Off-switch fidelity:** with `cafeIdentity.enabled = false`, the guest pages are pixel-identical to today (a screenshot test or a documented manual check), and the new endpoints return their "off" shapes.
 - **Existing conventions:** the config rule (no `process.env` reads), the standard response shape, money in paise, tests in `tests/` folders only, and the colour rule for the owner dashboard (`brand-*` accent, status colours only for meaning) in the new owner Settings card.
 - **Tests:**
-  - backend: services with an in-memory Mongo harness (`tests/helpers.ts`), covering token scope (one café only, rejected elsewhere), never recognising by phone, memory TTL fields, pairing and tip thresholds (no fabricated facts below the minimums), and the master-switch off shapes
+  - backend: services with an in-memory Mongo harness (`tests/helpers.ts`), covering:
+    - token scope (one café only, rejected elsewhere), and never recognising by phone
+    - **no pass and no memory write for an order placed without a fresh-OTP proof or a pass**
+    - memory TTL fields
+    - pairing and tip thresholds (no fabricated facts below the minimums)
+    - both switch levels (global off, café off) returning their "off" shapes
+    - **the amend flow:** totals, GST, commission and ledger match a placement of the final items; rejected when paid, checkout, READY or later; a status race can't let an amendment in; kitchen and order rooms receive the update
   - frontend: theme registry and contrast, the backend/frontend id sync, mascot config validity for the new pages, and that light mode does not import the engine
 
 ## 13. Rollout
 
 1. Ship with `cafeIdentity.enabled = false` in production config. Turn it on in development and staging.
-2. Enable for the demo cafés first (they already exist under `backend/src/demo`), then a few real cafés chosen by the team.
+2. Turn the global switch on in production; every café's own switch is still off by default, so nothing changes yet. Then switch on the demo cafés (they already exist under `backend/src/demo`), then a few real cafés chosen by the team, from super admin.
 3. Watch the readout (§11) for 4 weeks before wider enablement.
-4. `mascotRendering` starts as `"light"` in production (my call: safest for cheap phones) and moves to `"heavy"` once the engine budget (§8.4) is met.
+4. Before production enablement, run the stress test (§8.5) and set `mascotRendering` to whatever the decision rule picks. Until the test has been run, production config stays on `"light"`.
 
 ## 14. Left to the builder
 
 - Exact variant colours per theme (3 each, AA-compliant, in each theme's spirit).
 - The light mascot's asset technique, and the exact heavy-engine optimisations.
-- Whether "Add" on a pairing is an in-page mini cart or a deep link to the menu.
 - Exact endpoint paths and response field names (keep the shapes in §10.3).
 - Copy for questions, replies and welcome templates within the rules in §9.4 (the product owner may review the bank before launch).
 - Exact dock insets and bubble placement on the menu, as long as nothing in §12 is broken.
@@ -372,4 +452,8 @@ Follow the codebase's intended layering for new features (`routes → controller
 9. The guest token lasts 180 days and is valid at one café; memory expires 365 days after the last visit (§9.3, §10.4).
 10. A "7 in 10 add it" style number appears only from ≥ 20 qualifying orders (§9.1).
 11. A measurement readout in super admin only (§11).
-12. Production starts with the feature off and light rendering (§13).
+12. Production starts with the feature off; rendering is chosen by the stress test (§8.5), with light as the placeholder until it has been run (§13).
+13. Guest passes add no extra SMS. A new device within someone's 14-day window isn't recognised until they next complete a fresh OTP there (§10.4).
+14. Pairing "Add" is offered only for unpaid, non-checkout orders; paid orders get "Ask your server to add it" (§9.1).
+15. Amendment limits: 3 per order, 10 added units (§10.7).
+16. The per-café switch gates *everything* for that café, the theme included, not only the guest features (§7).
