@@ -7,6 +7,11 @@ import { Business } from '../src/models/Business';
 import { Product } from '../src/models/Product';
 import { Order } from '../src/models/Order';
 import { IdentityEvent } from '../src/models/IdentityEvent';
+import { FinancialLedger } from '../src/models/FinancialLedger';
+import { InventoryItem } from '../src/models/InventoryItem';
+import { InventoryTransaction } from '../src/models/InventoryTransaction';
+import { Recipe } from '../src/models/Recipe';
+import { statusChangeTestHooks } from '../src/controllers/orderController';
 import { Table } from '../src/models/Table';
 import { VerifiedPhone } from '../src/models/VerifiedPhone';
 import { signGuestPass } from '../src/utils/guestToken';
@@ -34,6 +39,7 @@ after(async () => {
 });
 beforeEach(async () => {
   amendTestHooks.afterPricing = undefined;
+  statusChangeTestHooks.beforeWrite = undefined;
   await Business.updateOne({ _id: artisanId }, { identity: { enabled: true, enabledAt: new Date() }, taxRatePercentage: 5 });
 });
 
@@ -250,4 +256,113 @@ test('a successful amendment records pairing_ordered; a refused one does not', a
   await Order.updateOne({ _id: o.id }, { orderStatus: 'READY' });
   assert.equal((await addItems(o.id, o.pass, [{ productId: productB, quantity: 1 }])).status, 409);
   assert.equal(await IdentityEvent.countDocuments({ kind: 'pairing_ordered' }), before + 1);
+});
+
+test('a guest who says they paid can no longer add (409), and the guard holds in a race too', async () => {
+  const o = await place([{ productId: productA, quantity: 1 }]);
+  await Order.updateOne({ _id: o.id }, { customerMarkedPaidAt: new Date() });
+  const doc = (await Order.findById(o.id))!;
+  assert.equal(canAmend(doc), false);
+  const res = await addItems(o.id, o.pass, [{ productId: productB, quantity: 1 }]);
+  assert.equal(res.status, 409);
+  assert.equal(res.body.error.code, 'ORDER_NOT_AMENDABLE');
+
+  // "I've paid" lands between pricing and the write: the atomic guard refuses it.
+  const p = await place([{ productId: productA, quantity: 1 }]);
+  const before = await Order.findById(p.id).lean();
+  amendTestHooks.afterPricing = async (orderId) => {
+    await Order.updateOne({ _id: orderId }, { customerMarkedPaidAt: new Date() });
+  };
+  const raced = await addItems(p.id, p.pass, [{ productId: productB, quantity: 1 }]);
+  assert.equal(raced.status, 409);
+  assert.deepEqual(money(await Order.findById(p.id).lean()), money(before));
+});
+
+// Gives product B a recipe on a fresh inventory item, so its stock movements can be counted.
+const trackStockOfB = async () => {
+  await Recipe.deleteMany({ productId: productB });
+  const item = await InventoryItem.create({ businessId: artisanId, name: `Amend stock ${Date.now()}`, unit: 'PIECE', currentStock: 100, minimumStockLevel: 1 });
+  await Recipe.create({ businessId: artisanId, productId: productB, ingredients: [{ inventoryItemId: item._id, quantityRequired: 1 }] });
+  return item._id;
+};
+
+const kitchen = async () => tokenFor('owner@artisan.com');
+const setStatus = async (id: string, status: string) =>
+  request(h.app).put(`/api/v1/orders/${id}/status`).set('Authorization', `Bearer ${await kitchen()}`).send({ status });
+
+test('an amend between the kitchen loading the order and saving it is ledgered and stocked exactly once', async () => {
+  const itemId = await trackStockOfB();
+  const o = await place([{ productId: productA, quantity: 1 }]);
+  // The kitchen marks it COMPLETED (PLACED → paid, stock off) while the guest adds 2 × B.
+  statusChangeTestHooks.beforeWrite = async () => {
+    statusChangeTestHooks.beforeWrite = undefined;
+    const add = await addItems(o.id, o.pass, [{ productId: productB, quantity: 2 }]);
+    assert.equal(add.status, 200, JSON.stringify(add.body));
+  };
+  const res = await setStatus(o.id, 'COMPLETED');
+  assert.equal(res.status, 200, JSON.stringify(res.body));
+
+  const final = (await Order.findById(o.id).lean())!;
+  assert.equal(final.items.length, 2);
+  assert.equal(final.paymentStatus, 'PAID');
+  const payments = await FinancialLedger.find({ orderId: o.id, type: 'ORDER_PAYMENT' }).lean();
+  assert.equal(payments.length, 1);
+  assert.equal(payments[0].amountPaise, final.totalAmountPaise);
+  const fees = await FinancialLedger.find({ orderId: o.id, type: 'PLATFORM_FEE' }).lean();
+  assert.equal(fees[0].amountPaise, final.platformFeePaise);
+  // The added lines' stock came off once (2 units of B), not zero times and not twice.
+  const moves = await InventoryTransaction.find({ inventoryItemId: itemId, referenceOrderId: o.id }).lean();
+  assert.equal(moves.length, 1);
+  assert.equal(moves[0].quantityChanged, -2);
+  assert.equal((await InventoryItem.findById(itemId))!.currentStock, 98);
+});
+
+test('lines added after the kitchen took the order on are stocked once, by the amend', async () => {
+  const itemId = await trackStockOfB();
+  const o = await place([{ productId: productA, quantity: 1 }]);
+  assert.equal((await setStatus(o.id, 'PREPARING')).status, 200);
+  assert.equal((await addItems(o.id, o.pass, [{ productId: productB, quantity: 3 }])).status, 200);
+  assert.equal((await setStatus(o.id, 'READY')).status, 200);
+  assert.equal((await setStatus(o.id, 'COMPLETED')).status, 200);
+  const moves = await InventoryTransaction.find({ inventoryItemId: itemId, referenceOrderId: o.id }).lean();
+  assert.equal(moves.length, 1);
+  assert.equal(moves[0].quantityChanged, -3);
+  const final = (await Order.findById(o.id).lean())!;
+  const payments = await FinancialLedger.find({ orderId: o.id, type: 'ORDER_PAYMENT' }).lean();
+  assert.equal(payments.length, 1);
+  assert.equal(payments[0].amountPaise, final.totalAmountPaise);
+});
+
+test('a status change racing another status change re-reads the order instead of overwriting it', async () => {
+  const o = await place([{ productId: productA, quantity: 1 }]);
+  // Someone else cancels it between this request's load and write: COMPLETED must not win.
+  statusChangeTestHooks.beforeWrite = async (orderId) => {
+    statusChangeTestHooks.beforeWrite = undefined;
+    await Order.updateOne({ _id: orderId }, { orderStatus: 'CANCELLED' });
+  };
+  const res = await setStatus(o.id, 'COMPLETED');
+  assert.equal(res.status, 400);
+  assert.equal(res.body.error.code, 'ORDER_FINISHED');
+  const final = (await Order.findById(o.id).lean())!;
+  assert.equal(final.orderStatus, 'CANCELLED');
+  assert.equal(final.paymentStatus, 'UNPAID');
+  assert.equal(await FinancialLedger.countDocuments({ orderId: o.id }), 0);
+});
+
+test('the bulk status path shares the atomic transition', async () => {
+  const o = await place([{ productId: productA, quantity: 1 }]);
+  statusChangeTestHooks.beforeWrite = async () => {
+    statusChangeTestHooks.beforeWrite = undefined;
+    assert.equal((await addItems(o.id, o.pass, [{ productId: productB, quantity: 1 }])).status, 200);
+  };
+  const res = await request(h.app)
+    .put('/api/v1/orders/bulk-status')
+    .set('Authorization', `Bearer ${await kitchen()}`)
+    .send({ orderIds: [o.id], status: 'COMPLETED' });
+  assert.equal(res.status, 200, JSON.stringify(res.body));
+  assert.equal(res.body.data.updated.length, 1);
+  const final = (await Order.findById(o.id).lean())!;
+  const payments = await FinancialLedger.find({ orderId: o.id, type: 'ORDER_PAYMENT' }).lean();
+  assert.equal(payments[0].amountPaise, final.totalAmountPaise);
+  assert.equal(final.items.length, 2);
 });

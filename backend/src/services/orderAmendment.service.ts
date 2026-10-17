@@ -22,6 +22,7 @@ import { emitToBusiness, emitToOrder } from '../websocket/socketManager';
 import { verifyGuestPass } from '../utils/guestToken';
 import { phoneKeyOf } from '../utils/phone';
 import { ServiceError } from '../utils/serviceError';
+import { runtime } from '../config';
 import { LEGACY_CONFIRMED_STATUS } from '../utils/orderStatus';
 
 type OrderDoc = InstanceType<typeof Order>;
@@ -49,12 +50,14 @@ export const canAmend = (order: OrderDoc): boolean =>
   (order.orderStatus === 'PLACED' || order.orderStatus === 'PREPARING') &&
   order.paymentStatus === 'UNPAID' &&
   order.paymentMethod !== 'CHECKOUT' &&
+  // The guest already says they paid (UPI) the old amount: adding now would leave the bill short.
+  !order.customerMarkedPaidAt &&
   (order.amendments?.length ?? 0) < AMEND_MAX_PER_ORDER &&
   addedUnitsOf(order) < AMEND_MAX_UNITS;
 
 /**
  * Test-only seam: runs between pricing and the guarded write, so a test can make a status change
- * land exactly there (the race the guard exists for). Never set outside tests.
+ * land exactly there (the race the guard exists for). Ignored outside NODE_ENV=test.
  */
 export const amendTestHooks: { afterPricing?: (orderId: string) => Promise<void> } = {};
 
@@ -116,7 +119,7 @@ export const amendOrder = async (params: AmendOrderParams): Promise<OrderDoc> =>
   }
 
   const priced = await priceItems(business, items);
-  if (amendTestHooks.afterPricing) await amendTestHooks.afterPricing(orderId);
+  if (runtime.nodeEnv === 'test' && amendTestHooks.afterPricing) await amendTestHooks.afterPricing(orderId);
 
   const subtotalPaise = order.subtotalPaise + priced.subtotalPaise;
   const totals = computeTotals(business, subtotalPaise);
@@ -134,6 +137,7 @@ export const amendOrder = async (params: AmendOrderParams): Promise<OrderDoc> =>
       orderStatus: { $in: AMENDABLE_STORED_STATUSES },
       paymentStatus: 'UNPAID',
       paymentMethod: { $ne: 'CHECKOUT' },
+      customerMarkedPaidAt: null, // missing or null
       [`amendments.${AMEND_MAX_PER_ORDER - 1}`]: { $exists: false },
       // Optimistic concurrency: the totals above were computed from exactly this state.
       amendments: { $size: amendmentCount },
