@@ -9,6 +9,7 @@ import {
   UtensilsCrossed,
   X,
   ScanText,
+  Star,
 } from 'lucide-react';
 import { formatCurrency } from '@/utils/money';
 import VegMark from '@/atoms/VegMark';
@@ -24,7 +25,13 @@ interface DigitalMenuPanelProps {
   onRemoveItem: (productId: string) => void;
   onRestoreItem: (productId: string) => void;
   onDeleteItem: (product: any) => void;
+  /** Café identity is on for this café: each dish gets a House special toggle (at most 3). */
+  houseSpecialsEnabled?: boolean;
+  /** Mark or unmark a dish. The API's limit message is shown by the caller when it refuses. */
+  onToggleHouseSpecial?: (productId: string, on: boolean) => void;
 }
+
+const HOUSE_SPECIAL_MAX = 3;
 
 const ALL = 'ALL';
 const UNCATEGORIZED = 'UNCATEGORIZED';
@@ -46,6 +53,8 @@ export const DigitalMenuPanel = ({
   onRemoveItem,
   onRestoreItem,
   onDeleteItem,
+  houseSpecialsEnabled = false,
+  onToggleHouseSpecial,
 }: DigitalMenuPanelProps) => {
   const [query, setQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>(ALL);
@@ -83,9 +92,11 @@ export const DigitalMenuPanel = ({
   }, [groups, activeCategory, query]);
 
   const hiddenCount = products.filter((p) => p.isAvailable === false).length;
+  const houseSpecialCount = products.filter((p) => p.isHouseSpecial).length;
   const summary = [
     `${products.length} item${products.length === 1 ? '' : 's'}`,
     hiddenCount > 0 && `${hiddenCount} hidden`,
+    houseSpecialsEnabled && `${houseSpecialCount} of ${HOUSE_SPECIAL_MAX} house specials`,
     `${categories.length} categor${categories.length === 1 ? 'y' : 'ies'}`,
   ]
     .filter(Boolean)
@@ -202,6 +213,8 @@ export const DigitalMenuPanel = ({
                           p.isAvailable === false ? onRestoreItem(p._id) : onRemoveItem(p._id)
                         }
                         onDelete={() => onDeleteItem(p)}
+                        showHouseSpecial={houseSpecialsEnabled && !!onToggleHouseSpecial}
+                        onToggleHouseSpecial={() => onToggleHouseSpecial?.(p._id, !p.isHouseSpecial)}
                       />
                     ))}
                   </ul>
@@ -220,10 +233,19 @@ interface MenuManageRowProps {
   onEdit: () => void;
   onToggle: () => void;
   onDelete: () => void;
+  showHouseSpecial: boolean;
+  onToggleHouseSpecial: () => void;
 }
 
 /** One compact item row: tap it to edit; hide/show and delete sit on the right. */
-const MenuManageRow = ({ product: p, onEdit, onToggle, onDelete }: MenuManageRowProps) => {
+const MenuManageRow = ({
+  product: p,
+  onEdit,
+  onToggle,
+  onDelete,
+  showHouseSpecial,
+  onToggleHouseSpecial,
+}: MenuManageRowProps) => {
   const hidden = p.isAvailable === false;
   const [imageFailed, setImageFailed] = useState(false);
   const iconBtn = 'w-9 h-9 rounded-xl flex items-center justify-center transition-colors shrink-0';
@@ -276,6 +298,22 @@ const MenuManageRow = ({ product: p, onEdit, onToggle, onDelete }: MenuManageRow
         </div>
       </button>
 
+      {showHouseSpecial && (
+        <button
+          type="button"
+          onClick={onToggleHouseSpecial}
+          aria-label={`House special: ${p.name}`}
+          aria-pressed={!!p.isHouseSpecial}
+          title={p.isHouseSpecial ? 'House special (tap to remove)' : 'Make a house special'}
+          className={`${iconBtn} ${
+            p.isHouseSpecial
+              ? 'bg-brand-50 text-brand-600 hover:bg-brand-100'
+              : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'
+          }`}
+        >
+          <Star className={`w-4 h-4 ${p.isHouseSpecial ? 'fill-brand-500' : ''}`} />
+        </button>
+      )}
       <button
         type="button"
         onClick={onEdit}

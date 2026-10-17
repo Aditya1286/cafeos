@@ -1,17 +1,28 @@
 import React from 'react';
 import { AlertTriangle, ShieldCheck, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import type { AdminIdentityPayload } from '@/services/superAdmin/identity/types';
+import type { StoredBusinessIdentity } from '@/types';
+import { IdentitySection } from './IdentitySection';
 
 interface BusinessManagementModalProps {
   business: { id: string; name: string; status: string } | null;
   onClose: () => void;
   onConfirm: (id: string, newStatus: string) => void;
+  /** The café's stored identity (from the business list, so it follows each save). */
+  identity?: StoredBusinessIdentity;
+  savingIdentity?: boolean;
+  /** Switch café identity on/off or set the theme. Resolves true when saved. */
+  onSetIdentity?: (id: string, payload: AdminIdentityPayload) => Promise<boolean>;
 }
 
 export const BusinessManagementModal: React.FC<BusinessManagementModalProps> = ({
   business,
   onClose,
   onConfirm,
+  identity,
+  savingIdentity = false,
+  onSetIdentity,
 }) => {
   if (!business) return null;
 
@@ -29,7 +40,7 @@ export const BusinessManagementModal: React.FC<BusinessManagementModalProps> = (
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
-          className="w-full max-w-md bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5"
+          className="w-full max-w-md max-h-[90dvh] overflow-y-auto bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-center justify-between">
@@ -83,6 +94,14 @@ export const BusinessManagementModal: React.FC<BusinessManagementModalProps> = (
               Confirm {targetStatus}
             </button>
           </div>
+
+          {onSetIdentity && (
+            <IdentitySection
+              identity={identity}
+              saving={savingIdentity}
+              onSet={(payload) => onSetIdentity(business.id, payload)}
+            />
+          )}
         </motion.div>
       </div>
     </AnimatePresence>

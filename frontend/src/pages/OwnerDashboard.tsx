@@ -114,6 +114,7 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
     handleToggleMasterQr,
     handleRemoveProduct,
     handleRestoreProduct,
+    handleToggleHouseSpecial,
     handleDeleteProduct,
   } = dashboard;
   const { remittanceSummary, loadingRemittance, markingPaid, handleMarkRemittancePaid } =
@@ -546,6 +547,8 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
             onRemoveItem={handleRemoveProduct}
             onRestoreItem={handleRestoreProduct}
             onDeleteItem={setDeleteProductTarget}
+            houseSpecialsEnabled={!!business?.identity?.enabled}
+            onToggleHouseSpecial={handleToggleHouseSpecial}
           />
         )}
 
@@ -634,6 +637,8 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
             onMarkUpgradePaid={handleMarkUpgradePaid}
             onCancelUpgrade={handleCancelUpgrade}
             checkout={checkoutState}
+            categories={categories}
+            products={products}
           />
         )}
 

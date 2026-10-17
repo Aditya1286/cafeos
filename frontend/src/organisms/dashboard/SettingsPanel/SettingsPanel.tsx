@@ -6,6 +6,7 @@ import { inputCls } from '@/molecules/FormField';
 import { DashboardSubscriptionInfo, MySubscriptionStatus, SubscriptionPlan } from '@/types';
 import { PlanUpgradePanel } from '@/organisms/dashboard/PlanUpgradePanel';
 import { CheckoutSettingsCard } from '@/organisms/dashboard/CheckoutSettingsCard';
+import { CafeLookCard } from '@/organisms/dashboard/CafeLookCard';
 import { SMEPAY_CHECKOUT_ENABLED, FEES_AND_PAYMENTS_ENABLED } from '@/constants/features';
 import { CheckoutSettingsState } from '@/hooks/useCheckoutSettings';
 import { GstinField } from './GstinField';
@@ -34,6 +35,9 @@ interface SettingsPanelProps {
   onMarkUpgradePaid: (utr?: string) => void;
   onCancelUpgrade: () => void;
   checkout: CheckoutSettingsState;
+  /** The owner's menu, for the Café look preview. */
+  categories: any[];
+  products: any[];
 }
 
 export const SettingsPanel = ({
@@ -60,6 +64,8 @@ export const SettingsPanel = ({
   onMarkUpgradePaid,
   onCancelUpgrade,
   checkout,
+  categories,
+  products,
 }: SettingsPanelProps) => {
   const currentTaxRate: number = business?.taxRatePercentage ?? 0;
   const taxEnabled = currentTaxRate > 0;
@@ -233,6 +239,11 @@ export const SettingsPanel = ({
             </div>
           </div>
         </div>
+
+        {/* Only once a super admin has switched café identity on for this café. */}
+        {business?.identity?.enabled && (
+          <CafeLookCard business={business} categories={categories} products={products} />
+        )}
 
         {SMEPAY_CHECKOUT_ENABLED && (
           <CheckoutSettingsCard

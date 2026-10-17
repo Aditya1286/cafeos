@@ -20,3 +20,4 @@ export type RemoveProductResponse = ApiMessageResponse;
 export type RestoreProductResponse = ApiResponse<Product>;
 export type ArchiveProductResponse = ApiMessageResponse;
 export type UploadImageResponse = ApiResponse<{ imageUrl: string }>;
+export type SetHouseSpecialResponse = ApiResponse<{ productId: string; isHouseSpecial: boolean }>;

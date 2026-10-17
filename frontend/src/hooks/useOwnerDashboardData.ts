@@ -438,6 +438,19 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
     }
   };
 
+  // House special (café identity): at most 3 dishes per café. The API refuses a fourth with a
+  // message fit to show, which is surfaced as is; nothing changes locally unless it succeeds.
+  const handleToggleHouseSpecial = async (productId: string, on: boolean) => {
+    try {
+      await menuService.setHouseSpecial(productId, on);
+      setProducts((prev) =>
+        prev.map((p) => (p._id === productId ? { ...p, isHouseSpecial: on } : p)),
+      );
+    } catch (err: any) {
+      toast.error(err.message || 'Could not update the house special.');
+    }
+  };
+
   // Distinct from handleRemoveProduct — this one drops the item from `products` entirely
   // (see menuController.archiveProduct: sets isDeleted, which the backend list query now
   // excludes), so it's really gone from this dashboard, not just flagged unavailable. The
@@ -482,6 +495,7 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
     handleMarkTableEmpty,
     handleRemoveProduct,
     handleRestoreProduct,
+    handleToggleHouseSpecial,
     handleDeleteProduct,
   };
 };

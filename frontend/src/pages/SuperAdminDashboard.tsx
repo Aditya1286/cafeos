@@ -72,6 +72,8 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
     handleChangeBusinessPlan,
     updatingDemoId,
     handleSetBusinessDemo,
+    savingIdentityId,
+    handleSetBusinessIdentity,
   } = useSuperAdminDashboardData();
   const { systemHealth } = useSystemHealth(activeTab === 'system');
   const { analyticsData, refresh: refreshAnalytics } = useSuperAdminAnalytics(dateRange);
@@ -141,6 +143,9 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
         business={selectedBusinessForModal}
         onClose={() => setSelectedBusinessForModal(null)}
         onConfirm={handleToggleBusinessStatus}
+        identity={businesses.find((b) => b._id === selectedBusinessForModal?.id)?.identity}
+        savingIdentity={savingIdentityId === selectedBusinessForModal?.id}
+        onSetIdentity={handleSetBusinessIdentity}
       />
 
       <BusinessFinanceDrawer
