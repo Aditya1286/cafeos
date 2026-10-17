@@ -299,7 +299,8 @@ export interface SuperAdminOverview {
 
 /**
  * A café's stored identity record, as the owner's profile (/auth/me) and the super admin's business
- * list return it. Guests never see this shape; they get themes/types PublicIdentity.
+ * list return it. Guests never see this shape; they get themes/types PublicIdentity. On /auth/me,
+ * `enabled` is the effective switch (platform AND café), so a café whose platform switch is off reads as off.
  */
 export interface StoredBusinessIdentity {
   enabled: boolean;

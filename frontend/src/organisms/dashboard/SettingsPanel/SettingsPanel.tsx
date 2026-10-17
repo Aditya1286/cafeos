@@ -240,7 +240,7 @@ export const SettingsPanel = ({
           </div>
         </div>
 
-        {/* Only once a super admin has switched café identity on for this café. */}
+        {/* Only while café identity is on for this café: /auth/me reports `identity.enabled` as the platform switch AND the café's own. */}
         {business?.identity?.enabled && (
           <CafeLookCard business={business} categories={categories} products={products} />
         )}

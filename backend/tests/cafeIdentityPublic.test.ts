@@ -9,13 +9,15 @@ import { Product } from '../src/models/Product';
 import { Order } from '../src/models/Order';
 import { Table } from '../src/models/Table';
 import { toPublicIdentity } from '../src/services/cafeIdentity.service';
-import { startHarness, Harness, createOrderPlacer } from './helpers';
+import authRoutes from '../src/routes/authRoutes';
+import { startHarness, Harness, createOrderPlacer, tokenFor } from './helpers';
 
 let h: Harness;
 let placeOrder: Awaited<ReturnType<typeof createOrderPlacer>>;
 
 before(async () => {
   h = await startHarness();
+  h.app.use('/api/v1/auth', authRoutes);
   placeOrder = await createOrderPlacer(h.app, 'idp');
 });
 after(async () => {
@@ -145,6 +147,27 @@ test('the platform switch off darkens identity even for a café that is on', asy
 
     const tracker = await request(h.app).get(`/api/v1/public/orders/${order._id}`);
     assert.deepEqual(tracker.body.data.business.identity, OFF);
+  } finally {
+    cafeIdentity.enabled = original;
+    await resetIdentity();
+  }
+});
+
+test("the owner's /auth/me shows identity on only while the platform switch is on too", async () => {
+  await Business.updateOne({ slug: SLUG }, { identity: { enabled: true, themeId: 'warm-classic', variantId: 'olive', tagline: 'Hi' } });
+  const token = await tokenFor('owner@artisan.com');
+  const me = () => request(h.app).get('/api/v1/auth/me').set('Authorization', `Bearer ${token}`);
+  const original = cafeIdentity.enabled;
+  try {
+    const on = await me();
+    assert.equal(on.body.data.business.identity.enabled, true);
+    assert.equal(on.body.data.business.identity.themeId, 'warm-classic', 'the stored look is kept for the card');
+    assert.equal(on.body.data.business.identity.tagline, 'Hi');
+
+    cafeIdentity.enabled = false;
+    const off = await me();
+    assert.equal(off.body.data.business.identity.enabled, false);
+    assert.equal(off.body.data.business.identity.themeId, 'warm-classic');
   } finally {
     cafeIdentity.enabled = original;
     await resetIdentity();
