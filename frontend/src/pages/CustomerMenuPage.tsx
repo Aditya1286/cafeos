@@ -32,6 +32,7 @@ import { YourOrders } from '@/organisms/customer-menu/YourOrders';
 import { rememberOrder } from '@/utils/recentOrders';
 import { readGuestPass, saveGuestPass } from '@/utils/guestPass';
 import { CafeThemeScope, resolveTheme } from '@/themes';
+import { rememberCafeTheme, rememberedCafeTheme } from '@/utils/cafeThemeMemory';
 
 type DietFilter = 'ALL' | 'VEG' | 'NON_VEG';
 
@@ -50,6 +51,9 @@ export const CustomerMenuPage: React.FC = () => {
   const navigate = useNavigate();
 
   const [business, setBusiness] = useState<any>(null);
+  // The look this device saw here last time, painted on the first frame while the café loads (§12).
+  // Null for a café never opened or without a theme: those render the default look instantly.
+  const [rememberedTheme] = useState(() => rememberedCafeTheme(slug));
   const [table, setTable] = useState<any>(null);
   const [categories, setCategories] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
@@ -107,6 +111,11 @@ export const CustomerMenuPage: React.FC = () => {
 
     fetchBusinessAndMenu();
   }, [slug, qrToken]);
+
+  // Remember (or forget) the café's look once it has loaded, for the next visit's first frame.
+  useEffect(() => {
+    if (business && slug) rememberCafeTheme(slug, business.identity);
+  }, [business, slug]);
 
   const handleAddToCart = (product: any) => {
     setCart((prev) => {
@@ -313,7 +322,11 @@ export const CustomerMenuPage: React.FC = () => {
 
   // Café identity (theme, tagline, House specials) applies only when it is on for this café; off, the
   // page is the default caos look. The theme itself is applied by CafeThemeScope.
-  const identity = business?.identity;
+  // Until the café loads, a remembered theme stands in for its identity so a themed café doesn't
+  // flash the default look; the loaded data then takes over (tagline stays empty until it does).
+  const identity = business
+    ? business.identity
+    : rememberedTheme && { enabled: true, mascotRendering: 'light', theme: rememberedTheme, tagline: '' };
   const identityOn = !!identity?.enabled;
   const tagline = identityOn ? identity?.tagline?.trim() : '';
   const themeId = identityOn
@@ -324,7 +337,8 @@ export const CustomerMenuPage: React.FC = () => {
 
   return (
     // While the café loads this renders the default (caos) page with its placeholder name, address
-    // and stock cover, exactly as the page always did; the theme takes over once `identity` arrives.
+    // and stock cover, exactly as the page always did, unless this device remembers the café's theme
+    // (then that theme, without the stock cover); the loaded `identity` takes over once it arrives.
     <CafeThemeScope identity={identity}>
       <div className="min-h-screen bg-cafe-page text-cafe-ink pb-28 selection:bg-cafe-button selection:text-cafe-on-accent max-w-md mx-auto relative shadow-xl border-x border-cafe-line font-cafe-body overflow-x-clip">
         {/* ── Top Hero Header (Swiggy / Zomato Aesthetic) ────────────────── */}
