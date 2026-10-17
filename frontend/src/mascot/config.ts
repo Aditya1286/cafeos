@@ -693,9 +693,15 @@ export const DEMO_CONFIG: MascotConfig = {
 // own: everything it says (the returning-guest welcome, category tips) comes from the café's data,
 // which the page hands over at runtime as `reactions` and drives with `signal`.
 
+// Docked bottom-right, lifted clear of the menu's sticky cart bar (fixed, bottom 12px, ~56px tall,
+// 92% wide), so it never covers the cart or the add buttons beneath it.
+export const MENU_DOCK_BOTTOM_INSET = 76;
+
 export const MENU_CONFIG: MascotConfig = {
-  flow: { mode: 'dock' },
+  flow: { mode: 'dock', insets: { bottom: MENU_DOCK_BOTTOM_INSET } },
   phoneFlow: { mode: 'dock' },
+  // The welcome (the bubble with "Add") closes on a scroll or a tap elsewhere (§8.1).
+  closeBubbleOnInteract: true,
   sections: [],
   targets: [],
   peeks: [],

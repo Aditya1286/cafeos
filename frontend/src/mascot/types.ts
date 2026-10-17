@@ -127,6 +127,9 @@ export interface MascotConfig {
    * move the mascot differently on a phone (dock it, or give it a slot) without a second config.
    * Set a key to `undefined` to drop it there, e.g. `bounds: undefined` for the whole viewport. */
   phoneFlow?: Partial<PageFlow>;
+  /** A bubble with action buttons closes on a scroll or a tap anywhere else on the page. Bubbles
+   * without buttons keep their own timing (a scroll is what brings the menu's tips in). */
+  closeBubbleOnInteract?: boolean;
 }
 
 export type TriggerKind = 'section' | 'signal' | 'peek' | 'hover' | 'focus';

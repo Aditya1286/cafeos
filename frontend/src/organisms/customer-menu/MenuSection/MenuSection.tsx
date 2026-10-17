@@ -7,6 +7,9 @@ interface MenuSectionProps {
   subtitle?: string;
   collapsed: boolean;
   onToggle: () => void;
+  /** Set on a café category's section (not "Popular" or search results): the menu mascot's tips
+   * watch `[data-category-id]` to tell which category is in view. */
+  categoryId?: string;
   children: ReactNode;
 }
 
@@ -15,8 +18,11 @@ interface MenuSectionProps {
  * two-column grid of items beneath. The ref lets the menu jump sheet scroll straight to it.
  */
 export const MenuSection = forwardRef<HTMLElement, MenuSectionProps>(
-  ({ title, count, subtitle, collapsed, onToggle, children }, ref) => (
-    <section ref={ref} className="border-b border-cafe-line last:border-b-0 scroll-mt-32">
+  ({ title, count, subtitle, collapsed, onToggle, categoryId, children }, ref) => (
+    <section
+      ref={ref}
+      data-category-id={categoryId}
+      className="border-b border-cafe-line last:border-b-0 scroll-mt-32">
       <button
         type="button"
         onClick={onToggle}

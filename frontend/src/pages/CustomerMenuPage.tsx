@@ -31,8 +31,11 @@ import MenuJumpSheet from '@/organisms/customer-menu/MenuJumpSheet';
 import { YourOrders } from '@/organisms/customer-menu/YourOrders';
 import { rememberOrder } from '@/utils/recentOrders';
 import { readGuestPass, saveGuestPass } from '@/utils/guestPass';
-import { CafeThemeScope, resolveTheme } from '@/themes';
+import { CafeThemeScope, mascotDressFor, resolveTheme } from '@/themes';
 import { rememberCafeTheme, rememberedCafeTheme } from '@/utils/cafeThemeMemory';
+import { PageMascot } from '@/mascot/PageMascot';
+import { useMenuMascot } from '@/hooks/useMenuMascot';
+import type { CategoryTip } from '@/services/public/menu/types';
 
 type DietFilter = 'ALL' | 'VEG' | 'NON_VEG';
 
@@ -44,6 +47,8 @@ interface MenuSectionData {
   title: string;
   subtitle?: string;
   products: any[];
+  /** Set on a café category's section, for the mascot's category tips. */
+  categoryId?: string;
 }
 
 export const CustomerMenuPage: React.FC = () => {
@@ -58,6 +63,10 @@ export const CustomerMenuPage: React.FC = () => {
   const [categories, setCategories] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [popularProductIds, setPopularProductIds] = useState<string[]>([]);
+  // Café identity's menu extras (present only while identity is on): the mascot's lines.
+  const [categoryTips, setCategoryTips] = useState<Record<string, CategoryTip>>({});
+  const [firstVisitLine, setFirstVisitLine] = useState<string | undefined>(undefined);
+  const [menuLoaded, setMenuLoaded] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [dietFilter, setDietFilter] = useState<DietFilter>('ALL');
   // Sections start expanded; a customer collapses what they're not interested in.
@@ -93,6 +102,9 @@ export const CustomerMenuPage: React.FC = () => {
           setCategories(menuRes.data.categories || []);
           setProducts(menuRes.data.products || []);
           setPopularProductIds(menuRes.data.popularProductIds || []);
+          setCategoryTips(menuRes.data.categoryTips || {});
+          setFirstVisitLine(menuRes.data.firstVisitLine);
+          setMenuLoaded(true);
         } else if (slug) {
           const businessRes = await publicMenuService.getBusinessBySlug(slug);
           setBusiness(businessRes.data);
@@ -103,6 +115,9 @@ export const CustomerMenuPage: React.FC = () => {
           setCategories(menuRes.data.categories || []);
           setProducts(menuRes.data.products || []);
           setPopularProductIds(menuRes.data.popularProductIds || []);
+          setCategoryTips(menuRes.data.categoryTips || {});
+          setFirstVisitLine(menuRes.data.firstVisitLine);
+          setMenuLoaded(true);
         }
       } catch (err: any) {
         setError(err.message || 'Unable to load menu.');
@@ -294,6 +309,7 @@ export const CustomerMenuPage: React.FC = () => {
       if (items.length)
         result.push({
           id: cat._id,
+          categoryId: cat._id,
           title: cat.name,
           subtitle: cat.description || undefined,
           products: items,
@@ -334,6 +350,22 @@ export const CustomerMenuPage: React.FC = () => {
     : 'caos';
   // No café photo: caos keeps its stock photo; a theme draws its own cover treatment instead.
   const coverSrc = business?.coverImageUrl || (themeId === 'caos' ? CAOS_STOCK_COVER : '');
+
+  // The café's mascot (spec §8.1): only while identity is on, and only once its rendering is known,
+  // so a light café never starts loading the 3D one.
+  const cartCount = cartItemsList.reduce((a, b) => a + b.quantity, 0);
+  const mascot = useMenuMascot({
+    business,
+    ready: menuLoaded,
+    categoryTips,
+    firstVisitLine,
+    products,
+    cartCount,
+    addToCart: handleAddToCart,
+    sectionsKey: sections.map((sec) => sec.id).join(','),
+  });
+  const mascotRendering = identityOn ? identity?.mascotRendering : undefined;
+  const mascotDress = useMemo(() => mascotDressFor(identity), [identity]);
 
   return (
     // While the café loads this renders the default (caos) page with its placeholder name, address
@@ -474,6 +506,7 @@ export const CustomerMenuPage: React.FC = () => {
                 ref={(el) => {
                   sectionRefs.current[section.id] = el;
                 }}
+                categoryId={section.categoryId}
                 title={section.title}
                 count={section.products.length}
                 subtitle={section.subtitle}
@@ -505,7 +538,7 @@ export const CustomerMenuPage: React.FC = () => {
             >
               <div className="flex items-center gap-3">
                 <span className="w-7 h-7 rounded-xl bg-white/20 text-white text-xs font-black flex items-center justify-center">
-                  {cartItemsList.reduce((a, b) => a + b.quantity, 0)}
+                  {cartCount}
                 </span>
                 <div className="text-left">
                   <div className="text-xs font-black leading-tight">View Cart</div>
@@ -778,6 +811,16 @@ export const CustomerMenuPage: React.FC = () => {
           />
         )}
       </div>
+      {identityOn && mascotRendering && (
+        <PageMascot
+          page="menu"
+          rendering={mascotRendering}
+          dress={mascotDress}
+          reactions={mascot.reactions}
+          signal={mascot.signal}
+          onAction={mascot.onAction}
+        />
+      )}
     </CafeThemeScope>
   );
 };

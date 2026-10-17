@@ -21,6 +21,7 @@ import {
   LOGIN_CONFIG,
   MASCOT_CONFIGS,
   MENU_CONFIG,
+  MENU_DOCK_BOTTOM_INSET,
   ORDER_CONFIG,
   resolveFlow,
   validateConfig,
@@ -374,18 +375,22 @@ describe('mascot route scoping', () => {
     const importers = files
       .filter((f) => !rel(f).startsWith('mascot/'))
       .filter((f) =>
-        /from\s+['"](@\/|\.{1,2}\/)([^'"]*\/)?mascot[\/'"]/.test(readFileSync(f, 'utf8')),
+        readFileSync(f, 'utf8')
+          .split('\n')
+          // A type-only import is erased at build time, so it never pulls the mascot into a route.
+          .filter((line) => !/^\s*import\s+type\b/.test(line))
+          .some((line) => /from\s+['"](@\/|\.{1,2}\/)([^'"]*\/)?mascot[\/'"]/.test(line)),
       )
       .map(rel)
       .sort();
-    // The customer menu is allowed (its mascot lands in a later task) but not required yet.
     const required = [
+      'pages/CustomerMenuPage.tsx',
       'pages/CustomerOrderTrackingPage.tsx',
       'pages/LandingPage.tsx',
       'pages/LoginPage.tsx',
       'pages/RequestDemoPage.tsx',
     ];
-    const allowed = [...required, 'pages/CustomerMenuPage.tsx'];
+    const allowed = required;
     for (const page of required) expect(importers).toContain(page);
     for (const importer of importers) expect(allowed).toContain(importer);
   });
@@ -397,6 +402,10 @@ describe('mascot route scoping', () => {
     expect(login).toMatch(/<PageMascot page="login" \/>/);
     const tracking = readFileSync(join(srcRoot, 'pages/CustomerOrderTrackingPage.tsx'), 'utf8');
     expect(tracking).toMatch(/<PageMascot page="order" signal=\{mascotSignal\} \/>/);
+    // The menu mounts it only with the café's own rendering (never heavy by default).
+    const menu = readFileSync(join(srcRoot, 'pages/CustomerMenuPage.tsx'), 'utf8');
+    expect(menu).toMatch(/<PageMascot\s+page="menu"/);
+    expect(menu).toMatch(/rendering=\{mascotRendering\}/);
     const demo = readFileSync(join(srcRoot, 'pages/RequestDemoPage.tsx'), 'utf8');
     expect(demo).toMatch(/<PageMascot page="demo" signal=\{mascotSignal\} \/>/);
     // The checkout, ordering, dashboard and register pages must stay mascot-free.
@@ -622,7 +631,11 @@ describe('request-demo page config', () => {
 describe('menu page config', () => {
   it('docks on every viewport and reacts only to what the page passes at runtime', () => {
     expect(validateConfig(MENU_CONFIG)).toEqual([]);
-    expect(MENU_CONFIG.flow).toEqual({ mode: 'dock' });
+    // Lifted clear of the menu's sticky cart bar (fixed, bottom 12px, about 56px tall).
+    expect(MENU_CONFIG.flow).toEqual({ mode: 'dock', insets: { bottom: MENU_DOCK_BOTTOM_INSET } });
+    expect(MENU_DOCK_BOTTOM_INSET).toBeGreaterThanOrEqual(72);
+    expect(resolveFlow(MENU_CONFIG, true)?.insets?.bottom).toBe(MENU_DOCK_BOTTOM_INSET);
+    expect(MENU_CONFIG.closeBubbleOnInteract).toBe(true);
     expect(MENU_CONFIG.phoneFlow).toEqual({ mode: 'dock' });
     expect(resolveFlow(MENU_CONFIG, true)?.mode).toBe('dock');
     expect(resolveFlow(MENU_CONFIG, false)?.mode).toBe('dock');

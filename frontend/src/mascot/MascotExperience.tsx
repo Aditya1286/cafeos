@@ -326,6 +326,29 @@ const ActiveMascot: React.FC<
     brainRef.current?.setSignal(signal ?? null);
   }, [signal]);
 
+  // A bubble with buttons (the menu's welcome) closes on a scroll or a tap elsewhere, if the page
+  // asks for it. Taps inside the mascot (its buttons) are left to their own handlers.
+  const actionBubbleOpen = revealed && (message?.actions?.length ?? 0) > 0;
+  useEffect(() => {
+    if (!config.closeBubbleOnInteract || !actionBubbleOpen) return;
+    const startY = window.scrollY;
+    const close = () => brainRef.current?.dismissMessage();
+    const onScroll = () => {
+      if (Math.abs(window.scrollY - startY) > 24) close();
+    };
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target;
+      if (target instanceof Node && hostRef.current?.contains(target)) return;
+      close();
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    document.addEventListener('pointerdown', onPointerDown, true);
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      document.removeEventListener('pointerdown', onPointerDown, true);
+    };
+  }, [config, actionBubbleOpen]);
+
   const showPoster = mode === 'fallback';
   const live = mode === 'live';
   const bubbleOpen = revealed && message !== null;
