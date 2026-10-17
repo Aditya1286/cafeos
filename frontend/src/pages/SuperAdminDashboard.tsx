@@ -378,7 +378,13 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
 
         {activeTab === 'kitchen' && <GlobalKitchenMonitor liveOrders={liveOrders} />}
 
-        {activeTab === 'identity' && <CafeIdentityPanel />}
+        {activeTab === 'identity' && (
+          <CafeIdentityPanel
+            businesses={businesses}
+            savingIdentityId={savingIdentityId}
+            onSetIdentity={handleSetBusinessIdentity}
+          />
+        )}
 
         {activeTab === 'plans' && (
           <div className="space-y-8">
