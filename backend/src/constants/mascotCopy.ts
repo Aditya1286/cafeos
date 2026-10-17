@@ -8,8 +8,8 @@
  *  - categoryTip:      {category}, {dish}
  *  - houseSpecialTip:  {dish}, {cafe}, {category}
  *  - pairing:          {dish}, the suggested dish (the card around it names what it goes with)
- *  - pairingShare:     {dish}. These carry no number; use one only when the share is computed from
- *    at least 20 real orders (§9.1), because they say a fair number of guests add the dish.
+ *  - pairingShare:     {share}, {dish}. {share} is the real share ("7 in 10"), computed only from at
+ *    least 20 qualifying orders (§9.1); the lines themselves carry no number.
  *
  * Copy rules: restate only what is true, promise no time ("soon", minutes), claim nothing the data
  * does not support. A category tip is only for a real best seller; a house-special line is the
@@ -67,7 +67,7 @@ export const MASCOT_COPY: {
 
   // Only when the share of orders that add it is real and computed from at least 20 orders.
   pairingShare: [
-    { id: 'pairing-share-1', text: 'Quite a few guests add {dish} with this.' },
-    { id: 'pairing-share-2', text: 'Some guests like to add {dish} to this order.' },
+    { id: 'pairing-share-1', text: '{share} guests add {dish} with this.' },
+    { id: 'pairing-share-2', text: '{share} guests with this order add {dish}.' },
   ],
 };

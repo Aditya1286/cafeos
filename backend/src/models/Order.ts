@@ -96,6 +96,10 @@ export interface IOrder extends Document {
   refundReason?: string;
   refundedAt?: Date;
   refundedByUserId?: mongoose.Types.ObjectId;
+  // Café identity, the tracker's daily question (services/dailyQuestion.service.ts): the question this
+  // order was given, and the one it answered. One answer per order.
+  askedQuestionId?: string;
+  answeredQuestionId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -195,7 +199,9 @@ const OrderSchema = new Schema<IOrder>(
     refundRequestedAt: { type: Date },
     refundReason: { type: String, default: '' },
     refundedAt: { type: Date },
-    refundedByUserId: { type: Schema.Types.ObjectId, ref: 'User' }
+    refundedByUserId: { type: Schema.Types.ObjectId, ref: 'User' },
+    askedQuestionId: { type: String },
+    answeredQuestionId: { type: String }
   },
   // getters: true so the orderStatus getter also applies when an order is sent to a client.
   { timestamps: true, toJSON: { getters: true }, toObject: { getters: true } }

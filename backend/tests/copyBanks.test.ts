@@ -7,7 +7,7 @@ import { GUEST_QUESTIONS } from '../src/constants/guestQuestions';
 import { MASCOT_COPY } from '../src/constants/mascotCopy';
 import { fillTemplate } from '../src/services/copyTemplates';
 
-const ALLOWED_PLACEHOLDERS = new Set(['name', 'usual', 'cafe', 'category', 'dish']);
+const ALLOWED_PLACEHOLDERS = new Set(['name', 'usual', 'cafe', 'category', 'dish', 'share']);
 const GESTURES = new Set(['nod', 'tilt', 'wave', 'pop', 'wiggle', 'tipHat', 'lean']);
 // The brief's rule, plus the other ways a time promise creeps in.
 const TIME_PROMISE = /\b(soon|minutes?|mins?|seconds|hours?|shortly|instantly|immediately|guarantee[sd]?|right away|in no time|ready in)\b/i;
@@ -160,7 +160,7 @@ test('tips and pairings use only the placeholders they can be given', () => {
     categoryTip: ['category', 'dish'],
     houseSpecialTip: ['dish', 'cafe', 'category'],
     pairing: ['dish'],
-    pairingShare: ['dish'],
+    pairingShare: ['dish', 'share'],
   };
   for (const [list, allowed] of Object.entries(allowedFor)) {
     for (const l of MASCOT_COPY[list as keyof typeof MASCOT_COPY]) {
@@ -176,6 +176,19 @@ test('a house-special tip never claims "most ordered" or "best seller"', () => {
   for (const l of MASCOT_COPY.houseSpecialTip) {
     assert.ok(!/most ordered|best[- ]?sell|popular|favourite|favorite|everyone|most guests/i.test(l.text), `${l.id} claims popularity: "${l.text}"`);
   }
+});
+
+test('only pairingShare lines carry the {share} figure, and every one of them does', () => {
+  for (const [list, lines] of Object.entries(MASCOT_COPY)) {
+    for (const l of lines) {
+      assert.equal(placeholdersIn(l.text).includes('share'), list === 'pairingShare', `${l.id}: {share} belongs in pairingShare only`);
+    }
+  }
+  for (const q of GUEST_QUESTIONS) for (const o of q.options) for (const t of o.welcomeTemplates) assert.ok(!t.text.includes('{share}'), t.id);
+});
+
+test('fillTemplate fills {share}', () => {
+  assert.equal(fillTemplate('{share} guests add {dish} with this.', { share: '7 in 10', dish: 'Bun Maska' }), '7 in 10 guests add Bun Maska with this.');
 });
 
 test('pairing lines carry no number (a "7 in 10" share is only ever from real data)', () => {
