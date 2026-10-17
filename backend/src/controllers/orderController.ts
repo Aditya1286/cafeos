@@ -492,7 +492,12 @@ interface StatusChangeResult {
 }
 
 // Automatic BOM deduction: takes each ingredient in the order's recipes off the stock and logs it.
-const deductIngredientsForOrder = async (order: InstanceType<typeof Order>, businessId: string) => {
+// Exported for the amend flow (services/orderAmendment.service.ts): lines added to an order the
+// kitchen has already taken on get their stock deducted at once, by passing just those lines.
+export const deductIngredientsForOrder = async (
+  order: Pick<InstanceType<typeof Order>, '_id' | 'orderId' | 'items'>,
+  businessId: string
+) => {
   for (const item of order.items) {
     const recipe = await Recipe.findOne({ productId: item.productId, businessId });
     if (!recipe || !recipe.ingredients || recipe.ingredients.length === 0) continue;

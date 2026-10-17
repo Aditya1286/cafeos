@@ -7,7 +7,7 @@
 // - placeOrder: the writes — daily order id, the Order itself, table occupancy, realtime emits.
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
-import { Order, PaymentMethod, PaymentStatus } from '../models/Order';
+import { Order, PaymentMethod, PaymentStatus, IOrderItemSnapshot } from '../models/Order';
 import { Business, IBusiness } from '../models/Business';
 import { Table } from '../models/Table';
 import { Product } from '../models/Product';
@@ -76,6 +76,97 @@ export const recordOrderPaymentLedger = async (order: OrderDoc) => {
   });
 };
 
+export interface PriceItemInput {
+  productId: string;
+  quantity: number;
+  variantName?: string;
+  addons?: { name: string }[];
+  notes?: string;
+  name?: string; // only used to name the item in the "unavailable" error
+}
+
+/**
+ * Prices cart lines against the café's live menu and returns exact snapshots plus their subtotal,
+ * in integer paise. Shared by order placement and the amend flow (orderAmendment.service.ts), so
+ * an added line is priced exactly as it would have been at placement. Throws PRODUCT_UNAVAILABLE
+ * for a product that is unavailable or belongs to another café.
+ */
+export const priceItems = async (
+  business: BusinessDoc,
+  items: PriceItemInput[]
+): Promise<{ items: IOrderItemSnapshot[]; subtotalPaise: number }> => {
+  let subtotalPaise = 0;
+  const itemSnapshots: IOrderItemSnapshot[] = [];
+
+  for (const item of items) {
+    const product = await Product.findOne({ _id: item.productId, businessId: business._id });
+    if (!product || !product.isAvailable) {
+      throw new ServiceError(400, 'PRODUCT_UNAVAILABLE', `Item '${item.name || 'product'}' is currently unavailable.`);
+    }
+
+    let unitPricePaise = product.pricePaise;
+
+    // Handle variant pricing if specified
+    if (item.variantName && product.variants && product.variants.length > 0) {
+      const foundVariant = product.variants.find((v) => v.name === item.variantName);
+      if (foundVariant) {
+        unitPricePaise = foundVariant.pricePaise;
+      }
+    }
+
+    // Handle addon pricing if specified
+    let addonsTotalPricePaise = 0;
+    const addonSnapshots = [];
+    if (item.addons && Array.isArray(item.addons)) {
+      for (const add of item.addons) {
+        const foundAddon = product.addons.find((a) => a.name === add.name);
+        if (foundAddon) {
+          addonsTotalPricePaise += foundAddon.pricePaise;
+          addonSnapshots.push({ name: foundAddon.name, pricePaise: foundAddon.pricePaise });
+        }
+      }
+    }
+
+    const singleItemTotalPaise = (unitPricePaise + addonsTotalPricePaise) * item.quantity;
+    subtotalPaise += singleItemTotalPaise;
+
+    itemSnapshots.push({
+      productId: product._id,
+      name: product.name,
+      pricePaise: unitPricePaise,
+      quantity: item.quantity,
+      variantName: item.variantName || '',
+      addons: addonSnapshots,
+      itemTotalPaise: singleItemTotalPaise,
+      notes: item.notes || ''
+    });
+  }
+
+  return { items: itemSnapshots, subtotalPaise };
+};
+
+/**
+ * GST, commission and earnings for a whole order from its subtotal, in integer paise. Placement and
+ * the amend flow both call this on the order's full subtotal, so an amended order carries exactly
+ * the totals a fresh order with the same lines would.
+ */
+export const computeTotals = (
+  business: BusinessDoc,
+  subtotalPaise: number
+): { taxPaise: number; discountPaise: number; platformFeePaise: number; totalAmountPaise: number; businessEarningsPaise: number } => {
+  // `?? 0` not `|| 0` — kept nullish-coalescing (not that it matters at 0) so re-enabling
+  // GST for a business is just setting taxRatePercentage back to a nonzero value later.
+  const taxPaise = Math.round((subtotalPaise * (business.taxRatePercentage ?? 0)) / 100);
+  // Commission is charged on the pre-tax order value (discountPaise reserved for a future
+  // discount feature — always 0 today, included so commission stays correct once one ships).
+  const discountPaise = 0;
+  const commissionableAmountPaise = subtotalPaise - discountPaise;
+  const platformFeePaise = Math.round((commissionableAmountPaise * (business.commissionRatePercentage ?? 3)) / 100);
+  const totalAmountPaise = subtotalPaise + taxPaise;
+  const businessEarningsPaise = totalAmountPaise - platformFeePaise;
+  return { taxPaise, discountPaise, platformFeePaise, totalAmountPaise, businessEarningsPaise };
+};
+
 export const prepareOrder = async (input: OrderPlacementInput): Promise<PreparedOrder> => {
   const { qrToken, businessSlug, customerName, customerPhone, items, notes } = input;
 
@@ -134,65 +225,8 @@ export const prepareOrder = async (input: OrderPlacementInput): Promise<Prepared
     await assertTableFree(table);
   }
 
-  // Process Items and build exact snapshots
-  let subtotalPaise = 0;
-  const itemSnapshots = [];
-
-  for (const item of items) {
-    const product = await Product.findOne({ _id: item.productId, businessId: business._id });
-    if (!product || !product.isAvailable) {
-      throw new ServiceError(400, 'PRODUCT_UNAVAILABLE', `Item '${item.name || 'product'}' is currently unavailable.`);
-    }
-
-    let unitPricePaise = product.pricePaise;
-
-    // Handle variant pricing if specified
-    if (item.variantName && product.variants && product.variants.length > 0) {
-      const foundVariant = product.variants.find((v) => v.name === item.variantName);
-      if (foundVariant) {
-        unitPricePaise = foundVariant.pricePaise;
-      }
-    }
-
-    // Handle addon pricing if specified
-    let addonsTotalPricePaise = 0;
-    const addonSnapshots = [];
-    if (item.addons && Array.isArray(item.addons)) {
-      for (const add of item.addons) {
-        const foundAddon = product.addons.find((a) => a.name === add.name);
-        if (foundAddon) {
-          addonsTotalPricePaise += foundAddon.pricePaise;
-          addonSnapshots.push({ name: foundAddon.name, pricePaise: foundAddon.pricePaise });
-        }
-      }
-    }
-
-    const singleItemTotalPaise = (unitPricePaise + addonsTotalPricePaise) * item.quantity;
-    subtotalPaise += singleItemTotalPaise;
-
-    itemSnapshots.push({
-      productId: product._id,
-      name: product.name,
-      pricePaise: unitPricePaise,
-      quantity: item.quantity,
-      variantName: item.variantName || '',
-      addons: addonSnapshots,
-      itemTotalPaise: singleItemTotalPaise,
-      notes: item.notes || ''
-    });
-  }
-
-  // Calculate Tax & Platform Commission
-  // `?? 0` not `|| 0` — kept nullish-coalescing (not that it matters at 0) so re-enabling
-  // GST for a business is just setting taxRatePercentage back to a nonzero value later.
-  const taxPaise = Math.round((subtotalPaise * (business.taxRatePercentage ?? 0)) / 100);
-  // Commission is charged on the pre-tax order value (discountPaise reserved for a future
-  // discount feature — always 0 today, included so commission stays correct once one ships).
-  const discountPaise = 0;
-  const commissionableAmountPaise = subtotalPaise - discountPaise;
-  const platformFeePaise = Math.round((commissionableAmountPaise * (business.commissionRatePercentage ?? 3)) / 100);
-  const totalAmountPaise = subtotalPaise + taxPaise;
-  const businessEarningsPaise = totalAmountPaise - platformFeePaise;
+  const { items: itemSnapshots, subtotalPaise } = await priceItems(business, items);
+  const { taxPaise, discountPaise, platformFeePaise, totalAmountPaise, businessEarningsPaise } = computeTotals(business, subtotalPaise);
 
   return {
     business,

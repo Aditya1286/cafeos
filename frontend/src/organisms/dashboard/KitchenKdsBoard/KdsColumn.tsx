@@ -8,6 +8,8 @@ import { KDS_ANIMATE_MAX } from '@/constants/kitchen';
 import { WaitBadge } from '@/molecules/WaitBadge';
 import { KdsOrderTicketCompact } from './KdsOrderTicketCompact';
 import { KdsWallTicket } from './KdsWallTicket';
+import AddedMarker from '@/atoms/AddedMarker';
+import { amendedMarks } from '@/utils/amendedItems';
 
 interface KdsColumnProps extends KdsBoardViewProps {
   status: KdsStatus;
@@ -239,6 +241,7 @@ export const KdsColumn = ({
                       <span>
                         <strong className="text-slate-900 font-extrabold">{it.quantity}×</strong>{' '}
                         {it.name}
+                        <AddedMarker mark={amendedMarks(order)[i]} />
                       </span>
                       <span className="font-extrabold text-slate-900">
                         {formatCurrency(it.itemTotalPaise || it.pricePaise * it.quantity)}

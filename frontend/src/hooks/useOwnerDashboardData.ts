@@ -8,6 +8,7 @@ import inventoryService from '../services/dashboard/inventory';
 import businessService from '../services/dashboard/business';
 import analyticsService from '../services/dashboard/analytics';
 import { toast } from '../utils/toast';
+import { amendedOrderPatch } from '../utils/amendedItems';
 import { getSocket, joinBusinessRoom, onReconnect } from '../services/socket';
 import { DashboardAnalytics } from '../types';
 
@@ -146,10 +147,11 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
       setOrders((prev) =>
         prev.map((o) =>
           o._id === updated.orderId || o.orderId === updated.orderId
-            ? { ...o, orderStatus: updated.orderStatus }
+            ? { ...o, orderStatus: updated.orderStatus, ...amendedOrderPatch(updated) }
             : o,
         ),
       );
+      if (updated.amended) toast(`➕ Items added to ${updated.orderId}`);
       patchTableStatus(updated.tableId, updated.tableStatus);
       callbacksRef.current.onOrderUpdated?.(updated);
     });

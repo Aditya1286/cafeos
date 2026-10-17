@@ -22,6 +22,7 @@ import {
 } from '../controllers/checkoutController';
 import { isCheckoutAvailable } from '../services/checkout.service';
 import { toPublicIdentity } from '../services/cafeIdentity.service';
+import { addItemsToOrderPublic } from '../controllers/orderExtras.controller';
 
 const router = Router();
 
@@ -170,5 +171,15 @@ const demoRequestLimiter = rateLimit({
 });
 
 router.post('/demo-requests', demoRequestLimiter, submitDemoRequestPublic);
+
+// Café identity: order extras and events
+const orderExtrasLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: runtime.nodeEnv === 'production' ? 20 : 1000,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many requests. Please try again in a few minutes.' } }
+});
+router.post('/orders/:id/add-items', orderExtrasLimiter, addItemsToOrderPublic);
 
 export default router;

@@ -5,6 +5,8 @@ import { NEXT_STATUS } from '@/constants/orderStatus';
 import { formatCurrency } from '@/utils/money';
 import { KdsStatus } from './types';
 import { WaitBadge } from '@/molecules/WaitBadge';
+import AddedMarker from '@/atoms/AddedMarker';
+import { amendedMarks } from '@/utils/amendedItems';
 
 interface KdsOrderTicketCompactProps {
   order: any;
@@ -143,6 +145,7 @@ export const KdsOrderTicketCompact = ({
                 <span>
                   <strong className="text-slate-900 font-extrabold">{it.quantity}×</strong>{' '}
                   {it.name}
+                  <AddedMarker mark={amendedMarks(order)[i]} />
                 </span>
                 <span className="font-extrabold text-slate-900 shrink-0">
                   {formatCurrency(it.itemTotalPaise || it.pricePaise * it.quantity)}

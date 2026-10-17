@@ -8,6 +8,8 @@ import { WaitBadge } from '@/molecules/WaitBadge';
 import { KdsStatus } from './types';
 import { useClickGuard } from './useClickGuard';
 import { useHasMoreBelow } from './useHasMoreBelow';
+import AddedMarker from '@/atoms/AddedMarker';
+import { amendedMarks } from '@/utils/amendedItems';
 
 interface TicketCardProps extends KdsWallTicketProps {
   /** The tapped-open copy: natural height, every item visible, no scrolling. */
@@ -162,6 +164,7 @@ function TicketCard({
             <li key={i} className="text-[15px] leading-snug text-slate-900">
               <span className="font-black text-brand-600">{it.quantity}×</span>{' '}
               <span className="font-extrabold">{it.name}</span>
+              <AddedMarker mark={amendedMarks(order)[i]} />
               {it.variantName && (
                 <span className="ml-1 text-sm font-semibold text-slate-500">
                   ({it.variantName})

@@ -5,6 +5,8 @@ import { STATUS_CONFIG, isOrderCancellable } from '@/constants/orderStatus';
 import { formatCurrency } from '@/utils/money';
 import { formatDateTime } from '@/utils/DateUtils';
 import { describeActor } from '@/constants/roles';
+import AddedMarker from '@/atoms/AddedMarker';
+import { amendedMarks } from '@/utils/amendedItems';
 
 interface OrderDetailsDrawerProps {
   order: any | null;
@@ -127,6 +129,7 @@ export const OrderDetailsDrawer = ({
                       <div>
                         <div className="font-extrabold text-slate-900">
                           <span className="text-brand-600">{it.quantity}×</span> {it.name}
+                          <AddedMarker mark={amendedMarks(order)[i]} />
                         </div>
                         {it.variantName && (
                           <div className="text-[10px] font-medium text-slate-400">
