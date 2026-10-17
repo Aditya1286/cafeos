@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   Coffee,
@@ -20,11 +20,17 @@ import { PoweredByCaos } from '@/organisms/marketing/PoweredByCaos';
 import { PrintableInvoice } from '@/organisms/invoice';
 import { invoiceFromOrder } from '@/utils/invoice';
 import { PageMascot } from '@/mascot/PageMascot';
+import type { Gesture, MascotReaction } from '@/mascot/types';
 import { useNow } from '@/hooks/useNow';
 import { orderSignal } from '@/utils/orderSignal';
 import { forgetOrder, isFinishedStatus, rememberOrder } from '@/utils/recentOrders';
 import { OtherOrders } from '@/organisms/customer-menu/YourOrders';
-import { CafeThemeScope } from '@/themes';
+import { CafeThemeScope, mascotDressFor } from '@/themes';
+import { useWhileYouWait } from '@/hooks/useWhileYouWait';
+import { WhileYouWait } from '@/organisms/customer-order/WhileYouWait';
+
+const GESTURES: readonly Gesture[] = ['pop', 'nod', 'tilt', 'lean', 'tipHat', 'wiggle', 'wave'];
+const REPLY_SIGNAL = 'answer-reply';
 
 export const CustomerOrderTrackingPage: React.FC = () => {
   const { orderId } = useParams<{ orderId: string }>();
@@ -92,6 +98,39 @@ export const CustomerOrderTrackingPage: React.FC = () => {
       });
   }, [orderId, order?.orderStatus, business?.slug]);
 
+  // Café identity: "While you wait" and a dressed mascot. Off, the tracker is exactly as before
+  // (an empty status means the hook fetches nothing).
+  const identity = business?.identity;
+  const identityOn = !!identity?.enabled && !!identity?.mascotRendering;
+  const wait = useWhileYouWait(
+    orderId ?? '',
+    identityOn ? order?.orderStatus ?? '' : '',
+    order?.businessId ?? '',
+    { onOrderChanged: fetchOrderDetails },
+  );
+  const mascotDress = useMemo(() => mascotDressFor(identity), [identity]);
+  // What the mascot should say right now: the order's status, or a calming word once it has waited.
+  const mascotSignal = orderSignal(order, now);
+  // The mascot's reply to the daily question speaks until the status line moves on.
+  const [replyOver, setReplyOver] = useState<string | null>(null);
+  useEffect(() => {
+    if (wait.mascotReply) setReplyOver(mascotSignal);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- captured when the reply arrives
+  }, [wait.mascotReply]);
+  const replying = !!wait.mascotReply && replyOver === mascotSignal;
+  const mascotReactions = useMemo((): Record<string, MascotReaction> => {
+    if (!wait.mascotReply) return {};
+    const gesture = GESTURES.find((g) => g === wait.replyGesture) ?? 'nod';
+    return {
+      [REPLY_SIGNAL]: {
+        expression: 'excited',
+        gesture,
+        priority: 7,
+        message: { id: 'order-answer-reply', text: wait.mascotReply, durationMs: 6000 },
+      },
+    };
+  }, [wait.mascotReply, wait.replyGesture]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-page text-slate-900 flex items-center justify-center font-sans">
@@ -113,8 +152,6 @@ export const CustomerOrderTrackingPage: React.FC = () => {
   const currentStepIndex = steps.findIndex((s) => s.key === (order?.orderStatus || 'PLACED'));
   const isPaid = order?.paymentStatus === 'PAID';
   const isRefunded = order?.paymentStatus === 'REFUNDED';
-  // What the mascot should say right now: the order's status, or a calming word once it has waited.
-  const mascotSignal = orderSignal(order, now);
   const isCancelled = order?.orderStatus === 'CANCELLED' || order?.orderStatus === 'REFUNDED';
   // CHECKOUT (paid through the café's SMEPay checkout) reads as plain "ONLINE" to a customer.
   const methodLabel = order?.paymentMethod === 'CHECKOUT' ? 'ONLINE' : order?.paymentMethod;
@@ -232,6 +269,15 @@ export const CustomerOrderTrackingPage: React.FC = () => {
             )}
           </div>
 
+          {/* ── While you wait: pairings and the daily question (café identity; PLACED/PREPARING) ── */}
+          {identityOn && (
+            <WhileYouWait
+              wait={wait}
+              subtotalPaise={order?.subtotalPaise || 0}
+              taxRatePercentage={business?.taxRatePercentage ?? 0}
+            />
+          )}
+
           {/* ── The customer's other live orders at this café (verified number, kept 12h) ── */}
           {orderId && business?.slug && (
             <OtherOrders slug={business.slug} currentOrderId={orderId} />
@@ -320,7 +366,17 @@ export const CustomerOrderTrackingPage: React.FC = () => {
           )}
         </div>
       </CafeThemeScope>
-      <PageMascot page="order" signal={mascotSignal} />
+      {identityOn ? (
+        <PageMascot
+          page="order"
+          signal={replying ? REPLY_SIGNAL : mascotSignal}
+          rendering={identity.mascotRendering}
+          dress={mascotDress}
+          reactions={mascotReactions}
+        />
+      ) : (
+        <PageMascot page="order" signal={mascotSignal} />
+      )}
     </>
   );
 };

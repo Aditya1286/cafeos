@@ -402,6 +402,9 @@ describe('mascot route scoping', () => {
     expect(login).toMatch(/<PageMascot page="login" \/>/);
     const tracking = readFileSync(join(srcRoot, 'pages/CustomerOrderTrackingPage.tsx'), 'utf8');
     expect(tracking).toMatch(/<PageMascot page="order" signal=\{mascotSignal\} \/>/);
+    // With café identity on, the tracker's mascot wears the café's rendering and dress (R5).
+    expect(tracking).toMatch(/rendering=\{identity\.mascotRendering\}/);
+    expect(tracking).toMatch(/dress=\{mascotDress\}/);
     // The menu mounts it only with the café's own rendering (never heavy by default).
     const menu = readFileSync(join(srcRoot, 'pages/CustomerMenuPage.tsx'), 'utf8');
     expect(menu).toMatch(/<PageMascot\s+page="menu"/);
