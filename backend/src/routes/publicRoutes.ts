@@ -23,6 +23,7 @@ import {
 import { isCheckoutAvailable } from '../services/checkout.service';
 import { toPublicIdentity } from '../services/cafeIdentity.service';
 import { addItemsToOrderPublic, recordIdentityEventPublic } from '../controllers/orderExtras.controller';
+import { getWelcome } from '../controllers/guestExperience.controller';
 
 const router = Router();
 
@@ -190,5 +191,17 @@ const identityEventsLimiter = rateLimit({
   message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many requests. Please try again in a few minutes.' } }
 });
 router.post('/identity-events', identityEventsLimiter, recordIdentityEventPublic);
+// Café identity: guest experience
+// The returning-guest welcome and the tracker's "while you wait" extras (controllers/
+// guestExperience.controller.ts). Polled by guest pages, so a roomy per-IP limiter of their own.
+const guestExperienceLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: runtime.nodeEnv === 'production' ? 120 : 1000,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many requests. Please try again in a few minutes.' } }
+});
+router.get('/c/:businessId/welcome', guestExperienceLimiter, getWelcome);
+// End café identity: guest experience
 
 export default router;
