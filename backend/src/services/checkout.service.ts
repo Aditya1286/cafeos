@@ -48,16 +48,21 @@ export const isCheckoutAvailable = (business: Pick<IBusiness, 'checkoutAllowed' 
 
 // The guest pass a proven checkout earned (café identity, §10.4). The proof was checked when the
 // checkout started and the visit recorded when its order was placed; the pass itself is stateless,
-// so it is signed afresh for whoever holds this session's unguessable id: the device that started it.
-const guestPassOf = (session: SessionDoc): { guestToken?: string; guestTokenExpiresAt?: Date } => {
+// so it is signed here. The session id is the only credential on this endpoint, and SMEPay knows it
+// too, so the token goes out AT MOST ONCE: the first fetch that finds the session paid claims it
+// atomically (guestPassIssuedAt), every later fetch gets none.
+const issueGuestPass = async (session: SessionDoc): Promise<{ guestToken?: string; guestTokenExpiresAt?: Date }> => {
   const phone = phoneKeyOf(session.customerPhone);
-  if (!session.guestPassIssued || !session.orderId || !phone || !['PAID', 'SWITCHED'].includes(session.status)) return {};
+  if (!session.guestPassIssued || session.guestPassIssuedAt || !session.orderId || !phone || !['PAID', 'SWITCHED'].includes(session.status)) {
+    return {};
+  }
+  if (!(await sessionDao.claimGuestPass(session._id, new Date()))) return {};
   const pass = signGuestPass({ phone, businessId: session.businessId.toString() });
   return { guestToken: pass.token, guestTokenExpiresAt: pass.expiresAt };
 };
 
 // What the customer's browser gets back — no phone, no draft, no SMEPay credentials.
-const toView = (session: SessionDoc) => {
+const toView = async (session: SessionDoc) => {
   const latest = session.attempts[session.attempts.length - 1];
   return {
     id: session._id,
@@ -73,7 +78,7 @@ const toView = (session: SessionDoc) => {
     paymentUrl: latest?.paymentUrl || null,
     paymentStatus: latest?.lastStatus || null,
     attemptsLeft: Math.max(0, MAX_ATTEMPTS - session.attempts.length),
-    ...guestPassOf(session)
+    ...(await issueGuestPass(session))
   };
 };
 
@@ -89,7 +94,7 @@ const recordCheckoutVisit = async (session: SessionDoc, business: InstanceType<t
   }
 };
 
-export type CheckoutView = ReturnType<typeof toView>;
+export type CheckoutView = Awaited<ReturnType<typeof toView>>;
 
 const ttlFromNow = () => new Date(Date.now() + checkout.sessionTtlMinutes * 60_000);
 
@@ -305,7 +310,7 @@ export const startCheckout = async (
   });
 
   try {
-    return toView(await openAttempt(session, creds));
+    return await toView(await openAttempt(session, creds));
   } catch (error) {
     // Nothing was charged — close the session so nothing ever tries to validate it.
     await sessionDao.transitionSession(session._id, ['PENDING'], 'EXPIRED');

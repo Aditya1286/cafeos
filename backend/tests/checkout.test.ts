@@ -456,6 +456,34 @@ test('a checkout started with a device proof returns a guest pass once paid; one
   }
 });
 
+test('the checkout result hands the guest pass out at most once per session', async () => {
+  await Business.updateOne({ _id: artisanId }, { identity: { enabled: true } });
+  try {
+    const { qrToken, phone } = await freshCustomer();
+    const start = await request(h.app)
+      .post('/api/v1/public/checkout')
+      .send({ qrToken, customerName: 'Once Only', customerPhone: phone, items: [{ productId, quantity: 1 }], deviceProof: signDeviceProof(phone) });
+    assert.equal(start.status, 201, JSON.stringify(start.body));
+    setPaymentStatus(String(start.body.data.paymentUrl).split('/').pop()!, 'SUCCESS');
+    const url = `/api/v1/public/checkout/${start.body.data.id}`;
+
+    // Fetched together (the customer's poll and anyone else holding the session id): one token only.
+    const racing = await Promise.all([request(h.app).get(url), request(h.app).get(url), request(h.app).get(url)]);
+    const tokens = racing.map((r) => r.body.data.guestToken).filter(Boolean);
+    assert.equal(tokens.length, 1, 'exactly one concurrent fetch gets the pass');
+    assert.deepEqual(verifyGuestPass(tokens[0], artisanId), { phone });
+    assert.ok((await CheckoutSession.findById(start.body.data.id))!.guestPassIssuedAt);
+
+    // Every later fetch is still PAID, but never carries a token again.
+    const again = await request(h.app).get(url);
+    assert.equal(again.body.data.status, 'PAID');
+    assert.equal(again.body.data.guestToken, undefined);
+    assert.equal(again.body.data.guestTokenExpiresAt, undefined);
+  } finally {
+    await Business.updateOne({ _id: artisanId }, { $unset: { identity: '' } });
+  }
+});
+
 // ── Guards ──────────────────────────────────────────────────────────────────
 
 test('the plain order endpoint refuses to create an unpaid CHECKOUT order', async () => {

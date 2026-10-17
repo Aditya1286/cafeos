@@ -48,6 +48,21 @@ export const claimForFinalize = (id: Id, now: Date, staleBefore: Date): Promise<
 export const updateSession = (id: Id, update: Partial<ICheckoutSession>): Promise<ICheckoutSession | null> =>
   CheckoutSession.findByIdAndUpdate(id, { $set: update }, { new: true });
 
+// Atomically marks the session's earned guest pass as handed out. Exactly one caller gets the
+// session back (null for everyone after), so the pass is returned to the client at most once.
+export const claimGuestPass = (id: Id, now: Date): Promise<ICheckoutSession | null> =>
+  CheckoutSession.findOneAndUpdate(
+    {
+      _id: id,
+      guestPassIssued: true,
+      guestPassIssuedAt: { $exists: false },
+      orderId: { $exists: true },
+      status: { $in: ['PAID', 'SWITCHED'] }
+    },
+    { $set: { guestPassIssuedAt: now } },
+    { new: true }
+  );
+
 // Sessions the background sweep should still ask SMEPay about.
 export const findSessionsToSweep = (openSince: Date, staleBefore: Date, limit: number): Promise<ICheckoutSession[]> =>
   CheckoutSession.find({
