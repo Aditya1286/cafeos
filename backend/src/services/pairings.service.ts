@@ -9,13 +9,13 @@ import { Product } from '../models/Product';
 import { MASCOT_COPY, CopyLine } from '../constants/mascotCopy';
 import { fillTemplate, TemplateValues } from './copyTemplates';
 import { POPULAR_WINDOW_DAYS, POPULAR_MIN_ORDERS } from './menuPopularity.service';
+import { canAmend } from './orderAmendment.service';
 
 type OrderDoc = InstanceType<typeof Order>;
 
 export const PAIRING_MIN_ORDERS = POPULAR_MIN_ORDERS;
 export const PAIRING_SHARE_MIN_ORDERS = 20;
 export const PAIRING_MAX_ITEMS = 2;
-export const AMEND_MAX_PER_ORDER = 3;
 
 export type Pairing = { productId: string; name: string; pricePaise: number; line: string; addable: boolean };
 
@@ -99,17 +99,6 @@ export const shareText = (together: number, baseOrders: number): string | null =
   return inTen >= 1 ? `${Math.min(inTen, 10)} in 10` : null;
 };
 
-/**
- * Whether the guest may add to this order from the tracker (§9.1): still PLACED or PREPARING,
- * unpaid, not an online-checkout order, and under the amendment limit.
- * TODO(controller): replace with canAmend from orderAmendment.service
- */
-export const isAmendable = (order: OrderDoc): boolean =>
-  ['PLACED', 'PREPARING'].includes(order.orderStatus) &&
-  order.paymentStatus === 'UNPAID' &&
-  order.paymentMethod !== 'CHECKOUT' &&
-  (order.amendments?.length ?? 0) < AMEND_MAX_PER_ORDER;
-
 export const pairingsFor = async (order: OrderDoc): Promise<Pairing[]> => {
   const baseIds = [...new Set(order.items.map((i) => i.productId.toString()))].sort();
   if (!baseIds.length) return [];
@@ -123,7 +112,7 @@ export const pairingsFor = async (order: OrderDoc): Promise<Pairing[]> => {
     isDeleted: { $ne: true }
   }).select('name pricePaise');
   const byId = new Map(available.map((p) => [p._id.toString(), p]));
-  const addable = isAmendable(order);
+  const addable = canAmend(order);
 
   const result: Pairing[] = [];
   for (const pair of counts.pairs) {
