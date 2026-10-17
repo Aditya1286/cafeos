@@ -3,7 +3,7 @@ import { describe, it, expect, afterEach } from 'vitest';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { BRAND_SHADES, DEFAULT_BRAND_PALETTE } from '../src/constants/theme';
+import { BRAND_SHADES } from '../src/constants/theme';
 import { THEMES, applyTheme, contrastRatio, resolveTheme } from '../src/themes';
 
 const everyThemeAndVariant = Object.values(THEMES).flatMap((theme) =>
@@ -45,9 +45,16 @@ describe('resolveTheme', () => {
   });
 });
 
+// Tailwind's orange-500/600 and slate-50/400/900, the classes the guest pages used before themes.
 describe('caos, the default look', () => {
-  it('uses the default brand palette as its accent', () => {
-    expect(THEMES.caos.tokens.accent).toEqual(DEFAULT_BRAND_PALETTE);
+  it("keeps today's guest-page colours: Tailwind orange accent, slate neutrals", () => {
+    const { tokens } = THEMES.caos;
+    expect(tokens.accent['500']).toBe('249 115 22');
+    expect(tokens.accent['600']).toBe('234 88 12');
+    expect(tokens.buttonShade).toBe('500');
+    expect(tokens.neutral['50']).toBe('248 250 252');
+    expect(tokens.neutral['400']).toBe('148 163 184');
+    expect(tokens.neutral['900']).toBe('15 23 42');
   });
 
   it('has a single "default" variant', () => {
@@ -76,6 +83,32 @@ describe('theme data', () => {
       }
       for (const key of ['mascotBand', 'bubbleBg', 'bubbleFg', 'bubbleBorder'] as const) {
         expect(tokens[key], `${label} ${key}`).toMatch(triplet);
+      }
+      for (const shade of BRAND_SHADES) {
+        expect(tokens.neutral[shade], `${label} neutral ${shade}`).toMatch(triplet);
+      }
+      expect(BRAND_SHADES, `${label} buttonShade`).toContain(tokens.buttonShade);
+    }
+  });
+
+  it('anchors the neutral scale on ink (900) and muted (500)', () => {
+    for (const { label, themeId, variantId } of everyThemeAndVariant) {
+      const { tokens } = resolveTheme(themeId, variantId);
+      expect(tokens.neutral['900'], label).toBe(tokens.ink);
+      expect(tokens.neutral['500'], label).toBe(tokens.muted);
+    }
+  });
+
+  it('runs both scales outwards from the surface (50 nearest, 950 farthest)', () => {
+    for (const { label, themeId, variantId } of everyThemeAndVariant) {
+      const { tokens } = resolveTheme(themeId, variantId);
+      for (const scale of ['neutral', 'accent'] as const) {
+        const away = BRAND_SHADES.map((s) => contrastRatio(tokens[scale][s], tokens.surface));
+        // Each step is at least as far from the surface as the one before (a hair of slack for
+        // rounding in hand-made scales).
+        away
+          .slice(1)
+          .forEach((c, i) => expect(c, `${label} ${scale}`).toBeGreaterThan(away[i] - 0.05));
       }
     }
   });
@@ -113,7 +146,23 @@ describe('WCAG AA (contrast >= 4.5)', () => {
     const { tokens } = resolveTheme(v.themeId, v.variantId);
     expect(contrastRatio(tokens.ink, tokens.page)).toBeGreaterThanOrEqual(4.5);
     expect(contrastRatio(tokens.ink, tokens.surface)).toBeGreaterThanOrEqual(4.5);
-    expect(contrastRatio(tokens.onAccent, tokens.accent['600'])).toBeGreaterThanOrEqual(4.5);
+    const button = tokens.accent[tokens.buttonShade];
+    if (v.themeId === 'caos') {
+      // The default look must stay exactly as the pages were (spec §6.3): white on orange-500 for
+      // the quantity stepper and the tracker's current step, which is 2.80. Those controls carry
+      // icons and a digit, not body text, and orange-600 (3.56) would not clear AA either. Pinned
+      // here so a change is noticed. Every launch theme clears AA.
+      expect(contrastRatio(tokens.onAccent, button)).toBeCloseTo(2.8, 1);
+    } else {
+      expect(contrastRatio(tokens.onAccent, button)).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  it.each(everyThemeAndVariant)('$label: strong secondary text (neutral 600 and up)', (v) => {
+    const { tokens } = resolveTheme(v.themeId, v.variantId);
+    for (const shade of ['600', '700', '800', '900', '950'] as const) {
+      expect(contrastRatio(tokens.neutral[shade], tokens.surface)).toBeGreaterThanOrEqual(4.5);
+    }
   });
 
   it.each(everyThemeAndVariant)('$label: secondary text, badges and the mascot bubble', (v) => {
@@ -178,6 +227,9 @@ describe('applyTheme', () => {
     expect(get('--cafe-on-accent')).toBe(resolved.tokens.onAccent);
     expect(get('--cafe-accent-600')).toBe(resolved.tokens.accent['600']);
     expect(get('--cafe-accent-950')).toBe(resolved.tokens.accent['950']);
+    expect(get('--cafe-neutral-400')).toBe(resolved.tokens.neutral['400']);
+    expect(get('--cafe-button')).toBe(resolved.tokens.accent[resolved.tokens.buttonShade]);
+    expect(get('--cafe-dish-fallback')).toBe(resolved.tokens.dishFallback);
     expect(get('--cafe-radius-card')).toBe(resolved.tokens.radiusCard);
     expect(get('--cafe-card-shadow')).toBe(resolved.tokens.cardShadow);
     expect(get('--cafe-badge-special-bg')).toBe(resolved.tokens.badgeSpecial.bg);

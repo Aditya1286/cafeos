@@ -86,6 +86,8 @@ export interface Product {
   imageUrl?: string;
   isAvailable: boolean;
   isVeg: boolean;
+  /** Marked by the owner (at most 3 per café); badged on the guest menu when café identity is on. */
+  isHouseSpecial?: boolean;
   preparationTimeMinutes: number;
   variants: ProductVariant[];
   addons: ProductAddon[];

@@ -28,7 +28,7 @@ export const MenuJumpSheet = ({ targets, onJump, raised }: MenuJumpSheetProps) =
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className={`fixed left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 px-5 h-11 rounded-full bg-slate-900 text-white text-xs font-black uppercase tracking-widest shadow-2xl shadow-slate-900/40 active:scale-95 transition-all ${
+        className={`fixed left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 px-5 h-11 rounded-full bg-cafe-ink text-cafe-surface text-xs font-black uppercase tracking-widest shadow-2xl shadow-slate-900/40 active:scale-95 transition-all ${
           raised ? 'bottom-24' : 'bottom-5'
         }`}
       >
@@ -43,15 +43,15 @@ export const MenuJumpSheet = ({ targets, onJump, raised }: MenuJumpSheetProps) =
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-md bg-white rounded-t-3xl shadow-2xl p-5 pb-8 max-h-[70vh] overflow-y-auto animate-in slide-in-from-bottom duration-300"
+            className="w-full max-w-md bg-cafe-surface rounded-t-cafe-card shadow-2xl p-5 pb-8 max-h-[70vh] overflow-y-auto animate-in slide-in-from-bottom duration-300"
           >
-            <div className="flex items-center justify-between pb-3 mb-1 border-b border-slate-100">
-              <h3 className="text-base font-black text-slate-900">Menu</h3>
+            <div className="flex items-center justify-between pb-3 mb-1 border-b border-cafe-neutral-100">
+              <h3 className="text-base font-black font-cafe-display text-cafe-ink">Menu</h3>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
                 aria-label="Close menu"
-                className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 transition-colors"
+                className="p-1.5 rounded-lg hover:bg-cafe-raised text-cafe-neutral-400 transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -65,10 +65,10 @@ export const MenuJumpSheet = ({ targets, onJump, raised }: MenuJumpSheetProps) =
                       setOpen(false);
                       onJump(t.id);
                     }}
-                    className="w-full flex items-center justify-between py-3.5 text-left text-sm font-bold text-slate-800 hover:text-orange-600 transition-colors"
+                    className="w-full flex items-center justify-between py-3.5 text-left text-sm font-bold text-cafe-neutral-800 hover:text-cafe-accent-600 transition-colors"
                   >
                     <span className="truncate pr-3">{t.title}</span>
-                    <span className="text-xs font-extrabold text-slate-400 tabular-nums">
+                    <span className="text-xs font-extrabold text-cafe-neutral-400 tabular-nums">
                       {t.count}
                     </span>
                   </button>

@@ -18,9 +18,10 @@ const ensureFontStylesheet = (doc: Document, href: string) => {
 
 /**
  * Writes a resolved theme onto `root` as --cafe-* custom properties, for example --cafe-page,
- * --cafe-on-accent, --cafe-accent-600, --cafe-radius-card, --cafe-badge-special-bg,
- * --cafe-mascot-band, --cafe-font-display. Colours are "r g b" triplets (use them as
- * `rgb(var(--cafe-page))`); radii, shadow, cover and fonts are plain CSS values. Calling it again
+ * --cafe-on-accent, --cafe-accent-600, --cafe-neutral-400, --cafe-button (the accent step named by
+ * `buttonShade`), --cafe-radius-card, --cafe-badge-special-bg, --cafe-mascot-band,
+ * --cafe-font-display. Colours are "r g b" triplets (use them as `rgb(var(--cafe-page))`); radii,
+ * shadow, cover and fonts are plain CSS values. Every theme sets every token, so calling it again
  * replaces the earlier theme. Loads the theme's web font once.
  */
 export function applyTheme(root: HTMLElement, resolved: ResolvedTheme): void {
@@ -28,7 +29,7 @@ export function applyTheme(root: HTMLElement, resolved: ResolvedTheme): void {
   const set = (name: string, value: string) => root.style.setProperty(`--cafe-${name}`, value);
 
   for (const [key, value] of Object.entries(tokens)) {
-    if (key === 'accent') continue;
+    if (key === 'accent' || key === 'neutral' || key === 'buttonShade') continue;
     if (key === 'badgeSpecial' || key === 'badgePopular') {
       const badge = value as { bg: string; fg: string };
       set(`${kebab(key)}-bg`, badge.bg);
@@ -37,7 +38,11 @@ export function applyTheme(root: HTMLElement, resolved: ResolvedTheme): void {
       set(kebab(key), value as string);
     }
   }
-  for (const shade of BRAND_SHADES) set(`accent-${shade}`, tokens.accent[shade]);
+  for (const shade of BRAND_SHADES) {
+    set(`accent-${shade}`, tokens.accent[shade]);
+    set(`neutral-${shade}`, tokens.neutral[shade]);
+  }
+  set('button', tokens.accent[tokens.buttonShade]);
 
   set('font-display', theme.fonts.display);
   set('font-body', theme.fonts.body);

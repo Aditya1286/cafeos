@@ -1,4 +1,5 @@
 import { Order } from '../../../types';
+import type { PublicIdentity } from '../../../themes/types';
 import { ApiMessageResponse, ApiResponse } from '../../apiTypes';
 
 export interface CreateOrderPayload {
@@ -20,7 +21,12 @@ export interface GuestPassGrant {
 }
 
 export type CreateOrderResponse = ApiResponse<Order & GuestPassGrant>;
-export type GetOrderResponse = ApiResponse<{ order: Order; business: any }>;
+/** The tracker's café details (a hand-picked set from orderController), plus its `identity`. */
+export interface PublicOrderBusiness {
+  identity?: PublicIdentity;
+  [key: string]: any;
+}
+export type GetOrderResponse = ApiResponse<{ order: Order; business: PublicOrderBusiness }>;
 export type RequestRefundResponse = ApiMessageResponse;
 export type MarkPaidResponse = ApiMessageResponse;
 export type CancelOrderResponse = ApiMessageResponse;

@@ -16,7 +16,7 @@ interface MenuSectionProps {
  */
 export const MenuSection = forwardRef<HTMLElement, MenuSectionProps>(
   ({ title, count, subtitle, collapsed, onToggle, children }, ref) => (
-    <section ref={ref} className="border-b border-slate-200 last:border-b-0 scroll-mt-32">
+    <section ref={ref} className="border-b border-cafe-line last:border-b-0 scroll-mt-32">
       <button
         type="button"
         onClick={onToggle}
@@ -24,15 +24,15 @@ export const MenuSection = forwardRef<HTMLElement, MenuSectionProps>(
         className="w-full flex items-center justify-between gap-3 py-5 text-left"
       >
         <span className="min-w-0">
-          <span className="block text-lg font-black text-slate-900 leading-tight">
-            {title} <span className="text-slate-400 font-bold">({count})</span>
+          <span className="block text-lg font-black font-cafe-display text-cafe-ink leading-tight">
+            {title} <span className="text-cafe-neutral-400 font-bold">({count})</span>
           </span>
           {subtitle && (
-            <span className="block text-xs font-medium text-slate-500 mt-1">{subtitle}</span>
+            <span className="block text-xs font-medium text-cafe-muted mt-1">{subtitle}</span>
           )}
         </span>
         <ChevronDown
-          className={`w-5 h-5 text-slate-500 shrink-0 transition-transform duration-200 ${collapsed ? '' : 'rotate-180'}`}
+          className={`w-5 h-5 text-cafe-muted shrink-0 transition-transform duration-200 ${collapsed ? '' : 'rotate-180'}`}
         />
       </button>
       {!collapsed && <div className="grid grid-cols-2 gap-x-3 gap-y-5 pb-6">{children}</div>}

@@ -31,8 +31,12 @@ import MenuJumpSheet from '@/organisms/customer-menu/MenuJumpSheet';
 import { YourOrders } from '@/organisms/customer-menu/YourOrders';
 import { rememberOrder } from '@/utils/recentOrders';
 import { readGuestPass, saveGuestPass } from '@/utils/guestPass';
+import { CafeThemeScope, resolveTheme } from '@/themes';
 
 type DietFilter = 'ALL' | 'VEG' | 'NON_VEG';
+
+// The default (caos) look's cover when the café has no photo, as before café themes.
+const CAOS_STOCK_COVER = 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=800&q=80';
 
 interface MenuSectionData {
   id: string;
@@ -302,434 +306,459 @@ export const CustomerMenuPage: React.FC = () => {
   const toggleDiet = (diet: Exclude<DietFilter, 'ALL'>) =>
     setDietFilter((prev) => (prev === diet ? 'ALL' : diet));
 
+  // Café identity (theme, tagline, House specials) applies only when it is on for this café; off, the
+  // page is the default caos look. The theme itself is applied by CafeThemeScope.
+  const identity = business?.identity;
+  const identityOn = !!identity?.enabled;
+  const tagline = identityOn ? identity?.tagline?.trim() : '';
+  const themeId = identityOn
+    ? resolveTheme(identity?.theme?.id, identity?.theme?.variantId).theme.id
+    : 'caos';
+  // No café photo: caos keeps its stock photo; a theme draws its own cover treatment instead.
+  const coverSrc = business?.coverImageUrl || (themeId === 'caos' ? CAOS_STOCK_COVER : '');
+
   return (
-    <div className="min-h-screen bg-page text-slate-900 pb-28 selection:bg-orange-500 selection:text-white max-w-md mx-auto relative shadow-xl border-x border-slate-200 font-sans overflow-x-clip">
-      {/* ── Top Hero Header (Swiggy / Zomato Aesthetic) ────────────────── */}
-      <div className="relative bg-white border-b border-slate-200">
-        <div className="h-44 relative overflow-hidden bg-slate-100">
-          <img
-            src={
-              business?.coverImageUrl ||
-              'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=800&q=80'
-            }
-            alt="Business Cover"
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+    // Hidden until the café (and so its theme) has loaded, so a themed café never flashes the default look.
+    <CafeThemeScope identity={identity} pending={!business && !error}>
+      <div className="min-h-screen bg-cafe-page text-cafe-ink pb-28 selection:bg-cafe-button selection:text-cafe-on-accent max-w-md mx-auto relative shadow-xl border-x border-cafe-line font-cafe-body overflow-x-clip">
+        {/* ── Top Hero Header (Swiggy / Zomato Aesthetic) ────────────────── */}
+        <div className="relative bg-cafe-surface border-b border-cafe-line">
+          <div className="h-44 relative overflow-hidden bg-cafe-raised">
+            {coverSrc ? (
+              <img src={coverSrc} alt="Business Cover" className="w-full h-full object-cover" />
+            ) : (
+              // No café photo on a themed café: the theme's cover treatment.
+              <div
+                aria-hidden="true"
+                className="w-full h-full [background:var(--cafe-cover-fallback)]"
+              />
+            )}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
-          {/* Table Badge */}
-          <div className="absolute top-4 right-4 z-10 px-3.5 py-1.5 rounded-full bg-white/95 backdrop-blur-md shadow-md text-xs font-black text-orange-600 border border-orange-200 flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
-            {orderContextLabel}
+            {/* Table Badge */}
+            <div className="absolute top-4 right-4 z-10 px-3.5 py-1.5 rounded-cafe-chip bg-cafe-surface/95 backdrop-blur-md shadow-md text-xs font-black text-cafe-accent-600 border border-cafe-accent-200 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-cafe-accent-500 animate-pulse" />
+              {orderContextLabel}
+            </div>
           </div>
-        </div>
 
-        {/* Business Card Overlay */}
-        <div className="px-4 pb-4 -mt-10 relative z-10">
-          <div className="bg-white rounded-3xl p-4 shadow-lg border border-slate-100 space-y-2">
-            <div className="flex items-start justify-between gap-3">
-              {/* min-w-0: lets this column shrink so a long address truncates instead of pushing
+          {/* Business Card Overlay */}
+          <div className="px-4 pb-4 -mt-10 relative z-10">
+            <div className="bg-cafe-surface rounded-cafe-card p-4 shadow-lg border border-cafe-neutral-100 space-y-2">
+              <div className="flex items-start justify-between gap-3">
+                {/* min-w-0: lets this column shrink so a long address truncates instead of pushing
                   the rating badge (and the whole page) past the right edge of the phone. */}
-              <div className="min-w-0 flex-1">
-                <h1 className="text-xl font-black text-slate-900 leading-tight">
-                  {business?.name || 'The Artisan Roastery'}
-                </h1>
-                <p className="text-xs text-slate-500 font-medium mt-0.5 flex items-center gap-1 min-w-0">
-                  <MapPin className="w-3 h-3 text-orange-500 shrink-0" />
-                  <span className="truncate">{business?.address || 'Bandra West, Mumbai'}</span>
-                </p>
+                <div className="min-w-0 flex-1">
+                  <h1 className="text-xl font-black font-cafe-display text-cafe-ink leading-tight">
+                    {business?.name || 'The Artisan Roastery'}
+                  </h1>
+                  {tagline && (
+                    <p className="text-[13px] font-semibold font-cafe-display text-cafe-neutral-700 leading-snug mt-0.5">
+                      {tagline}
+                    </p>
+                  )}
+                  <p className="text-xs text-cafe-muted font-medium mt-0.5 flex items-center gap-1 min-w-0">
+                    <MapPin className="w-3 h-3 text-cafe-accent-500 shrink-0" />
+                    <span className="truncate">{business?.address || 'Bandra West, Mumbai'}</span>
+                  </p>
+                </div>
+
+                <div className="px-2.5 py-1 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-black flex items-center gap-1 shrink-0">
+                  <span>4.8</span>
+                  <Star className="w-3.5 h-3.5 fill-emerald-600 text-emerald-600" />
+                </div>
               </div>
 
-              <div className="px-2.5 py-1 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-black flex items-center gap-1 shrink-0">
-                <span>4.8</span>
-                <Star className="w-3.5 h-3.5 fill-emerald-600 text-emerald-600" />
+              <div className="pt-2 border-t border-cafe-neutral-100 flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 text-[11px] font-bold text-cafe-muted">
+                <span className="flex items-center gap-1 text-cafe-neutral-600 shrink-0">
+                  <Clock className="w-3.5 h-3.5 text-cafe-neutral-400" />
+                  15-20 min prep time
+                </span>
+                <span className="px-2.5 py-0.5 rounded-cafe-chip bg-cafe-accent-50 text-cafe-accent-600 text-[10px] font-extrabold uppercase whitespace-nowrap">
+                  {orderContextHint}
+                </span>
               </div>
-            </div>
-
-            <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 text-[11px] font-bold text-slate-500">
-              <span className="flex items-center gap-1 text-slate-600 shrink-0">
-                <Clock className="w-3.5 h-3.5 text-slate-400" />
-                15-20 min prep time
-              </span>
-              <span className="px-2.5 py-0.5 rounded-full bg-orange-50 text-orange-600 text-[10px] font-extrabold uppercase whitespace-nowrap">
-                {orderContextHint}
-              </span>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* ── This phone's open orders, and a way back for a lost one ───── */}
-      {slug && <YourOrders slug={slug} qrToken={qrToken} cafeName={business?.name} />}
+        {/* ── This phone's open orders, and a way back for a lost one ───── */}
+        {slug && <YourOrders slug={slug} qrToken={qrToken} cafeName={business?.name} />}
 
-      {/* ── Search & Diet Filters (sticky) ─────────────────────────────── */}
-      <div className="sticky top-0 bg-white/95 backdrop-blur z-20 px-4 pt-3 pb-3 border-b border-slate-200 shadow-sm space-y-3">
-        <div className="relative">
-          <input
-            type="search"
-            placeholder="Search dishes & drinks"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-5 pr-11 py-3 rounded-full bg-slate-100 border border-transparent text-base sm:text-sm text-slate-900 placeholder:text-slate-500 outline-none focus:border-orange-400 focus:bg-white focus:ring-2 focus:ring-orange-100 transition-all font-medium"
-          />
-          <Search className="w-5 h-5 absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
-        </div>
+        {/* ── Search & Diet Filters (sticky) ─────────────────────────────── */}
+        <div className="sticky top-0 bg-cafe-surface/95 backdrop-blur z-20 px-4 pt-3 pb-3 border-b border-cafe-line shadow-sm space-y-3">
+          <div className="relative">
+            <input
+              type="search"
+              placeholder="Search dishes & drinks"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-5 pr-11 py-3 rounded-cafe-chip bg-cafe-raised border border-transparent text-base sm:text-sm text-cafe-ink placeholder:text-cafe-muted outline-none focus:border-cafe-accent-400 focus:bg-cafe-surface focus:ring-2 focus:ring-cafe-accent-100 transition-all font-medium"
+            />
+            <Search className="w-5 h-5 absolute right-4 top-1/2 -translate-y-1/2 text-cafe-muted pointer-events-none" />
+          </div>
 
-        <div className="flex items-center gap-2">
-          {(['VEG', 'NON_VEG'] as const).map((diet) => {
-            const on = dietFilter === diet;
-            const isVeg = diet === 'VEG';
-            return (
-              <button
-                key={diet}
-                type="button"
-                role="switch"
-                aria-checked={on}
-                aria-label={isVeg ? 'Veg only' : 'Non-veg only'}
-                onClick={() => toggleDiet(diet)}
-                className={`flex items-center gap-2 pl-3 pr-2.5 h-10 rounded-full border transition-all ${
-                  on
-                    ? isVeg
-                      ? 'border-emerald-500 bg-emerald-50'
-                      : 'border-rose-500 bg-rose-50'
-                    : 'border-slate-200 bg-white'
-                }`}
-              >
-                <VegMark isVeg={isVeg} />
-                <span className="text-xs font-bold text-slate-700">
-                  {isVeg ? 'Veg' : 'Non-veg'}
-                </span>
-                <span
-                  className={`relative w-8 h-4 rounded-full transition-colors ${
-                    on ? (isVeg ? 'bg-emerald-500' : 'bg-rose-500') : 'bg-slate-200'
+          <div className="flex items-center gap-2">
+            {(['VEG', 'NON_VEG'] as const).map((diet) => {
+              const on = dietFilter === diet;
+              const isVeg = diet === 'VEG';
+              return (
+                <button
+                  key={diet}
+                  type="button"
+                  role="switch"
+                  aria-checked={on}
+                  aria-label={isVeg ? 'Veg only' : 'Non-veg only'}
+                  onClick={() => toggleDiet(diet)}
+                  className={`flex items-center gap-2 pl-3 pr-2.5 h-10 rounded-cafe-chip border transition-all ${
+                    on
+                      ? isVeg
+                        ? 'border-emerald-500 bg-emerald-50'
+                        : 'border-rose-500 bg-rose-50'
+                      : 'border-cafe-line bg-cafe-surface'
                   }`}
                 >
-                  <span
-                    className={`absolute top-0.5 w-3 h-3 rounded-full bg-white shadow transition-all ${on ? 'left-[18px]' : 'left-0.5'}`}
-                  />
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* ── Menu: one scroll of collapsible, photo-first sections ─────────── */}
-      <div className="px-4">
-        {sections.length === 0 ? (
-          <div className="my-6 py-14 text-center space-y-3 bg-white rounded-3xl border border-slate-200 p-8">
-            <ShoppingBag className="w-12 h-12 text-slate-300 mx-auto" />
-            <h3 className="text-sm font-bold text-slate-700">No menu items found</h3>
-            <p className="text-xs text-slate-400">
-              Try a different search or turn off the veg filter
-            </p>
-          </div>
-        ) : (
-          sections.map((section) => (
-            <MenuSection
-              key={section.id}
-              ref={(el) => {
-                sectionRefs.current[section.id] = el;
-              }}
-              title={section.title}
-              count={section.products.length}
-              subtitle={section.subtitle}
-              collapsed={!!collapsedSections[section.id]}
-              onToggle={() => toggleSection(section.id)}
-            >
-              {section.products.map((product) => (
-                <MenuItemCard
-                  key={product._id}
-                  product={product}
-                  quantity={cart[product._id]?.quantity || 0}
-                  isPopular={section.id !== 'popular' && popularSet.has(product._id)}
-                  onAdd={() => handleAddToCart(product)}
-                  onRemove={() => handleRemoveFromCart(product._id)}
-                />
-              ))}
-            </MenuSection>
-          ))
-        )}
-      </div>
-
-      {/* ── Sticky Bottom Floating Cart Bar ─────────────────────────────── */}
-      {cartItemsList.length > 0 && (
-        <div className="fixed bottom-3 left-1/2 -translate-x-1/2 w-[92%] max-w-md z-30">
-          <button
-            onClick={() => setShowCheckoutDrawer(true)}
-            className="w-full py-3.5 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-2xl shadow-emerald-600/40 flex items-center justify-between transition-all transform active:scale-[0.99]"
-          >
-            <div className="flex items-center gap-3">
-              <span className="w-7 h-7 rounded-xl bg-white/20 text-white text-xs font-black flex items-center justify-center">
-                {cartItemsList.reduce((a, b) => a + b.quantity, 0)}
-              </span>
-              <div className="text-left">
-                <div className="text-xs font-black leading-tight">View Cart</div>
-                <div className="text-[10px] text-emerald-100 font-medium">Items added</div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-1.5 text-sm font-black">
-              <span>₹{(totalAmountPaise / 100).toFixed(0)}</span>
-              <ChevronRight className="w-4 h-4" />
-            </div>
-          </button>
-        </div>
-      )}
-
-      {/* ── Floating "MENU" jump button (hidden while searching) ─────────── */}
-      {!searchQuery.trim() && (
-        <MenuJumpSheet
-          targets={sections.map((sec) => ({
-            id: sec.id,
-            title: sec.title,
-            count: sec.products.length,
-          }))}
-          onJump={jumpToSection}
-          raised={cartItemsList.length > 0}
-        />
-      )}
-
-      {/* ── Checkout Drawer Sheet ────────────────────────────────────────── */}
-      {showCheckoutDrawer && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-end justify-center">
-          <div className="w-full max-w-md bg-white rounded-t-3xl shadow-2xl border-t border-slate-200 p-6 space-y-5 max-h-[85dvh] overflow-y-auto overscroll-contain animate-in slide-in-from-bottom duration-300">
-            {/* Sheet Header */}
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div>
-                <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
-                  <ShoppingBag className="w-4 h-4 text-orange-500" /> Confirm Your Order
-                </h3>
-                <p className="text-xs text-slate-400 font-medium">
-                  {orderContextLabel} • {business?.name || 'Artisan Roastery'}
-                </p>
-              </div>
-              <button
-                onClick={() => setShowCheckoutDrawer(false)}
-                className="p-2 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Cart Items Summary */}
-            <div className="space-y-3 max-h-48 overflow-y-auto pr-1">
-              {cartItemsList.map((item) => (
-                <div
-                  key={item.product._id}
-                  className="flex justify-between items-center gap-3 text-xs"
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <VegMark isVeg={item.product.isVeg} size="sm" />
-                    <span className="font-bold text-slate-800 truncate">{item.product.name}</span>
-                    <span className="text-slate-400 font-medium shrink-0">× {item.quantity}</span>
-                  </div>
-                  <span className="font-extrabold text-slate-900 shrink-0">
-                    ₹{((item.product.pricePaise * item.quantity) / 100).toFixed(0)}
+                  <VegMark isVeg={isVeg} />
+                  <span className="text-xs font-bold text-cafe-neutral-700">
+                    {isVeg ? 'Veg' : 'Non-veg'}
                   </span>
-                </div>
-              ))}
+                  <span
+                    className={`relative w-8 h-4 rounded-full transition-colors ${
+                      on ? (isVeg ? 'bg-emerald-500' : 'bg-rose-500') : 'bg-cafe-neutral-200'
+                    }`}
+                  >
+                    <span
+                      className={`absolute top-0.5 w-3 h-3 rounded-full bg-white shadow transition-all ${on ? 'left-[18px]' : 'left-0.5'}`}
+                    />
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ── Menu: one scroll of collapsible, photo-first sections ─────────── */}
+        <div className="px-4">
+          {sections.length === 0 ? (
+            <div className="my-6 py-14 text-center space-y-3 bg-cafe-surface rounded-cafe-card border border-cafe-line p-8">
+              <ShoppingBag className="w-12 h-12 text-cafe-neutral-300 mx-auto" />
+              <h3 className="text-sm font-bold text-cafe-neutral-700">No menu items found</h3>
+              <p className="text-xs text-cafe-neutral-400">
+                Try a different search or turn off the veg filter
+              </p>
             </div>
-
-            {/* Bill Breakdown */}
-            <div className="pt-3 border-t border-slate-100 space-y-1.5 text-xs bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
-              <div className="flex justify-between text-slate-500 font-medium">
-                <span>Item Total</span>
-                <span>₹{(cartSubtotalPaise / 100).toFixed(0)}</span>
-              </div>
-              {taxRate > 0 && (
-                <div className="flex justify-between text-slate-500 font-medium">
-                  <span>GST Tax ({taxRate}%)</span>
-                  <span>₹{(taxPaise / 100).toFixed(0)}</span>
-                </div>
-              )}
-              <div className="flex justify-between text-sm font-black text-slate-900 pt-2 border-t border-slate-200">
-                <span>To Pay</span>
-                <span className="text-emerald-600">₹{(totalAmountPaise / 100).toFixed(0)}</span>
-              </div>
-            </div>
-
-            {/* Guest Details Form */}
-            <form onSubmit={handlePlaceOrder} className="space-y-3.5 pt-1">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Customer Name *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Sahil Sharma"
-                  value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-base sm:text-xs text-slate-900 font-medium outline-none focus:border-orange-500 focus:bg-white focus:ring-2 focus:ring-orange-100 transition-all"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Phone Number *
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="tel"
-                    required
-                    disabled={otp.otpVerified}
-                    placeholder="e.g. 9876543210"
-                    value={customerPhone}
-                    onChange={(e) =>
-                      setCustomerPhone(e.target.value.replace(/\D/g, '').slice(0, 10))
-                    }
-                    className="flex-1 min-w-0 px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-base sm:text-xs text-slate-900 font-medium outline-none focus:border-orange-500 focus:bg-white focus:ring-2 focus:ring-orange-100 transition-all disabled:opacity-60"
+          ) : (
+            sections.map((section) => (
+              <MenuSection
+                key={section.id}
+                ref={(el) => {
+                  sectionRefs.current[section.id] = el;
+                }}
+                title={section.title}
+                count={section.products.length}
+                subtitle={section.subtitle}
+                collapsed={!!collapsedSections[section.id]}
+                onToggle={() => toggleSection(section.id)}
+              >
+                {section.products.map((product) => (
+                  <MenuItemCard
+                    key={product._id}
+                    product={product}
+                    quantity={cart[product._id]?.quantity || 0}
+                    isPopular={section.id !== 'popular' && popularSet.has(product._id)}
+                    isHouseSpecial={identityOn && !!product.isHouseSpecial}
+                    onAdd={() => handleAddToCart(product)}
+                    onRemove={() => handleRemoveFromCart(product._id)}
                   />
-                  {!otp.otpVerified && (
-                    <div className="flex items-center gap-2">
+                ))}
+              </MenuSection>
+            ))
+          )}
+        </div>
+
+        {/* ── Sticky Bottom Floating Cart Bar ─────────────────────────────── */}
+        {cartItemsList.length > 0 && (
+          <div className="fixed bottom-3 left-1/2 -translate-x-1/2 w-[92%] max-w-md z-30">
+            <button
+              onClick={() => setShowCheckoutDrawer(true)}
+              className="w-full py-3.5 px-4 rounded-cafe-button bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-2xl shadow-emerald-600/40 flex items-center justify-between transition-all transform active:scale-[0.99]"
+            >
+              <div className="flex items-center gap-3">
+                <span className="w-7 h-7 rounded-xl bg-white/20 text-white text-xs font-black flex items-center justify-center">
+                  {cartItemsList.reduce((a, b) => a + b.quantity, 0)}
+                </span>
+                <div className="text-left">
+                  <div className="text-xs font-black leading-tight">View Cart</div>
+                  <div className="text-[10px] text-emerald-100 font-medium">Items added</div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5 text-sm font-black">
+                <span>₹{(totalAmountPaise / 100).toFixed(0)}</span>
+                <ChevronRight className="w-4 h-4" />
+              </div>
+            </button>
+          </div>
+        )}
+
+        {/* ── Floating "MENU" jump button (hidden while searching) ─────────── */}
+        {!searchQuery.trim() && (
+          <MenuJumpSheet
+            targets={sections.map((sec) => ({
+              id: sec.id,
+              title: sec.title,
+              count: sec.products.length,
+            }))}
+            onJump={jumpToSection}
+            raised={cartItemsList.length > 0}
+          />
+        )}
+
+        {/* ── Checkout Drawer Sheet ────────────────────────────────────────── */}
+        {showCheckoutDrawer && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-end justify-center">
+            <div className="w-full max-w-md bg-cafe-surface rounded-t-cafe-card shadow-2xl border-t border-cafe-line p-6 space-y-5 max-h-[85dvh] overflow-y-auto overscroll-contain animate-in slide-in-from-bottom duration-300">
+              {/* Sheet Header */}
+              <div className="flex items-center justify-between pb-3 border-b border-cafe-neutral-100">
+                <div>
+                  <h3 className="text-base font-black font-cafe-display text-cafe-ink flex items-center gap-2">
+                    <ShoppingBag className="w-4 h-4 text-cafe-accent-500" /> Confirm Your Order
+                  </h3>
+                  <p className="text-xs text-cafe-neutral-400 font-medium">
+                    {orderContextLabel} • {business?.name || 'Artisan Roastery'}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowCheckoutDrawer(false)}
+                  className="p-2 rounded-full hover:bg-cafe-raised text-cafe-neutral-400 hover:text-cafe-neutral-600 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Cart Items Summary */}
+              <div className="space-y-3 max-h-48 overflow-y-auto pr-1">
+                {cartItemsList.map((item) => (
+                  <div
+                    key={item.product._id}
+                    className="flex justify-between items-center gap-3 text-xs"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <VegMark isVeg={item.product.isVeg} size="sm" />
+                      <span className="font-bold text-cafe-neutral-800 truncate">
+                        {item.product.name}
+                      </span>
+                      <span className="text-cafe-neutral-400 font-medium shrink-0">
+                        × {item.quantity}
+                      </span>
+                    </div>
+                    <span className="font-extrabold text-cafe-ink shrink-0">
+                      ₹{((item.product.pricePaise * item.quantity) / 100).toFixed(0)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Bill Breakdown */}
+              <div className="pt-3 space-y-1.5 text-xs bg-cafe-neutral-50 p-3.5 rounded-2xl border border-cafe-line">
+                <div className="flex justify-between text-cafe-muted font-medium">
+                  <span>Item Total</span>
+                  <span>₹{(cartSubtotalPaise / 100).toFixed(0)}</span>
+                </div>
+                {taxRate > 0 && (
+                  <div className="flex justify-between text-cafe-muted font-medium">
+                    <span>GST Tax ({taxRate}%)</span>
+                    <span>₹{(taxPaise / 100).toFixed(0)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-sm font-black text-cafe-ink pt-2 border-t border-cafe-line">
+                  <span>To Pay</span>
+                  <span className="text-emerald-600">₹{(totalAmountPaise / 100).toFixed(0)}</span>
+                </div>
+              </div>
+
+              {/* Guest Details Form */}
+              <form onSubmit={handlePlaceOrder} className="space-y-3.5 pt-1">
+                <div>
+                  <label className="block text-xs font-bold text-cafe-neutral-700 mb-1">
+                    Customer Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Sahil Sharma"
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-cafe-neutral-50 border border-cafe-line text-base sm:text-xs text-cafe-ink font-medium outline-none focus:border-cafe-accent-500 focus:bg-cafe-surface focus:ring-2 focus:ring-cafe-accent-100 transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-cafe-neutral-700 mb-1">
+                    Phone Number *
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="tel"
+                      required
+                      disabled={otp.otpVerified}
+                      placeholder="e.g. 9876543210"
+                      value={customerPhone}
+                      onChange={(e) =>
+                        setCustomerPhone(e.target.value.replace(/\D/g, '').slice(0, 10))
+                      }
+                      className="flex-1 min-w-0 px-3.5 py-2.5 rounded-xl bg-cafe-neutral-50 border border-cafe-line text-base sm:text-xs text-cafe-ink font-medium outline-none focus:border-cafe-accent-500 focus:bg-cafe-surface focus:ring-2 focus:ring-cafe-accent-100 transition-all disabled:opacity-60"
+                    />
+                    {!otp.otpVerified && (
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={otp.sendOtp}
+                          disabled={otp.sending || !otp.canResend}
+                          className="px-3.5 py-2.5 rounded-xl bg-cafe-ink text-cafe-surface text-[11px] font-extrabold whitespace-nowrap disabled:opacity-40 transition-all"
+                        >
+                          {otp.sending ? 'Sending...' : otp.otpSent ? 'Resend OTP' : 'Send OTP'}
+                        </button>
+
+                        {otp.otpSent && !otp.canResend && (
+                          <span className="flex items-center gap-1 text-[11px] font-bold text-cafe-neutral-400 tabular-nums">
+                            <Clock className="w-3.5 h-3.5" />
+                            {formatTime(otp.resendSecondsLeft)}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <div id="otp-captcha-container" className="mt-2" />
+
+                  {/* Staging-only: backend echoes the OTP back instead of sending a
+                    real SMS, so testers don't need a phone to complete the flow.
+                    This never appears against the live MSG91 widget. */}
+                  {otp.devOtp && (
+                    <div className="mt-2 flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-amber-50 border border-dashed border-amber-300 animate-in fade-in slide-in-from-top-1 duration-200">
+                      <span className="flex items-center gap-1.5 text-[10px] font-extrabold text-amber-700">
+                        <span className="px-1.5 py-0.5 rounded-md bg-amber-400/30 uppercase tracking-wider">
+                          Staging
+                        </span>
+                        Test OTP
+                      </span>
+                      <span className="text-sm font-black text-amber-800 tracking-[0.2em]">
+                        {otp.devOtp}
+                      </span>
+                    </div>
+                  )}
+
+                  {otp.otpVerified && (
+                    <p className="mt-1.5 text-[11px] font-bold text-emerald-600 flex items-center gap-1">
+                      <CheckCircle2 className="w-3.5 h-3.5" /> Phone verified
+                    </p>
+                  )}
+
+                  {otp.otpSent && !otp.otpVerified && (
+                    <div className="mt-2 flex gap-2">
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="Enter OTP"
+                        value={otp.otpCode}
+                        onChange={(e) =>
+                          otp.setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))
+                        }
+                        className="flex-1 min-w-0 px-3.5 py-2.5 rounded-xl bg-cafe-neutral-50 border border-cafe-line text-base sm:text-xs text-cafe-ink font-medium outline-none focus:border-cafe-accent-500 focus:bg-cafe-surface focus:ring-2 focus:ring-cafe-accent-100 transition-all"
+                      />
                       <button
                         type="button"
-                        onClick={otp.sendOtp}
-                        disabled={otp.sending || !otp.canResend}
-                        className="px-3.5 py-2.5 rounded-xl bg-slate-900 text-white text-[11px] font-extrabold whitespace-nowrap disabled:opacity-40 transition-all"
+                        onClick={otp.verifyOtp}
+                        disabled={otp.verifying}
+                        className="px-3.5 py-2.5 rounded-xl bg-emerald-600 text-white text-[11px] font-extrabold whitespace-nowrap disabled:opacity-40"
                       >
-                        {otp.sending ? 'Sending...' : otp.otpSent ? 'Resend OTP' : 'Send OTP'}
+                        {otp.verifying ? 'Verifying...' : 'Verify'}
                       </button>
-
-                      {otp.otpSent && !otp.canResend && (
-                        <span className="flex items-center gap-1 text-[11px] font-bold text-slate-400 tabular-nums">
-                          <Clock className="w-3.5 h-3.5" />
-                          {formatTime(otp.resendSecondsLeft)}
-                        </span>
-                      )}
                     </div>
+                  )}
+
+                  {otp.error && (
+                    <p className="mt-1.5 text-[11px] font-bold text-rose-600">{otp.error}</p>
                   )}
                 </div>
 
-                <div id="otp-captcha-container" className="mt-2" />
-
-                {/* Staging-only: backend echoes the OTP back instead of sending a
-                    real SMS, so testers don't need a phone to complete the flow.
-                    This never appears against the live MSG91 widget. */}
-                {otp.devOtp && (
-                  <div className="mt-2 flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-amber-50 border border-dashed border-amber-300 animate-in fade-in slide-in-from-top-1 duration-200">
-                    <span className="flex items-center gap-1.5 text-[10px] font-extrabold text-amber-700">
-                      <span className="px-1.5 py-0.5 rounded-md bg-amber-400/30 uppercase tracking-wider">
-                        Staging
-                      </span>
-                      Test OTP
-                    </span>
-                    <span className="text-sm font-black text-amber-800 tracking-[0.2em]">
-                      {otp.devOtp}
-                    </span>
+                <div>
+                  <label className="block text-xs font-bold text-cafe-neutral-700 mb-1.5">
+                    Payment Method
+                  </label>
+                  <div className={`grid gap-2 ${offerCheckout ? 'grid-cols-3' : 'grid-cols-2'}`}>
+                    {(offerCheckout
+                      ? [
+                          { id: 'CHECKOUT', label: 'Pay Online' },
+                          { id: 'ONLINE', label: 'Direct UPI' },
+                          { id: 'CASH', label: 'Pay at Counter' },
+                        ]
+                      : [
+                          { id: 'ONLINE', label: 'Online' },
+                          { id: 'CASH', label: 'Pay at Counter' },
+                        ]
+                    ).map((pm) => (
+                      <button
+                        key={pm.id}
+                        type="button"
+                        onClick={() => setPaymentMethod(pm.id as any)}
+                        className={`py-2 text-[11px] font-extrabold rounded-xl border transition-all ${
+                          paymentMethod === pm.id
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-400 shadow-sm'
+                            : 'bg-cafe-neutral-50 text-cafe-muted border-cafe-line hover:bg-cafe-raised'
+                        }`}
+                      >
+                        {pm.label}
+                      </button>
+                    ))}
                   </div>
-                )}
+                </div>
 
-                {otp.otpVerified && (
-                  <p className="mt-1.5 text-[11px] font-bold text-emerald-600 flex items-center gap-1">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> Phone verified
+                {needsTableQr && (
+                  <p className="text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 text-center">
+                    This café takes orders from table QR codes. Please scan the QR on your table to
+                    order.
                   </p>
                 )}
 
-                {otp.otpSent && !otp.otpVerified && (
-                  <div className="mt-2 flex gap-2">
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      placeholder="Enter OTP"
-                      value={otp.otpCode}
-                      onChange={(e) =>
-                        otp.setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))
-                      }
-                      className="flex-1 min-w-0 px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-base sm:text-xs text-slate-900 font-medium outline-none focus:border-orange-500 focus:bg-white focus:ring-2 focus:ring-orange-100 transition-all"
-                    />
-                    <button
-                      type="button"
-                      onClick={otp.verifyOtp}
-                      disabled={otp.verifying}
-                      className="px-3.5 py-2.5 rounded-xl bg-emerald-600 text-white text-[11px] font-extrabold whitespace-nowrap disabled:opacity-40"
-                    >
-                      {otp.verifying ? 'Verifying...' : 'Verify'}
-                    </button>
-                  </div>
-                )}
-
-                {otp.error && (
-                  <p className="mt-1.5 text-[11px] font-bold text-rose-600">{otp.error}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                  Payment Method
-                </label>
-                <div className={`grid gap-2 ${offerCheckout ? 'grid-cols-3' : 'grid-cols-2'}`}>
-                  {(offerCheckout
-                    ? [
-                        { id: 'CHECKOUT', label: 'Pay Online' },
-                        { id: 'ONLINE', label: 'Direct UPI' },
-                        { id: 'CASH', label: 'Pay at Counter' },
-                      ]
-                    : [
-                        { id: 'ONLINE', label: 'Online' },
-                        { id: 'CASH', label: 'Pay at Counter' },
-                      ]
-                  ).map((pm) => (
-                    <button
-                      key={pm.id}
-                      type="button"
-                      onClick={() => setPaymentMethod(pm.id as any)}
-                      className={`py-2 text-[11px] font-extrabold rounded-xl border transition-all ${
-                        paymentMethod === pm.id
-                          ? 'bg-emerald-50 text-emerald-700 border-emerald-400 shadow-sm'
-                          : 'bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100'
-                      }`}
-                    >
-                      {pm.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {needsTableQr && (
-                <p className="text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 text-center">
-                  This café takes orders from table QR codes. Please scan the QR on your table to
-                  order.
-                </p>
-              )}
-
-              <button
-                type="submit"
-                disabled={submitting || !otp.otpVerified || needsTableQr}
-                className="w-full py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-xl shadow-emerald-600/30 transition-all disabled:opacity-50 uppercase tracking-wider flex items-center justify-center gap-2 mt-3"
-              >
-                {submitting ? (
-                  <span>
-                    {paymentMethod === 'CHECKOUT' ? 'Opening Payment...' : 'Placing Order...'}
-                  </span>
-                ) : !otp.otpVerified ? (
-                  <span>Verify phone to continue</span>
-                ) : paymentMethod === 'CHECKOUT' ? (
-                  <>
-                    <span>Continue to Payment • ₹{(totalAmountPaise / 100).toFixed(0)}</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </>
-                ) : (
-                  <>
-                    <span>Pay & Place Order • ₹{(totalAmountPaise / 100).toFixed(0)}</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </>
-                )}
-              </button>
-            </form>
+                <button
+                  type="submit"
+                  disabled={submitting || !otp.otpVerified || needsTableQr}
+                  className="w-full py-4 rounded-cafe-button bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-xl shadow-emerald-600/30 transition-all disabled:opacity-50 uppercase tracking-wider flex items-center justify-center gap-2 mt-3"
+                >
+                  {submitting ? (
+                    <span>
+                      {paymentMethod === 'CHECKOUT' ? 'Opening Payment...' : 'Placing Order...'}
+                    </span>
+                  ) : !otp.otpVerified ? (
+                    <span>Verify phone to continue</span>
+                  ) : paymentMethod === 'CHECKOUT' ? (
+                    <>
+                      <span>Continue to Payment • ₹{(totalAmountPaise / 100).toFixed(0)}</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  ) : (
+                    <>
+                      <span>Pay & Place Order • ₹{(totalAmountPaise / 100).toFixed(0)}</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+              </form>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {CUSTOMER_SUPPORT_ENABLED && business && (
-        <SupportWidget
-          mode="CUSTOMER"
-          businessId={business.id || business._id}
-          raised={cartItemsList.length > 0}
-        />
-      )}
-    </div>
+        {CUSTOMER_SUPPORT_ENABLED && business && (
+          <SupportWidget
+            mode="CUSTOMER"
+            businessId={business.id || business._id}
+            raised={cartItemsList.length > 0}
+          />
+        )}
+      </div>
+    </CafeThemeScope>
   );
 };
 export default CustomerMenuPage;

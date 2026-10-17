@@ -43,18 +43,18 @@ export const YourOrders: React.FC<YourOrdersProps> = ({ slug, qrToken, cafeName 
             aria-controls="your-orders-list"
             className="w-full flex items-center justify-between gap-3 text-left"
           >
-            <span className="text-[11px] font-bold text-slate-500">
-              <span className="font-extrabold text-slate-900">Your orders</span> • {orders.length}{' '}
-              in progress
+            <span className="text-[11px] font-bold text-cafe-muted">
+              <span className="font-extrabold text-cafe-ink">Your orders</span> • {orders.length} in
+              progress
               {session && (
                 <>
                   {' '}
-                  • <span className="font-mono text-slate-800">{session.phoneMask}</span>
+                  • <span className="font-mono text-cafe-neutral-800">{session.phoneMask}</span>
                 </>
               )}
             </span>
             <ChevronDown
-              className={`w-4 h-4 text-slate-400 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`}
+              className={`w-4 h-4 text-cafe-neutral-400 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`}
               aria-hidden="true"
             />
           </button>
@@ -65,18 +65,18 @@ export const YourOrders: React.FC<YourOrdersProps> = ({ slug, qrToken, cafeName 
                 <Link
                   key={o.id}
                   to={`/c/${slug}/order/${o.id}`}
-                  className="flex items-center justify-between gap-3 px-4 py-3 rounded-2xl bg-orange-50 border border-orange-200 hover:bg-orange-100 transition-colors"
+                  className="flex items-center justify-between gap-3 px-4 py-3 rounded-cafe-button bg-cafe-accent-50 border border-cafe-accent-200 hover:bg-cafe-accent-100 transition-colors"
                 >
                   <span className="min-w-0">
-                    <span className="block text-[10px] font-extrabold uppercase tracking-wider text-orange-600">
+                    <span className="block text-[10px] font-extrabold uppercase tracking-wider text-cafe-accent-600">
                       Your order{o.orderNumber ? ` #${o.orderNumber}` : ''}
                     </span>
-                    <span className="block text-xs font-black text-slate-900 truncate">
+                    <span className="block text-xs font-black text-cafe-ink truncate">
                       {customerStatusLabel(o.status)}
                       {o.tableName ? ` • ${o.tableName}` : ''}
                     </span>
                   </span>
-                  <span className="flex items-center gap-1 text-xs font-extrabold text-orange-700 shrink-0">
+                  <span className="flex items-center gap-1 text-xs font-extrabold text-cafe-accent-700 shrink-0">
                     Track <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
                   </span>
                 </Link>
@@ -87,16 +87,16 @@ export const YourOrders: React.FC<YourOrdersProps> = ({ slug, qrToken, cafeName 
       )}
 
       {session && orders.length === 0 && (
-        <p className="text-[11px] font-bold text-slate-500">
-          Orders for <span className="font-mono text-slate-800">{session.phoneMask}</span>
-          <span className="font-medium text-slate-400"> • none in progress</span>
+        <p className="text-[11px] font-bold text-cafe-muted">
+          Orders for <span className="font-mono text-cafe-neutral-800">{session.phoneMask}</span>
+          <span className="font-medium text-cafe-neutral-400"> • none in progress</span>
         </p>
       )}
 
       <button
         type="button"
         onClick={startFinding}
-        className="flex items-center gap-1.5 text-[11px] font-bold text-slate-500 hover:text-slate-800 underline underline-offset-2 decoration-slate-300"
+        className="flex items-center gap-1.5 text-[11px] font-bold text-cafe-muted hover:text-cafe-neutral-800 underline underline-offset-2 decoration-cafe-neutral-300"
       >
         <Search className="w-3 h-3" aria-hidden="true" />
         {session
