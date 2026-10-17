@@ -18,6 +18,10 @@ import { ServiceError } from '../utils/serviceError';
 import { decryptSecret } from '../utils/secretBox';
 import { logger } from '../utils/logger';
 import { wizCreateOrder, wizValidate, SmepayCredentials } from './payments/smepay.client';
+import { isIdentityOnFor } from './cafeIdentity.service';
+import { proofKindFor, recordProvenVisit } from './guestMemory.service';
+import { signGuestPass } from '../utils/guestToken';
+import { phoneKeyOf } from '../utils/phone';
 import { prepareOrder, placeOrder, assertTableFree, markOrderPaid, OrderPlacementInput } from './orderPlacement.service';
 
 const MAX_ATTEMPTS = 5;
@@ -42,11 +46,22 @@ type SessionDoc = ICheckoutSession;
 export const isCheckoutAvailable = (business: Pick<IBusiness, 'checkoutAllowed' | 'checkoutEnabled'>) =>
   !!(business.checkoutAllowed && business.checkoutEnabled);
 
+// The guest pass a proven checkout earned (café identity, §10.4). The proof was checked when the
+// checkout started and the visit recorded when its order was placed; the pass itself is stateless,
+// so it is signed afresh for whoever holds this session's unguessable id: the device that started it.
+const guestPassOf = (session: SessionDoc): { guestToken?: string; guestTokenExpiresAt?: Date } => {
+  const phone = phoneKeyOf(session.customerPhone);
+  if (!session.guestPassIssued || !session.orderId || !phone || !['PAID', 'SWITCHED'].includes(session.status)) return {};
+  const pass = signGuestPass({ phone, businessId: session.businessId.toString() });
+  return { guestToken: pass.token, guestTokenExpiresAt: pass.expiresAt };
+};
+
 // What the customer's browser gets back — no phone, no draft, no SMEPay credentials.
 const toView = (session: SessionDoc) => {
   const latest = session.attempts[session.attempts.length - 1];
   return {
     id: session._id,
+    businessId: session.businessId,
     status: session.status,
     businessSlug: session.businessSlug,
     amountPaise: session.amountPaise,
@@ -57,8 +72,21 @@ const toView = (session: SessionDoc) => {
     slug: latest?.slug || null,
     paymentUrl: latest?.paymentUrl || null,
     paymentStatus: latest?.lastStatus || null,
-    attemptsLeft: Math.max(0, MAX_ATTEMPTS - session.attempts.length)
+    attemptsLeft: Math.max(0, MAX_ATTEMPTS - session.attempts.length),
+    ...guestPassOf(session)
   };
+};
+
+// The checkout's order is placed: remember the visit when the checkout started with proof. Never
+// throws (the order is already saved); true when a guest pass was issued.
+const recordCheckoutVisit = async (session: SessionDoc, business: InstanceType<typeof Business>, order: InstanceType<typeof Order>) => {
+  if (!session.guestProof) return false;
+  try {
+    return !!(await recordProvenVisit(business, order)).guestToken;
+  } catch (err: any) {
+    logger.warn({ checkoutSessionId: session._id.toString(), err: err?.message }, '[checkout] failed to record the guest visit');
+    return false;
+  }
 };
 
 export type CheckoutView = ReturnType<typeof toView>;
@@ -183,7 +211,11 @@ const finalize = async (session: SessionDoc, attempt: ICheckoutAttempt): Promise
     throw error;
   }
 
-  return (await sessionDao.updateSession(claimed._id, { status: 'PAID', orderId: order._id, paidAt: now })) || claimed;
+  const guestPassIssued = await recordCheckoutVisit(claimed, business, order);
+  return (
+    (await sessionDao.updateSession(claimed._id, { status: 'PAID', orderId: order._id, paidAt: now, ...(guestPassIssued ? { guestPassIssued } : {}) })) ||
+    claimed
+  );
 };
 
 // A FINALIZING claim whose owner died without the payment having succeeded (i.e. a crashed
@@ -242,7 +274,10 @@ const pollProvider = async (session: SessionDoc): Promise<SessionDoc> => {
 
 // ── Public API ──────────────────────────────────────────────────────────────
 
-export const startCheckout = async (input: OrderPlacementInput): Promise<CheckoutView> => {
+export const startCheckout = async (
+  input: OrderPlacementInput,
+  proofs: { deviceProof?: unknown; guestPass?: unknown } = {}
+): Promise<CheckoutView> => {
   const prepared = await prepareOrder(input);
   const { business, table } = prepared;
 
@@ -261,7 +296,12 @@ export const startCheckout = async (input: OrderPlacementInput): Promise<Checkou
     amountPaise: prepared.draft.totalAmountPaise,
     status: 'PENDING',
     attempts: [],
-    expiresAt: ttlFromNow()
+    expiresAt: ttlFromNow(),
+    // A device proof lasts 30 minutes and the payment may be confirmed later, so it is checked now.
+    guestProof:
+      (isIdentityOnFor(business) &&
+        proofKindFor({ businessId: business._id.toString(), phone: prepared.customerPhone, ...proofs })) ||
+      undefined
   });
 
   try {
@@ -390,7 +430,12 @@ export const switchPaymentMethod = async (id: string, paymentMethod: unknown): P
       paymentStatus: 'UNPAID',
       checkoutSessionId: claimed._id
     });
-    const switched = await sessionDao.updateSession(claimed._id, { status: 'SWITCHED', orderId: order._id });
+    const guestPassIssued = await recordCheckoutVisit(claimed, business, order);
+    const switched = await sessionDao.updateSession(claimed._id, {
+      status: 'SWITCHED',
+      orderId: order._id,
+      ...(guestPassIssued ? { guestPassIssued } : {})
+    });
     return toView(switched || claimed);
   } catch (error) {
     await sessionDao.transitionSession(claimed._id, ['FINALIZING'], previousStatus);

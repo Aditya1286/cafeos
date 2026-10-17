@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 import { otp } from '../config';
+import { signDeviceProof } from '../utils/guestToken';
+import { phoneKeyOf } from '../utils/phone';
 import { isPhoneOrderVerified, sendOtp, verifyOtp, resendOtp, verifyWidgetAccessToken, OtpPurpose } from '../services/otp.service';
 
 // 'ACCOUNT' asks for a fresh, single-use verification for a sensitive account action (password
@@ -8,6 +10,15 @@ import { isPhoneOrderVerified, sendOtp, verifyOtp, resendOtp, verifyWidgetAccess
 const purposeOf = (req: Request): OtpPurpose => {
   const asked = req.body?.purpose ?? req.query?.purpose;
   return asked === 'ACCOUNT' || asked === 'RECOVERY' ? asked : 'DEFAULT';
+};
+
+// A fresh order verification in this browser also hands back a short-lived device proof for the
+// phone: the order request carries it, and that is what earns the guest pass (café identity,
+// §10.4). Never for ACCOUNT/RECOVERY OTPs, and never for ALREADY_VERIFIED (no fresh OTP happened).
+const withDeviceProof = (result: { success: boolean; code: string }, purpose: OtpPurpose, phone: unknown) => {
+  const key = phoneKeyOf(String(phone || ''));
+  if (purpose !== 'DEFAULT' || !result.success || result.code === 'ALREADY_VERIFIED' || !key) return result;
+  return { ...result, deviceProof: signDeviceProof(key) };
 };
 
 const statusFor = (result: { success: boolean; code: string }) =>
@@ -54,8 +65,9 @@ export const resendOtpRequest = async (req: Request, res: Response) => {
 
 export const confirmOtp = async (req: Request, res: Response) => {
   try {
-    const result = await verifyOtp(req.body.phone, req.body.otp, purposeOf(req));
-    return res.status(statusFor(result)).json(result);
+    const purpose = purposeOf(req);
+    const result = await verifyOtp(req.body.phone, req.body.otp, purpose);
+    return res.status(statusFor(result)).json(withDeviceProof(result, purpose, req.body.phone));
   } catch (error: any) {
     return serverError(res, error);
   }
@@ -65,8 +77,9 @@ export const confirmOtp = async (req: Request, res: Response) => {
 // JWT the widget handed the frontend after a successful client-side verify.
 export const confirmWidgetToken = async (req: Request, res: Response) => {
   try {
-    const result = await verifyWidgetAccessToken(req.body.phone, req.body.accessToken, purposeOf(req));
-    return res.status(statusFor(result)).json(result);
+    const purpose = purposeOf(req);
+    const result = await verifyWidgetAccessToken(req.body.phone, req.body.accessToken, purpose);
+    return res.status(statusFor(result)).json(withDeviceProof(result, purpose, req.body.phone));
   } catch (error: any) {
     return serverError(res, error);
   }

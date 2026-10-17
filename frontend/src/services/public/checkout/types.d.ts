@@ -19,6 +19,12 @@ export interface CheckoutSession {
   // SMEPay's own payment_status for the latest attempt (CREATED, PENDING, SUCCESS, FAILED, EXPIRED…)
   paymentStatus: string | null;
   attemptsLeft: number;
+  /** The café's Mongo id: guest passes are stored per café under it. */
+  businessId: string;
+  // A guest pass, once the checkout's order exists and the checkout was started with proof.
+  guestToken?: string;
+  /** ISO time the pass expires. */
+  guestTokenExpiresAt?: string;
 }
 
 export interface StartCheckoutPayload {
@@ -27,6 +33,8 @@ export interface StartCheckoutPayload {
   items: { productId: string; quantity: number; name: string }[];
   qrToken?: string;
   businessSlug?: string;
+  /** From a fresh OTP in this browser: proof of who is paying, so the order can earn a guest pass. */
+  deviceProof?: string;
 }
 
 export type CheckoutResponse = ApiResponse<CheckoutSession>;

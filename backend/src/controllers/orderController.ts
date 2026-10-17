@@ -11,6 +11,7 @@ import { emitToBusiness, emitToOrder, emitToAdminOrders } from '../websocket/soc
 import { computeRefundInsights } from '../services/refundInsights.service';
 import { prepareOrder, placeOrder, recordOrderPaymentLedger, markOrderPaid } from '../services/orderPlacement.service';
 import { toPublicIdentity } from '../services/cafeIdentity.service';
+import { recordVisit } from '../services/guestMemory.service';
 import { handleServiceError } from '../utils/serviceError';
 import {
   ACTIVE_ORDERS_LIMIT,
@@ -81,10 +82,23 @@ export const createOrder = async (req: Request, res: Response) => {
       idempotencyKey
     });
 
+    // Café identity: with proof of who is ordering (a fresh-OTP device proof, or this café's guest
+    // pass for the same phone), remember the visit and hand back a fresh pass. The order is
+    // already saved, so a failure here is logged, never returned.
+    const pass = await recordVisit({
+      business: prepared.business,
+      order,
+      deviceProof: req.body.deviceProof,
+      guestPass: req.get('X-Guest-Token')
+    }).catch((err) => {
+      console.error('[identity] Failed to record the guest visit:', err);
+      return {} as Awaited<ReturnType<typeof recordVisit>>;
+    });
+
     return res.status(201).json({
       success: true,
       message: 'Order placed successfully',
-      data: order
+      data: pass.guestToken ? { ...order.toJSON(), ...pass } : order
     });
   } catch (error: any) {
     return handleServiceError(res, error);

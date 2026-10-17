@@ -192,13 +192,18 @@ export const CustomerMenuPage: React.FC = () => {
       if (paymentMethod === 'CHECKOUT') {
         // No order exists until SMEPay confirms the payment. CheckoutReturnPage opens SMEPay's
         // payment popup over itself and waits there for the backend to confirm it.
-        const checkout = await publicCheckoutService.start({
-          customerName,
-          customerPhone,
-          items: payload.items,
-          qrToken: payload.qrToken,
-          businessSlug: payload.businessSlug,
-        });
+        const checkoutBusinessId: string | undefined = business?._id ?? business?.id;
+        const checkout = await publicCheckoutService.start(
+          {
+            customerName,
+            customerPhone,
+            items: payload.items,
+            qrToken: payload.qrToken,
+            businessSlug: payload.businessSlug,
+            ...(otp.deviceProof ? { deviceProof: otp.deviceProof } : {}),
+          },
+          { guestToken: checkoutBusinessId ? readGuestPass(checkoutBusinessId) : null },
+        );
         if (!checkout.data.slug && !checkout.data.paymentUrl)
           throw new Error('Could not start the online payment. Please try another method.');
         navigate(`/c/${checkout.data.businessSlug}/checkout/${checkout.data.id}`, {

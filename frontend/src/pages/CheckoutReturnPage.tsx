@@ -16,6 +16,7 @@ import publicMenuService from '../services/public/menu';
 import { CheckoutSession } from '../services/public/checkout/types';
 import { loadSmepayWidget, openSmepayCheckout } from '../services/smepayWidget';
 import { toast } from '@/utils/toast';
+import { saveGuestPass } from '@/utils/guestPass';
 
 // Poll fast while the customer has most likely just paid, then back off: the backend's sweep
 // confirms the payment either way, this only decides how soon this page notices.
@@ -54,6 +55,10 @@ export const CheckoutReturnPage: React.FC = () => {
     (next: CheckoutSession): boolean => {
       setSession(next);
       if ((next.status === 'PAID' || next.status === 'SWITCHED') && next.orderId) {
+        // A checkout started with proof of who paid earns this café's guest pass with its order.
+        if (next.businessId && next.guestToken && next.guestTokenExpiresAt) {
+          saveGuestPass(next.businessId, next.guestToken, next.guestTokenExpiresAt);
+        }
         goToOrder(next.orderId);
         return true;
       }

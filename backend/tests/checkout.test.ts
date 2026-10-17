@@ -22,6 +22,9 @@ import { FinancialLedger } from '../src/models/FinancialLedger';
 import { CheckoutSession } from '../src/models/CheckoutSession';
 import { SmepayAccount } from '../src/models/SmepayAccount';
 import { sweepOnce } from '../src/services/checkout.service';
+import { Business } from '../src/models/Business';
+import { GuestProfile } from '../src/models/GuestProfile';
+import { signDeviceProof, verifyGuestPass } from '../src/utils/guestToken';
 
 // ── Stub SMEPay ─────────────────────────────────────────────────────────────
 
@@ -421,6 +424,36 @@ test('the webhook gets a payment confirmed without anyone polling, but its body 
   assert.equal((await webhook('SUCCESS')).status, 200);
   await waitFor(async () => (await CheckoutSession.findById(session.id))!.status === 'PAID');
   assert.equal(await Order.countDocuments({ checkoutSessionId: session.id }), 1);
+});
+
+// ── Café identity: the guest pass of a checkout order ──────────────────────
+
+test('a checkout started with a device proof returns a guest pass once paid; one without proof does not', async () => {
+  await Business.updateOne({ _id: artisanId }, { identity: { enabled: true } });
+  try {
+    const { qrToken, phone } = await freshCustomer();
+    const start = await request(h.app)
+      .post('/api/v1/public/checkout')
+      .send({ qrToken, customerName: 'Pass Payer', customerPhone: phone, items: [{ productId, quantity: 1 }], deviceProof: signDeviceProof(phone) });
+    assert.equal(start.status, 201, JSON.stringify(start.body));
+    assert.equal(start.body.data.guestToken, undefined, 'a pass before any order exists');
+    assert.equal(start.body.data.businessId, artisanId);
+    setPaymentStatus(String(start.body.data.paymentUrl).split('/').pop()!, 'SUCCESS');
+
+    const paid = await request(h.app).get(`/api/v1/public/checkout/${start.body.data.id}`);
+    assert.equal(paid.body.data.status, 'PAID');
+    assert.deepEqual(verifyGuestPass(paid.body.data.guestToken, artisanId), { phone });
+    assert.ok(paid.body.data.guestTokenExpiresAt);
+    assert.equal((await GuestProfile.findOne({ businessId: artisanId, phone }))!.firstName, 'Pass');
+
+    const plain = await startCheckout();
+    setPaymentStatus(plain.slug, 'SUCCESS');
+    const plainPaid = await request(h.app).get(`/api/v1/public/checkout/${plain.id}`);
+    assert.equal(plainPaid.body.data.status, 'PAID');
+    assert.equal(plainPaid.body.data.guestToken, undefined);
+  } finally {
+    await Business.updateOne({ _id: artisanId }, { $unset: { identity: '' } });
+  }
 });
 
 // ── Guards ──────────────────────────────────────────────────────────────────
