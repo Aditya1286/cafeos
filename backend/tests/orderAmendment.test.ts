@@ -6,6 +6,7 @@ import request from 'supertest';
 import { Business } from '../src/models/Business';
 import { Product } from '../src/models/Product';
 import { Order } from '../src/models/Order';
+import { IdentityEvent } from '../src/models/IdentityEvent';
 import { Table } from '../src/models/Table';
 import { VerifiedPhone } from '../src/models/VerifiedPhone';
 import { signGuestPass } from '../src/utils/guestToken';
@@ -237,4 +238,16 @@ test('identity off, bad input and foreign products are refused', async () => {
 
   assert.equal((await addItems('ART-000000-0001', o.pass, [{ productId: productB, quantity: 1 }])).status, 404);
   assert.equal((await Order.findById(o.id).lean())!.amendments.length, 0);
+});
+
+test('a successful amendment records pairing_ordered; a refused one does not', async () => {
+  const o = await place([{ productId: productA, quantity: 1 }]);
+  const before = await IdentityEvent.countDocuments({ kind: 'pairing_ordered' });
+  assert.equal((await addItems(o.id, o.pass, [{ productId: productB, quantity: 2 }])).status, 200);
+  const events = await IdentityEvent.find({ kind: 'pairing_ordered', orderId: o.id }).lean();
+  assert.equal(events.length, 1);
+  assert.deepEqual(events[0].meta, { units: 2 });
+  await Order.updateOne({ _id: o.id }, { orderStatus: 'READY' });
+  assert.equal((await addItems(o.id, o.pass, [{ productId: productB, quantity: 1 }])).status, 409);
+  assert.equal(await IdentityEvent.countDocuments({ kind: 'pairing_ordered' }), before + 1);
 });

@@ -16,6 +16,7 @@ import { Order, IOrderAmendment } from '../models/Order';
 import { Business } from '../models/Business';
 import { priceItems, computeTotals } from './orderPlacement.service';
 import { isIdentityOnFor } from './cafeIdentity.service';
+import { recordEvent } from './identityEvents.service';
 import { deductIngredientsForOrder } from '../controllers/orderController';
 import { emitToBusiness, emitToOrder } from '../websocket/socketManager';
 import { verifyGuestPass } from '../utils/guestToken';
@@ -172,6 +173,11 @@ export const amendOrder = async (params: AmendOrderParams): Promise<OrderDoc> =>
   };
   emitToBusiness(businessId, 'order:updated', payload);
   emitToOrder(updated._id.toString(), 'order:updated', payload);
+
+  // Measurement (spec §11): never let it fail an amendment that has already been saved.
+  await recordEvent(businessId, 'pairing_ordered', { orderId: updated._id.toString(), units: newUnits }).catch((err) =>
+    console.error('[amend] Failed to record pairing_ordered:', err)
+  );
 
   return updated;
 };

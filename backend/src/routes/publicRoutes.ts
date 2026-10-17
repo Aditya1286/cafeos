@@ -22,7 +22,7 @@ import {
 } from '../controllers/checkoutController';
 import { isCheckoutAvailable } from '../services/checkout.service';
 import { toPublicIdentity } from '../services/cafeIdentity.service';
-import { addItemsToOrderPublic } from '../controllers/orderExtras.controller';
+import { addItemsToOrderPublic, recordIdentityEventPublic } from '../controllers/orderExtras.controller';
 
 const router = Router();
 
@@ -181,5 +181,14 @@ const orderExtrasLimiter = rateLimit({
   message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many requests. Please try again in a few minutes.' } }
 });
 router.post('/orders/:id/add-items', orderExtrasLimiter, addItemsToOrderPublic);
+// Engagement events fire on page views, so they get a roomier limit of their own.
+const identityEventsLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: runtime.nodeEnv === 'production' ? 120 : 1000,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many requests. Please try again in a few minutes.' } }
+});
+router.post('/identity-events', identityEventsLimiter, recordIdentityEventPublic);
 
 export default router;

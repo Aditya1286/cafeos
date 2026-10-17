@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { handleServiceError } from '../utils/serviceError';
 import * as cafeIdentityService from '../services/cafeIdentity.service';
+import { identitySummary } from '../services/identityEvents.service';
 
 // Thin handlers: the rules (the gate, the theme allow-list, the house special cap) live in
 // services/cafeIdentity.service.ts and surface here as ServiceError.
@@ -33,6 +34,15 @@ export const setProductHouseSpecial = async (req: AuthRequest, res: Response) =>
   try {
     const data = await cafeIdentityService.setHouseSpecial(req.businessId!.toString(), req.params.id, req.body?.on);
     return res.json({ success: true, data });
+  } catch (error: any) {
+    return handleServiceError(res, error);
+  }
+};
+
+// Super admin: the café identity readout (return rate before/after, adoption, event counts).
+export const getIdentitySummaryAdmin = async (_req: AuthRequest, res: Response) => {
+  try {
+    return res.json({ success: true, data: await identitySummary() });
   } catch (error: any) {
     return handleServiceError(res, error);
   }

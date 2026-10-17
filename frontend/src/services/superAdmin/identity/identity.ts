@@ -1,6 +1,6 @@
 import { apiRequest } from '../../api';
 import type { PublicIdentity } from '../../../themes/types';
-import { AdminIdentityPayload, SetIdentityResponse } from './types';
+import { AdminIdentityPayload, CafeIdentitySummaryResponse, SetIdentityResponse } from './types';
 
 /**
  * PUT /admin/businesses/:id/identity. Resolves to the café's public identity block, which reads as
@@ -17,3 +17,6 @@ export const set = async (
   );
   return res.data;
 };
+
+/** The café identity readout: return rate before/after, theme adoption, 30-day event counts. */
+export const getSummary = (): Promise<CafeIdentitySummaryResponse> => apiRequest('/admin/cafe-identity/summary');
