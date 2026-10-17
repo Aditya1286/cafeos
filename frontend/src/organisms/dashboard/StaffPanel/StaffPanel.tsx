@@ -81,7 +81,7 @@ const StaffRow = ({
           className={`flex items-center gap-1 px-3 py-2 rounded-xl text-[11px] font-extrabold disabled:opacity-50 ${
             active
               ? 'bg-rose-50 hover:bg-rose-100 text-rose-700'
-              : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700'
+              : 'bg-brand-50 hover:bg-brand-100 text-brand-700'
           }`}
         >
           <Power className="w-3 h-3" /> {active ? 'Deactivate' : 'Reactivate'}

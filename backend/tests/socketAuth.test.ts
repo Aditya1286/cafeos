@@ -18,7 +18,7 @@ import {
   noEvent,
   Harness
 } from './helpers';
-import { config } from '../src/config';
+import { analytics, auth } from '../src/config';
 import { User } from '../src/models/User';
 import { Business } from '../src/models/Business';
 
@@ -92,7 +92,7 @@ test('garbage business ids are rejected', async () => {
 test('a forged, expired, or wrong-secret token is treated as anonymous', async () => {
   const decoded = jwt.decode(artisanOwner) as any;
   const forged = jwt.sign({ id: decoded.id, role: 'SUPER_ADMIN' }, 'not-the-secret');
-  const expired = jwt.sign({ id: decoded.id }, config.jwtSecret, { expiresIn: -10 });
+  const expired = jwt.sign({ id: decoded.id }, auth.jwtSecret, { expiresIn: -10 });
   for (const token of [forged, expired, 'garbage']) {
     const s = await connect(token);
     assert.deepEqual(await join(s, 'join_business_room', artisanId), { ok: false, code: 'UNAUTHORIZED' });
@@ -114,7 +114,7 @@ test('the role/businessId inside the token are not trusted — only the DB user 
   const decoded = jwt.decode(beanOwner) as any;
   // Validly signed (e.g. minted before a role change) but claiming super admin + artisan:
   // the socket must still act as the real bean-and-butter owner.
-  const lying = jwt.sign({ id: decoded.id, role: 'SUPER_ADMIN', businessId: artisanId }, config.jwtSecret);
+  const lying = jwt.sign({ id: decoded.id, role: 'SUPER_ADMIN', businessId: artisanId }, auth.jwtSecret);
   const s = await connect(lying);
   assert.deepEqual(await join(s, 'join_business_room', artisanId), { ok: false, code: 'FORBIDDEN' });
   assert.deepEqual(await join(s, 'join_admin_support_room'), { ok: false, code: 'FORBIDDEN' });
@@ -254,15 +254,15 @@ test('status changes and customer cancellations update the feed', async () => {
 test('demo businesses stay out of the feed while demo exclusion is on', async () => {
   const admin = await connect(superAdmin);
   await join(admin, 'join_admin_orders_room');
-  const previous = config.excludeDemoBusinessesFromAnalytics;
-  config.excludeDemoBusinessesFromAnalytics = true;
+  const previous = analytics.excludeDemoBusinesses;
+  analytics.excludeDemoBusinesses = true;
   await Business.updateOne({ _id: artisanId }, { isDemo: true });
   try {
     const silent = noEvent(admin, 'admin_order:new', 800);
     await placeArtisanOrder();
     assert.equal(await silent, true, 'a demo order reached the live feed');
   } finally {
-    config.excludeDemoBusinessesFromAnalytics = previous;
+    analytics.excludeDemoBusinesses = previous;
     await Business.updateOne({ _id: artisanId }, { isDemo: false });
   }
 });

@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import superAdminAnalyticsService from '../services/superAdmin/analytics';
 import businessesService from '../services/superAdmin/businesses';
+import adminIdentityService from '../services/superAdmin/identity';
+import type { AdminIdentityPayload } from '../services/superAdmin/identity/types';
 import { getSocket, joinAdminOrdersRoom, onReconnect } from '../services/socket';
 import { toast } from '../utils/toast';
 import { SuperAdminOverview, AdminBusinessSummary } from '../types';
@@ -21,6 +23,7 @@ export const useSuperAdminDashboardData = () => {
   const [liveOrders, setLiveOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingDemoId, setUpdatingDemoId] = useState<string | null>(null);
+  const [savingIdentityId, setSavingIdentityId] = useState<string | null>(null);
 
   const fetchDashboardData = async () => {
     try {
@@ -113,6 +116,28 @@ export const useSuperAdminDashboardData = () => {
     }
   };
 
+  // Café identity on/off and theme. The reply is the guest-facing block (which reads as off while the
+  // platform switch is off), so the stored values come from a quiet re-read of the list instead.
+  // Resolves true when saved.
+  const handleSetBusinessIdentity = async (
+    businessId: string,
+    payload: AdminIdentityPayload,
+  ): Promise<boolean> => {
+    setSavingIdentityId(businessId);
+    try {
+      await adminIdentityService.set(businessId, payload);
+      toast.success('Café identity updated');
+      const res = await businessesService.list().catch(() => null);
+      if (res?.data) setBusinesses(res.data);
+      return true;
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update café identity');
+      return false;
+    } finally {
+      setSavingIdentityId(null);
+    }
+  };
+
   return {
     overview,
     businesses,
@@ -123,5 +148,7 @@ export const useSuperAdminDashboardData = () => {
     handleChangeBusinessPlan,
     updatingDemoId,
     handleSetBusinessDemo,
+    savingIdentityId,
+    handleSetBusinessIdentity,
   };
 };

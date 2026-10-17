@@ -10,6 +10,8 @@ import { FinancialLedger } from '../models/FinancialLedger';
 import { emitToBusiness, emitToOrder, emitToAdminOrders } from '../websocket/socketManager';
 import { computeRefundInsights } from '../services/refundInsights.service';
 import { prepareOrder, placeOrder, recordOrderPaymentLedger, markOrderPaid } from '../services/orderPlacement.service';
+import { toPublicIdentity } from '../services/cafeIdentity.service';
+import { recordVisit } from '../services/guestMemory.service';
 import { handleServiceError } from '../utils/serviceError';
 import {
   ACTIVE_ORDERS_LIMIT,
@@ -20,6 +22,7 @@ import {
   storedStatusFilter
 } from '../utils/orderStatus';
 import mongoose from 'mongoose';
+import { runtime } from '../config';
 import { v4 as uuidv4 } from 'uuid';
 
 // Public customer endpoints identify an order ONLY by its Mongo _id — the unguessable value
@@ -80,10 +83,23 @@ export const createOrder = async (req: Request, res: Response) => {
       idempotencyKey
     });
 
+    // Café identity: with proof of who is ordering (a fresh-OTP device proof, or this café's guest
+    // pass for the same phone), remember the visit and hand back a fresh pass. The order is
+    // already saved, so a failure here is logged, never returned.
+    const pass = await recordVisit({
+      business: prepared.business,
+      order,
+      deviceProof: req.body.deviceProof,
+      guestPass: req.get('X-Guest-Token')
+    }).catch((err) => {
+      console.error('[identity] Failed to record the guest visit:', err);
+      return {} as Awaited<ReturnType<typeof recordVisit>>;
+    });
+
     return res.status(201).json({
       success: true,
       message: 'Order placed successfully',
-      data: order
+      data: pass.guestToken ? { ...order.toJSON(), ...pass } : order
     });
   } catch (error: any) {
     return handleServiceError(res, error);
@@ -290,7 +306,8 @@ const sendOrderDetails = async (res: Response, order: InstanceType<typeof Order>
         phone: business.phone,
         taxRatePercentage: business.taxRatePercentage,
         gstin: business.gstin,
-        upiVpa: business.upiVpa
+        upiVpa: business.upiVpa,
+        identity: toPublicIdentity(business)
       } : null
     }
   });
@@ -490,7 +507,12 @@ interface StatusChangeResult {
 }
 
 // Automatic BOM deduction: takes each ingredient in the order's recipes off the stock and logs it.
-const deductIngredientsForOrder = async (order: InstanceType<typeof Order>, businessId: string) => {
+// Exported for the amend flow (services/orderAmendment.service.ts): lines added to an order the
+// kitchen has already taken on get their stock deducted at once, by passing just those lines.
+export const deductIngredientsForOrder = async (
+  order: Pick<InstanceType<typeof Order>, '_id' | 'orderId' | 'items'>,
+  businessId: string
+) => {
   for (const item of order.items) {
     const recipe = await Recipe.findOne({ productId: item.productId, businessId });
     if (!recipe || !recipe.ingredients || recipe.ingredients.length === 0) continue;
@@ -528,12 +550,8 @@ const deductIngredientsForOrder = async (order: InstanceType<typeof Order>, busi
 // exact same behavior per order instead of a thinner, silently-diverging copy — returns a
 // result object rather than throwing/responding, so a bulk caller can keep going past one
 // order's failure and report it alongside the others.
-const applyOrderStatusChange = async (
-  order: InstanceType<typeof Order>,
-  status: OrderStatus,
-  businessId: string,
-  userId?: string
-): Promise<StatusChangeResult> => {
+/** Why this order can't move to `status`, or null if it can. */
+const transitionError = (order: InstanceType<typeof Order>, status: OrderStatus): StatusChangeResult | null => {
   // A refund only makes sense for money that was actually collected, and only once the
   // order itself is cancelled (no point refunding an order that's still being served).
   if (status === 'REFUNDED') {
@@ -561,32 +579,77 @@ const applyOrderStatusChange = async (
   if (FINISHED_ORDER_STATUSES.includes(order.orderStatus) && !(order.orderStatus === 'CANCELLED' && status === 'REFUNDED')) {
     return { success: false, errorCode: 'ORDER_FINISHED', errorMessage: `This order is already ${order.orderStatus.toLowerCase()}.` };
   }
+  return null;
+};
 
-  const wasAlreadyPaid = order.paymentStatus === 'PAID';
-  // The stored value, not the normalized one: a legacy CONFIRMED order already had its stock deducted.
-  const previousStatus = order.get('orderStatus', null, { getters: false }) as string;
+/**
+ * Test-only seam: runs between loading the order and writing its new status, so a test can land an
+ * amendment exactly there. Ignored outside NODE_ENV=test.
+ */
+export const statusChangeTestHooks: { beforeWrite?: (orderId: string) => Promise<void> } = {};
 
-  order.orderStatus = status;
-  if (status === 'COMPLETED' || status === 'SERVED') {
-    order.paymentStatus = 'PAID';
+/** A transition retries this many times when the order's status or payment changed under it. */
+const STATUS_CHANGE_ATTEMPTS = 3;
+
+const applyOrderStatusChange = async (
+  loaded: InstanceType<typeof Order>,
+  status: OrderStatus,
+  businessId: string,
+  userId?: string
+): Promise<StatusChangeResult> => {
+  // The transition is ONE atomic findOneAndUpdate, guarded on the stored status and payment state it
+  // was decided from, and every side effect below (ledger, stock, emits) reads the document it
+  // RETURNS. So a guest's amendment landing between the load and the write (orderAmendment.service)
+  // is included in the totals that get ledgered and in the lines whose stock comes off, and a
+  // concurrent status or payment change makes the guard miss (we re-read and decide again) instead
+  // of being overwritten or ledgered twice.
+  let order: InstanceType<typeof Order> | null = loaded;
+  let updated: InstanceType<typeof Order> | null = null;
+  let wasAlreadyPaid = false;
+  let previousStatus = '';
+
+  for (let attempt = 0; attempt < STATUS_CHANGE_ATTEMPTS && !updated; attempt++) {
+    if (attempt > 0) order = await Order.findById(loaded._id);
+    if (!order) return { success: false, errorCode: 'ORDER_NOT_FOUND', errorMessage: 'Order not found.' };
+
+    const error = transitionError(order, status);
+    if (error) return error;
+
+    wasAlreadyPaid = order.paymentStatus === 'PAID';
+    // The stored value, not the normalized one: a legacy CONFIRMED order already had its stock deducted.
+    previousStatus = order.get('orderStatus', null, { getters: false }) as string;
+
+    const now = new Date();
+    const set: Record<string, unknown> = { orderStatus: status };
+    if (status === 'COMPLETED' || status === 'SERVED') set.paymentStatus = 'PAID';
+    if (status === 'REFUNDED') {
+      set.paymentStatus = 'REFUNDED';
+      set.refundedAt = now;
+      if (userId) set.refundedByUserId = userId;
+    }
+    if (status === 'CANCELLED' && userId) set.cancelledByUserId = userId;
+
+    // Update timeline timestamp
+    const stampField = ({ PREPARING: 'preparingAt', READY: 'readyAt', COMPLETED: 'completedAt', CANCELLED: 'cancelledAt' } as Record<string, string>)[status];
+    if (stampField) {
+      if (order.timeline) set[`timeline.${stampField}`] = now;
+      else set.timeline = { [stampField]: now };
+    }
+
+    if (runtime.nodeEnv === 'test' && statusChangeTestHooks.beforeWrite) {
+      await statusChangeTestHooks.beforeWrite(order._id.toString());
+    }
+
+    updated = await Order.findOneAndUpdate(
+      { _id: order._id, orderStatus: previousStatus, paymentStatus: order.paymentStatus },
+      { $set: set },
+      { new: true }
+    );
   }
-  if (status === 'REFUNDED') {
-    order.paymentStatus = 'REFUNDED';
-    order.refundedAt = new Date();
-    order.refundedByUserId = userId as any;
+  if (!updated) {
+    return { success: false, errorCode: 'ORDER_CHANGED', errorMessage: 'This order changed while you were updating it. Please try again.' };
   }
-  if (status === 'CANCELLED') {
-    order.cancelledByUserId = userId as any;
-  }
-
-  // Update timeline timestamp
-  if (!order.timeline) order.timeline = {};
-  if (status === 'PREPARING') order.timeline.preparingAt = new Date();
-  if (status === 'READY') order.timeline.readyAt = new Date();
-  if (status === 'COMPLETED') order.timeline.completedAt = new Date();
-  if (status === 'CANCELLED') order.timeline.cancelledAt = new Date();
-
-  await order.save();
+  order = updated;
 
   // Record the money leaving, mirroring the ORDER_PAYMENT/PLATFORM_FEE entries written below
   // when it first came in — same manual-transfer caveat: this logs that a refund happened,
@@ -614,7 +677,8 @@ const applyOrderStatusChange = async (
     await recordOrderPaymentLedger(order);
   }
 
-  // Stock comes off once, when the kitchen takes the order on (it leaves New).
+  // Stock comes off once, when the kitchen takes the order on (it leaves New). Lines a guest adds
+  // after this point have their stock deducted by the amend flow itself.
   if (previousStatus === 'PLACED' && status !== 'CANCELLED') {
     await deductIngredientsForOrder(order, businessId);
   }

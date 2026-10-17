@@ -7,6 +7,8 @@ interface MenuItemCardProps {
   product: any;
   quantity: number;
   isPopular: boolean;
+  /** The owner's House special mark (only passed as true when café identity is on). */
+  isHouseSpecial?: boolean;
   onAdd: () => void;
   onRemove: () => void;
 }
@@ -20,6 +22,7 @@ export const MenuItemCard = ({
   product,
   quantity,
   isPopular,
+  isHouseSpecial = false,
   onAdd,
   onRemove,
 }: MenuItemCardProps) => {
@@ -30,7 +33,7 @@ export const MenuItemCard = ({
 
   return (
     <div className="flex flex-col min-w-0">
-      <div className="relative aspect-square rounded-3xl overflow-hidden bg-slate-100 border border-slate-200/70 shadow-sm">
+      <div className="relative aspect-square rounded-cafe-image overflow-hidden bg-cafe-raised border border-cafe-line/70 shadow-cafe-card">
         {showPhoto ? (
           <img
             src={product.imageUrl}
@@ -41,23 +44,32 @@ export const MenuItemCard = ({
           />
         ) : (
           // No photo: a neutral tile, never a stock photo of some other dish.
-          <div className="w-full h-full flex flex-col items-center justify-center gap-1.5 bg-gradient-to-br from-orange-50 to-amber-100 text-orange-300">
+          <div className="w-full h-full flex flex-col items-center justify-center gap-1.5 [background:var(--cafe-dish-fallback)] text-cafe-accent-300">
             <UtensilsCrossed className="w-8 h-8" />
-            <span className="text-2xl font-black text-orange-400/80">
+            <span className="text-2xl font-black text-cafe-accent-400/80">
               {product.name?.charAt(0)}
             </span>
           </div>
         )}
 
-        {isPopular && (
-          <span className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-full bg-white/95 backdrop-blur text-[11px] font-extrabold text-emerald-700 shadow-sm">
-            Popular
-          </span>
+        {(isHouseSpecial || isPopular) && (
+          <div className="absolute top-2.5 left-2.5 flex flex-col items-start gap-1">
+            {isHouseSpecial && (
+              <span className="px-2.5 py-1 rounded-cafe-chip bg-cafe-badge-special-bg text-[11px] font-extrabold text-cafe-badge-special-fg shadow-sm">
+                House special
+              </span>
+            )}
+            {isPopular && (
+              <span className="px-2.5 py-1 rounded-cafe-chip bg-cafe-badge-popular-bg/95 backdrop-blur text-[11px] font-extrabold text-cafe-badge-popular-fg shadow-sm">
+                Popular
+              </span>
+            )}
+          </div>
         )}
 
         <div className="absolute bottom-2.5 right-2.5">
           {quantity > 0 ? (
-            <div className="flex items-center rounded-full bg-orange-500 text-white shadow-lg shadow-orange-500/30 font-black text-sm">
+            <div className="flex items-center rounded-full bg-cafe-button text-cafe-on-accent shadow-lg shadow-cafe-button/30 font-black text-sm">
               <button
                 type="button"
                 onClick={onRemove}
@@ -83,7 +95,7 @@ export const MenuItemCard = ({
               type="button"
               onClick={onAdd}
               aria-label={`Add ${product.name}`}
-              className="w-11 h-11 rounded-full bg-white border-2 border-orange-400 text-orange-500 shadow-lg flex items-center justify-center active:scale-90 transition-transform"
+              className="w-11 h-11 rounded-full bg-cafe-surface border-2 border-cafe-accent-400 text-cafe-accent-500 shadow-lg flex items-center justify-center active:scale-90 transition-transform"
             >
               <Plus className="w-5 h-5" strokeWidth={3} />
             </button>
@@ -96,13 +108,11 @@ export const MenuItemCard = ({
           <span className="mt-[3px]">
             <VegMark isVeg={product.isVeg} size="sm" />
           </span>
-          <h3 className="text-[13px] font-bold text-slate-900 leading-snug line-clamp-2">
+          <h3 className="text-[13px] font-bold font-cafe-display text-cafe-ink leading-snug line-clamp-2">
             {product.name}
           </h3>
         </div>
-        <div className="text-sm font-black text-slate-900">
-          {formatCurrency(product.pricePaise)}
-        </div>
+        <div className="text-sm font-black text-cafe-ink">{formatCurrency(product.pricePaise)}</div>
       </div>
     </div>
   );

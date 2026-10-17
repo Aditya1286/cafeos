@@ -33,6 +33,8 @@ import { SupportWidget } from '@/organisms/SupportWidget';
 import { DeleteProductModal } from '@/organisms/dashboard/DeleteProductModal';
 import { EBillModal } from '@/organisms/dashboard/EBillModal';
 import { AddProductModal } from '@/organisms/dashboard/AddProductModal';
+import { MenuImportModal } from '@/organisms/dashboard/MenuImportModal';
+import { useMenuImport } from '../hooks/useMenuImport';
 import { AddTableModal } from '@/organisms/dashboard/AddTableModal';
 import { AddInventoryModal } from '@/organisms/dashboard/AddInventoryModal';
 import { RefundsPanel } from '@/organisms/dashboard/RefundsPanel';
@@ -112,6 +114,7 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
     handleToggleMasterQr,
     handleRemoveProduct,
     handleRestoreProduct,
+    handleToggleHouseSpecial,
     handleDeleteProduct,
   } = dashboard;
   const { remittanceSummary, loadingRemittance, markingPaid, handleMarkRemittancePaid } =
@@ -150,6 +153,7 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
 
   // Add-entity modal open flags
   const [showAddProductModal, setShowAddProductModal] = useState(false);
+  const [showMenuImportModal, setShowMenuImportModal] = useState(false);
   const [showAddTableModal, setShowAddTableModal] = useState(false);
   const [showAddInventoryModal, setShowAddInventoryModal] = useState(false);
 
@@ -389,6 +393,24 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
     }
   };
 
+  // Upload Menu: closing throws the unsaved draft away; saving writes it and reloads the menu.
+  const menuImport = useMenuImport();
+  const handleCloseMenuImport = () => {
+    setShowMenuImportModal(false);
+    menuImport.reset();
+  };
+  const handleSaveMenuImport = async () => {
+    const result = await menuImport.save();
+    if (!result) return;
+    const skipped = result.itemsSkipped.length;
+    toast.success(
+      `${result.itemsCreated} item${result.itemsCreated === 1 ? '' : 's'} added to your menu` +
+        (skipped ? ` · ${skipped} already there, skipped` : ''),
+    );
+    handleCloseMenuImport();
+    fetchDashboardData();
+  };
+
   const handleCreateTable = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -520,10 +542,13 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
             products={products}
             categories={categories}
             onAddItem={handleOpenAddProduct}
+            onUploadMenu={() => setShowMenuImportModal(true)}
             onEditItem={handleOpenEditProduct}
             onRemoveItem={handleRemoveProduct}
             onRestoreItem={handleRestoreProduct}
             onDeleteItem={setDeleteProductTarget}
+            houseSpecialsEnabled={!!business?.identity?.enabled}
+            onToggleHouseSpecial={handleToggleHouseSpecial}
           />
         )}
 
@@ -612,6 +637,8 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
             onMarkUpgradePaid={handleMarkUpgradePaid}
             onCancelUpgrade={handleCancelUpgrade}
             checkout={checkoutState}
+            categories={categories}
+            products={products}
           />
         )}
 
@@ -680,6 +707,13 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
         imagePreviewUrl={newProductImagePreview}
         uploadingImage={uploadingProductImage}
         onSelectImage={handleSelectProductImage}
+      />
+
+      <MenuImportModal
+        open={showMenuImportModal}
+        importer={menuImport}
+        onClose={handleCloseMenuImport}
+        onSave={handleSaveMenuImport}
       />
 
       <AddTableModal

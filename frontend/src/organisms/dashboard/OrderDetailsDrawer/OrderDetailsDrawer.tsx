@@ -5,6 +5,8 @@ import { STATUS_CONFIG, isOrderCancellable } from '@/constants/orderStatus';
 import { formatCurrency } from '@/utils/money';
 import { formatDateTime } from '@/utils/DateUtils';
 import { describeActor } from '@/constants/roles';
+import AddedMarker from '@/atoms/AddedMarker';
+import { amendedMarks } from '@/utils/amendedItems';
 
 interface OrderDetailsDrawerProps {
   order: any | null;
@@ -18,7 +20,7 @@ interface OrderDetailsDrawerProps {
 
 const PAYMENT_BADGE_CLASS: Record<string, string> = {
   PAID: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  REFUNDED: 'bg-violet-50 text-violet-700 border-violet-200',
+  REFUNDED: 'bg-slate-100 text-slate-700 border-slate-200',
   FAILED: 'bg-rose-50 text-rose-700 border-rose-200',
   UNPAID: 'bg-amber-50 text-amber-700 border-amber-200',
 };
@@ -90,7 +92,7 @@ export const OrderDetailsDrawer = ({
                     <span>
                       {orderDetails.customerStats.previousOrdersCount || 1} previous orders
                     </span>
-                    <span className="text-emerald-600 font-black">
+                    <span className="text-slate-900 font-black">
                       {formatCurrency(orderDetails.customerStats.lifetimeSpendPaise)} lifetime spend
                     </span>
                   </div>
@@ -127,6 +129,7 @@ export const OrderDetailsDrawer = ({
                       <div>
                         <div className="font-extrabold text-slate-900">
                           <span className="text-brand-600">{it.quantity}×</span> {it.name}
+                          <AddedMarker mark={amendedMarks(order)[i]} />
                         </div>
                         {it.variantName && (
                           <div className="text-[10px] font-medium text-slate-400">
@@ -165,7 +168,7 @@ export const OrderDetailsDrawer = ({
 
                 <div className="pt-2 border-t border-slate-200 flex justify-between font-black text-sm text-slate-900">
                   <span>Total Paid</span>
-                  <span className="text-emerald-600">{formatCurrency(order.totalAmountPaise)}</span>
+                  <span className="text-slate-900">{formatCurrency(order.totalAmountPaise)}</span>
                 </div>
               </div>
 
@@ -217,7 +220,7 @@ export const OrderDetailsDrawer = ({
                   </div>
                 )}
                 {order.paymentStatus === 'REFUNDED' && order.refundedAt && (
-                  <div className="mt-1.5 px-2.5 py-1.5 rounded-xl bg-violet-50 border border-violet-200 text-violet-700 text-[10px] font-black">
+                  <div className="mt-1.5 px-2.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-[10px] font-black">
                     Refunded on {formatDateTime(order.refundedAt)}
                     {describeActor(order.refundedByUserId)
                       ? ` by ${describeActor(order.refundedByUserId)}`
@@ -266,7 +269,7 @@ export const OrderDetailsDrawer = ({
               {needsRefund(order) && onMarkRefunded && (
                 <button
                   onClick={() => onMarkRefunded(order)}
-                  className="w-full py-3 rounded-xl bg-violet-50 hover:bg-violet-100 border border-violet-200 text-violet-700 font-black text-xs transition-all flex items-center justify-center gap-2"
+                  className="w-full py-3 rounded-xl bg-brand-50 hover:bg-brand-100 border border-brand-200 text-brand-700 font-black text-xs transition-all flex items-center justify-center gap-2"
                 >
                   <Undo2 className="w-4 h-4" />
                   <span>Mark Refunded</span>

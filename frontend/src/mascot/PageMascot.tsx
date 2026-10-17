@@ -1,5 +1,5 @@
 import React, { Component, Suspense, lazy, useEffect, useState } from 'react';
-import type { PageId } from './types';
+import type { MascotPageProps, PageId } from './types';
 
 // The only entry point to the mascot. The landing and login pages render this and nothing else does,
 // which keeps the mascot (and three.js) off every other route: no other page imports this file, so
@@ -54,18 +54,21 @@ const useWhenIdle = (): boolean => {
   return ready;
 };
 
-/** `signal` is the page's own state for the mascot to react to (a key of the page config's
- * `signals`), e.g. the order's status on the order page. */
-export const PageMascot: React.FC<{ page: PageId; signal?: string | null }> = ({
-  page,
-  signal,
-}) => {
+/** The mascot for one page.
+ * - `signal`: the page's own state to react to, a key of the config's `signals` or of `reactions`
+ *   (e.g. the order's status on the order page).
+ * - `rendering`: `heavy` (default, three.js) or `light` (a flat SVG; never downloads three.js).
+ * - `reactions`: extra signals built from the page's data at runtime (the menu's welcome, tips).
+ * - `dress`: a café theme's hat band and bubble colours.
+ * - `onAction`: a button in the bubble was tapped (a message's `actions`).
+ * `import type` is erased at build time, so the experience chunk still loads only lazily. */
+export const PageMascot: React.FC<MascotPageProps & { page: PageId }> = (props) => {
   const ready = useWhenIdle();
   if (!ready) return null;
   return (
     <MascotBoundary>
       <Suspense fallback={null}>
-        <MascotExperience page={page} signal={signal} />
+        <MascotExperience {...props} />
       </Suspense>
     </MascotBoundary>
   );

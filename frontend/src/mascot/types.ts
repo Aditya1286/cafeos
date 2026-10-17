@@ -4,7 +4,7 @@
 export type Expression = 'idle' | 'curious' | 'confident' | 'excited' | 'shy';
 
 /** Pages the mascot lives on. Each has its own config (copy, reactions, flow area). */
-export type PageId = 'landing' | 'login' | 'order';
+export type PageId = 'landing' | 'login' | 'order' | 'demo' | 'menu';
 
 export type Gesture = 'pop' | 'nod' | 'tilt' | 'lean' | 'tipHat' | 'wiggle' | 'wave';
 
@@ -16,6 +16,16 @@ export interface MascotMessage {
   durationMs?: number;
   /** Also announce to screen readers. Off by default: the page already carries the same content. */
   announce?: boolean;
+  /** Buttons in the bubble (at most 2 are shown), e.g. "Add" for a returning guest's usual. A click
+   * calls the page's `onAction(id)` and closes the bubble. These and the hide button are the only
+   * parts of the mascot that take taps. */
+  actions?: MascotAction[];
+}
+
+export interface MascotAction {
+  /** What the page receives in `onAction`, e.g. `add-usual`. */
+  id: string;
+  label: string;
 }
 
 export interface MascotReaction {
@@ -85,15 +95,18 @@ export interface PageFlow {
   /** `scroll` (default): the path follows page scroll. `steps`: it follows `steps` below. */
   progress?: 'scroll' | 'steps';
   steps?: FlowStep[];
-  /** `static`: no gliding or peeking; the mascot rests in one corner of the area. `slot`: it lives in
-   * a reserved spot in the page itself (`slot`), scrolls with the page, covers nothing, and its
-   * message sits beside it (the order page, made for phones). */
-  mode?: 'static' | 'slot';
+  /** How the mascot is placed (default: glide along the path):
+   *  - `static`: no gliding or peeking; it rests in one corner of the area.
+   *  - `dock`: rests small in one corner of the area, but still pops up from cards. Made for phones,
+   *    where a path across the screen would sit on top of the text.
+   *  - `slot`: lives in a reserved spot in the page itself (`slot`), scrolls with the page, covers
+   *    nothing, and its message sits beside it (the order page, made for phones). */
+  mode?: 'static' | 'dock' | 'slot';
   /** CSS selector of the reserved spot, for `mode: 'slot'`. */
   slot?: string;
   /** Fixed mascot size in px, instead of the responsive one. */
   size?: number;
-  /** Which bottom corner a static mascot rests in (default right). */
+  /** Which bottom corner a static or docked mascot rests in (default right). */
   corner?: 'left' | 'right';
   /** A slow, gentle turn: a sway of a few degrees plus an occasional full spin. Off in reduced motion. */
   ambientSpin?: boolean;
@@ -110,6 +123,13 @@ export interface MascotConfig {
   /** Reactions the page drives from its own data (e.g. the order's status), by key. */
   signals?: Record<string, MascotReaction>;
   flow?: PageFlow;
+  /** Overrides merged over `flow` on phone-sized viewports (see LAYOUT.phoneMaxWidth), so a page can
+   * move the mascot differently on a phone (dock it, or give it a slot) without a second config.
+   * Set a key to `undefined` to drop it there, e.g. `bounds: undefined` for the whole viewport. */
+  phoneFlow?: Partial<PageFlow>;
+  /** A bubble with action buttons closes on a scroll or a tap anywhere else on the page. Bubbles
+   * without buttons keep their own timing (a scroll is what brings the menu's tips in). */
+  closeBubbleOnInteract?: boolean;
 }
 
 export type TriggerKind = 'section' | 'signal' | 'peek' | 'hover' | 'focus';
@@ -128,4 +148,31 @@ export interface MascotState {
   /** Priority of whatever currently owns the expression (0 = idle). */
   priority: number;
   source: 'idle' | TriggerKind;
+}
+
+/** Which renderer draws the mascot. `heavy` is the 3D engine; `light` never downloads three.js. */
+export type MascotRendering = 'heavy' | 'light';
+
+/** A café theme's dressing for the mascot (theme tokens `mascotBand` and `bubble*`). */
+export interface MascotDress {
+  /** Hat band colour. */
+  band: string;
+  bubbleBg: string;
+  bubbleFg: string;
+  bubbleBorder: string;
+}
+
+/** What a page passes to `<PageMascot>` besides its id. */
+export interface MascotPageProps {
+  /** The page's own state for the mascot to react to: a key of the config's `signals` or of
+   * `reactions`. */
+  signal?: string | null;
+  /** `heavy` (default) is the 3D engine; `light` is the flat SVG renderer and never loads three.js. */
+  rendering?: MascotRendering;
+  /** Extra signals built from the page's data at runtime (e.g. the menu's welcome and tips). */
+  reactions?: Record<string, MascotReaction>;
+  /** A café theme's hat band and bubble colours. Without it the mascot wears the CAOS colours. */
+  dress?: MascotDress;
+  /** A bubble action was tapped (its `id`). The bubble closes afterwards. */
+  onAction?: (id: string) => void;
 }

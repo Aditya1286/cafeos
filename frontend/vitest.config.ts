@@ -11,7 +11,8 @@ export default defineConfig({
     },
   },
   test: {
-    include: ['tests/**/*.test.ts'],
+    include: ['tests/**/*.test.{ts,tsx}'],
+    // Node by default; a test that needs the DOM opts in with a first-line `// @vitest-environment jsdom`.
     environment: 'node',
     testTimeout: 15_000,
   },

@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
-import { config } from '../config';
+import { auth } from '../config';
 
 // "My orders" sessions. After a customer proves their phone with a fresh OTP, the lookup hands back
 // one of these so the same number's orders can be listed again on that device without another code.
@@ -14,7 +14,7 @@ const TOKEN_TYPE = 'order-recovery';
 // A key derived from the JWT secret instead of the secret itself: a login/socket JWT can never
 // verify as a recovery token, and a recovery token can never verify as a login, whatever claims
 // either carries.
-const signingKey = () => crypto.createHmac('sha256', config.jwtSecret).update('order-recovery-session-v1').digest();
+const signingKey = () => crypto.createHmac('sha256', auth.jwtSecret).update('order-recovery-session-v1').digest();
 
 export interface RecoveryTokenPayload {
   /** The ten digits of the verified phone number. */

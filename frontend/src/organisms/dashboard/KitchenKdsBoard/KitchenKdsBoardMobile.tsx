@@ -55,13 +55,13 @@ export const KitchenKdsBoardMobile = (props: KdsBoardViewProps) => {
               <span className="flex items-center gap-1">
                 <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />
                 <span
-                  className={`text-[10px] font-black uppercase tracking-wide ${active ? sc.color : 'text-slate-400'}`}
+                  className={`text-[10px] font-black uppercase tracking-wide ${active ? 'text-slate-900' : 'text-slate-400'}`}
                 >
                   {MOBILE_STATUS_LABEL[s]}
                 </span>
               </span>
               <span
-                className={`text-[11px] font-mono font-bold ${active ? sc.color : 'text-slate-400'}`}
+                className={`text-[11px] font-mono font-bold ${active ? 'text-slate-900' : 'text-slate-400'}`}
               >
                 {count}
               </span>

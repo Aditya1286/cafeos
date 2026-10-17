@@ -22,16 +22,16 @@ export const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
   };
 
   return (
-    <nav className="sticky top-0 z-40 w-full bg-white/90 backdrop-blur-md border-b border-slate-200/80 px-4 lg:px-8 py-3.5 shadow-sm">
-      <div className="max-w-7xl mx-auto flex items-center justify-between">
+    <nav className="sticky top-0 z-40 w-full bg-white/90 backdrop-blur-md border-b border-slate-200/80 px-4 lg:px-8 py-2.5 sm:py-3.5 shadow-sm">
+      <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
         {/* Brand Logo */}
-        <Link to="/" className="flex items-center gap-2.5 group">
-          <CaosLogo className="w-10 h-10 rounded-xl shadow-md shadow-red-600/20 group-hover:scale-105 transition-transform" />
+        <Link to="/" className="flex items-center gap-2.5 group min-w-0">
+          <CaosLogo className="w-9 h-9 sm:w-10 sm:h-10 shrink-0 rounded-xl shadow-md shadow-red-600/20 group-hover:scale-105 transition-transform" />
           <div>
-            <span className="text-xl font-black tracking-tight text-slate-900 flex items-center gap-1.5">
+            <span className="text-lg sm:text-xl font-black tracking-tight text-slate-900 flex items-center gap-1.5">
               {APP_NAME}
             </span>
-            <p className="text-[10px] text-slate-500 font-semibold">
+            <p className="hidden sm:block text-[10px] text-slate-500 font-semibold">
               Ordering for Cafés & Restaurants
             </p>
           </div>
@@ -54,7 +54,7 @@ export const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
         </div>
 
         {/* Auth Buttons / User Profile */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 shrink-0">
           {token ? (
             <div className="flex items-center gap-3">
               {user?.role === 'SUPER_ADMIN' ? (
@@ -82,16 +82,16 @@ export const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
               </button>
             </div>
           ) : (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2">
               <Link
                 to="/login"
-                className="px-4 py-2 text-xs font-bold text-slate-700 hover:text-red-600 transition-colors"
+                className="px-2.5 sm:px-4 py-2 whitespace-nowrap text-xs font-bold text-slate-700 hover:text-red-600 transition-colors"
               >
                 Log in
               </Link>
               <Link
                 to={DEMO_PATH}
-                className="px-5 py-2 text-xs font-bold rounded-xl bg-red-600 hover:bg-red-700 text-white shadow-md shadow-red-600/20 transition-all"
+                className="px-3.5 sm:px-5 py-2 whitespace-nowrap text-xs font-bold rounded-xl bg-red-600 hover:bg-red-700 text-white shadow-md shadow-red-600/20 transition-all"
               >
                 Request a demo
               </Link>

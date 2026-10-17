@@ -82,9 +82,10 @@
   max-width: min(250px, calc(100vw - 32px));
   padding: 8px 12px;
   border-radius: 14px;
-  background: #15110f;
-  color: #f6e7c8;
-  border: 1px solid rgb(255 255 255 / 0.18);
+  /* A café theme dresses the bubble through these (PageMascot `dress`); CAOS colours otherwise. */
+  background: var(--m-bubble-bg, #15110f);
+  color: var(--m-bubble-fg, #f6e7c8);
+  border: 1px solid var(--m-bubble-border, rgb(255 255 255 / 0.18));
   font-size: 13px;
   font-weight: 700;
   line-height: 1.3;
@@ -109,6 +110,35 @@
 .caos-mascot__bubble[data-open='true'] {
   opacity: 1;
   transform: translateY(0) scale(1);
+}
+
+/* Bubble actions (a message's `actions`, at most 2). With the hide button, the only parts of the
+   mascot that take taps, and only while the bubble is open. Colours are the bubble's own, swapped,
+   so a theme that passes contrast for the bubble passes for its buttons too. */
+.caos-mascot__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+.caos-mascot__action {
+  min-height: 32px;
+  padding: 4px 14px;
+  border-radius: 9999px;
+  border: 0;
+  background: var(--m-bubble-fg, #f6e7c8);
+  color: var(--m-bubble-bg, #15110f);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  pointer-events: none;
+}
+.caos-mascot__bubble[data-open='true'] .caos-mascot__action {
+  pointer-events: auto;
+}
+.caos-mascot__action:focus-visible {
+  outline: 3px solid var(--m-bubble-fg, #f6e7c8);
+  outline-offset: 2px;
 }
 
 .caos-mascot__hide {
@@ -219,4 +249,13 @@
 }
 .caos-mascot[data-reduced='true'] .caos-mascot__poster {
   animation: none;
+}
+
+/* Phones: a smaller bubble, so a docked mascot's message covers less of the page under it. */
+@media (max-width: 767px) {
+  .caos-mascot__bubble {
+    max-width: min(210px, calc(100vw - 32px));
+    padding: 6px 10px;
+    font-size: 12px;
+  }
 }

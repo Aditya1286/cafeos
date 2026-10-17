@@ -7,6 +7,16 @@ export const phoneKeyOf = (phone: string | undefined | null): string => {
   return digits.length >= 10 ? digits.slice(-10) : '';
 };
 
+/**
+ * Matches a stored phone however it was typed (9876543210, +91 98765 43210, 919876543210, 098765 43210, …) given its
+ * 10-digit key. It builds a regex from `key`, so anything that is not exactly ten digits (an empty or non-numeric
+ * string, a regex fragment) returns a pattern that matches nothing, never one built from untrusted text.
+ */
+export const phoneMatchPattern = (key: string): RegExp => {
+  if (typeof key !== 'string' || !/^\d{10}$/.test(key)) return /(?!)/; // never matches
+  return new RegExp(`^\\D*(?:(?:\\+?91|0)\\D*)?${key.split('').join('\\D*')}\\D*$`);
+};
+
 export const isSamePhone = (a: string | undefined | null, b: string | undefined | null): boolean => {
   const key = phoneKeyOf(a);
   return !!key && key === phoneKeyOf(b);

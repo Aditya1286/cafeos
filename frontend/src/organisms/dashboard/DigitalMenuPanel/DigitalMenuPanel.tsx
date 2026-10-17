@@ -1,5 +1,16 @@
 import { useMemo, useState } from 'react';
-import { Plus, EyeOff, RotateCcw, Pencil, Trash2, Search, UtensilsCrossed, X } from 'lucide-react';
+import {
+  Plus,
+  EyeOff,
+  RotateCcw,
+  Pencil,
+  Trash2,
+  Search,
+  UtensilsCrossed,
+  X,
+  ScanText,
+  Star,
+} from 'lucide-react';
 import { formatCurrency } from '@/utils/money';
 import VegMark from '@/atoms/VegMark';
 import EmptyState from '@/atoms/EmptyState';
@@ -8,11 +19,19 @@ interface DigitalMenuPanelProps {
   products: any[];
   categories: any[];
   onAddItem: () => void;
+  /** Opens "Upload Menu" — read a photographed printed menu into categories + items. */
+  onUploadMenu: () => void;
   onEditItem: (product: any) => void;
   onRemoveItem: (productId: string) => void;
   onRestoreItem: (productId: string) => void;
   onDeleteItem: (product: any) => void;
+  /** Café identity is on for this café: each dish gets a House special toggle (at most 3). */
+  houseSpecialsEnabled?: boolean;
+  /** Mark or unmark a dish. The API's limit message is shown by the caller when it refuses. */
+  onToggleHouseSpecial?: (productId: string, on: boolean) => void;
 }
+
+const HOUSE_SPECIAL_MAX = 3;
 
 const ALL = 'ALL';
 const UNCATEGORIZED = 'UNCATEGORIZED';
@@ -29,10 +48,13 @@ export const DigitalMenuPanel = ({
   products,
   categories,
   onAddItem,
+  onUploadMenu,
   onEditItem,
   onRemoveItem,
   onRestoreItem,
   onDeleteItem,
+  houseSpecialsEnabled = false,
+  onToggleHouseSpecial,
 }: DigitalMenuPanelProps) => {
   const [query, setQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>(ALL);
@@ -70,9 +92,11 @@ export const DigitalMenuPanel = ({
   }, [groups, activeCategory, query]);
 
   const hiddenCount = products.filter((p) => p.isAvailable === false).length;
+  const houseSpecialCount = products.filter((p) => p.isHouseSpecial).length;
   const summary = [
     `${products.length} item${products.length === 1 ? '' : 's'}`,
     hiddenCount > 0 && `${hiddenCount} hidden`,
+    houseSpecialsEnabled && `${houseSpecialCount} of ${HOUSE_SPECIAL_MAX} house specials`,
     `${categories.length} categor${categories.length === 1 ? 'y' : 'ies'}`,
   ]
     .filter(Boolean)
@@ -85,21 +109,29 @@ export const DigitalMenuPanel = ({
           <h2 className="text-lg font-black text-slate-900">Your Menu</h2>
           <p className="text-xs text-slate-500 font-medium">{summary}</p>
         </div>
-        <button
-          onClick={onAddItem}
-          className="flex items-center gap-1.5 px-3.5 sm:px-4 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-extrabold text-xs shadow-md shadow-brand-500/20 transition-all shrink-0"
-        >
-          <Plus className="w-4 h-4" /> Add Item
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={onUploadMenu}
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 font-extrabold text-xs shadow-sm transition-all"
+          >
+            <ScanText className="w-4 h-4" /> Upload Menu
+          </button>
+          <button
+            onClick={onAddItem}
+            className="flex items-center gap-1.5 px-3.5 sm:px-4 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-extrabold text-xs shadow-md shadow-brand-500/20 transition-all"
+          >
+            <Plus className="w-4 h-4" /> Add Item
+          </button>
+        </div>
       </div>
 
       {products.length === 0 ? (
         <EmptyState
           icon={<UtensilsCrossed className="w-6 h-6" />}
           title="Your menu is empty"
-          description="Add your first dish — customers see it as soon as you save."
-          actionLabel="Add Menu Item"
-          onAction={onAddItem}
+          description="Already have a printed menu? Upload a photo of it and we'll fill in your sections, dishes and prices — or add dishes one by one."
+          actionLabel="Upload Menu Photo"
+          onAction={onUploadMenu}
         />
       ) : (
         <>
@@ -181,6 +213,8 @@ export const DigitalMenuPanel = ({
                           p.isAvailable === false ? onRestoreItem(p._id) : onRemoveItem(p._id)
                         }
                         onDelete={() => onDeleteItem(p)}
+                        showHouseSpecial={houseSpecialsEnabled && !!onToggleHouseSpecial}
+                        onToggleHouseSpecial={() => onToggleHouseSpecial?.(p._id, !p.isHouseSpecial)}
                       />
                     ))}
                   </ul>
@@ -199,10 +233,19 @@ interface MenuManageRowProps {
   onEdit: () => void;
   onToggle: () => void;
   onDelete: () => void;
+  showHouseSpecial: boolean;
+  onToggleHouseSpecial: () => void;
 }
 
 /** One compact item row: tap it to edit; hide/show and delete sit on the right. */
-const MenuManageRow = ({ product: p, onEdit, onToggle, onDelete }: MenuManageRowProps) => {
+const MenuManageRow = ({
+  product: p,
+  onEdit,
+  onToggle,
+  onDelete,
+  showHouseSpecial,
+  onToggleHouseSpecial,
+}: MenuManageRowProps) => {
   const hidden = p.isAvailable === false;
   const [imageFailed, setImageFailed] = useState(false);
   const iconBtn = 'w-9 h-9 rounded-xl flex items-center justify-center transition-colors shrink-0';
@@ -255,6 +298,22 @@ const MenuManageRow = ({ product: p, onEdit, onToggle, onDelete }: MenuManageRow
         </div>
       </button>
 
+      {showHouseSpecial && (
+        <button
+          type="button"
+          onClick={onToggleHouseSpecial}
+          aria-label={`House special: ${p.name}`}
+          aria-pressed={!!p.isHouseSpecial}
+          title={p.isHouseSpecial ? 'House special (tap to remove)' : 'Make a house special'}
+          className={`${iconBtn} ${
+            p.isHouseSpecial
+              ? 'bg-brand-50 text-brand-600 hover:bg-brand-100'
+              : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'
+          }`}
+        >
+          <Star className={`w-4 h-4 ${p.isHouseSpecial ? 'fill-brand-500' : ''}`} />
+        </button>
+      )}
       <button
         type="button"
         onClick={onEdit}
@@ -270,7 +329,7 @@ const MenuManageRow = ({ product: p, onEdit, onToggle, onDelete }: MenuManageRow
           onClick={onToggle}
           aria-label={`Show ${p.name} on the menu again`}
           title="Show on menu"
-          className={`${iconBtn} text-emerald-600 hover:bg-emerald-50`}
+          className={`${iconBtn} text-brand-600 hover:bg-brand-50`}
         >
           <RotateCcw className="w-4 h-4" />
         </button>

@@ -26,6 +26,15 @@ export interface IOrderItemSnapshot {
   notes?: string;
 }
 
+// One add-on to an order already placed (e.g. a pairing the guest tapped while waiting). The order's
+// own `items` and totals already include these lines; this list records what was added, when and from where.
+export interface IOrderAmendment {
+  at: Date;
+  source: 'pairing' | 'staff';
+  items: IOrderItemSnapshot[];
+  amountPaise: number; // what this amendment added to the order's total, in paise
+}
+
 export interface IOrderTimeline {
   placedAt?: Date;
   acceptedAt?: Date; // legacy: stamped by the old CONFIRMED step; new orders only get preparingAt
@@ -49,6 +58,7 @@ export interface IOrder extends Document {
   customerEmail?: string;
   source: OrderSource;
   items: IOrderItemSnapshot[];
+  amendments: IOrderAmendment[];
   subtotalPaise: number;
   discountPaise: number;
   taxPaise: number;
@@ -86,6 +96,10 @@ export interface IOrder extends Document {
   refundReason?: string;
   refundedAt?: Date;
   refundedByUserId?: mongoose.Types.ObjectId;
+  // Café identity, the tracker's daily question (services/dailyQuestion.service.ts): the question this
+  // order was given, and the one it answered. One answer per order.
+  askedQuestionId?: string;
+  answeredQuestionId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -105,6 +119,16 @@ const OrderItemSchema = new Schema<IOrderItemSnapshot>({
   itemTotalPaise: { type: Number, required: true },
   notes: { type: String, default: '' }
 });
+
+const OrderAmendmentSchema = new Schema<IOrderAmendment>(
+  {
+    at: { type: Date, required: true, default: Date.now },
+    source: { type: String, enum: ['pairing', 'staff'], required: true },
+    items: { type: [OrderItemSchema], default: [] },
+    amountPaise: { type: Number, required: true }
+  },
+  { _id: false }
+);
 
 const TimelineSchema = new Schema<IOrderTimeline>({
   placedAt: { type: Date, default: Date.now },
@@ -133,6 +157,7 @@ const OrderSchema = new Schema<IOrder>(
       default: 'QR_TABLE'
     },
     items: [OrderItemSchema],
+    amendments: { type: [OrderAmendmentSchema], default: [] },
     subtotalPaise: { type: Number, required: true },
     discountPaise: { type: Number, default: 0 },
     taxPaise: { type: Number, required: true, default: 0 },
@@ -174,7 +199,9 @@ const OrderSchema = new Schema<IOrder>(
     refundRequestedAt: { type: Date },
     refundReason: { type: String, default: '' },
     refundedAt: { type: Date },
-    refundedByUserId: { type: Schema.Types.ObjectId, ref: 'User' }
+    refundedByUserId: { type: Schema.Types.ObjectId, ref: 'User' },
+    askedQuestionId: { type: String },
+    answeredQuestionId: { type: String }
   },
   // getters: true so the orderStatus getter also applies when an order is sent to a client.
   { timestamps: true, toJSON: { getters: true }, toObject: { getters: true } }

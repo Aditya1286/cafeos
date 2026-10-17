@@ -6,7 +6,7 @@ import morgan from 'morgan';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import cookieParser from 'cookie-parser';
-import { config } from './config';
+import { runtime, server } from './config';
 import { APP_NAME } from './config/constants';
 import { connectDB } from './database';
 import { backfillUserPhoneKeys } from './database/migrations/backfillUserPhoneKeys';
@@ -45,14 +45,14 @@ const httpServer = http.createServer(app);
 app.set('trust proxy', 'loopback, linklocal, uniquelocal');
 
 // Initialize WebSockets
-initSocketServer(httpServer, config.frontendUrl);
+initSocketServer(httpServer, server.frontendUrl);
 
 // A single abusive client shouldn't be able to take down the whole
 // multi-tenant process — applied ahead of routes, exempting /health so
 // uptime probes never get throttled.
 const apiRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: config.nodeEnv === 'production' ? 300 : 10000,
+  max: runtime.nodeEnv === 'production' ? 300 : 10000,
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many requests. Please try again later.' } }
@@ -61,7 +61,7 @@ const apiRateLimiter = rateLimit({
 // Middleware Setup
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors({
-  origin: [config.frontendUrl, 'http://localhost:5173', 'http://localhost:3000'],
+  origin: [server.frontendUrl, 'http://localhost:5173', 'http://localhost:3000'],
   credentials: true
 }));
 app.use(compression());
@@ -70,7 +70,7 @@ app.use(compression());
 app.use(express.json({ limit: '8mb' }));
 app.use(express.urlencoded({ extended: true, limit: '8mb' }));
 app.use(cookieParser());
-app.use(morgan(config.nodeEnv === 'production' ? 'combined' : 'dev', {
+app.use(morgan(runtime.nodeEnv === 'production' ? 'combined' : 'dev', {
   stream: { write: (message: string) => logger.info(message.trim()) }
 }));
 app.use('/api/v1', apiRateLimiter);
@@ -117,7 +117,7 @@ const startServer = async () => {
   // Confirms SMEPay checkouts whose customer never came back to the return page.
   startCheckoutSweep();
 
-  const port = Number(config.port) || 5000;
+  const port = server.port;
 
   httpServer.on('error', (err: any) => {
     logger.error({ err }, 'HTTP Server Error');

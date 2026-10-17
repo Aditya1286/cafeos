@@ -8,6 +8,8 @@ import { KDS_ANIMATE_MAX } from '@/constants/kitchen';
 import { WaitBadge } from '@/molecules/WaitBadge';
 import { KdsOrderTicketCompact } from './KdsOrderTicketCompact';
 import { KdsWallTicket } from './KdsWallTicket';
+import AddedMarker from '@/atoms/AddedMarker';
+import { amendedMarks } from '@/utils/amendedItems';
 
 interface KdsColumnProps extends KdsBoardViewProps {
   status: KdsStatus;
@@ -58,7 +60,7 @@ export const KdsColumn = ({
       className={`bg-white rounded-3xl border border-slate-200 shadow-sm flex flex-col overflow-hidden ${wall ? 'h-full min-h-0' : scrollable ? 'h-[600px]' : ''}`}
     >
       <div
-        className={`px-4 py-3.5 ${sc.badgeBg} border-b ${sc.borderAccent} border-t-4 flex items-center justify-between`}
+        className="px-4 py-3.5 bg-slate-50 border-b border-slate-200 border-t-4 border-t-brand-500 flex items-center justify-between"
       >
         <div className="flex items-center gap-2">
           {columnOrders.length > 0 && (
@@ -67,11 +69,11 @@ export const KdsColumn = ({
               checked={allSelected}
               onChange={() => onToggleSelectAll(status)}
               title={`Select all ${sc.label.toLowerCase()} orders`}
-              className="w-3.5 h-3.5 rounded accent-blue-600 cursor-pointer"
+              className="w-3.5 h-3.5 rounded accent-brand-600 cursor-pointer"
             />
           )}
           <span className={`w-2.5 h-2.5 rounded-full ${sc.dot}`} />
-          <span className={`text-xs font-black ${sc.color} uppercase tracking-wider`}>
+          <span className="text-xs font-black text-slate-800 uppercase tracking-wider">
             {sc.label}
           </span>
         </div>
@@ -87,7 +89,7 @@ export const KdsColumn = ({
             </button>
           )}
           <span
-            className={`min-w-6 h-6 px-1.5 rounded-full bg-white border ${sc.badgeText} text-xs font-black flex items-center justify-center shadow-xs`}
+            className={`min-w-6 h-6 px-1.5 rounded-full bg-white border border-slate-200 text-slate-700 text-xs font-black flex items-center justify-center shadow-xs`}
           >
             {columnOrders.length}
           </span>
@@ -95,8 +97,8 @@ export const KdsColumn = ({
       </div>
 
       {selectedInColumn > 0 && (
-        <div className="px-4 py-2 bg-blue-50 border-b border-blue-100 flex items-center justify-between gap-2">
-          <span className="text-[11px] font-black text-blue-700">{selectedInColumn} selected</span>
+        <div className="px-4 py-2 bg-brand-50 border-b border-brand-100 flex items-center justify-between gap-2">
+          <span className="text-[11px] font-black text-brand-700">{selectedInColumn} selected</span>
           <div className="flex items-center gap-2">
             <button
               onClick={() => onClearSelection(status)}
@@ -106,7 +108,7 @@ export const KdsColumn = ({
             </button>
             <button
               onClick={() => onOpenBulkMove(status)}
-              className="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-black flex items-center gap-1 transition-colors"
+              className="px-2.5 py-1 rounded-lg bg-brand-600 hover:bg-brand-700 text-white text-[11px] font-black flex items-center gap-1 transition-colors"
             >
               <CheckSquare className="w-3 h-3" />
               <span>{bulkCopy.button}</span>
@@ -176,7 +178,7 @@ export const KdsColumn = ({
                 exit={{ opacity: 0, scale: 0.95 }}
                 className={`bg-white rounded-2xl border shadow-sm hover:shadow-md hover:border-brand-300 transition-all p-4 space-y-3 ${
                   isSelected
-                    ? 'border-blue-400 ring-4 ring-blue-100'
+                    ? 'border-brand-400 ring-4 ring-brand-100'
                     : isNew
                       ? 'border-brand-400 ring-4 ring-brand-100'
                       : 'border-slate-200'
@@ -188,7 +190,7 @@ export const KdsColumn = ({
                       type="checkbox"
                       checked={isSelected}
                       onChange={() => onToggleSelected(targetOrderId)}
-                      className="w-3.5 h-3.5 rounded accent-blue-600 cursor-pointer mr-0.5"
+                      className="w-3.5 h-3.5 rounded accent-brand-600 cursor-pointer mr-0.5"
                     />
                     <span className="text-xs font-black text-brand-600 bg-brand-50 border border-brand-200 px-2.5 py-0.5 rounded-lg">
                       {order.orderId || order.orderNumber}
@@ -239,6 +241,7 @@ export const KdsColumn = ({
                       <span>
                         <strong className="text-slate-900 font-extrabold">{it.quantity}×</strong>{' '}
                         {it.name}
+                        <AddedMarker mark={amendedMarks(order)[i]} />
                       </span>
                       <span className="font-extrabold text-slate-900">
                         {formatCurrency(it.itemTotalPaise || it.pricePaise * it.quantity)}
@@ -248,7 +251,7 @@ export const KdsColumn = ({
                 </div>
 
                 <div className="flex items-center justify-between pt-1">
-                  <div className="text-xs font-black text-emerald-600">
+                  <div className="text-xs font-black text-slate-900">
                     {formatCurrency(order.totalAmountPaise)}
                   </div>
 
@@ -289,9 +292,9 @@ export const KdsColumn = ({
         {columnOrders.length === 0 && (
           <div className="col-span-full flex flex-col items-center justify-center py-20 text-center space-y-2">
             <div
-              className={`w-12 h-12 rounded-2xl ${sc.badgeBg} border ${sc.badgeText} flex items-center justify-center shadow-xs`}
+              className="w-12 h-12 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center shadow-xs"
             >
-              <CheckCircle2 className={`w-6 h-6 ${sc.color} opacity-60`} />
+              <CheckCircle2 className="w-6 h-6 text-slate-400" />
             </div>
             <div className="text-xs font-black text-slate-400">
               No {sc.label.toLowerCase()} orders

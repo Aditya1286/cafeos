@@ -10,7 +10,7 @@ services:
     # MongoDB is no longer part of this stack — it's a separate connection the backend
     # reaches over the network (self-hosted, Atlas, a replica set, etc.). The backend
     # reads no .env file and no other env vars at all — every setting (Mongo host/port/
-    # db name, replica set, JWT secret, ...) comes from backend/config.production.json,
+    # db name, replica set, JWT secret, ...) comes from backend/src/config/config.production.json,
     # baked into the image (see backend/Dockerfile and src/config/index.ts). Edit that
     # file — not this one — to point at a real Mongo instance before deploying for real.
     environment:

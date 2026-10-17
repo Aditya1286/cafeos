@@ -9,6 +9,7 @@ import {
   Undo2,
   LifeBuoy,
   Inbox,
+  Sparkles,
   LucideIcon,
 } from 'lucide-react';
 import { FEES_AND_PAYMENTS_ENABLED } from '@/constants/features';
@@ -103,6 +104,7 @@ export const buildNavItems = ({
   },
   { id: 'analytics', label: 'Reports', icon: BarChart3 },
   { id: 'kitchen', label: 'Live Kitchens', icon: Flame },
+  { id: 'identity', label: 'Café Identity', icon: Sparkles },
   {
     id: 'plans',
     label: 'Plans',

@@ -17,6 +17,10 @@ interface UseOtpVerificationResult {
   // sending it via the real MSG91 widget). Undefined in live mode, where the widget handles
   // delivery and the code never leaves MSG91.
   devOtp: string | null;
+  // Proof that this device just passed a fresh OTP for `phone`, from the last successful verify.
+  // Null when the phone was already verified (no OTP was needed), for other purposes, or after a
+  // reset. Send it with the order so the café can recognise this guest next time.
+  deviceProof: string | null;
   sendOtp: () => Promise<void>;
   verifyOtp: () => Promise<void>;
   reset: () => void;
@@ -28,7 +32,7 @@ const RESEND_COOLDOWN_SECONDS = 30;
 /**
  * Self-contained OTP verification flow. In live mode this is backed by the MSG91 OTP Widget
  * (send + verify happen client-side, directly against MSG91 — our backend only checks the
- * resulting token). In mock mode (backend's config.otpMode, default outside production) it
+ * resulting token). In mock mode (backend's otp.mode in config.<env>.json) it
  * talks to our own mock REST endpoints instead, so local dev works without widget credentials
  * or spending SMS credits — which mode to use comes from the backend (/otp/status), not a
  * frontend flag, so it can never drift from what the server will actually accept.
@@ -61,6 +65,7 @@ export function useOtpVerification(
   const [error, setError] = useState<string | null>(null);
   const [resendSecondsLeft, setResendSecondsLeft] = useState(0);
   const [devOtp, setDevOtp] = useState<string | null>(null);
+  const [deviceProof, setDeviceProof] = useState<string | null>(null);
   const modeRef = useRef<'mock' | 'live'>('live');
 
   const reset = useCallback(() => {
@@ -70,6 +75,7 @@ export function useOtpVerification(
     setError(null);
     setResendSecondsLeft(0);
     setDevOtp(null);
+    setDeviceProof(null);
   }, []);
 
   // Countdown ticks every second while a cooldown is active.
@@ -145,6 +151,7 @@ export function useOtpVerification(
         const res = await otpService.verify(phone, otpCode.trim(), purpose);
         if (res.success) {
           setOtpVerified(true);
+          setDeviceProof(res.deviceProof ?? null);
           setDevOtp(null);
         } else {
           setError(res.message || 'Incorrect OTP. Please try again.');
@@ -161,6 +168,7 @@ export function useOtpVerification(
       const res = await otpService.confirmToken(phone, accessToken, purpose);
       if (res.success) {
         setOtpVerified(true);
+        setDeviceProof(res.deviceProof ?? null);
       } else {
         setError(res.message || 'Incorrect OTP. Please try again.');
       }
@@ -182,6 +190,7 @@ export function useOtpVerification(
     resendSecondsLeft,
     canResend: resendSecondsLeft === 0,
     devOtp,
+    deviceProof,
     sendOtp,
     verifyOtp,
     reset,

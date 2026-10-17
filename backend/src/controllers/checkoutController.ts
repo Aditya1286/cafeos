@@ -9,7 +9,11 @@ import * as checkoutSettingsService from '../services/checkoutSettings.service';
 export const startCheckoutPublic = async (req: Request, res: Response) => {
   try {
     const { qrToken, businessSlug, customerName, customerPhone, items, notes } = req.body;
-    const data = await checkoutService.startCheckout({ qrToken, businessSlug, customerName, customerPhone, items, notes });
+    // Proof of who is paying (café identity): the order this checkout places later earns a guest pass.
+    const data = await checkoutService.startCheckout(
+      { qrToken, businessSlug, customerName, customerPhone, items, notes },
+      { deviceProof: req.body.deviceProof, guestPass: req.get('X-Guest-Token') }
+    );
     return res.status(201).json({ success: true, data });
   } catch (error: any) {
     return handleServiceError(res, error);

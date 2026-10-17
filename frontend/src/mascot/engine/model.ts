@@ -1,4 +1,28 @@
-import * as THREE from 'three';
+import {
+  BackSide,
+  BoxGeometry,
+  BufferGeometry,
+  CanvasTexture,
+  CatmullRomCurve3,
+  CylinderGeometry,
+  DataTexture,
+  DoubleSide,
+  FrontSide,
+  Float32BufferAttribute,
+  Group,
+  type Material,
+  Mesh,
+  MeshBasicMaterial,
+  MeshToonMaterial,
+  NearestFilter,
+  PlaneGeometry,
+  RedFormat,
+  type Side,
+  SphereGeometry,
+  SRGBColorSpace,
+  TubeGeometry,
+  Vector3,
+} from 'three';
 
 // The CAOS hamster, built from a handful of coordinated primitives and drawn in the logo's flat,
 // outlined style: cream face, cheeks and ears, a dark charcoal crown, big round black eyes under
@@ -19,28 +43,30 @@ export const PALETTE = {
 } as const;
 
 export interface HamsterRig {
-  group: THREE.Group;
+  group: Group;
   /** Pivots at the base of the torso: leaning and lifting move the whole figure from here. */
-  bodyPivot: THREE.Group;
-  head: THREE.Group;
-  hat: THREE.Group;
-  earL: THREE.Group;
-  earR: THREE.Group;
-  browL: THREE.Mesh;
-  browR: THREE.Mesh;
-  lidL: THREE.Group;
-  lidR: THREE.Group;
+  bodyPivot: Group;
+  head: Group;
+  hat: Group;
+  earL: Group;
+  earR: Group;
+  browL: Mesh;
+  browR: Mesh;
+  lidL: Group;
+  lidR: Group;
   /** Eyeball + highlight; offset to make the mascot look around. */
-  eyeL: THREE.Group;
-  eyeR: THREE.Group;
-  whiskersL: THREE.Group;
-  whiskersR: THREE.Group;
-  pawL: THREE.Mesh;
-  pawR: THREE.Mesh;
-  qr: THREE.Group;
-  mouth: THREE.Group;
-  cheekL: THREE.Mesh;
-  cheekR: THREE.Mesh;
+  eyeL: Group;
+  eyeR: Group;
+  whiskersL: Group;
+  whiskersR: Group;
+  pawL: Mesh;
+  pawR: Mesh;
+  qr: Group;
+  /** The hat band; its material's colour is the café theme's `mascotBand` (default brand red). */
+  band: Mesh<BufferGeometry, MeshToonMaterial>;
+  mouth: Group;
+  cheekL: Mesh;
+  cheekR: Mesh;
   /** Free every geometry, material and texture the rig created. */
   dispose(): void;
 }
@@ -60,17 +86,17 @@ export const REST = {
 } as const;
 const OUTLINE = 0.045;
 
-const makeToonGradient = (): THREE.DataTexture => {
-  const tex = new THREE.DataTexture(new Uint8Array([105, 165, 215, 255]), 4, 1, THREE.RedFormat);
-  tex.minFilter = THREE.NearestFilter;
-  tex.magFilter = THREE.NearestFilter;
+const makeToonGradient = (): DataTexture => {
+  const tex = new DataTexture(new Uint8Array([105, 165, 215, 255]), 4, 1, RedFormat);
+  tex.minFilter = NearestFilter;
+  tex.magFilter = NearestFilter;
   tex.generateMipmaps = false;
   tex.needsUpdate = true;
   return tex;
 };
 
 /** A deterministic QR-like pattern (finder squares + pseudo-random modules). Decorative only. */
-const makeQrTexture = (): THREE.CanvasTexture => {
+const makeQrTexture = (): CanvasTexture => {
   const modules = 17;
   const px = 8;
   const canvas = document.createElement('canvas');
@@ -104,24 +130,36 @@ const makeQrTexture = (): THREE.CanvasTexture => {
     finder(modules - 7, 0);
     finder(0, modules - 7);
   }
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  tex.magFilter = THREE.NearestFilter;
+  const tex = new CanvasTexture(canvas);
+  tex.colorSpace = SRGBColorSpace;
+  tex.magFilter = NearestFilter;
   return tex;
 };
 
-const starShape = (outer: number, inner: number): THREE.Shape => {
-  const shape = new THREE.Shape();
-  for (let i = 0; i < 8; i++) {
+/** The hat's star as a triangle fan from its centre. The outline is star-shaped around the centre,
+ * so a fan covers exactly the same area as a general triangulation, without pulling three's
+ * Shape/Path/Curve/earcut code (about 7 KB gzip) into the engine chunk. */
+const starGeometry = (outer: number, inner: number): BufferGeometry => {
+  const points = 8;
+  const positions = [0, 0, 0];
+  for (let i = 0; i < points; i++) {
     const r = i % 2 === 0 ? outer : inner;
-    const a = (i / 8) * Math.PI * 2 + Math.PI / 2;
-    const x = Math.cos(a) * r;
-    const y = Math.sin(a) * r;
-    if (i === 0) shape.moveTo(x, y);
-    else shape.lineTo(x, y);
+    const a = (i / points) * Math.PI * 2 + Math.PI / 2;
+    positions.push(Math.cos(a) * r, Math.sin(a) * r, 0);
   }
-  shape.closePath();
-  return shape;
+  const index: number[] = [];
+  for (let i = 1; i <= points; i++) index.push(0, i, i === points ? 1 : i + 1);
+  const geometry = new BufferGeometry();
+  geometry.setAttribute('position', new Float32BufferAttribute(positions, 3));
+  geometry.setAttribute(
+    'normal',
+    new Float32BufferAttribute(
+      new Array((points + 1) * 3).fill(0).map((_, i) => (i % 3 === 2 ? 1 : 0)),
+      3,
+    ),
+  );
+  geometry.setIndex(index);
+  return geometry;
 };
 
 export const buildHamster = (): HamsterRig => {
@@ -132,11 +170,10 @@ export const buildHamster = (): HamsterRig => {
   };
 
   const gradient = track(makeToonGradient());
-  const toon = (color: number) =>
-    track(new THREE.MeshToonMaterial({ color, gradientMap: gradient }));
-  const flat = (color: number, side: THREE.Side = THREE.FrontSide) =>
-    track(new THREE.MeshBasicMaterial({ color, side }));
-  const inkHull = track(new THREE.MeshBasicMaterial({ color: PALETTE.ink, side: THREE.BackSide }));
+  const toon = (color: number) => track(new MeshToonMaterial({ color, gradientMap: gradient }));
+  const flat = (color: number, side: Side = FrontSide) =>
+    track(new MeshBasicMaterial({ color, side }));
+  const inkHull = track(new MeshBasicMaterial({ color: PALETTE.ink, side: BackSide }));
 
   const cream = toon(PALETTE.cream);
   const tan = toon(PALETTE.tan);
@@ -145,25 +182,24 @@ export const buildHamster = (): HamsterRig => {
   const noseMat = toon(PALETTE.nose);
   const pink = toon(PALETTE.pink);
   const ink = toon(PALETTE.ink);
-  const red = toon(PALETTE.red);
 
-  const mesh = (geometry: THREE.BufferGeometry, material: THREE.Material, outlined = false) => {
+  const mesh = (geometry: BufferGeometry, material: Material, outlined = false) => {
     track(geometry);
-    const m = new THREE.Mesh(geometry, material);
+    const m = new Mesh(geometry, material);
     if (outlined) {
-      const hull = new THREE.Mesh(geometry, inkHull);
+      const hull = new Mesh(geometry, inkHull);
       hull.scale.setScalar(1 + OUTLINE);
       m.add(hull);
     }
     return m;
   };
-  const sphere = (r: number, material: THREE.Material, outlined = true, seg = 28) =>
-    mesh(new THREE.SphereGeometry(r, seg, Math.round(seg * 0.75)), material, outlined);
+  const sphere = (r: number, material: Material, outlined = true, seg = 28) =>
+    mesh(new SphereGeometry(r, seg, Math.round(seg * 0.75)), material, outlined);
 
-  const group = new THREE.Group();
-  const bodyPivot = new THREE.Group();
+  const group = new Group();
+  const bodyPivot = new Group();
   bodyPivot.position.set(0, -1.5, 0);
-  const figure = new THREE.Group();
+  const figure = new Group();
   figure.position.set(0, 1.5, 0);
   bodyPivot.add(figure);
   group.add(bodyPivot);
@@ -175,12 +211,9 @@ export const buildHamster = (): HamsterRig => {
   figure.add(torso);
 
   const qrTex = track(makeQrTexture());
-  const qr = new THREE.Group();
-  const qrBack = mesh(new THREE.BoxGeometry(0.62, 0.62, 0.05), flat(PALETTE.white), true);
-  const qrFace = mesh(
-    new THREE.PlaneGeometry(0.54, 0.54),
-    track(new THREE.MeshBasicMaterial({ map: qrTex })),
-  );
+  const qr = new Group();
+  const qrBack = mesh(new BoxGeometry(0.62, 0.62, 0.05), flat(PALETTE.white), true);
+  const qrFace = mesh(new PlaneGeometry(0.54, 0.54), track(new MeshBasicMaterial({ map: qrTex })));
   qrFace.position.z = 0.03;
   qr.add(qrBack, qrFace);
   qr.position.set(0, -0.78, 0.92);
@@ -198,7 +231,7 @@ export const buildHamster = (): HamsterRig => {
   const pawR = makePaw(1);
 
   // ── Head ───────────────────────────────────────────────────────────────────────────────────
-  const head = new THREE.Group();
+  const head = new Group();
   head.position.set(0, HEAD_PIVOT_Y, 0);
   figure.add(head);
   const hy = (y: number) => y - HEAD_PIVOT_Y;
@@ -210,12 +243,12 @@ export const buildHamster = (): HamsterRig => {
 
   // Dark crown: a charcoal cap hugging the top of the skull and dropping into a brow line over the
   // eyes, like the logo's dark head fur under the hat.
-  const crown = mesh(new THREE.SphereGeometry(1.012, 36, 14, 0, Math.PI * 2, 0, 1.0), fur);
+  const crown = mesh(new SphereGeometry(1.012, 36, 14, 0, Math.PI * 2, 0, 1.0), fur);
   crown.scale.set(1.25, 1.0, 1.05);
   crown.position.copy(skull.position);
   head.add(crown);
 
-  const cheekGeo = new THREE.SphereGeometry(0.58, 28, 20);
+  const cheekGeo = new SphereGeometry(0.58, 28, 20);
   const makeCheek = (sx: number) => {
     const c = mesh(cheekGeo, cream, true);
     c.position.set(sx * 0.82, hy(-0.12), 0.38);
@@ -236,7 +269,7 @@ export const buildHamster = (): HamsterRig => {
 
   // Ears: cream with a soft inner disc, tucked just below the hat's brim.
   const makeEar = (sx: number) => {
-    const ear = new THREE.Group();
+    const ear = new Group();
     ear.position.set(sx * 1.08, hy(0.9), -0.05);
     const outer = sphere(0.36, cream);
     outer.scale.set(1, 1, 0.55);
@@ -254,16 +287,16 @@ export const buildHamster = (): HamsterRig => {
   // Eyes: big round black eyes with a bright highlight, like the logo's. The lid is a cap that
   // closes from the top; tilted far back it is hidden inside the head (wide open). The eyeball
   // group is offset by the animator so the mascot can glance around.
-  const eyeGeo = new THREE.SphereGeometry(0.235, 24, 16);
-  const glintGeo = new THREE.SphereGeometry(0.058, 10, 8);
-  const glint2Geo = new THREE.SphereGeometry(0.03, 8, 6);
-  const lidGeo = new THREE.SphereGeometry(0.275, 24, 10, 0, Math.PI * 2, 0, Math.PI / 2);
+  const eyeGeo = new SphereGeometry(0.235, 24, 16);
+  const glintGeo = new SphereGeometry(0.058, 10, 8);
+  const glint2Geo = new SphereGeometry(0.03, 8, 6);
+  const lidGeo = new SphereGeometry(0.275, 24, 10, 0, Math.PI * 2, 0, Math.PI / 2);
   const glintMat = flat(PALETTE.white);
   const makeEye = (sx: number) => {
-    const pivot = new THREE.Group();
+    const pivot = new Group();
     pivot.position.set(sx * 0.5, hy(0.46), 0.99);
     pivot.rotation.y = sx * 0.22;
-    const eyeball = new THREE.Group();
+    const eyeball = new Group();
     const eye = mesh(eyeGeo, ink);
     eye.scale.set(0.95, 1.08, 0.72);
     const glint = mesh(glintGeo, glintMat);
@@ -271,7 +304,7 @@ export const buildHamster = (): HamsterRig => {
     const glint2 = mesh(glint2Geo, glintMat);
     glint2.position.set(sx * 0.07, -0.08, 0.15);
     eyeball.add(eye, glint, glint2);
-    const lid = new THREE.Group();
+    const lid = new Group();
     const lidMesh = mesh(lidGeo, cream);
     lidMesh.scale.set(1, 1, 0.74);
     lid.add(lidMesh);
@@ -284,7 +317,7 @@ export const buildHamster = (): HamsterRig => {
 
   // Brows: thick ink bars that slant inward-down (the logo's mischievous scowl). Expressions tilt
   // and lift them; the left stays the "serious" one.
-  const browGeo = new THREE.BoxGeometry(0.56, 0.15, 0.09);
+  const browGeo = new BoxGeometry(0.56, 0.15, 0.09);
   const makeBrow = (sx: number) => {
     const b = mesh(browGeo, ink);
     b.position.set(sx * 0.5, REST.browY, 0.92);
@@ -298,7 +331,7 @@ export const buildHamster = (): HamsterRig => {
   // Whiskers: three long curved strands per side fanning out over the cheeks.
   const whiskerMat = ink;
   const makeWhiskers = (sx: number) => {
-    const group = new THREE.Group();
+    const group = new Group();
     group.position.set(0, hy(-0.05), 0);
     const fan = [
       { y: 0.04, dy: 0.17 },
@@ -306,13 +339,13 @@ export const buildHamster = (): HamsterRig => {
       { y: -0.2, dy: -0.15 },
     ];
     for (const w of fan) {
-      const curve = new THREE.CatmullRomCurve3([
-        new THREE.Vector3(sx * 0.3, w.y, 1.06),
-        new THREE.Vector3(sx * 0.58, w.y + w.dy * 0.3, 1.07),
-        new THREE.Vector3(sx * 0.88, w.y + w.dy * 0.75, 1.0),
-        new THREE.Vector3(sx * 1.14, w.y + w.dy, 0.88),
+      const curve = new CatmullRomCurve3([
+        new Vector3(sx * 0.3, w.y, 1.06),
+        new Vector3(sx * 0.58, w.y + w.dy * 0.3, 1.07),
+        new Vector3(sx * 0.88, w.y + w.dy * 0.75, 1.0),
+        new Vector3(sx * 1.14, w.y + w.dy, 0.88),
       ]);
-      group.add(mesh(new THREE.TubeGeometry(curve, 24, 0.017, 6), whiskerMat));
+      group.add(mesh(new TubeGeometry(curve, 24, 0.017, 6), whiskerMat));
     }
     head.add(group);
     return group;
@@ -324,24 +357,20 @@ export const buildHamster = (): HamsterRig => {
   // but the asymmetry is baked into the curve, so it can't flatten into a neutral line.
   const MUZZLE_R = 0.42;
   const onMuzzle = (x: number, y: number) =>
-    new THREE.Vector3(x, y, Math.sqrt(Math.max(0, MUZZLE_R ** 2 - x ** 2 - y ** 2)) * 1.015);
-  const smirk = new THREE.CatmullRomCurve3([
+    new Vector3(x, y, Math.sqrt(Math.max(0, MUZZLE_R ** 2 - x ** 2 - y ** 2)) * 1.015);
+  const smirk = new CatmullRomCurve3([
     onMuzzle(-0.27, -0.2),
     onMuzzle(-0.13, -0.27),
     onMuzzle(0.05, -0.27),
     onMuzzle(0.2, -0.22),
     onMuzzle(0.31, -0.11),
   ]);
-  const mouth = new THREE.Group();
+  const mouth = new Group();
   mouth.position.set(0, hy(-0.12), 0.78);
-  const mouthLine = mesh(new THREE.TubeGeometry(smirk, 24, 0.036, 8), ink);
+  const mouthLine = mesh(new TubeGeometry(smirk, 24, 0.036, 8), ink);
   const dimple = mesh(
-    new THREE.TubeGeometry(
-      new THREE.CatmullRomCurve3([
-        onMuzzle(0.3, -0.04),
-        onMuzzle(0.36, -0.08),
-        onMuzzle(0.37, -0.15),
-      ]),
+    new TubeGeometry(
+      new CatmullRomCurve3([onMuzzle(0.3, -0.04), onMuzzle(0.36, -0.08), onMuzzle(0.37, -0.15)]),
       8,
       0.026,
       6,
@@ -352,18 +381,21 @@ export const buildHamster = (): HamsterRig => {
   head.add(mouth);
 
   // ── Hat: the signature. Black crown, red band, cream star, tilted brim. ─────────────────────
-  const hat = new THREE.Group();
+  const hat = new Group();
   hat.position.set(0.08, REST.hatY, -0.05);
   hat.rotation.z = REST.hatRoll;
-  const brim = mesh(new THREE.CylinderGeometry(1.08, 1.12, 0.1, 40), ink, false);
-  const hatCrown = mesh(new THREE.CylinderGeometry(0.7, 0.74, 0.64, 36), ink, true);
+  const brim = mesh(new CylinderGeometry(1.08, 1.12, 0.1, 40), ink, false);
+  const hatCrown = mesh(new CylinderGeometry(0.7, 0.74, 0.64, 36), ink, true);
   hatCrown.position.y = 0.37;
-  const band = mesh(new THREE.CylinderGeometry(0.752, 0.752, 0.22, 36), red, false);
+  // The band is the only part using this material, so a café's tint (setBandColor) touches
+  // nothing else.
+  const bandMat = toon(PALETTE.red);
+  const band = mesh(new CylinderGeometry(0.752, 0.752, 0.22, 36), bandMat, false) as Mesh<
+    BufferGeometry,
+    MeshToonMaterial
+  >;
   band.position.y = 0.17;
-  const star = mesh(
-    new THREE.ShapeGeometry(starShape(0.22, 0.075)),
-    flat(PALETTE.cream, THREE.DoubleSide),
-  );
+  const star = mesh(starGeometry(0.22, 0.075), flat(PALETTE.cream, DoubleSide));
   star.position.set(0.04, 0.5, 0.72);
   star.rotation.y = 0.12;
   hat.add(brim, hatCrown, band, star);
@@ -387,6 +419,7 @@ export const buildHamster = (): HamsterRig => {
     pawL,
     pawR,
     qr,
+    band,
     mouth,
     cheekL,
     cheekR,

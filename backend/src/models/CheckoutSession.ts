@@ -52,6 +52,14 @@ export interface ICheckoutSession extends Document {
   claimedAt?: Date;
   orderId?: mongoose.Types.ObjectId;
   paidAt?: Date;
+  // Café identity (§10.4): the proof of who is paying, checked when the checkout starts (a fresh-OTP
+  // device proof or this café's guest pass for the same phone). Its order then earns a guest pass,
+  // and guestPassIssued records that one was earned, so the checkout's result can carry it. The
+  // result hands the token out AT MOST ONCE: guestPassIssuedAt is set atomically on that first
+  // fetch, because the session id alone (known to SMEPay too) must not mint passes forever.
+  guestProof?: 'DEVICE' | 'PASS';
+  guestPassIssued?: boolean;
+  guestPassIssuedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -117,7 +125,10 @@ const CheckoutSessionSchema = new Schema<ICheckoutSession>(
     lastCheckedAt: { type: Date },
     claimedAt: { type: Date },
     orderId: { type: Schema.Types.ObjectId, ref: 'Order' },
-    paidAt: { type: Date }
+    paidAt: { type: Date },
+    guestProof: { type: String, enum: ['DEVICE', 'PASS'] },
+    guestPassIssued: { type: Boolean },
+    guestPassIssuedAt: { type: Date }
   },
   { timestamps: true }
 );

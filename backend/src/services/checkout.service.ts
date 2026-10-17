@@ -7,7 +7,7 @@
 // polling and a background sweep all just trigger a server-side validate call. That also covers a
 // customer who pays and closes the tab.
 import mongoose from 'mongoose';
-import { config } from '../config';
+import { checkout, runtime, server } from '../config';
 import { Business, IBusiness } from '../models/Business';
 import { Order } from '../models/Order';
 import { Table } from '../models/Table';
@@ -18,6 +18,10 @@ import { ServiceError } from '../utils/serviceError';
 import { decryptSecret } from '../utils/secretBox';
 import { logger } from '../utils/logger';
 import { wizCreateOrder, wizValidate, SmepayCredentials } from './payments/smepay.client';
+import { isIdentityOnFor } from './cafeIdentity.service';
+import { proofKindFor, recordProvenVisit } from './guestMemory.service';
+import { signGuestPass } from '../utils/guestToken';
+import { phoneKeyOf } from '../utils/phone';
 import { prepareOrder, placeOrder, assertTableFree, markOrderPaid, OrderPlacementInput } from './orderPlacement.service';
 
 const MAX_ATTEMPTS = 5;
@@ -35,18 +39,34 @@ const FINAL_FAILURE_STATUSES = ['FAILED', 'EXPIRED'];
 // no real money, so outside production they count as the status they stand for; in production
 // they're kept as-is, so a test payment can never pay for a real order.
 const countedStatus = (paymentStatus: string) =>
-  config.nodeEnv !== 'production' && paymentStatus.startsWith('TEST_') ? paymentStatus.slice('TEST_'.length) : paymentStatus;
+  runtime.nodeEnv !== 'production' && paymentStatus.startsWith('TEST_') ? paymentStatus.slice('TEST_'.length) : paymentStatus;
 
 type SessionDoc = ICheckoutSession;
 
 export const isCheckoutAvailable = (business: Pick<IBusiness, 'checkoutAllowed' | 'checkoutEnabled'>) =>
   !!(business.checkoutAllowed && business.checkoutEnabled);
 
+// The guest pass a proven checkout earned (café identity, §10.4). The proof was checked when the
+// checkout started and the visit recorded when its order was placed; the pass itself is stateless,
+// so it is signed here. The session id is the only credential on this endpoint, and SMEPay knows it
+// too, so the token goes out AT MOST ONCE: the first fetch that finds the session paid claims it
+// atomically (guestPassIssuedAt), every later fetch gets none.
+const issueGuestPass = async (session: SessionDoc): Promise<{ guestToken?: string; guestTokenExpiresAt?: Date }> => {
+  const phone = phoneKeyOf(session.customerPhone);
+  if (!session.guestPassIssued || session.guestPassIssuedAt || !session.orderId || !phone || !['PAID', 'SWITCHED'].includes(session.status)) {
+    return {};
+  }
+  if (!(await sessionDao.claimGuestPass(session._id, new Date()))) return {};
+  const pass = signGuestPass({ phone, businessId: session.businessId.toString() });
+  return { guestToken: pass.token, guestTokenExpiresAt: pass.expiresAt };
+};
+
 // What the customer's browser gets back — no phone, no draft, no SMEPay credentials.
-const toView = (session: SessionDoc) => {
+const toView = async (session: SessionDoc) => {
   const latest = session.attempts[session.attempts.length - 1];
   return {
     id: session._id,
+    businessId: session.businessId,
     status: session.status,
     businessSlug: session.businessSlug,
     amountPaise: session.amountPaise,
@@ -57,13 +77,26 @@ const toView = (session: SessionDoc) => {
     slug: latest?.slug || null,
     paymentUrl: latest?.paymentUrl || null,
     paymentStatus: latest?.lastStatus || null,
-    attemptsLeft: Math.max(0, MAX_ATTEMPTS - session.attempts.length)
+    attemptsLeft: Math.max(0, MAX_ATTEMPTS - session.attempts.length),
+    ...(await issueGuestPass(session))
   };
 };
 
-export type CheckoutView = ReturnType<typeof toView>;
+// The checkout's order is placed: remember the visit when the checkout started with proof. Never
+// throws (the order is already saved); true when a guest pass was issued.
+const recordCheckoutVisit = async (session: SessionDoc, business: InstanceType<typeof Business>, order: InstanceType<typeof Order>) => {
+  if (!session.guestProof) return false;
+  try {
+    return !!(await recordProvenVisit(business, order)).guestToken;
+  } catch (err: any) {
+    logger.warn({ checkoutSessionId: session._id.toString(), err: err?.message }, '[checkout] failed to record the guest visit');
+    return false;
+  }
+};
 
-const ttlFromNow = () => new Date(Date.now() + config.checkoutSessionTtlMinutes * 60_000);
+export type CheckoutView = Awaited<ReturnType<typeof toView>>;
+
+const ttlFromNow = () => new Date(Date.now() + checkout.sessionTtlMinutes * 60_000);
 
 const getCredentials = async (businessId: mongoose.Types.ObjectId): Promise<SmepayCredentials> => {
   const account = await accountDao.findAccountWithSecret(businessId);
@@ -89,8 +122,8 @@ const plainDraft = (session: SessionDoc): ICheckoutDraft => {
 // SMEPay uses an order's callback_url twice: it sends the customer's browser there (GET) after a
 // successful payment, and POSTs its webhook there. So it points at the API (handled by
 // getCheckoutReturnUrl / handlePaymentWebhook below), not at the customer's page. The API is
-// reachable under FRONTEND_URL: nginx proxies /api/v1 in production, Vite's proxy in dev.
-const callbackUrlFor = (session: SessionDoc) => `${config.frontendUrl}/api/v1/public/checkout/${session._id}/callback`;
+// reachable under server.frontendUrl: nginx proxies /api/v1 in production, Vite's proxy in dev.
+const callbackUrlFor = (session: SessionDoc) => `${server.frontendUrl}/api/v1/public/checkout/${session._id}/callback`;
 
 // Opens a fresh SMEPay Wizard order for this session and extends its hold window.
 const openAttempt = async (session: SessionDoc, creds: SmepayCredentials): Promise<SessionDoc> => {
@@ -183,7 +216,11 @@ const finalize = async (session: SessionDoc, attempt: ICheckoutAttempt): Promise
     throw error;
   }
 
-  return (await sessionDao.updateSession(claimed._id, { status: 'PAID', orderId: order._id, paidAt: now })) || claimed;
+  const guestPassIssued = await recordCheckoutVisit(claimed, business, order);
+  return (
+    (await sessionDao.updateSession(claimed._id, { status: 'PAID', orderId: order._id, paidAt: now, ...(guestPassIssued ? { guestPassIssued } : {}) })) ||
+    claimed
+  );
 };
 
 // A FINALIZING claim whose owner died without the payment having succeeded (i.e. a crashed
@@ -242,7 +279,10 @@ const pollProvider = async (session: SessionDoc): Promise<SessionDoc> => {
 
 // ── Public API ──────────────────────────────────────────────────────────────
 
-export const startCheckout = async (input: OrderPlacementInput): Promise<CheckoutView> => {
+export const startCheckout = async (
+  input: OrderPlacementInput,
+  proofs: { deviceProof?: unknown; guestPass?: unknown } = {}
+): Promise<CheckoutView> => {
   const prepared = await prepareOrder(input);
   const { business, table } = prepared;
 
@@ -261,11 +301,16 @@ export const startCheckout = async (input: OrderPlacementInput): Promise<Checkou
     amountPaise: prepared.draft.totalAmountPaise,
     status: 'PENDING',
     attempts: [],
-    expiresAt: ttlFromNow()
+    expiresAt: ttlFromNow(),
+    // A device proof lasts 30 minutes and the payment may be confirmed later, so it is checked now.
+    guestProof:
+      (isIdentityOnFor(business) &&
+        proofKindFor({ businessId: business._id.toString(), phone: prepared.customerPhone, ...proofs })) ||
+      undefined
   });
 
   try {
-    return toView(await openAttempt(session, creds));
+    return await toView(await openAttempt(session, creds));
   } catch (error) {
     // Nothing was charged — close the session so nothing ever tries to validate it.
     await sessionDao.transitionSession(session._id, ['PENDING'], 'EXPIRED');
@@ -295,7 +340,7 @@ export const getCheckoutStatus = async (id: string): Promise<CheckoutView> => {
 /** Where SMEPay's post-payment redirect to callback_url should land: the customer's checkout page. */
 export const getCheckoutReturnUrl = async (id: string): Promise<string> => {
   const session = await loadSession(id);
-  return `${config.frontendUrl}/c/${session.businessSlug}/checkout/${session._id}`;
+  return `${server.frontendUrl}/c/${session.businessSlug}/checkout/${session._id}`;
 };
 
 /**
@@ -390,7 +435,12 @@ export const switchPaymentMethod = async (id: string, paymentMethod: unknown): P
       paymentStatus: 'UNPAID',
       checkoutSessionId: claimed._id
     });
-    const switched = await sessionDao.updateSession(claimed._id, { status: 'SWITCHED', orderId: order._id });
+    const guestPassIssued = await recordCheckoutVisit(claimed, business, order);
+    const switched = await sessionDao.updateSession(claimed._id, {
+      status: 'SWITCHED',
+      orderId: order._id,
+      ...(guestPassIssued ? { guestPassIssued } : {})
+    });
     return toView(switched || claimed);
   } catch (error) {
     await sessionDao.transitionSession(claimed._id, ['FINALIZING'], previousStatus);
@@ -408,7 +458,7 @@ export const switchPaymentMethod = async (id: string, paymentMethod: unknown): P
 export const sweepOnce = async (): Promise<void> => {
   const now = Date.now();
   const sessions = await sessionDao.findSessionsToSweep(
-    new Date(now - config.checkoutLateGraceMinutes * 60_000),
+    new Date(now - checkout.lateGraceMinutes * 60_000),
     new Date(now - STALE_CLAIM_MS),
     SWEEP_BATCH
   );

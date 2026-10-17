@@ -160,7 +160,7 @@ const CompleteUpgradeCard: React.FC<{
                 type="button"
                 onClick={handleConfirm}
                 disabled={markingUpgradePaid}
-                className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-lg shadow-emerald-600/30 transition-all disabled:opacity-50"
+                className="w-full py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-black text-xs shadow-lg shadow-brand-600/30 transition-all disabled:opacity-50"
               >
                 Yes, I've paid {formatCurrency(request.amountPaise)}
               </button>
@@ -244,7 +244,7 @@ export const PlanUpgradePanel = ({
               key={plan._id}
               className={`p-5 rounded-2xl border flex flex-col justify-between gap-4 relative overflow-hidden ${
                 isCurrent
-                  ? 'border-2 border-emerald-400 bg-emerald-50/40'
+                  ? 'border-2 border-brand-400 bg-brand-50/40'
                   : plan.isPopular
                     ? 'border-2 border-brand-300'
                     : 'border-slate-200'
@@ -276,7 +276,7 @@ export const PlanUpgradePanel = ({
               </div>
 
               {isCurrent ? (
-                <div className="w-full py-2.5 rounded-xl bg-emerald-100 text-emerald-700 font-black text-[11px] flex items-center justify-center gap-1.5">
+                <div className="w-full py-2.5 rounded-xl bg-brand-100 text-brand-700 font-black text-[11px] flex items-center justify-center gap-1.5">
                   <Check className="w-3.5 h-3.5" /> Current plan
                 </div>
               ) : (

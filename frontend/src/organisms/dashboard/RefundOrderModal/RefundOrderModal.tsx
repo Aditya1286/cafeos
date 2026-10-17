@@ -29,7 +29,7 @@ export const RefundOrderModal = ({
       maxWidth="max-w-sm"
     >
       <div className="space-y-5 text-center">
-        <div className="w-12 h-12 rounded-2xl bg-violet-50 border border-violet-200 text-violet-600 flex items-center justify-center mx-auto">
+        <div className="w-12 h-12 rounded-2xl bg-brand-50 border border-brand-200 text-brand-600 flex items-center justify-center mx-auto">
           <Undo2 className="w-6 h-6" />
         </div>
         <div className="space-y-1">
@@ -54,7 +54,7 @@ export const RefundOrderModal = ({
           <button
             onClick={onConfirm}
             disabled={refunding}
-            className="flex-1 py-3 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-black text-xs shadow-md shadow-violet-600/20 transition-all disabled:opacity-50"
+            className="flex-1 py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-black text-xs shadow-md shadow-brand-600/20 transition-all disabled:opacity-50"
           >
             {refunding ? 'Saving...' : 'Yes, Refunded'}
           </button>

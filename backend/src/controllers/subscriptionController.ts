@@ -3,7 +3,7 @@ import { AuthRequest } from '../middleware/auth';
 import { SubscriptionPlan } from '../models/SubscriptionPlan';
 import { Subscription } from '../models/Subscription';
 import { SubscriptionUpgradeRequest } from '../models/SubscriptionUpgradeRequest';
-import { config } from '../config';
+import { platform } from '../config';
 
 // Owner/Staff: current plan + any pending upgrade request + where to pay for one.
 export const getMySubscriptionStatus = async (req: AuthRequest, res: Response) => {
@@ -18,8 +18,8 @@ export const getMySubscriptionStatus = async (req: AuthRequest, res: Response) =
         billingCycle: subscription?.billingCycle || 'MONTHLY',
         currentPeriodEnd: subscription?.currentPeriodEnd || null,
         pendingRequest,
-        platformUpiVpa: config.platformUpiVpa,
-        platformPayeeName: config.platformPayeeName
+        platformUpiVpa: platform.upiVpa,
+        platformPayeeName: platform.payeeName
       }
     });
   } catch (error: any) {

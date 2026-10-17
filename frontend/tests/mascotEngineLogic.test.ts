@@ -15,10 +15,15 @@ import {
   pickPeek,
 } from '../src/mascot/flow';
 import {
+  DEFAULT_PRIORITY,
+  DEMO_CONFIG,
   LANDING_CONFIG,
   LOGIN_CONFIG,
   MASCOT_CONFIGS,
+  MENU_CONFIG,
+  MENU_DOCK_BOTTOM_INSET,
   ORDER_CONFIG,
+  resolveFlow,
   validateConfig,
 } from '../src/mascot/config';
 import { FLOW, LAYOUT, PEEK } from '../src/mascot/config';
@@ -366,19 +371,28 @@ describe('mascot route scoping', () => {
   const files = walk(srcRoot).filter((f) => /\.(ts|tsx)$/.test(f));
   const rel = (f: string) => relative(srcRoot, f).split('\\').join('/');
 
-  it('is imported only by the landing, login and order-tracking pages', () => {
+  it('is imported only by the landing, login, request-demo, menu and order-tracking pages', () => {
     const importers = files
       .filter((f) => !rel(f).startsWith('mascot/'))
       .filter((f) =>
-        /from\s+['"](@\/|\.{1,2}\/)([^'"]*\/)?mascot[\/'"]/.test(readFileSync(f, 'utf8')),
+        readFileSync(f, 'utf8')
+          .split('\n')
+          // A type-only import is erased at build time, so it never pulls the mascot into a route.
+          .filter((line) => !/^\s*import\s+type\b/.test(line))
+          .some((line) => /from\s+['"](@\/|\.{1,2}\/)([^'"]*\/)?mascot[\/'"]/.test(line)),
       )
       .map(rel)
       .sort();
-    expect(importers).toEqual([
+    const required = [
+      'pages/CustomerMenuPage.tsx',
       'pages/CustomerOrderTrackingPage.tsx',
       'pages/LandingPage.tsx',
       'pages/LoginPage.tsx',
-    ]);
+      'pages/RequestDemoPage.tsx',
+    ];
+    const allowed = required;
+    for (const page of required) expect(importers).toContain(page);
+    for (const importer of importers) expect(allowed).toContain(importer);
   });
 
   it('every page mounts it through the lazy PageMascot entry, with its own page id', () => {
@@ -388,9 +402,17 @@ describe('mascot route scoping', () => {
     expect(login).toMatch(/<PageMascot page="login" \/>/);
     const tracking = readFileSync(join(srcRoot, 'pages/CustomerOrderTrackingPage.tsx'), 'utf8');
     expect(tracking).toMatch(/<PageMascot page="order" signal=\{mascotSignal\} \/>/);
+    // With café identity on, the tracker's mascot wears the café's rendering and dress (R5).
+    expect(tracking).toMatch(/rendering=\{identity\.mascotRendering\}/);
+    expect(tracking).toMatch(/dress=\{mascotDress\}/);
+    // The menu mounts it only with the café's own rendering (never heavy by default).
+    const menu = readFileSync(join(srcRoot, 'pages/CustomerMenuPage.tsx'), 'utf8');
+    expect(menu).toMatch(/<PageMascot\s+page="menu"/);
+    expect(menu).toMatch(/rendering=\{mascotRendering\}/);
+    const demo = readFileSync(join(srcRoot, 'pages/RequestDemoPage.tsx'), 'utf8');
+    expect(demo).toMatch(/<PageMascot page="demo" signal=\{mascotSignal\} \/>/);
     // The checkout, ordering, dashboard and register pages must stay mascot-free.
     for (const page of [
-      'CustomerMenuPage',
       'CheckoutReturnPage',
       'OwnerDashboard',
       'SuperAdminDashboard',
@@ -416,6 +438,28 @@ describe('mascot route scoping', () => {
     for (const u of users) expect(u.startsWith('mascot/engine/')).toBe(true);
   });
 
+  it('keeps the light renderer free of the engine folder (so it never pulls three.js)', () => {
+    const lite = files.filter((f) => rel(f).startsWith('mascot/lite/'));
+    expect(lite.map(rel)).toContain('mascot/lite/createLiteEngine.ts');
+    for (const f of lite) {
+      const source = readFileSync(f, 'utf8');
+      expect(source, rel(f)).not.toMatch(/(from\s+|import\(\s*)['"][^'"]*\/engine(\/|['"])/);
+      expect(source, rel(f)).not.toMatch(/from\s+['"]three['"]/);
+    }
+  });
+
+  it('loads the light renderer only through a dynamic import', () => {
+    const shell = readFileSync(join(srcRoot, 'mascot/MascotExperience.tsx'), 'utf8');
+    expect(shell).toMatch(/import\('\.\/lite\/createLiteEngine'\)/);
+    expect(shell).not.toMatch(/^import (?!type\b).*from '\.\/lite\/createLiteEngine'/m);
+    // Nothing else outside the lite folder pulls it in statically.
+    for (const f of files.filter((x) => !rel(x).startsWith('mascot/lite/'))) {
+      expect(readFileSync(f, 'utf8'), rel(f)).not.toMatch(
+        /^import (?!type\b).*from ['"][^'"]*lite\/createLiteEngine['"]/m,
+      );
+    }
+  });
+
   it('loads the experience and the engine only through dynamic imports', () => {
     const landing = readFileSync(join(srcRoot, 'mascot/PageMascot.tsx'), 'utf8');
     expect(landing).toMatch(/lazy\(\(\) => import\('\.\/MascotExperience'\)\)/);
@@ -429,7 +473,13 @@ describe('mascot route scoping', () => {
 
 describe('page configs', () => {
   it('has a config for every page id, each valid', () => {
-    expect(Object.keys(MASCOT_CONFIGS).sort()).toEqual(['landing', 'login', 'order']);
+    expect(Object.keys(MASCOT_CONFIGS).sort()).toEqual([
+      'demo',
+      'landing',
+      'login',
+      'menu',
+      'order',
+    ]);
     for (const config of Object.values(MASCOT_CONFIGS)) {
       expect(validateConfig(config)).toEqual([]);
     }
@@ -513,5 +563,88 @@ describe('order page config', () => {
       expect(r.message?.durationMs).toBe(Infinity);
       expect(r.message?.announce).toBe(true);
     }
+  });
+});
+
+describe('phone overrides (phoneFlow)', () => {
+  it('merges phoneFlow over flow on phones only', () => {
+    expect(resolveFlow(DEMO_CONFIG, false)).toBe(DEMO_CONFIG.flow);
+    const phone = resolveFlow(DEMO_CONFIG, true);
+    expect(phone).toMatchObject({ mode: 'slot', slot: '[data-mascot-slot="demo"]', size: 84 });
+    // Keys the override doesn't name are kept.
+    expect(phone?.steps).toEqual(DEMO_CONFIG.flow?.steps);
+  });
+
+  it('pages without phoneFlow get the same flow everywhere', () => {
+    expect(resolveFlow(LOGIN_CONFIG, true)).toBe(LOGIN_CONFIG.flow);
+    expect(resolveFlow(ORDER_CONFIG, true)).toBe(ORDER_CONFIG.flow);
+  });
+
+  it('landing: docks in the corner on phones instead of sweeping across the text', () => {
+    expect(resolveFlow(LANDING_CONFIG, true)).toMatchObject({ mode: 'dock' });
+    expect(resolveFlow(LANDING_CONFIG, false)?.mode).toBeUndefined();
+  });
+});
+
+describe('request-demo page config', () => {
+  const srcRoot = join(__dirname, '..', 'src');
+  const markup = readFileSync(join(srcRoot, 'pages/RequestDemoPage.tsx'), 'utf8');
+
+  it('moves down its stage in form order, ending on the submit button', () => {
+    const steps = DEMO_CONFIG.flow?.steps ?? [];
+    expect(DEMO_CONFIG.flow?.progress).toBe('steps');
+    const progress = steps.map((s) => s.progress);
+    expect([...progress].sort((a, b) => a - b)).toEqual(progress);
+    expect(steps[steps.length - 1]).toEqual({
+      selector: '[data-mascot-field="demo-submit"]',
+      progress: 1,
+    });
+    // Every step is also a field the mascot reacts to.
+    const targets = new Set(DEMO_CONFIG.targets.map((t) => t.selector));
+    for (const step of steps) expect(targets.has(step.selector), step.selector).toBe(true);
+  });
+
+  it('every page-markup hook it names exists', () => {
+    const names = [
+      DEMO_CONFIG.flow?.bounds,
+      DEMO_CONFIG.phoneFlow?.slot,
+      ...DEMO_CONFIG.sections.map((s) => s.selector),
+      ...DEMO_CONFIG.peeks.map((p) => p.selector),
+      ...DEMO_CONFIG.targets.map((t) => t.selector),
+    ];
+    for (const selector of names) {
+      const attr = /\[(data-[a-z-]+)="([^"]+)"\]/.exec(selector ?? '');
+      expect(attr, `selector ${selector}`).not.toBeNull();
+      expect(markup, `${selector} is in the markup`).toContain(`${attr![1]}="${attr![2]}"`);
+    }
+  });
+
+  it('submit outcomes outrank field focus (focus is still on the button when they arrive)', () => {
+    for (const key of ['submitting', 'error', 'sent']) {
+      const reaction = DEMO_CONFIG.signals?.[key];
+      expect(reaction, key).toBeDefined();
+      expect(reaction!.priority!).toBeGreaterThan(DEFAULT_PRIORITY.focus);
+    }
+    expect(markup).toMatch(
+      /mascotSignal = sent \? 'sent' : submitting \? 'submitting' : error \? 'error' : null/,
+    );
+  });
+});
+
+describe('menu page config', () => {
+  it('docks on every viewport and reacts only to what the page passes at runtime', () => {
+    expect(validateConfig(MENU_CONFIG)).toEqual([]);
+    // Lifted clear of the menu's sticky cart bar (fixed, bottom 12px, about 56px tall).
+    expect(MENU_CONFIG.flow).toEqual({ mode: 'dock', insets: { bottom: MENU_DOCK_BOTTOM_INSET } });
+    expect(MENU_DOCK_BOTTOM_INSET).toBeGreaterThanOrEqual(72);
+    expect(resolveFlow(MENU_CONFIG, true)?.insets?.bottom).toBe(MENU_DOCK_BOTTOM_INSET);
+    expect(MENU_CONFIG.closeBubbleOnInteract).toBe(true);
+    expect(MENU_CONFIG.phoneFlow).toEqual({ mode: 'dock' });
+    expect(resolveFlow(MENU_CONFIG, true)?.mode).toBe('dock');
+    expect(resolveFlow(MENU_CONFIG, false)?.mode).toBe('dock');
+    expect(MENU_CONFIG.sections).toEqual([]);
+    expect(MENU_CONFIG.targets).toEqual([]);
+    expect(MENU_CONFIG.peeks).toEqual([]);
+    expect(MENU_CONFIG.signals).toBeUndefined();
   });
 });

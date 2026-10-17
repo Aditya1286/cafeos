@@ -1,0 +1,51 @@
+<svg class="caosl" viewBox="0 0 200 210" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" data-pending="">
+<defs>
+<ellipse id="caosl-sk" cx="100" cy="90" rx="64" ry="48"/>
+<circle id="caosl-el" cx="46" cy="54" r="17"/>
+<circle id="caosl-er" cx="154" cy="54" r="17"/>
+<circle id="caosl-cl" cx="56" cy="112" r="24"/>
+<circle id="caosl-cr" cx="144" cy="112" r="24"/>
+<ellipse id="caosl-to" cx="100" cy="172" rx="54" ry="34"/>
+<clipPath id="caosl-skc"><use href="#caosl-sk"/></clipPath>
+<clipPath id="caosl-eyl"><ellipse cx="78" cy="96" rx="14" ry="16"/></clipPath>
+<clipPath id="caosl-eyr"><ellipse cx="122" cy="96" rx="14" ry="16"/></clipPath>
+</defs>
+<g class="caosl-enter">
+<g class="caosl-fig">
+<g class="caosl-sway">
+<g class="caosl-breath">
+<use href="#caosl-to" fill="#15110f" stroke="#15110f" stroke-width="8"/>
+<use href="#caosl-to" fill="#f6e7c8"/>
+<g class="caosl-head">
+<g fill="#15110f" stroke="#15110f" stroke-width="8"><use href="#caosl-el"/><use href="#caosl-er"/><use href="#caosl-sk"/><use href="#caosl-cl"/><use href="#caosl-cr"/></g>
+<g fill="#f6e7c8"><use href="#caosl-el"/><use href="#caosl-er"/></g>
+<g fill="#f0cdb8"><circle cx="46" cy="54" r="9"/><circle cx="154" cy="54" r="9"/></g>
+<use href="#caosl-sk" fill="#f6e7c8"/>
+<path clip-path="url(#caosl-skc)" fill="#2a211d" d="M30 30H170V66Q148 57 126 62Q110 66 100 73Q90 66 74 62Q52 57 30 66Z"/>
+<g fill="#f6e7c8"><use href="#caosl-cl"/><use href="#caosl-cr"/></g>
+<g class="caosl-blush" fill="#e9a7a0"><ellipse cx="56" cy="122" rx="10" ry="5.5"/><ellipse cx="144" cy="122" rx="10" ry="5.5"/></g>
+<g fill="none" stroke="#15110f" stroke-width="2.2" stroke-linecap="round"><path class="caosl-wl" d="M72 110Q48 102 22 100M72 115Q46 115 20 117M72 120Q48 128 24 136"/><path class="caosl-wr" d="M128 110Q152 102 178 100M128 115Q154 115 180 117M128 120Q152 128 176 136"/></g>
+<g class="caosl-eyes"><g fill="#15110f"><ellipse cx="78" cy="96" rx="13" ry="15"/><ellipse cx="122" cy="96" rx="13" ry="15"/></g><g fill="#fff"><circle cx="82" cy="89" r="4.2"/><circle cx="73" cy="102" r="2"/><circle cx="118" cy="89" r="4.2"/><circle cx="127" cy="102" r="2"/></g></g>
+<g fill="#f6e7c8" stroke="#15110f" stroke-width="3">
+<g clip-path="url(#caosl-eyl)"><rect class="caosl-lid caosl-lidl" x="62" y="80" width="32" height="32"/><rect class="caosl-blink" x="62" y="80" width="32" height="32"/></g>
+<g clip-path="url(#caosl-eyr)"><rect class="caosl-lid caosl-lidr" x="106" y="80" width="32" height="32"/><rect class="caosl-blink" x="106" y="80" width="32" height="32"/></g>
+</g>
+<path class="caosl-shut" fill="none" stroke="#15110f" stroke-width="3.5" stroke-linecap="round" d="M67 98Q78 90 89 98M111 98Q122 90 133 98"/>
+<g fill="#15110f"><rect class="caosl-bl" x="63" y="71" width="30" height="8" rx="4"/><rect class="caosl-br" x="107" y="71" width="30" height="8" rx="4"/></g>
+<ellipse cx="100" cy="110" rx="6" ry="4.2" fill="#3a2828"/>
+<g class="caosl-mouth" fill="none" stroke="#15110f" stroke-width="3" stroke-linecap="round"><path class="caosl-smirk" d="M88 119Q96 125 105 123Q112 121 115 114M114 112q3 2 2.5 5.5"/><path class="caosl-grin" fill="#15110f" d="M87 117Q100 134 115 115Q101 122 87 117Z"/></g>
+<g transform="rotate(8 104 46)"><g class="caosl-hat">
+<ellipse cx="104" cy="46" rx="48" ry="7" fill="#15110f" stroke="#f6e7c8" stroke-opacity=".55" stroke-width="1.2"/>
+<path fill="#15110f" d="M78 45L80 14H128L130 45Z"/>
+<ellipse cx="104" cy="14" rx="24" ry="4.5" fill="#15110f"/>
+<path class="caosl-band" d="M79 33H129L130 43H78Z"/>
+<polygon fill="#f6e7c8" points="104,17 105.8,21.6 110.7,21.8 106.9,24.9 108.1,29.7 104,27 99.9,29.7 101.1,24.9 97.3,21.8 102.2,21.6"/>
+</g></g>
+</g>
+<g transform="rotate(-5 100 170)"><rect x="83" y="152" width="34" height="34" rx="3" fill="#fff" stroke="#15110f" stroke-width="3"/><path fill="#15110f" transform="translate(86 155) scale(1.87)" d="M0 0h7v1h-7zM8 0h7v1h-7zM0 1h1v1h-1zM6 1h1v1h-1zM8 1h1v1h-1zM14 1h1v1h-1zM0 2h1v1h-1zM2 2h3v1h-3zM6 2h1v1h-1zM8 2h1v1h-1zM10 2h3v1h-3zM14 2h1v1h-1zM0 3h1v1h-1zM2 3h3v1h-3zM6 3h1v1h-1zM8 3h1v1h-1zM10 3h3v1h-3zM14 3h1v1h-1zM0 4h1v1h-1zM2 4h3v1h-3zM6 4h1v1h-1zM8 4h1v1h-1zM10 4h3v1h-3zM14 4h1v1h-1zM0 5h1v1h-1zM6 5h1v1h-1zM8 5h1v1h-1zM14 5h1v1h-1zM0 6h7v1h-7zM8 6h7v1h-7zM0 8h7v1h-7zM11 8h2v1h-2zM14 8h1v1h-1zM0 9h1v1h-1zM6 9h1v1h-1zM8 9h5v1h-5zM0 10h1v1h-1zM2 10h3v1h-3zM6 10h1v1h-1zM8 10h1v1h-1zM10 10h1v1h-1zM12 10h3v1h-3zM0 11h1v1h-1zM2 11h3v1h-3zM6 11h1v1h-1zM8 11h1v1h-1zM10 11h1v1h-1zM12 11h1v1h-1zM14 11h1v1h-1zM0 12h1v1h-1zM2 12h3v1h-3zM6 12h1v1h-1zM8 12h1v1h-1zM10 12h2v1h-2zM0 13h1v1h-1zM6 13h1v1h-1zM8 13h3v1h-3zM13 13h1v1h-1zM0 14h7v1h-7zM12 14h3v1h-3z"/></g>
+<g fill="#f6e7c8" stroke="#15110f" stroke-width="3"><ellipse cx="84" cy="186" rx="10.5" ry="8"/><ellipse class="caosl-pawr" cx="117" cy="184" rx="10.5" ry="8"/></g>
+</g>
+</g>
+</g>
+</g>
+</svg>

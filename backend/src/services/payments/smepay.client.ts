@@ -3,7 +3,7 @@
 //
 // Money crosses this boundary as rupees (SMEPay's format) and everywhere else in the codebase as
 // integer paise, so every conversion happens in this file and nowhere else.
-import { config } from '../../config';
+import { smepay } from '../../config';
 import { ServiceError } from '../../utils/serviceError';
 
 const REQUEST_TIMEOUT_MS = 10_000;
@@ -73,7 +73,7 @@ const providerError = (what: string, status: number, data: any) =>
 // ── Wizard Checkout ──────────────────────────────────────────────────────────
 
 const tokenCache = new Map<string, { token: string; expiresAt: number }>();
-const cacheKey = (clientId: string) => `${config.smepayBaseUrl}|${clientId}`;
+const cacheKey = (clientId: string) => `${smepay.baseUrl}|${clientId}`;
 
 /**
  * Exchanges a café's client id/secret for a Wizard access token (cached per client id).
@@ -88,7 +88,7 @@ export const wizAuth = async (creds: SmepayCredentials, { fresh = false } = {}):
     return cached.token;
   }
 
-  const { ok, status, data } = await postJson(`${config.smepayBaseUrl}/api/wiz/external/auth`, {
+  const { ok, status, data } = await postJson(`${smepay.baseUrl}/api/wiz/external/auth`, {
     client_id: creds.clientId,
     client_secret: creds.clientSecret
   });
@@ -108,10 +108,10 @@ export const wizAuth = async (creds: SmepayCredentials, { fresh = false } = {}):
 // Authenticated Wizard call; a 401 means the cached token went stale early — re-auth once.
 const wizPost = async (creds: SmepayCredentials, path: string, body: unknown) => {
   let token = await wizAuth(creds);
-  let result = await postJson(`${config.smepayBaseUrl}${path}`, body, token);
+  let result = await postJson(`${smepay.baseUrl}${path}`, body, token);
   if (result.status === 401) {
     token = await wizAuth(creds, { fresh: true });
-    result = await postJson(`${config.smepayBaseUrl}${path}`, body, token);
+    result = await postJson(`${smepay.baseUrl}${path}`, body, token);
   }
   return result;
 };
@@ -175,15 +175,15 @@ export const wizValidate = async (
 
 // ── Partner (TSP) onboarding ────────────────────────────────────────────────
 
-export const isPartnerOnboardingConfigured = () => !!(config.smepayPartnerCode && config.smepayPartnerEmail);
+export const isPartnerOnboardingConfigured = () => !!(smepay.partnerCode && smepay.partnerEmail);
 
 const partnerAuth = async (): Promise<string> => {
   if (!isPartnerOnboardingConfigured()) {
     throw new ServiceError(503, 'PARTNER_ONBOARDING_UNAVAILABLE', 'SMEPay account creation is not configured on this platform yet.');
   }
-  const { ok, status, data } = await postJson(`${config.smepayPartnerBaseUrl}/api/partner/merchants/tsp/auth`, {
-    partner_code: config.smepayPartnerCode,
-    email: config.smepayPartnerEmail
+  const { ok, status, data } = await postJson(`${smepay.partnerBaseUrl}/api/partner/merchants/tsp/auth`, {
+    partner_code: smepay.partnerCode,
+    email: smepay.partnerEmail
   });
   // The response shape isn't documented — accept the token wherever the other SMEPay APIs put it.
   const token = data?.access_token || data?.token || data?.data?.token || data?.data?.access_token;
@@ -202,7 +202,7 @@ export const partnerCreateMerchant = async (merchant: {
 }): Promise<{ smepayBusinessId: string; kycUrl: string }> => {
   const token = await partnerAuth();
   const { ok, status, data } = await postJson(
-    `${config.smepayPartnerBaseUrl}/api/partner/merchants/extended`,
+    `${smepay.partnerBaseUrl}/api/partner/merchants/extended`,
     {
       name: merchant.name,
       business_name: merchant.businessName,

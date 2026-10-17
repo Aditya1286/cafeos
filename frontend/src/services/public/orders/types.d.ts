@@ -1,4 +1,5 @@
 import { Order } from '../../../types';
+import type { PublicIdentity } from '../../../themes/types';
 import { ApiMessageResponse, ApiResponse } from '../../apiTypes';
 
 export interface CreateOrderPayload {
@@ -8,10 +9,24 @@ export interface CreateOrderPayload {
   items: { productId: string; quantity: number; name: string }[];
   qrToken?: string;
   businessSlug?: string;
+  /** From the last fresh OTP on this device: lets the server issue a guest pass with the order. */
+  deviceProof?: string;
 }
 
-export type CreateOrderResponse = ApiResponse<Order>;
-export type GetOrderResponse = ApiResponse<{ order: Order; business: any }>;
+/** The guest pass the server issues (or renews) with an order that came with proof. Absent otherwise. */
+export interface GuestPassGrant {
+  guestToken?: string;
+  /** ISO timestamp. */
+  guestTokenExpiresAt?: string;
+}
+
+export type CreateOrderResponse = ApiResponse<Order & GuestPassGrant>;
+/** The tracker's café details (a hand-picked set from orderController), plus its `identity`. */
+export interface PublicOrderBusiness {
+  identity?: PublicIdentity;
+  [key: string]: any;
+}
+export type GetOrderResponse = ApiResponse<{ order: Order; business: PublicOrderBusiness }>;
 export type RequestRefundResponse = ApiMessageResponse;
 export type MarkPaidResponse = ApiMessageResponse;
 export type CancelOrderResponse = ApiMessageResponse;

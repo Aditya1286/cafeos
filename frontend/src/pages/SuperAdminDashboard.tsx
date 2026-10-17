@@ -42,6 +42,7 @@ import { useSupportDesk } from '../hooks/useSupportDesk';
 import { useDemoRequests } from '../hooks/useDemoRequests';
 import { FEES_AND_PAYMENTS_ENABLED } from '@/constants/features';
 import { DemoRequestsPanel } from '@/organisms/super-admin/DemoRequestsPanel';
+import { CafeIdentityPanel } from '@/organisms/super-admin/CafeIdentityPanel';
 import { useAdminRefunds } from '../hooks/useAdminRefunds';
 import '@/styles/dashboardTheme.css';
 import { useDashboardDarkMode } from '../hooks/useDashboardDarkMode';
@@ -72,6 +73,8 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
     handleChangeBusinessPlan,
     updatingDemoId,
     handleSetBusinessDemo,
+    savingIdentityId,
+    handleSetBusinessIdentity,
   } = useSuperAdminDashboardData();
   const { systemHealth } = useSystemHealth(activeTab === 'system');
   const { analyticsData, refresh: refreshAnalytics } = useSuperAdminAnalytics(dateRange);
@@ -141,6 +144,9 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
         business={selectedBusinessForModal}
         onClose={() => setSelectedBusinessForModal(null)}
         onConfirm={handleToggleBusinessStatus}
+        identity={businesses.find((b) => b._id === selectedBusinessForModal?.id)?.identity}
+        savingIdentity={savingIdentityId === selectedBusinessForModal?.id}
+        onSetIdentity={handleSetBusinessIdentity}
       />
 
       <BusinessFinanceDrawer
@@ -371,6 +377,14 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
         )}
 
         {activeTab === 'kitchen' && <GlobalKitchenMonitor liveOrders={liveOrders} />}
+
+        {activeTab === 'identity' && (
+          <CafeIdentityPanel
+            businesses={businesses}
+            savingIdentityId={savingIdentityId}
+            onSetIdentity={handleSetBusinessIdentity}
+          />
+        )}
 
         {activeTab === 'plans' && (
           <div className="space-y-8">

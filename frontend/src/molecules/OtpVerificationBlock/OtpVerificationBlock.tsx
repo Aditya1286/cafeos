@@ -76,7 +76,7 @@ export const OtpVerificationBlock = ({
             type="button"
             onClick={otp.verifyOtp}
             disabled={otp.verifying}
-            className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-extrabold whitespace-nowrap disabled:opacity-40 transition-all"
+            className="px-3.5 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-[11px] font-extrabold whitespace-nowrap disabled:opacity-40 transition-all"
           >
             {otp.verifying ? 'Verifying…' : 'Verify'}
           </button>

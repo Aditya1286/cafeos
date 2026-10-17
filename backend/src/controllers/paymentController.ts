@@ -4,7 +4,7 @@ import { FinancialLedger } from '../models/FinancialLedger';
 import { Business } from '../models/Business';
 import { Remittance } from '../models/Remittance';
 import { getRemittanceSummary } from '../services/remittance.service';
-import { config } from '../config';
+import { platform } from '../config';
 
 export const getLedgerTransactions = async (req: AuthRequest, res: Response) => {
   try {
@@ -33,8 +33,8 @@ export const getMyRemittances = async (req: AuthRequest, res: Response) => {
       success: true,
       data: {
         commissionRatePercentage: business?.commissionRatePercentage ?? 3,
-        platformUpiVpa: config.platformUpiVpa,
-        platformPayeeName: config.platformPayeeName,
+        platformUpiVpa: platform.upiVpa,
+        platformPayeeName: platform.payeeName,
         ...summary
       }
     });

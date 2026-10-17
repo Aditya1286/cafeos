@@ -11,7 +11,7 @@ import { Socket as ClientSocket } from 'socket.io-client';
 import {
   startHarness, tokenFor, superAdminToken, businessIdFor, firstProductIdFor, connectSocket, join, nextEvent, noEvent, Harness
 } from './helpers';
-import { config } from '../src/config';
+import { runtime, server, smepay } from '../src/config';
 import businessRoutes from '../src/routes/businessRoutes';
 import adminRoutes from '../src/routes/adminRoutes';
 import paymentRoutes from '../src/routes/paymentRoutes';
@@ -22,6 +22,9 @@ import { FinancialLedger } from '../src/models/FinancialLedger';
 import { CheckoutSession } from '../src/models/CheckoutSession';
 import { SmepayAccount } from '../src/models/SmepayAccount';
 import { sweepOnce } from '../src/services/checkout.service';
+import { Business } from '../src/models/Business';
+import { GuestProfile } from '../src/models/GuestProfile';
+import { signDeviceProof, verifyGuestPass } from '../src/utils/guestToken';
 
 // ── Stub SMEPay ─────────────────────────────────────────────────────────────
 
@@ -112,10 +115,10 @@ let seq = 0;
 
 before(async () => {
   await startStub();
-  config.smepayBaseUrl = stub.url;
-  config.smepayPartnerBaseUrl = stub.url;
-  config.smepayPartnerCode = 'PARTNER_TEST';
-  config.smepayPartnerEmail = 'partner@test.local';
+  smepay.baseUrl = stub.url;
+  smepay.partnerBaseUrl = stub.url;
+  smepay.partnerCode = 'PARTNER_TEST';
+  smepay.partnerEmail = 'partner@test.local';
 
   h = await startHarness();
   h.app.use('/api/v1/business', businessRoutes);
@@ -323,12 +326,12 @@ test("staging's TEST_ statuses count as the real ones outside production", async
 test('in production a TEST_SUCCESS never pays for an order', async () => {
   const session = await startCheckout();
   setPaymentStatus(session.slug, 'TEST_SUCCESS');
-  const nodeEnv = config.nodeEnv;
-  config.nodeEnv = 'production';
+  const nodeEnv = runtime.nodeEnv;
+  runtime.nodeEnv = 'production';
   try {
     await sweepOnce();
   } finally {
-    config.nodeEnv = nodeEnv;
+    runtime.nodeEnv = nodeEnv;
   }
   const after = await CheckoutSession.findById(session.id);
   assert.equal(after!.status, 'PENDING');
@@ -395,12 +398,12 @@ test("callback_url is the API, and its redirect lands on the customer's checkout
   const session = await startCheckout();
   assert.equal(
     stub.orders.get(session.slug)!.callbackUrl,
-    `${config.frontendUrl}/api/v1/public/checkout/${session.id}/callback`
+    `${server.frontendUrl}/api/v1/public/checkout/${session.id}/callback`
   );
 
   const res = await request(h.app).get(`/api/v1/public/checkout/${session.id}/callback`);
   assert.equal(res.status, 302);
-  assert.equal(res.headers.location, `${config.frontendUrl}/c/artisan-cafe/checkout/${session.id}`);
+  assert.equal(res.headers.location, `${server.frontendUrl}/c/artisan-cafe/checkout/${session.id}`);
 });
 
 test('the webhook gets a payment confirmed without anyone polling, but its body is never trusted', async () => {
@@ -421,6 +424,64 @@ test('the webhook gets a payment confirmed without anyone polling, but its body 
   assert.equal((await webhook('SUCCESS')).status, 200);
   await waitFor(async () => (await CheckoutSession.findById(session.id))!.status === 'PAID');
   assert.equal(await Order.countDocuments({ checkoutSessionId: session.id }), 1);
+});
+
+// ── Café identity: the guest pass of a checkout order ──────────────────────
+
+test('a checkout started with a device proof returns a guest pass once paid; one without proof does not', async () => {
+  await Business.updateOne({ _id: artisanId }, { identity: { enabled: true } });
+  try {
+    const { qrToken, phone } = await freshCustomer();
+    const start = await request(h.app)
+      .post('/api/v1/public/checkout')
+      .send({ qrToken, customerName: 'Pass Payer', customerPhone: phone, items: [{ productId, quantity: 1 }], deviceProof: signDeviceProof(phone) });
+    assert.equal(start.status, 201, JSON.stringify(start.body));
+    assert.equal(start.body.data.guestToken, undefined, 'a pass before any order exists');
+    assert.equal(start.body.data.businessId, artisanId);
+    setPaymentStatus(String(start.body.data.paymentUrl).split('/').pop()!, 'SUCCESS');
+
+    const paid = await request(h.app).get(`/api/v1/public/checkout/${start.body.data.id}`);
+    assert.equal(paid.body.data.status, 'PAID');
+    assert.deepEqual(verifyGuestPass(paid.body.data.guestToken, artisanId), { phone });
+    assert.ok(paid.body.data.guestTokenExpiresAt);
+    assert.equal((await GuestProfile.findOne({ businessId: artisanId, phone }))!.firstName, 'Pass');
+
+    const plain = await startCheckout();
+    setPaymentStatus(plain.slug, 'SUCCESS');
+    const plainPaid = await request(h.app).get(`/api/v1/public/checkout/${plain.id}`);
+    assert.equal(plainPaid.body.data.status, 'PAID');
+    assert.equal(plainPaid.body.data.guestToken, undefined);
+  } finally {
+    await Business.updateOne({ _id: artisanId }, { $unset: { identity: '' } });
+  }
+});
+
+test('the checkout result hands the guest pass out at most once per session', async () => {
+  await Business.updateOne({ _id: artisanId }, { identity: { enabled: true } });
+  try {
+    const { qrToken, phone } = await freshCustomer();
+    const start = await request(h.app)
+      .post('/api/v1/public/checkout')
+      .send({ qrToken, customerName: 'Once Only', customerPhone: phone, items: [{ productId, quantity: 1 }], deviceProof: signDeviceProof(phone) });
+    assert.equal(start.status, 201, JSON.stringify(start.body));
+    setPaymentStatus(String(start.body.data.paymentUrl).split('/').pop()!, 'SUCCESS');
+    const url = `/api/v1/public/checkout/${start.body.data.id}`;
+
+    // Fetched together (the customer's poll and anyone else holding the session id): one token only.
+    const racing = await Promise.all([request(h.app).get(url), request(h.app).get(url), request(h.app).get(url)]);
+    const tokens = racing.map((r) => r.body.data.guestToken).filter(Boolean);
+    assert.equal(tokens.length, 1, 'exactly one concurrent fetch gets the pass');
+    assert.deepEqual(verifyGuestPass(tokens[0], artisanId), { phone });
+    assert.ok((await CheckoutSession.findById(start.body.data.id))!.guestPassIssuedAt);
+
+    // Every later fetch is still PAID, but never carries a token again.
+    const again = await request(h.app).get(url);
+    assert.equal(again.body.data.status, 'PAID');
+    assert.equal(again.body.data.guestToken, undefined);
+    assert.equal(again.body.data.guestTokenExpiresAt, undefined);
+  } finally {
+    await Business.updateOne({ _id: artisanId }, { $unset: { identity: '' } });
+  }
 });
 
 // ── Guards ──────────────────────────────────────────────────────────────────

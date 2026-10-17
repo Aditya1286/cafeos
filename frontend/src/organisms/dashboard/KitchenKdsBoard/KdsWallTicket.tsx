@@ -8,6 +8,8 @@ import { WaitBadge } from '@/molecules/WaitBadge';
 import { KdsStatus } from './types';
 import { useClickGuard } from './useClickGuard';
 import { useHasMoreBelow } from './useHasMoreBelow';
+import AddedMarker from '@/atoms/AddedMarker';
+import { amendedMarks } from '@/utils/amendedItems';
 
 interface TicketCardProps extends KdsWallTicketProps {
   /** The tapped-open copy: natural height, every item visible, no scrolling. */
@@ -82,7 +84,7 @@ function TicketCard({
       aria-label={`Order ${order.orderId || order.orderNumber}, ${order.tableName || 'counter'}`}
       className={`bg-white rounded-2xl border border-l-[6px] shadow-sm p-3 flex flex-col gap-2 ${expanded ? 'max-h-[90vh] shadow-2xl' : TICKET_HEIGHT} ${EDGE[level]} ${
         isSelected
-          ? 'border-blue-400 ring-4 ring-blue-100'
+          ? 'border-brand-400 ring-4 ring-brand-100'
           : isNew
             ? 'border-brand-400 ring-4 ring-brand-100'
             : 'border-slate-200'
@@ -94,7 +96,7 @@ function TicketCard({
           checked={isSelected}
           onChange={onToggleSelected}
           aria-label={`Select order ${order.orderId || order.orderNumber}`}
-          className="w-5 h-5 rounded accent-blue-600 shrink-0 cursor-pointer"
+          className="w-5 h-5 rounded accent-brand-600 shrink-0 cursor-pointer"
         />
         <span className="text-base font-black text-slate-900 shrink-0 max-w-[45%] truncate">
           {order.tableName || 'Counter'}
@@ -162,6 +164,7 @@ function TicketCard({
             <li key={i} className="text-[15px] leading-snug text-slate-900">
               <span className="font-black text-brand-600">{it.quantity}×</span>{' '}
               <span className="font-extrabold">{it.name}</span>
+              <AddedMarker mark={amendedMarks(order)[i]} />
               {it.variantName && (
                 <span className="ml-1 text-sm font-semibold text-slate-500">
                   ({it.variantName})
@@ -204,7 +207,7 @@ function TicketCard({
             {order.customerMarkedPaidAt ? 'Says paid' : 'Unpaid'}
           </button>
         ) : (
-          <span className="text-xs font-black text-emerald-600">
+          <span className="text-xs font-black text-slate-900">
             {formatCurrency(order.totalAmountPaise)}
           </span>
         )}

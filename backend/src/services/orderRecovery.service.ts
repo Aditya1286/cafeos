@@ -3,6 +3,7 @@ import { Table } from '../models/Table';
 import { findRecentOrdersByPhonePattern } from '../dao/orderRecovery.dao';
 import { isPhoneRecoveryVerified } from './otp.service';
 import { ServiceError } from '../utils/serviceError';
+import { phoneMatchPattern } from '../utils/phone';
 import { readRecoveryToken, signRecoveryToken, RecoverySession } from '../utils/recoveryToken';
 
 /** How far back a customer can recover orders. Long enough for a day out, short enough that an old
@@ -26,9 +27,6 @@ const tenDigits = (value: unknown): string | null => {
   const ten = digits.length === 12 && digits.startsWith('91') ? digits.slice(2) : digits;
   return /^[6-9]\d{9}$/.test(ten) ? ten : null;
 };
-
-/** Matches however the number was typed when the order was placed. */
-const phonePattern = (ten: string) => new RegExp(`^\\D*(?:\\+?91\\D*)?${ten.split('').join('\\D*')}\\D*$`);
 
 export interface RecoverResult {
   orders: RecoverableOrder[];
@@ -94,7 +92,7 @@ export const recoverOrders = async (input: {
   }
 
   const since = new Date(Date.now() - RECOVERY_WINDOW_HOURS * 3_600_000);
-  const orders = await findRecentOrdersByPhonePattern(businessId, phonePattern(ten), since, RECOVERY_LIMIT);
+  const orders = await findRecentOrdersByPhonePattern(businessId, phoneMatchPattern(ten), since, RECOVERY_LIMIT);
   return {
     orders: orders.map((o) => ({
       _id: String(o._id),

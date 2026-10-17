@@ -19,7 +19,7 @@ export const ThemeToggle = ({
       className="shrink-0 p-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors shadow-sm"
     >
       {darkMode ? (
-        <Sun className="w-4 h-4 text-amber-500" />
+        <Sun className="w-4 h-4 text-slate-500" />
       ) : (
         <Moon className="w-4 h-4 text-slate-500" />
       )}

@@ -500,7 +500,7 @@ export const toggleBusinessStatus = async (req: AuthRequest, res: Response) => {
 
 // Super admin: flag/unflag a business as a demo (internal/test) account. Purely a reporting
 // flag — the business keeps operating normally; it only stops counting toward platform-wide
-// analytics while config.excludeDemoBusinessesFromAnalytics is on.
+// analytics while analytics.excludeDemoBusinesses is on.
 export const setBusinessDemoStatus = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;

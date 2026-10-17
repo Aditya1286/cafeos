@@ -40,14 +40,14 @@ interface OrderHistoryPanelProps {
 
 const PAYMENT_BADGE_TONE: Record<string, StatusBadgeTone> = {
   PAID: 'success',
-  REFUNDED: 'violet',
+  REFUNDED: 'neutral',
   FAILED: 'danger',
   UNPAID: 'warning',
 };
 
-const ACTION_BUTTON_CLASS: Record<'amber' | 'violet' | 'rose', string> = {
+const ACTION_BUTTON_CLASS: Record<'amber' | 'brand' | 'rose', string> = {
   amber: 'bg-amber-50 hover:bg-amber-100 border-amber-200 text-amber-700',
-  violet: 'bg-violet-50 hover:bg-violet-100 border-violet-200 text-violet-700',
+  brand: 'bg-brand-50 hover:bg-brand-100 border-brand-200 text-brand-700',
   rose: 'bg-rose-50 hover:bg-rose-100 border-rose-200 text-rose-700',
 };
 
@@ -80,7 +80,7 @@ export const OrderHistoryPanel = ({
       key: string;
       label: string;
       icon: typeof Wallet;
-      tone: 'amber' | 'violet' | 'rose';
+      tone: 'amber' | 'brand' | 'rose';
       onClick: () => void;
     }[] = [];
     if (o.paymentStatus === 'UNPAID' && o.orderStatus !== 'CANCELLED') {
@@ -97,7 +97,7 @@ export const OrderHistoryPanel = ({
         key: 'refund',
         label: 'Mark Refunded',
         icon: Undo2,
-        tone: 'violet',
+        tone: 'brand',
         onClick: () => onMarkRefunded(o),
       });
     }
@@ -427,10 +427,10 @@ export const OrderHistoryPanel = ({
             <span className="text-[9px] sm:text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">
               Today's Sales
             </span>
-            <div className="text-base sm:text-2xl font-black text-emerald-600 truncate">
+            <div className="text-base sm:text-2xl font-black text-slate-900 truncate">
               {formatCurrency(todaySalesPaise)}
             </div>
-            <span className="text-[9px] sm:text-[10px] font-semibold text-emerald-600 hidden sm:block">
+            <span className="text-[9px] sm:text-[10px] font-semibold text-slate-400 hidden sm:block">
               Money from today's orders
             </span>
           </div>
@@ -456,7 +456,7 @@ export const OrderHistoryPanel = ({
           <span className="text-[9px] sm:text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">
             Time Zone
           </span>
-          <div className="text-base sm:text-2xl font-black text-indigo-600 truncate">
+          <div className="text-base sm:text-2xl font-black text-slate-900 truncate">
             {(business?.timezone || 'Asia/Kolkata') === 'Asia/Kolkata'
               ? 'India (IST)'
               : business?.timezone}

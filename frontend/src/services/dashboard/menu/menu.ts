@@ -8,6 +8,7 @@ import {
   ProductPayload,
   RemoveProductResponse,
   RestoreProductResponse,
+  SetHouseSpecialResponse,
   UpdateProductResponse,
   UploadImageResponse,
 } from './types';
@@ -40,3 +41,8 @@ export const archiveProduct = (productId: string): Promise<ArchiveProductRespons
 
 export const uploadImage = (dataUrl: string): Promise<UploadImageResponse> =>
   apiRequest('/menu/upload-image', 'POST', { image: dataUrl });
+
+// Marks (or unmarks) a dish as a house special. The API allows at most 3 per café and answers
+// HOUSE_SPECIAL_LIMIT (a message fit to show) when a fourth is tried.
+export const setHouseSpecial = (productId: string, on: boolean): Promise<SetHouseSpecialResponse> =>
+  apiRequest(`/menu/products/${productId}/house-special`, 'PUT', { on });

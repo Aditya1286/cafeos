@@ -88,7 +88,7 @@ export const MasterQrCard = ({
           onClick={onToggle}
           disabled={saving}
           className={`shrink-0 relative w-14 h-8 rounded-full transition-colors disabled:opacity-50 ${
-            masterQrEnabled ? 'bg-emerald-500' : 'bg-slate-300'
+            masterQrEnabled ? 'bg-brand-600' : 'bg-slate-300'
           }`}
           title={
             masterQrEnabled

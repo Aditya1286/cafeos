@@ -29,6 +29,9 @@ export interface IProduct extends Document {
   variants: IProductVariant[];
   addons: IProductAddon[];
   discountPercentage: number;
+  // "House special": one of at most HOUSE_SPECIAL_MAX dishes the owner points guests to first when
+  // café identity is on. Set only through PUT /menu/products/:id/house-special, which enforces the cap.
+  isHouseSpecial: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -58,7 +61,8 @@ const ProductSchema = new Schema<IProduct>(
         pricePaise: { type: Number, required: true }
       }
     ],
-    discountPercentage: { type: Number, default: 0 }
+    discountPercentage: { type: Number, default: 0 },
+    isHouseSpecial: { type: Boolean, default: false }
   },
   { timestamps: true }
 );

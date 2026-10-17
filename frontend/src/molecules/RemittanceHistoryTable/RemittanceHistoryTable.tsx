@@ -72,7 +72,7 @@ export const RemittanceHistoryTable: React.FC<RemittanceHistoryTableProps> = ({
       {p.status === 'UNPAID' && onMarkPaid && (
         <button
           onClick={() => onMarkPaid(p)}
-          className={`px-3 py-1.5 rounded-xl text-[11px] font-extrabold bg-emerald-600 text-white hover:bg-emerald-700 transition-colors ${fullWidth ? 'w-full py-2' : ''}`}
+          className={`px-3 py-1.5 rounded-xl text-[11px] font-extrabold bg-brand-600 text-white hover:bg-brand-700 transition-colors ${fullWidth ? 'w-full py-2' : ''}`}
         >
           Mark as Paid
         </button>

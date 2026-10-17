@@ -4,7 +4,8 @@ import type { PageFlow, PeekConfig } from './types';
 
 // Where the mascot is on the page. Two ways of being placed:
 //
-//   flow : fixed to the viewport, gliding down it in an S-curve as the page scrolls top to bottom.
+//   flow : fixed to the viewport, gliding down it in an S-curve as the page scrolls top to bottom
+//          (or, in `dock` mode, resting in a bottom corner of it).
 //   peek : anchored to a card in the document (so it scrolls natively with the card, no jitter),
 //          popping up from behind the card's top edge. The card paints above the mascot layer,
 //          which is what hides the mascot's lower part.
@@ -280,11 +281,14 @@ export const createFlowController = ({
     return area.bottom > area.top && area.right > area.left ? area : null;
   };
 
+  /** Static and docked mascots rest in a corner instead of following the path. */
+  const resting = staticMode || flow?.mode === 'dock';
+
   const flowTarget = (): Point | null => {
     const area = flowArea();
     if (!area) return null;
     const size = getSize();
-    if (staticMode) {
+    if (resting) {
       return {
         x: flow?.corner === 'left' ? area.left + LAYOUT.margin : area.right - size - LAYOUT.margin,
         y: area.bottom - insets.bottom - size - LAYOUT.margin,

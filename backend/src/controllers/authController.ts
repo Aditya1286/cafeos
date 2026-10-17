@@ -3,12 +3,13 @@ import { User, IUser } from '../models/User';
 import { Business } from '../models/Business';
 import { SubscriptionPlan } from '../models/SubscriptionPlan';
 import { Subscription } from '../models/Subscription';
-import { config } from '../config';
+import { runtime } from '../config';
 import { AuthRequest } from '../middleware/auth';
 import { isPhoneVerified, clearVerifiedPhone } from '../services/otp.service';
 import { signAuthToken } from '../utils/authToken';
 import { handleServiceError } from '../utils/serviceError';
 import { findUserForLogin } from '../services/auth.service';
+import { toPublicIdentity } from '../services/cafeIdentity.service';
 
 const generateToken = (user: IUser): string => signAuthToken(user);
 
@@ -112,7 +113,7 @@ export const register = async (req: Request, res: Response) => {
 
     res.cookie('jwt', token, {
       httpOnly: true,
-      secure: config.nodeEnv === 'production',
+      secure: runtime.nodeEnv === 'production',
       maxAge: 7 * 24 * 60 * 60 * 1000
     });
 
@@ -171,7 +172,7 @@ export const login = async (req: Request, res: Response) => {
 
     res.cookie('jwt', token, {
       httpOnly: true,
-      secure: config.nodeEnv === 'production',
+      secure: runtime.nodeEnv === 'production',
       maxAge: 7 * 24 * 60 * 60 * 1000
     });
 
@@ -222,7 +223,13 @@ export const getMe = async (req: AuthRequest, res: Response) => {
           businessId: user?.businessId,
           avatarUrl: user?.avatarUrl || ''
         },
-        business
+        // The stored identity (theme, variant, tagline) stays as it is for the "Café look" card, but
+        // `enabled` is the effective switch (platform AND café), so the card shows only while guests
+        // would actually see the look.
+        business: business && {
+          ...business.toJSON(),
+          identity: { ...business.toJSON().identity, enabled: toPublicIdentity(business).enabled }
+        }
       }
     });
   } catch (error: any) {

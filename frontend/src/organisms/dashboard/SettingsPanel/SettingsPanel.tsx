@@ -6,6 +6,7 @@ import { inputCls } from '@/molecules/FormField';
 import { DashboardSubscriptionInfo, MySubscriptionStatus, SubscriptionPlan } from '@/types';
 import { PlanUpgradePanel } from '@/organisms/dashboard/PlanUpgradePanel';
 import { CheckoutSettingsCard } from '@/organisms/dashboard/CheckoutSettingsCard';
+import { CafeLookCard } from '@/organisms/dashboard/CafeLookCard';
 import { SMEPAY_CHECKOUT_ENABLED, FEES_AND_PAYMENTS_ENABLED } from '@/constants/features';
 import { CheckoutSettingsState } from '@/hooks/useCheckoutSettings';
 import { GstinField } from './GstinField';
@@ -34,6 +35,9 @@ interface SettingsPanelProps {
   onMarkUpgradePaid: (utr?: string) => void;
   onCancelUpgrade: () => void;
   checkout: CheckoutSettingsState;
+  /** The owner's menu, for the Café look preview. */
+  categories: any[];
+  products: any[];
 }
 
 export const SettingsPanel = ({
@@ -60,6 +64,8 @@ export const SettingsPanel = ({
   onMarkUpgradePaid,
   onCancelUpgrade,
   checkout,
+  categories,
+  products,
 }: SettingsPanelProps) => {
   const currentTaxRate: number = business?.taxRatePercentage ?? 0;
   const taxEnabled = currentTaxRate > 0;
@@ -155,7 +161,7 @@ export const SettingsPanel = ({
                 onClick={handleToggleTax}
                 disabled={savingTaxRate}
                 className={`shrink-0 relative w-14 h-8 rounded-full transition-colors disabled:opacity-50 ${
-                  taxEnabled ? 'bg-emerald-500' : 'bg-slate-300'
+                  taxEnabled ? 'bg-brand-600' : 'bg-slate-300'
                 }`}
                 title={
                   taxEnabled ? 'GST enabled — click to disable' : 'GST disabled — click to enable'
@@ -180,12 +186,12 @@ export const SettingsPanel = ({
                       disabled={savingTaxRate}
                       className={`p-3 rounded-xl border text-left transition-all disabled:opacity-50 ${
                         rate === currentTaxRate
-                          ? 'bg-emerald-50 border-emerald-400 shadow-sm'
+                          ? 'bg-brand-50 border-brand-400 shadow-sm'
                           : 'bg-slate-50 border-slate-200 hover:bg-slate-100'
                       }`}
                     >
                       <div
-                        className={`text-sm font-black ${rate === currentTaxRate ? 'text-emerald-700' : 'text-slate-800'}`}
+                        className={`text-sm font-black ${rate === currentTaxRate ? 'text-brand-700' : 'text-slate-800'}`}
                       >
                         {rate}%
                       </div>
@@ -233,6 +239,11 @@ export const SettingsPanel = ({
             </div>
           </div>
         </div>
+
+        {/* Only while café identity is on for this café: /auth/me reports `identity.enabled` as the platform switch AND the café's own. */}
+        {business?.identity?.enabled && (
+          <CafeLookCard business={business} categories={categories} products={products} />
+        )}
 
         {SMEPAY_CHECKOUT_ENABLED && (
           <CheckoutSettingsCard

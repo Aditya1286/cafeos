@@ -13,13 +13,13 @@ export const ProductTour: React.FC = () => {
   const step = TOUR_STEPS.find((s) => s.id === active) ?? TOUR_STEPS[0];
 
   return (
-    <section id="features" className="scroll-mt-20 py-24 px-4 lg:px-8 bg-page">
+    <section id="features" className="scroll-mt-20 py-14 sm:py-24 px-4 lg:px-8 bg-page">
       <div className="max-w-7xl mx-auto">
-        <div className="text-center max-w-2xl mx-auto mb-12">
+        <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-12">
           <h2 className="text-3xl sm:text-4xl font-black text-slate-900 leading-tight mb-3">
             Take a look inside
           </h2>
-          <p className="text-slate-600 font-medium leading-relaxed">
+          <p className="text-sm sm:text-base text-slate-600 font-medium leading-relaxed">
             The same screens your guests, kitchen and you will use every day.
           </p>
         </div>
@@ -60,7 +60,7 @@ export const ProductTour: React.FC = () => {
             </p>
 
             {/* Small screens: the description sits under the stage, in a fixed-height block. */}
-            <div className="lg:hidden mt-4 min-h-[170px] rounded-2xl bg-white border border-slate-200 p-4">
+            <div className="lg:hidden mt-4 min-h-[128px] sm:min-h-[150px] rounded-2xl bg-white border border-slate-200 p-4">
               <p className="text-[15px] font-extrabold text-slate-900 leading-snug">{step.title}</p>
               <p className="mt-1.5 text-sm text-slate-600 font-medium leading-relaxed">
                 {step.body}

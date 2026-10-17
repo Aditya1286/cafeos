@@ -8,7 +8,7 @@ import { demoConfig } from './demo.config';
 import { startOfLocalDay, localTime, DAY_MS } from './clock';
 
 // Keeps a demo café's data from growing forever (the database is a 512 MB Atlas free cluster): once
-// a day, everything older than DEMO_KEEP_DAYS goes — orders with their ledger rows and kitchen
+// a day, everything older than demo.keepDays goes — orders with their ledger rows and kitchen
 // plans, fee periods with their settlement rows, and daily order counters. Every dashboard window
 // (today, this week vs last week, 30-day popular items and kitchen speed) stays fully covered.
 //

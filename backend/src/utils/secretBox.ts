@@ -1,10 +1,10 @@
 import crypto from 'crypto';
-import { config } from '../config';
+import { encryption } from '../config';
 
 // AES-256-GCM for small secrets stored at rest (a café's SMEPay client secret). The configured
 // key is hashed to exactly 32 bytes so any string works. Output: "v1:<iv>:<tag>:<ciphertext>",
 // all base64 — the version prefix leaves room to rotate the scheme later.
-const key = () => crypto.createHash('sha256').update(String(config.credentialsEncryptionKey)).digest();
+const key = () => crypto.createHash('sha256').update(String(encryption.credentialsKey)).digest();
 
 export const encryptSecret = (plaintext: string): string => {
   const iv = crypto.randomBytes(12);

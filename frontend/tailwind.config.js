@@ -6,6 +6,13 @@ const scaledFontSize = (name, size, lineHeight) => [
   { lineHeight: `var(--lh-${name}, ${lineHeight})` },
 ];
 
+// A café theme colour (an "r g b" triplet in a --cafe-* variable), with opacity support like brand-*.
+const cafeVar = (name) => `rgb(var(--cafe-${name}) / <alpha-value>)`;
+const cafeScale = (name) =>
+  Object.fromEntries(
+    [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950].map((s) => [s, cafeVar(`${name}-${s}`)]),
+  );
+
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
@@ -32,13 +39,34 @@ export default {
         // The dashboards' page background: white by default, a soft charcoal in dark mode (a variable,
         // set in index.css / styles/dashboardTheme.css, so the two modes share one class).
         page: 'rgb(var(--page-bg) / <alpha-value>)',
+        // Café themes on the guest pages (menu and order tracker). Each reads a --cafe-* variable that
+        // themes/CafeThemeScope writes for the café's theme, or for the built-in caos look, which
+        // reproduces the pages as they were. Use these, never fixed colours, inside a CafeThemeScope;
+        // keep emerald/amber/rose/violet for meaning (paid, pending, errors). See themes/types.ts.
         cafe: {
-          50: '#fdf8f6',
-          100: '#f2e8e5',
-          500: '#ea580c',
-          600: '#c2410c',
-          900: '#431407',
+          page: cafeVar('page'),
+          surface: cafeVar('surface'),
+          raised: cafeVar('raised'),
+          line: cafeVar('line'),
+          ink: cafeVar('ink'),
+          muted: cafeVar('muted'),
+          'on-accent': cafeVar('on-accent'),
+          // The filled-control colour: the accent step the theme names (themes/types.ts buttonShade).
+          button: cafeVar('button'),
+          accent: cafeScale('accent'),
+          neutral: cafeScale('neutral'),
+          'badge-special': { bg: cafeVar('badge-special-bg'), fg: cafeVar('badge-special-fg') },
+          'badge-popular': { bg: cafeVar('badge-popular-bg'), fg: cafeVar('badge-popular-fg') },
         },
+      },
+      borderRadius: {
+        'cafe-card': 'var(--cafe-radius-card)',
+        'cafe-chip': 'var(--cafe-radius-chip)',
+        'cafe-button': 'var(--cafe-radius-button)',
+        'cafe-image': 'var(--cafe-radius-image)',
+      },
+      boxShadow: {
+        'cafe-card': 'var(--cafe-card-shadow)',
       },
       fontSize: {
         xs: scaledFontSize('xs', '0.75rem', '1rem'),
@@ -52,6 +80,8 @@ export default {
       },
       fontFamily: {
         sans: ['Plus Jakarta Sans', 'Inter', 'sans-serif'],
+        'cafe-display': 'var(--cafe-font-display)',
+        'cafe-body': 'var(--cafe-font-body)',
       },
     },
   },

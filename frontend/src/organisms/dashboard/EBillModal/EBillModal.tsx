@@ -117,7 +117,7 @@ export const EBillModal = ({ bill, onClose }: EBillModalProps) => {
             </div>
             <div className="flex justify-between text-sm font-black text-slate-900 pt-2 border-t border-slate-200">
               <span>GRAND TOTAL</span>
-              <span className="text-emerald-600 font-mono text-base">
+              <span className="text-slate-900 font-mono text-base">
                 {formatCurrency(bill.totalAmountPaise)}
               </span>
             </div>

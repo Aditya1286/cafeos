@@ -6,7 +6,7 @@ import { getPublicMenu, getMenuImage } from '../controllers/menuController';
 import { createOrder, getPublicOrderById, markOrderPaidByCustomer, cancelOrderByCustomer, requestOrderRefund } from '../controllers/orderController';
 import { SubscriptionPlan } from '../models/SubscriptionPlan';
 import { Business } from '../models/Business';
-import { config } from '../config';
+import { runtime } from '../config';
 import { getOtpStatus, confirmWidgetToken, requestOtp, confirmOtp, resendOtpRequest } from '../controllers/otp.controller';
 import { recoverOrdersPublic } from '../controllers/orderRecoveryController';
 import { readRecoveryToken } from '../utils/recoveryToken';
@@ -21,6 +21,9 @@ import {
   checkoutCallbackWebhook
 } from '../controllers/checkoutController';
 import { isCheckoutAvailable } from '../services/checkout.service';
+import { toPublicIdentity } from '../services/cafeIdentity.service';
+import { addItemsToOrderPublic, recordIdentityEventPublic } from '../controllers/orderExtras.controller';
+import { getWelcome, getWhileYouWait, postAnswer } from '../controllers/guestExperience.controller';
 
 const router = Router();
 
@@ -53,7 +56,13 @@ router.get('/c/:slug', async (req, res) => {
     }
     // checkoutAvailable: whether the menu should offer SMEPay online checkout. Credentials live
     // in SmepayAccount, never on this document.
-    return res.json({ success: true, data: { ...business.toJSON(), checkoutAvailable: isCheckoutAvailable(business) } });
+    // identity: the raw stored record (enabledAt, appliedAt, stored ids) stays private; guests get
+    // only the public block, which is inert when the platform or the café has identity off.
+    const { identity: _storedIdentity, ...publicBusiness } = business.toJSON();
+    return res.json({
+      success: true,
+      data: { ...publicBusiness, checkoutAvailable: isCheckoutAvailable(business), identity: toPublicIdentity(business) }
+    });
   } catch (error: any) {
     return res
       .status(500)
@@ -70,7 +79,7 @@ router.get('/images/:id', getMenuImage);
 // limiter on top of the OTP it requires (a guesser can't brute-force the code through it).
 const recoverRouteLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
-  max: config.nodeEnv === 'production' ? 15 : 1000,
+  max: runtime.nodeEnv === 'production' ? 15 : 1000,
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many attempts. Please try again in a few minutes.' } }
@@ -82,7 +91,7 @@ const recoverRouteLimiter = rateLimit({
 // takes the tight per-IP limit above, so spraying made-up tokens never earns the roomier one.
 const recoverSessionLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
-  max: config.nodeEnv === 'production' ? 60 : 1000,
+  max: runtime.nodeEnv === 'production' ? 60 : 1000,
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req) => crypto.createHash('sha256').update(String(req.body?.recoveryToken)).digest('hex'),
@@ -104,7 +113,7 @@ router.put('/orders/:id/request-refund', requestOrderRefund);
 // a paid SMEPay order, so they get their own limiter; status polling rides the default one.
 const checkoutRouteLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
-  max: config.nodeEnv === 'production' ? 20 : 1000,
+  max: runtime.nodeEnv === 'production' ? 20 : 1000,
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many payment attempts. Please try again later.' } }
@@ -163,5 +172,38 @@ const demoRequestLimiter = rateLimit({
 });
 
 router.post('/demo-requests', demoRequestLimiter, submitDemoRequestPublic);
+
+// Café identity: order extras and events
+const orderExtrasLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: runtime.nodeEnv === 'production' ? 20 : 1000,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many requests. Please try again in a few minutes.' } }
+});
+router.post('/orders/:id/add-items', orderExtrasLimiter, addItemsToOrderPublic);
+// Engagement events fire on page views, so they get a roomier limit of their own.
+const identityEventsLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: runtime.nodeEnv === 'production' ? 120 : 1000,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many requests. Please try again in a few minutes.' } }
+});
+router.post('/identity-events', identityEventsLimiter, recordIdentityEventPublic);
+// Café identity: guest experience
+// The returning-guest welcome and the tracker's "while you wait" extras (controllers/
+// guestExperience.controller.ts). Polled by guest pages, so a roomy per-IP limiter of their own.
+const guestExperienceLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: runtime.nodeEnv === 'production' ? 120 : 1000,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many requests. Please try again in a few minutes.' } }
+});
+router.get('/c/:businessId/welcome', guestExperienceLimiter, getWelcome);
+router.get('/orders/:id/while-you-wait', guestExperienceLimiter, getWhileYouWait);
+router.post('/orders/:id/answer', guestExperienceLimiter, postAnswer);
+// End café identity: guest experience
 
 export default router;

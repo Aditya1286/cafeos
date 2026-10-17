@@ -3,7 +3,8 @@ import mongoose, { Schema, Document } from 'mongoose';
 // Files kept in MongoDB by the 'mongo' storage driver (services/storage/mongo.driver.ts), served
 // back through GET /api/v1/public/images/:id. It lives in the original `menuimages` collection
 // so every image uploaded before the storage helper existed keeps its URL.
-export type StorageFolder = 'menu' | 'avatars';
+// 'menu-imports' = photos of a printed menu sent to the AI menu reader ("Upload Menu").
+export type StorageFolder = 'menu' | 'avatars' | 'menu-imports';
 
 export interface IStoredFile extends Document {
   _id: mongoose.Types.ObjectId;
@@ -18,7 +19,7 @@ export interface IStoredFile extends Document {
 const StoredFileSchema = new Schema<IStoredFile>(
   {
     businessId: { type: Schema.Types.ObjectId, ref: 'Business', index: true },
-    folder: { type: String, enum: ['menu', 'avatars'], default: 'menu' },
+    folder: { type: String, enum: ['menu', 'avatars', 'menu-imports'], default: 'menu' },
     contentType: { type: String, required: true },
     data: { type: Buffer, required: true }
   },

@@ -1,6 +1,18 @@
 import mongoose, { Schema, Document } from 'mongoose';
 import { GSTIN_PATTERN, GSTIN_ERROR_MESSAGE } from '../utils/gst';
 
+// Café identity (themes, mascot, guest recognition) — see services/cafeIdentity.service.ts.
+// `enabled` is the per-café switch and is set only by a super admin; it counts only while the
+// platform switch (config cafeIdentity.enabled) is also on. No themeId = the default Caos look.
+export interface IBusinessIdentity {
+  enabled: boolean;
+  enabledAt?: Date; // when a super admin last switched it on
+  themeId?: string; // an id from constants/cafeThemes.ts
+  variantId?: string;
+  tagline?: string; // the owner's one-liner, shown with the theme (max 80 characters)
+  appliedAt?: Date; // when the theme was first chosen
+}
+
 export interface IBusiness extends Document {
   _id: mongoose.Types.ObjectId;
   name: string;
@@ -30,7 +42,7 @@ export interface IBusiness extends Document {
   masterQrEnabled: boolean;
   status: 'ACTIVE' | 'SUSPENDED';
   // Internal/test account (set by a super admin). Its orders, revenue, and customers are left
-  // out of platform-wide analytics when config.excludeDemoBusinessesFromAnalytics is on — the
+  // out of platform-wide analytics when analytics.excludeDemoBusinesses is on — the
   // business itself keeps working normally and still sees its own dashboard analytics.
   isDemo: boolean;
   // Optional SMEPay online checkout (services/checkout.service.ts). A super admin allows it per
@@ -39,6 +51,7 @@ export interface IBusiness extends Document {
   // because the public /c/:slug endpoint returns this document as-is.
   checkoutAllowed: boolean;
   checkoutEnabled: boolean;
+  identity: IBusinessIdentity;
   subscriptionId?: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
@@ -78,6 +91,20 @@ const BusinessSchema = new Schema<IBusiness>(
     isDemo: { type: Boolean, default: false },
     checkoutAllowed: { type: Boolean, default: false },
     checkoutEnabled: { type: Boolean, default: false },
+    identity: {
+      type: new Schema<IBusinessIdentity>(
+        {
+          enabled: { type: Boolean, default: false },
+          enabledAt: { type: Date },
+          themeId: { type: String },
+          variantId: { type: String },
+          tagline: { type: String },
+          appliedAt: { type: Date }
+        },
+        { _id: false }
+      ),
+      default: () => ({ enabled: false })
+    },
     subscriptionId: { type: Schema.Types.ObjectId, ref: 'Subscription' }
   },
   { timestamps: true }

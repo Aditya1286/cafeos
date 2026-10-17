@@ -1,0 +1,72 @@
+{
+  "server": {
+    "port": 5000,
+    "frontendUrl": "http://localhost:5173",
+    "logLevel": "debug"
+  },
+  "database": {
+    "mongo": {
+      "uri": "",
+      "host": "127.0.0.1",
+      "port": 27017,
+      "dbName": "Caos",
+      "replicaSetName": "",
+      "replicaHosts": ""
+    }
+  },
+  "auth": {
+    "jwtSecret": "",
+    "jwtExpiresIn": "7d"
+  },
+  "otp": {
+    "mode": "mock",
+    "msg91AuthKey": ""
+  },
+  "platform": {
+    "upiVpa": "Caos@okhdfcbank",
+    "payeeName": "Caos Technologies"
+  },
+  "smepay": {
+    "baseUrl": "https://staging.smepay.in",
+    "partnerBaseUrl": "https://partner.smepay.in",
+    "partnerCode": "",
+    "partnerEmail": ""
+  },
+  "checkout": {
+    "sessionTtlMinutes": 15,
+    "lateGraceMinutes": 60
+  },
+  "encryption": {
+    "credentialsKey": ""
+  },
+  "analytics": {
+    "excludeDemoBusinesses": false
+  },
+  "storage": {
+    "driver": "mongo",
+    "s3": {
+      "bucket": "",
+      "region": "ap-south-1",
+      "accessKeyId": "",
+      "secretAccessKey": "",
+      "endpoint": "",
+      "publicBaseUrl": ""
+    }
+  },
+  "aiService": {
+    "url": "http://localhost:3066",
+    "key": "",
+    "menuTimeoutMs": 190000
+  },
+  "demo": {
+    "tickKey": "",
+    "accountPassword": "",
+    "backfillDays": 30,
+    "keepDays": 45,
+    "apiBaseUrl": ""
+  },
+  "cafeIdentity": {
+    "enabled": true,
+    "mascotRendering": "light"
+  }
+}

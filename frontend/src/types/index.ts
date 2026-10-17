@@ -86,6 +86,8 @@ export interface Product {
   imageUrl?: string;
   isAvailable: boolean;
   isVeg: boolean;
+  /** Marked by the owner (at most 3 per café); badged on the guest menu when café identity is on. */
+  isHouseSpecial?: boolean;
   preparationTimeMinutes: number;
   variants: ProductVariant[];
   addons: ProductAddon[];
@@ -295,8 +297,22 @@ export interface SuperAdminOverview {
   demoFilter?: { enabled: boolean; excludedCount: number };
 }
 
+/**
+ * A café's stored identity record, as the owner's profile (/auth/me) and the super admin's business
+ * list return it. Guests never see this shape; they get themes/types PublicIdentity. On /auth/me,
+ * `enabled` is the effective switch (platform AND café), so a café whose platform switch is off reads as off.
+ */
+export interface StoredBusinessIdentity {
+  enabled: boolean;
+  themeId?: string;
+  variantId?: string;
+  tagline?: string;
+}
+
 export interface AdminBusinessSummary extends Business {
   _id: string;
+  /** Missing on a café saved before café identity existed: counts as off. */
+  identity?: StoredBusinessIdentity;
   commissionRatePercentage: number;
   lifetimeGMVPaise: number;
   totalCommissionOwedPaise: number;

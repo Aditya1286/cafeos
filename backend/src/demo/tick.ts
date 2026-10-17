@@ -13,12 +13,12 @@ import { startOfLocalDay, nextLocalMidnight, DAY_MS, MINUTE_MS } from './clock';
 //
 //  1. make sure every demo café exists, with its logins, tables and menu;
 //  2. fill in order history up to 45 minutes ago, a day at a time, in past time (a new café gets
-//     DEMO_BACKFILL_DAYS of it; after a gap — laptop asleep — the missed stretch is filled the same
+//     demo.backfillDays of it; after a gap — laptop asleep — the missed stretch is filled the same
 //     way, so charts never have holes);
 //  3. turn the arrivals of the last 45 minutes into live orders through the real order API;
 //  4. move live orders along in the kitchen (accept, cook, ready, complete) as their times come;
 //  5. keep the cafés' platform fees paid;
-//  6. once a day, prune data older than DEMO_KEEP_DAYS (the database is a 512 MB free cluster).
+//  6. once a day, prune data older than demo.keepDays (the database is a 512 MB free cluster).
 //
 // History that doesn't fit in `budgetMs` carries over to the next tick; live orders only start
 // once a café's history has caught up.

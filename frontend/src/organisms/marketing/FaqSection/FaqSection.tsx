@@ -14,9 +14,9 @@ export const FaqSection: React.FC<FaqSectionProps> = ({ items = FAQS, defaultOpe
   return (
     // `w-full` matters: the page root is a flex column, where an `mx-auto` child otherwise
     // shrinks to its content and the whole block resizes as answers open and close.
-    <section id="faq" className="scroll-mt-20 w-full max-w-3xl mx-auto py-24 px-4 lg:px-8">
-      <div className="text-center mb-12">
-        <h2 className="text-3xl font-black text-slate-900 mb-3">Frequently Asked Questions</h2>
+    <section id="faq" className="scroll-mt-20 w-full max-w-3xl mx-auto py-14 sm:py-24 px-4 lg:px-8">
+      <div className="text-center mb-8 sm:mb-12">
+        <h2 className="text-[1.7rem] sm:text-3xl font-black text-slate-900 mb-3">Frequently Asked Questions</h2>
         <p className="text-sm text-slate-500 font-semibold">Quick answers before you start</p>
       </div>
 

@@ -3,14 +3,14 @@ import rateLimit from 'express-rate-limit';
 import { register, login, getMe } from '../controllers/authController';
 import { verifyPasswordResetDetails, completePasswordReset } from '../controllers/passwordResetController';
 import { protect } from '../middleware/auth';
-import { config } from '../config';
+import { runtime } from '../config';
 
 const router = Router();
 
 // Password reset guesses at an email + phone pair, so it gets a tight limiter of its own.
 const passwordResetLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: config.nodeEnv === 'production' ? 10 : 1000,
+  max: runtime.nodeEnv === 'production' ? 10 : 1000,
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many attempts. Please try again later.' } }
@@ -20,7 +20,7 @@ const passwordResetLimiter = rateLimit({
 // all still sign in normally.
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: config.nodeEnv === 'production' ? 10 : 1000,
+  max: runtime.nodeEnv === 'production' ? 10 : 1000,
   skipSuccessfulRequests: true,
   standardHeaders: true,
   legacyHeaders: false,

@@ -10,8 +10,15 @@ import {
   RequestRefundResponse,
 } from './types';
 
-export const create = (payload: CreateOrderPayload): Promise<CreateOrderResponse> =>
-  apiRequest('/public/orders', 'POST', payload);
+/**
+ * `guestToken` is this device's stored guest pass for the café, if any. It travels as a header (not
+ * in the body), and an order without it is accepted exactly as before.
+ */
+export const create = (
+  payload: CreateOrderPayload,
+  { guestToken }: { guestToken?: string | null } = {},
+): Promise<CreateOrderResponse> =>
+  apiRequest('/public/orders', 'POST', payload, guestToken ? { 'X-Guest-Token': guestToken } : {});
 
 export const get = (orderId: string): Promise<GetOrderResponse> =>
   apiRequest(`/public/orders/${orderId}`);

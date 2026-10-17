@@ -4,6 +4,8 @@ import { Table } from '../models/Table';
 import { Business } from '../models/Business';
 import { Order } from '../models/Order';
 import { isCheckoutAvailable } from '../services/checkout.service';
+import { toPublicIdentity } from '../services/cafeIdentity.service';
+import { server } from '../config';
 import qrcode from 'qrcode';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -52,7 +54,9 @@ export const getTableByToken = async (req: Request, res: Response) => {
           coverImageUrl: business.coverImageUrl,
           currencySymbol: business.currencySymbol,
           taxRatePercentage: business.taxRatePercentage,
-          checkoutAvailable: isCheckoutAvailable(business)
+          checkoutAvailable: isCheckoutAvailable(business),
+          // The same public block as GET /public/c/:slug, so a menu opened from a table QR is themed too.
+          identity: toPublicIdentity(business)
         }
       }
     });
@@ -109,7 +113,7 @@ export const getTableQRCode = async (req: AuthRequest, res: Response) => {
     if (!table) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Table not found' } });
 
     const business = await Business.findById(req.businessId);
-    const targetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/c/${business?.slug}/t/${table.qrToken}`;
+    const targetUrl = `${server.frontendUrl}/c/${business?.slug}/t/${table.qrToken}`;
 
     const qrDataUrl = await qrcode.toDataURL(targetUrl, {
       margin: 2,

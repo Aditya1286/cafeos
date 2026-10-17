@@ -7,6 +7,9 @@ import { handleServiceError } from '../utils/serviceError';
 import { Request } from 'express';
 import mongoose from 'mongoose';
 import { getPopularProductIds } from '../services/menuPopularity.service';
+import { Business } from '../models/Business';
+import { isIdentityOnFor } from '../services/cafeIdentity.service';
+import { getCategoryTips, firstVisitLineFor } from '../services/menuTips.service';
 
 
 // The only fields an owner/manager may change on an update. Anything else in the body —
@@ -27,6 +30,19 @@ const pickFields = (body: any, fields: readonly string[]): Record<string, unknow
 };
 
 // Public: Get menu by business slug
+// Present only while identity is on for the café; absent (not empty) otherwise.
+const menuIdentityExtras = async (businessId: string, products: { _id: unknown; isHouseSpecial?: boolean }[]) => {
+  const business = await Business.findById(businessId).select('name identity');
+  if (!business || !isIdentityOnFor(business)) return {};
+  const categoryTips = await getCategoryTips(business);
+  const firstVisitLine = firstVisitLineFor(business);
+  return {
+    categoryTips,
+    houseSpecialIds: products.filter((p) => p.isHouseSpecial).map((p) => String(p._id)),
+    ...(firstVisitLine ? { firstVisitLine } : {})
+  };
+};
+
 export const getPublicMenu = async (req: Request, res: Response) => {
   try {
     const { businessId } = req.params;
@@ -47,12 +63,20 @@ export const getPublicMenu = async (req: Request, res: Response) => {
       return [] as string[];
     });
 
+    // Café identity: the mascot's category tips, the house specials and the first-visit line. Also
+    // a nice-to-have: a failure leaves the menu exactly as it is without identity.
+    const identityExtras = await menuIdentityExtras(businessId, products).catch((err) => {
+      console.error('[menu] Café identity extras failed:', err);
+      return {};
+    });
+
     return res.json({
       success: true,
       data: {
         categories,
         products,
-        popularProductIds
+        popularProductIds,
+        ...identityExtras
       }
     });
   } catch (error: any) {
@@ -197,7 +221,7 @@ export const updateProduct = async (req: AuthRequest, res: Response) => {
 };
 
 // Owner/Manager: Upload a menu image (category or product photo). Validation and where the
-// bytes end up (MongoDB or S3, per config.storageDriver) live in services/storage.
+// bytes end up (MongoDB or S3, per storage.driver) live in services/storage.
 export const uploadMenuImage = async (req: AuthRequest, res: Response) => {
   try {
     const { url } = await uploadImage({ dataUrl: req.body.image, folder: 'menu', ownerId: req.businessId?.toString() });

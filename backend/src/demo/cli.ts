@@ -12,7 +12,7 @@ import { pruneOldDemoData } from './prune';
 //   npx ts-node src/demo/cli.ts status          (in the Docker image: node dist/demo/cli.js status)
 //   npx ts-node src/demo/cli.ts backfill        create the cafés and fill in their order history now,
 //                                              instead of over the first few ticks (no live orders)
-//   npx ts-node src/demo/cli.ts prune           delete demo data older than DEMO_KEEP_DAYS now
+//   npx ts-node src/demo/cli.ts prune           delete demo data older than demo.keepDays now
 //                                              (ticks already do this once a day)
 //   npx ts-node src/demo/cli.ts remove --yes    delete the demo cafés and every trace of them (the
 //                                              undo — see README.md; if ticks keep coming they are
