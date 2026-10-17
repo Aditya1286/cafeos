@@ -4,6 +4,7 @@ import { Table } from '../models/Table';
 import { Business } from '../models/Business';
 import { Order } from '../models/Order';
 import { isCheckoutAvailable } from '../services/checkout.service';
+import { toPublicIdentity } from '../services/cafeIdentity.service';
 import { server } from '../config';
 import qrcode from 'qrcode';
 import { v4 as uuidv4 } from 'uuid';
@@ -53,7 +54,9 @@ export const getTableByToken = async (req: Request, res: Response) => {
           coverImageUrl: business.coverImageUrl,
           currencySymbol: business.currencySymbol,
           taxRatePercentage: business.taxRatePercentage,
-          checkoutAvailable: isCheckoutAvailable(business)
+          checkoutAvailable: isCheckoutAvailable(business),
+          // The same public block as GET /public/c/:slug, so a menu opened from a table QR is themed too.
+          identity: toPublicIdentity(business)
         }
       }
     });

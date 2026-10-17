@@ -1,4 +1,4 @@
-// The café-identity block on the public payloads (GET /public/c/:slug and GET /public/orders/:id),
+// The café-identity block on the public payloads (GET /public/c/:slug, /public/t/:token and /public/orders/:id),
 // plus the new schema fields it rests on (Business.identity, Product.isHouseSpecial, Order.amendments).
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
@@ -7,6 +7,7 @@ import { cafeIdentity } from '../src/config';
 import { Business } from '../src/models/Business';
 import { Product } from '../src/models/Product';
 import { Order } from '../src/models/Order';
+import { Table } from '../src/models/Table';
 import { toPublicIdentity } from '../src/services/cafeIdentity.service';
 import { startHarness, Harness, createOrderPlacer } from './helpers';
 
@@ -101,6 +102,32 @@ test('GET /public/orders/:id carries the same identity block under business', as
     });
   } finally {
     await resetIdentity();
+  }
+});
+
+test('GET /t/:token (a table QR) carries the same identity block under business', async () => {
+  const table = await Table.create({ businessId: (await Business.findOne({ slug: SLUG }))!._id, tableNumber: 'ID-QR', capacity: 2, qrToken: 'tok_identity_qr' });
+
+  const off = await request(h.app).get(`/api/v1/public/t/${table.qrToken}`);
+  assert.equal(off.status, 200);
+  assert.deepEqual(off.body.data.business.identity, OFF);
+
+  await Business.updateOne(
+    { slug: SLUG },
+    { identity: { enabled: true, enabledAt: new Date(), themeId: 'cozy-night', variantId: 'ember', tagline: 'Late nights' } }
+  );
+  try {
+    const on = await request(h.app).get(`/api/v1/public/t/${table.qrToken}`);
+    assert.equal(on.status, 200);
+    assert.deepEqual(on.body.data.business.identity, {
+      enabled: true,
+      mascotRendering: 'light',
+      theme: { id: 'cozy-night', variantId: 'ember' },
+      tagline: 'Late nights'
+    });
+  } finally {
+    await resetIdentity();
+    await Table.deleteOne({ _id: table._id });
   }
 });
 
