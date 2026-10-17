@@ -318,8 +318,9 @@ export const CustomerMenuPage: React.FC = () => {
   const coverSrc = business?.coverImageUrl || (themeId === 'caos' ? CAOS_STOCK_COVER : '');
 
   return (
-    // Hidden until the café (and so its theme) has loaded, so a themed café never flashes the default look.
-    <CafeThemeScope identity={identity} pending={!business && !error}>
+    // While the café loads this renders the default (caos) page with its placeholder name, address
+    // and stock cover, exactly as the page always did; the theme takes over once `identity` arrives.
+    <CafeThemeScope identity={identity}>
       <div className="min-h-screen bg-cafe-page text-cafe-ink pb-28 selection:bg-cafe-button selection:text-cafe-on-accent max-w-md mx-auto relative shadow-xl border-x border-cafe-line font-cafe-body overflow-x-clip">
         {/* ── Top Hero Header (Swiggy / Zomato Aesthetic) ────────────────── */}
         <div className="relative bg-cafe-surface border-b border-cafe-line">
