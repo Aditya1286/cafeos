@@ -1,0 +1,1 @@
+export { SnapSlider } from './SnapSlider';

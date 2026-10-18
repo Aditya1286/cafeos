@@ -2,8 +2,9 @@
 // A line whose placeholders cannot all be filled is not used at all: the caller skips it and tries
 // another, so the mascot never says "Welcome back, !" or names a dish it does not know about.
 
+// {orders} is a dish's real order count and {price} its menu price (services/menuTips.service.ts).
 // {share} is a pairing's real share, e.g. "7 in 10" (services/pairings.service.ts, from at least 20 orders).
-export const TEMPLATE_PLACEHOLDERS = ['name', 'usual', 'cafe', 'category', 'dish', 'share'] as const;
+export const TEMPLATE_PLACEHOLDERS = ['name', 'usual', 'cafe', 'category', 'dish', 'share', 'orders', 'price'] as const;
 
 export type TemplatePlaceholder = (typeof TEMPLATE_PLACEHOLDERS)[number];
 
@@ -14,7 +15,7 @@ const PLACEHOLDER = /\{([^{}]*)\}/g;
 const isAllowed = (key: string): key is TemplatePlaceholder => (TEMPLATE_PLACEHOLDERS as readonly string[]).includes(key);
 
 /**
- * Replaces each `{name}`, `{usual}`, `{cafe}`, `{category}`, `{dish}` and `{share}` in `text` with its value.
+ * Replaces each `{name}`, `{usual}`, `{cafe}`, `{category}`, `{dish}`, `{share}`, `{orders}` and `{price}` in `text` with its value.
  * Returns null if any placeholder in the text has no non-blank value, or is not an allowed
  * placeholder. Extra values are ignored. Values go in as given (trimmed): a value that itself looks
  * like a placeholder, or like a replacement pattern such as `$&`, is not expanded.

@@ -100,8 +100,11 @@ export interface PageFlow {
    *  - `dock`: rests small in one corner of the area, but still pops up from cards. Made for phones,
    *    where a path across the screen would sit on top of the text.
    *  - `slot`: lives in a reserved spot in the page itself (`slot`), scrolls with the page, covers
-   *    nothing, and its message sits beside it (the order page, made for phones). */
-  mode?: 'static' | 'dock' | 'slot';
+   *    nothing, and its message sits beside it (the order page, made for phones).
+   *  - `peek`: not on screen between pop-ups. It only rises from behind a card, and the pace follows
+   *    the page's scrolling: no pop-up while the page is being scrolled fast, a slow and gentle rise
+   *    once it slows down or stops, a quicker sink when the visitor flicks away (the café menu). */
+  mode?: 'static' | 'dock' | 'slot' | 'peek';
   /** CSS selector of the reserved spot, for `mode: 'slot'`. */
   slot?: string;
   /** Fixed mascot size in px, instead of the responsive one. */
@@ -175,4 +178,9 @@ export interface MascotPageProps {
   dress?: MascotDress;
   /** A bubble action was tapped (its `id`). The bubble closes afterwards. */
   onAction?: (id: string) => void;
+  /** Cards to pop up from that only exist at runtime (one per menu category), added to the page
+   * config's own `peeks`. Replaces the previous set. */
+  peeks?: PeekConfig[];
+  /** The mascot popped up from a card (its `peekId`) or sank back behind it (null). */
+  onPeek?: (peekId: string | null) => void;
 }

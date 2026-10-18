@@ -31,6 +31,8 @@ export interface StartCheckoutPayload {
   customerName: string;
   customerPhone: string;
   items: { productId: string; quantity: number; name: string }[];
+  /** An optional note for the kitchen. */
+  notes?: string;
   qrToken?: string;
   businessSlug?: string;
   /** From a fresh OTP in this browser: proof of who is paying, so the order can earn a guest pass. */

@@ -7,6 +7,8 @@ export interface CreateOrderPayload {
   customerPhone: string;
   paymentMethod: string;
   items: { productId: string; quantity: number; name: string }[];
+  /** An optional note for the kitchen. */
+  notes?: string;
   qrToken?: string;
   businessSlug?: string;
   /** From the last fresh OTP on this device: lets the server issue a guest pass with the order. */

@@ -89,6 +89,27 @@ export const PEEK = {
   repeatMs: 20_000,
 } as const;
 
+/** Pop-ups that follow the page's scrolling (`flow.mode === 'peek'`, the café menu). Speeds are in
+ * px of page scroll per ms (0.45 = 450 px/s, a comfortable read; a flick is several times that). */
+export const PEEK_PACE = {
+  /** No scroll for this long counts as stopped. */
+  settleMs: 220,
+  /** The speed is measured over this many ms of recent scrolling. */
+  windowMs: 160,
+  /** Needs at least this much scrolling history to know the speed; a page that has only just
+   * started to move counts as fast until then, so a flick never starts a pop-up. */
+  minSpanMs: 48,
+  /** A pop-up may only start while scrolling is slower than this. */
+  startBelow: 0.45,
+  /** An open pop-up sinks quickly once scrolling gets faster than this. */
+  fastAbove: 1.2,
+  /** How long the rise takes: slow and deliberate when the page is still, quicker as the scroll nears
+   * the limit above. */
+  riseMs: { still: 1100, limit: 700 },
+  /** How long the sink takes: unhurried when the visitor stops, quick when they flick past. */
+  sinkMs: { calm: 520, fast: 260 },
+} as const;
+
 /** The scroll probe line (fraction of viewport height) that decides the active section. */
 export const ACTIVE_LINE = 0.45;
 
@@ -689,25 +710,35 @@ export const DEMO_CONFIG: MascotConfig = {
 };
 
 // ─── Customer menu page ────────────────────────────────────────────────────────────────────────
-// A café's own menu. The mascot rests small in a corner on every viewport and says nothing of its
-// own: everything it says (the returning-guest welcome, category tips) comes from the café's data,
-// which the page hands over at runtime as `reactions` and drives with `signal`.
+// A café's own menu. The mascot is not on screen between pop-ups and says nothing of its own:
+// everything it says (the returning-guest welcome, category tips) comes from the café's data, which
+// the page hands over at runtime as `peeks`: the welcome rises from behind the café's card, and each
+// tip from behind its category's top bar (hooks/useMenuMascot, organisms/customer-menu/MenuSection).
 
-// Docked bottom-right, lifted clear of the menu's sticky cart bar (fixed, bottom 12px, ~56px tall,
-// 92% wide), so it never covers the cart or the add buttons beneath it.
-export const MENU_DOCK_BOTTOM_INSET = 76;
-
-// On a phone the mascot is half its usual size: at full size it sat on top of the add buttons of
-// the menu items beside it, which is exactly what a guest is trying to tap.
+// The menu's mascot is small and is not on screen between pop-ups: it rises from behind the café's
+// card and each category's top bar (mode 'peek'), at a pace set by how fast the page is scrolling.
+// At its full size it sat on top of the add buttons of the menu items, which is exactly what a guest
+// is trying to tap.
 export const MENU_PHONE_SIZE_SCALE = 0.5;
+export const MENU_SIZE_SCALE = 0.34;
+/** How long a pop-up stays up (after rising) if the visitor stays put, then it sinks again. */
+export const MENU_PEEK_HOLD_MS = 6500;
+/** How much of the small mascot clears the card it rises from: the whole face, not just the hat. */
+export const MENU_PEEK_VISIBLE = 0.82;
 
 export const MENU_CONFIG: MascotConfig = {
-  flow: { mode: 'dock', insets: { bottom: MENU_DOCK_BOTTOM_INSET } },
-  phoneFlow: { mode: 'dock', sizeScale: MENU_PHONE_SIZE_SCALE, corner: 'left' },
+  flow: {
+    mode: 'peek',
+    sizeScale: MENU_SIZE_SCALE,
+    peekHoldMs: MENU_PEEK_HOLD_MS,
+    peekVisible: MENU_PEEK_VISIBLE,
+  },
+  phoneFlow: { sizeScale: MENU_PHONE_SIZE_SCALE },
   // The welcome (the bubble with "Add") closes on a scroll or a tap elsewhere (§8.1).
   closeBubbleOnInteract: true,
   sections: [],
   targets: [],
+  // The welcome card and one per category tip are added at runtime (hooks/useMenuMascot).
   peeks: [],
 };
 

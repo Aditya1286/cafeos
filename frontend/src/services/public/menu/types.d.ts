@@ -11,7 +11,7 @@ export type GetBusinessBySlugResponse = ApiResponse<PublicBusiness>;
 export interface CategoryTip {
   productId: string;
   line: string;
-  kind: 'best-seller' | 'house-special';
+  kind: 'best-seller' | 'house-special' | 'value';
 }
 
 // popularProductIds: the café's real best sellers (backend services/menuPopularity.service.ts), best first.

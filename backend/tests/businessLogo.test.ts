@@ -94,3 +94,41 @@ test("one business's owner changes only their own logo", async () => {
   assert.equal((await Business.findOne({ slug: 'bean-and-butter' }))!.logoUrl, res.body.data.logoUrl);
   assert.equal((await Business.findOne({ slug: 'artisan-cafe' }))!.logoUrl, artisanBefore, "the first business's logo is untouched");
 });
+
+// ── The cover banner on the guests' menu ────────────────────────────────────────────────────────
+const putCover = (token: string, image: unknown) => request(h.app).put('/api/v1/business/cover').set(as(token)).send({ image });
+
+test('the owner sets the menu banner; guests get it, and the logo is left alone', async () => {
+  const logoBefore = (await Business.findOne({ slug: 'artisan-cafe' }))!.logoUrl;
+  const res = await putCover(owner, PNG_DATA_URL);
+  assert.equal(res.status, 200, JSON.stringify(res.body));
+  const url: string = res.body.data.coverImageUrl;
+  assert.match(url, /^\/api\/v1\/public\/images\//);
+  assert.equal((await request(h.app).get(url)).headers['content-type'], 'image/png');
+
+  const guestView = await request(h.app).get('/api/v1/public/c/artisan-cafe');
+  assert.equal(guestView.body.data.coverImageUrl, url);
+  assert.equal((await Business.findOne({ slug: 'artisan-cafe' }))!.logoUrl, logoBefore);
+});
+
+test('a new banner replaces the old one, and removing it deletes the file', async () => {
+  const first = (await Business.findOne({ slug: 'artisan-cafe' }))!.coverImageUrl!;
+  const second = await putCover(owner, PNG_DATA_URL);
+  assert.notEqual(second.body.data.coverImageUrl, first);
+  assert.equal((await request(h.app).get(first)).status, 404, 'the old file is deleted');
+
+  const removed = await request(h.app).delete('/api/v1/business/cover').set(as(owner));
+  assert.equal(removed.status, 200);
+  assert.equal(removed.body.data.coverImageUrl, '');
+  assert.equal((await request(h.app).get(second.body.data.coverImageUrl)).status, 404);
+  assert.equal((await Business.findOne({ slug: 'artisan-cafe' }))!.coverImageUrl, '');
+});
+
+test('only the owner changes the banner, and only with a real image', async () => {
+  assert.equal((await putCover(staffToken, PNG_DATA_URL)).status, 403);
+  assert.equal((await request(h.app).delete('/api/v1/business/cover').set(as(staffToken))).status, 403);
+  assert.equal((await request(h.app).put('/api/v1/business/cover').send({ image: PNG_DATA_URL })).status, 401);
+  const bad = await putCover(owner, 'not an image');
+  assert.equal(bad.status, 400);
+  assert.equal(bad.body.error.code, 'INVALID_IMAGE');
+});

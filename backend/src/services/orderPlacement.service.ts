@@ -138,7 +138,7 @@ export const priceItems = async (
       variantName: item.variantName || '',
       addons: addonSnapshots,
       itemTotalPaise: singleItemTotalPaise,
-      notes: item.notes || ''
+      notes: cleanNote(item.notes)
     });
   }
 
@@ -165,6 +165,18 @@ export const computeTotals = (
   const totalAmountPaise = subtotalPaise + taxPaise;
   const businessEarningsPaise = totalAmountPaise - platformFeePaise;
   return { taxPaise, discountPaise, platformFeePaise, totalAmountPaise, businessEarningsPaise };
+};
+
+/** The longest note a guest can leave for the kitchen, on the order or on one item. */
+export const MAX_NOTE_LENGTH = 300;
+
+/** A guest's note, trimmed; empty when there is none. Anything but a short string is refused. */
+const cleanNote = (value: unknown): string => {
+  if (value === undefined || value === null || value === '') return '';
+  if (typeof value !== 'string' || value.trim().length > MAX_NOTE_LENGTH) {
+    throw new ServiceError(400, 'VALIDATION_ERROR', `Notes can be at most ${MAX_NOTE_LENGTH} characters.`);
+  }
+  return value.trim();
 };
 
 export const prepareOrder = async (input: OrderPlacementInput): Promise<PreparedOrder> => {
@@ -243,7 +255,7 @@ export const prepareOrder = async (input: OrderPlacementInput): Promise<Prepared
       platformFeePaise,
       totalAmountPaise,
       businessEarningsPaise,
-      notes: notes || ''
+      notes: cleanNote(notes)
     }
   };
 };

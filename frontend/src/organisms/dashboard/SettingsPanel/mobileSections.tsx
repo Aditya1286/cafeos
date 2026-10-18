@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { CheckoutSettingsCard } from '@/organisms/dashboard/CheckoutSettingsCard';
-import { CafeLookCard } from '@/organisms/dashboard/CafeLookCard';
+import { CafeLookCardMobile } from '@/organisms/dashboard/CafeLookCard';
 import { PlanUpgradePanel } from '@/organisms/dashboard/PlanUpgradePanel';
 import { SMEPAY_CHECKOUT_ENABLED, FEES_AND_PAYMENTS_ENABLED } from '@/constants/features';
 import { GstinField } from './GstinField';
@@ -12,6 +12,7 @@ import {
   UpiSettings,
   SubscriptionCard,
   MenuQrCard,
+  MenuBannerEditor,
 } from './sections';
 
 /** One tab of the Settings screen on a phone. */
@@ -52,6 +53,12 @@ export const MOBILE_SECTIONS: MobileSection[] = [
           onRemoveLogo={p.onRemoveLogo}
         />
         <BusinessDetails business={p.business} className="grid grid-cols-2 gap-2.5" />
+        <MenuBannerEditor
+          business={p.business}
+          saving={p.savingCover}
+          onUpload={p.onUploadCover}
+          onRemove={p.onRemoveCover}
+        />
       </Card>
     ),
   },
@@ -92,7 +99,7 @@ export const MOBILE_SECTIONS: MobileSection[] = [
     // Only while café identity is on for this café (see the desktop panel).
     isVisible: (p) => !!p.business?.identity?.enabled,
     render: (p) => (
-      <CafeLookCard business={p.business} categories={p.categories} products={p.products} />
+      <CafeLookCardMobile business={p.business} categories={p.categories} products={p.products} />
     ),
   },
   {

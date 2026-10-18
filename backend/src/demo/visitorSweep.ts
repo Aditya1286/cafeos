@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import { Order } from '../models/Order';
 import { FinancialLedger } from '../models/FinancialLedger';
 import { PULSE_KEY_PREFIX } from './live';
+import { OrderReview } from '../models/OrderReview';
 import { DemoOrderPlan } from './models/DemoOrderPlan';
 
 // Anyone can order at the public demo café, with their own phone number (it is verified by OTP like
@@ -18,6 +19,7 @@ export const sweepVisitorOrders = async (businessId: mongoose.Types.ObjectId, no
   const ids = (await Order.find(old).select('_id').lean()).map((order) => order._id);
   if (!ids.length) return 0;
   await FinancialLedger.deleteMany({ businessId, orderId: { $in: ids } });
+  await OrderReview.deleteMany({ orderId: { $in: ids } }); // a visitor's review goes with their order
   return (await Order.deleteMany({ _id: { $in: ids } })).deletedCount;
 };
 
@@ -32,5 +34,6 @@ export const sweepPulseOrders = async (businessId: mongoose.Types.ObjectId, now:
   if (!ids.length) return 0;
   await FinancialLedger.deleteMany({ businessId, orderId: { $in: ids } });
   await DemoOrderPlan.deleteMany({ orderId: { $in: ids } });
+  await OrderReview.deleteMany({ orderId: { $in: ids } });
   return (await Order.deleteMany({ _id: { $in: ids } })).deletedCount;
 };

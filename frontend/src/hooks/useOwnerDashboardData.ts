@@ -291,34 +291,58 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
     return { updatedIds, failed };
   };
 
-  // The business's own logo in the top bar: a picked image replaces it, removing goes back to the default tile.
+  // The business's own pictures: the logo in the top bar and the banner on the guests' menu. A picked
+  // image replaces the old one; removing goes back to the default.
   const [savingLogo, setSavingLogo] = useState(false);
-  const changeLogo = async (
-    change: () => Promise<{ data: { logoUrl: string } }>,
+  const [savingCover, setSavingCover] = useState(false);
+  const changeImage = async (
+    setSaving: (saving: boolean) => void,
+    change: () => Promise<{ data: Partial<Record<'logoUrl' | 'coverImageUrl', string>> }>,
     success: string,
+    failure: string,
   ) => {
-    setSavingLogo(true);
+    setSaving(true);
     try {
       const { data } = await change();
-      setBusiness((prev: any) => (prev ? { ...prev, logoUrl: data.logoUrl } : prev));
+      setBusiness((prev: any) => (prev ? { ...prev, ...data } : prev));
       toast.success(success);
     } catch (err: any) {
-      toast.error(err.message || 'Could not change the logo');
+      toast.error(err.message || failure);
     } finally {
-      setSavingLogo(false);
+      setSaving(false);
     }
   };
-  const handleUploadLogo = async (file: File) => {
+  const pickedImage = async (file: File): Promise<string | null> => {
     if (!file.type.startsWith('image/')) {
       toast.error('Please pick an image (JPEG, PNG or WEBP).');
-      return;
+      return null;
     }
-    await changeLogo(
-      async () => businessService.uploadLogo(await readFileAsDataUrl(file)),
+    return readFileAsDataUrl(file);
+  };
+  const handleUploadLogo = async (file: File) => {
+    const image = await pickedImage(file);
+    if (!image) return;
+    await changeImage(
+      setSavingLogo,
+      async () => businessService.uploadLogo(image),
       'Logo updated',
+      'Could not change the logo',
     );
   };
-  const handleRemoveLogo = () => changeLogo(() => businessService.removeLogo(), 'Logo removed');
+  const handleRemoveLogo = () =>
+    changeImage(setSavingLogo, () => businessService.removeLogo(), 'Logo removed', 'Could not change the logo');
+  const handleUploadCover = async (file: File) => {
+    const image = await pickedImage(file);
+    if (!image) return;
+    await changeImage(
+      setSavingCover,
+      async () => businessService.uploadCover(image),
+      'Banner updated',
+      'Could not change the banner',
+    );
+  };
+  const handleRemoveCover = () =>
+    changeImage(setSavingCover, () => businessService.removeCover(), 'Banner removed', 'Could not change the banner');
 
   const [savingUpiVpa, setSavingUpiVpa] = useState(false);
   const handleSaveUpiVpa = async (upiVpa: string) => {
@@ -509,6 +533,9 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
     savingLogo,
     handleUploadLogo,
     handleRemoveLogo,
+    savingCover,
+    handleUploadCover,
+    handleRemoveCover,
     savingUpiVpa,
     handleSaveUpiVpa,
     savingGstin,

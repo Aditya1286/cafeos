@@ -7,7 +7,7 @@ import { GUEST_QUESTIONS } from '../src/constants/guestQuestions';
 import { MASCOT_COPY } from '../src/constants/mascotCopy';
 import { fillTemplate } from '../src/services/copyTemplates';
 
-const ALLOWED_PLACEHOLDERS = new Set(['name', 'usual', 'cafe', 'category', 'dish', 'share']);
+const ALLOWED_PLACEHOLDERS = new Set(['name', 'usual', 'cafe', 'category', 'dish', 'share', 'orders', 'price']);
 const GESTURES = new Set(['nod', 'tilt', 'wave', 'pop', 'wiggle', 'tipHat', 'lean']);
 // The brief's rule, plus the other ways a time promise creeps in.
 const TIME_PROMISE = /\b(soon|minutes?|mins?|seconds|hours?|shortly|instantly|immediately|guarantee[sd]?|right away|in no time|ready in)\b/i;
@@ -124,7 +124,7 @@ test('no copy is blank, shouts, or runs long', () => {
 // ---------------------------------------------------------------- mascot copy
 
 test('MASCOT_COPY has all six lists, each with unique ids and at least 2 entries', () => {
-  assert.deepEqual(Object.keys(MASCOT_COPY).sort(), ['categoryTip', 'firstVisit', 'houseSpecialTip', 'pairing', 'pairingShare', 'welcomeFallbacks']);
+  assert.deepEqual(Object.keys(MASCOT_COPY).sort(), ['categoryTip', 'firstVisit', 'houseSpecialTip', 'leaderTip', 'orderCountTip', 'pairing', 'pairingShare', 'valueTip', 'welcomeFallbacks']);
   for (const [name, lines] of Object.entries(MASCOT_COPY)) {
     assert.ok(lines.length >= 2, `${name} has ${lines.length} entries`);
     assert.equal(new Set(lines.map((l) => l.id)).size, lines.length, `${name} has a duplicate id`);
@@ -159,6 +159,9 @@ test('tips and pairings use only the placeholders they can be given', () => {
   const allowedFor: Record<string, string[]> = {
     categoryTip: ['category', 'dish'],
     houseSpecialTip: ['dish', 'cafe', 'category'],
+    orderCountTip: ['dish', 'category', 'orders'],
+    leaderTip: ['dish', 'category'],
+    valueTip: ['dish', 'category', 'price'],
     pairing: ['dish'],
     pairingShare: ['dish', 'share'],
   };

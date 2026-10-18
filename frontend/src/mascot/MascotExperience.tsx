@@ -74,14 +74,18 @@ const ActiveMascot: React.FC<
     config: MascotConfig;
     onMinimize: () => void;
   }
-> = ({ config, signal, rendering, reactions, dress, onAction, onMinimize }) => {
+> = ({ config, signal, rendering, reactions, dress, onAction, peeks, onPeek, onMinimize }) => {
   const reduced = useReducedMotion();
   const isPhone = useIsPhone();
   // The page's flow for this viewport; everything below reads this, never `config.flow` directly.
   const flow = resolveFlow(config, isPhone);
   const slotMode = flow?.mode === 'slot';
   const fixedSize = flow?.size;
-  const scale = (flow?.sizeScale ?? 1) * (reduced && !slotMode ? REDUCED_SIZE_SCALE : 1);
+  // The menu's pop-ups (mode 'peek') still happen with reduced motion, only without the slide: the
+  // mascot is not on screen between them, so there is nothing to rest in a corner.
+  const peekMode = flow?.mode === 'peek';
+  const scale =
+    (flow?.sizeScale ?? 1) * (reduced && !slotMode && !peekMode ? REDUCED_SIZE_SCALE : 1);
   const pickSize = (width: number) => fixedSize ?? sizeForWidth(width, scale);
   const [size, setSize] = useState(() => pickSize(window.innerWidth));
   const [mode, setMode] = useState<Mode>('loading');
@@ -115,6 +119,11 @@ const ActiveMascot: React.FC<
   bandRef.current = dress?.band;
   const onActionRef = useRef(onAction);
   onActionRef.current = onAction;
+  const peeksRef = useRef(peeks);
+  peeksRef.current = peeks;
+  const onPeekRef = useRef(onPeek);
+  onPeekRef.current = onPeek;
+  const moverRef = useRef<ReturnType<typeof createFlowController> | null>(null);
   const flowRef = useRef(flow);
   flowRef.current = flow;
   const reducedRef = useRef(reduced);
@@ -243,16 +252,24 @@ const ActiveMascot: React.FC<
     const mover = host
       ? createFlowController({
           host,
-          peeks: config.peeks,
+          // The config's cards plus the page's own (one per menu category), read on every look.
+          peeks: () => [...config.peeks, ...(peeksRef.current ?? [])],
           scroll: scrollRef.current,
           getSize: () => sizeRef.current,
-          onPeek: (id) => (id ? brain.peek(id) : brain.unpeek()),
+          onPeek: (id) => {
+            if (id) brain.peek(id);
+            else brain.unpeek();
+            onPeekRef.current?.(id);
+          },
           onVelocity: (vx) => engineRef.current?.setFlowVelocity(vx),
           flow,
-          staticMode: reduced || flow?.mode === 'static',
+          staticMode: (reduced && !peekMode) || flow?.mode === 'static',
           onVisible: (visible) => engineRef.current?.setVisible(visible),
         })
       : null;
+
+    moverRef.current = mover;
+    brain.setPeeks(peeksRef.current ?? []);
 
     const tracker = createSectionTracker({
       sections: config.sections,
@@ -292,6 +309,7 @@ const ActiveMascot: React.FC<
 
     return () => {
       brainRef.current = null;
+      moverRef.current = null;
       interactions.dispose();
       tracker.dispose();
       mover?.dispose();
@@ -307,6 +325,9 @@ const ActiveMascot: React.FC<
         delete el.dataset.bx;
         delete el.dataset.by;
         delete el.dataset.parked;
+        delete el.dataset.calm;
+        el.style.removeProperty('--m-rise-ms');
+        el.style.removeProperty('--m-sink-ms');
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `config` is a constant per page
@@ -320,6 +341,13 @@ const ActiveMascot: React.FC<
     brain.setReactions(reactions ?? {});
     brain.setSignal(signalRef.current);
   }, [reactions]);
+
+  // The page's own cards to pop up from changed (a category appeared, or its tip was used up): the
+  // brain needs their greetings, and the flow looks again in case one is already in view.
+  useEffect(() => {
+    brainRef.current?.setPeeks(peeks ?? []);
+    moverRef.current?.update();
+  }, [peeks]);
 
   // Later changes to the page's signal (status moved on, the wait got long).
   useEffect(() => {

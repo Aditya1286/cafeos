@@ -6,6 +6,7 @@ import type {
   MascotMessage,
   MascotReaction,
   MascotState,
+  PeekConfig,
   TriggerKind,
 } from './types';
 
@@ -58,6 +59,8 @@ export class MascotBrain {
   private disposed = false;
   /** Signals the page supplies at runtime (built from its own data), next to the config's. */
   private reactions: Record<string, MascotReaction> = {};
+  /** Cards the page supplies at runtime (one per menu category), next to the config's. */
+  private runtimePeeks: PeekConfig[] = [];
 
   constructor(private readonly config: MascotConfig) {
     this.state = IDLE_STATE();
@@ -134,9 +137,16 @@ export class MascotBrain {
     return true;
   }
 
+  /** Cards that only exist at runtime (the menu's categories), on top of the config's own. */
+  setPeeks(peeks: PeekConfig[]): void {
+    this.runtimePeeks = peeks;
+  }
+
   /** The mascot has popped up from behind a card. Returns false for an unknown peek id. */
   peek(peekId: string): boolean {
-    const peek = this.config.peeks.find((p) => p.peekId === peekId);
+    const peek =
+      this.config.peeks.find((p) => p.peekId === peekId) ??
+      this.runtimePeeks.find((p) => p.peekId === peekId);
     if (!peek || this.disposed) return false;
     if (this.layers.peek?.id === peekId) return true;
     delete this.layers.peek;

@@ -12,6 +12,7 @@ import {
   UpiSettings,
   SubscriptionCard,
   MenuQrCard,
+  MenuBannerEditor,
 } from './sections';
 
 export interface SettingsPanelProps {
@@ -31,6 +32,9 @@ export interface SettingsPanelProps {
   savingLogo: boolean;
   onUploadLogo: (file: File) => void;
   onRemoveLogo: () => void;
+  savingCover: boolean;
+  onUploadCover: (file: File) => void;
+  onRemoveCover: () => void;
   subscriptionStatus: MySubscriptionStatus | null;
   subscriptionPlans: SubscriptionPlan[];
   loadingSubscription: boolean;
@@ -63,6 +67,9 @@ export const SettingsPanel = ({
   savingLogo,
   onUploadLogo,
   onRemoveLogo,
+  savingCover,
+  onUploadCover,
+  onRemoveCover,
   subscriptionStatus,
   subscriptionPlans,
   loadingSubscription,
@@ -88,6 +95,13 @@ export const SettingsPanel = ({
           onRemoveLogo={onRemoveLogo}
         />
         <BusinessDetails business={business} />
+
+        <MenuBannerEditor
+          business={business}
+          saving={savingCover}
+          onUpload={onUploadCover}
+          onRemove={onRemoveCover}
+        />
 
         <TaxSettings business={business} saving={savingTaxRate} onSave={onSaveTaxRate} />
 

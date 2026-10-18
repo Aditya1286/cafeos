@@ -157,3 +157,27 @@ describe('editing the logo in Settings', () => {
     expect(onUploadLogo).toHaveBeenCalledWith(file);
   });
 });
+
+describe('the top-bar logo', () => {
+  const brand = (onLogoClick?: () => void) =>
+    render(
+      <HeaderBrand
+        business={{ name: 'Brew House', slug: 'b' }}
+        copiedUrl={false}
+        onCopyMenuUrl={vi.fn()}
+        onLogoClick={onLogoClick}
+      />,
+    );
+
+  it('opens Settings, where the logo is changed, when it is clicked', () => {
+    const onLogoClick = vi.fn();
+    brand(onLogoClick);
+    fireEvent.click(screen.getByRole('button', { name: 'Change logo in Settings' }));
+    expect(onLogoClick).toHaveBeenCalled();
+  });
+
+  it('is only a picture for a user without the Settings tab', () => {
+    brand(undefined);
+    expect(screen.queryByRole('button', { name: 'Change logo in Settings' })).toBeNull();
+  });
+});

@@ -138,7 +138,8 @@ export const SwipeTabs: React.FC<SwipeTabsProps> = ({
         </div>
       </div>
 
-      <div className="overflow-x-hidden pt-2">
+      {/* clip, not hidden: hidden would make this a scroll container and break sticky children. */}
+      <div className="overflow-x-clip pt-2">
         <AnimatePresence mode="popLayout" custom={direction} initial={false}>
           <motion.div
             key={tabs[index].id}

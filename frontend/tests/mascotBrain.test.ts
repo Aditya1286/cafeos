@@ -290,6 +290,60 @@ describe('mascot brain: peeking from behind a card', () => {
   });
 });
 
+describe('mascot brain: cards that only exist at runtime (the menu)', () => {
+  const tip = {
+    peekId: 'tip:coffee',
+    selector: '[data-mascot-peek="tip:coffee"]',
+    anchor: 0.9,
+    greet: {
+      expression: 'confident' as const,
+      gesture: 'nod' as const,
+      message: { id: 'menu-tip-coffee', text: 'Coffee? Try the cold brew.', durationMs: 6000 },
+    },
+  };
+
+  it('does not know a card the page has not handed over', () => {
+    const brain = make(MENU_CONFIG);
+    expect(brain.peek('tip:coffee')).toBe(false);
+    expect(brain.getState().message).toBeNull();
+  });
+
+  it('greets from a card the page hands over, with its own line', () => {
+    const brain = make(MENU_CONFIG);
+    brain.setPeeks([tip]);
+    expect(brain.peek('tip:coffee')).toBe(true);
+    const state = brain.getState();
+    expect(state.message?.text).toBe('Coffee? Try the cold brew.');
+    expect(state.expression).toBe('confident');
+    expect(state.source).toBe('peek');
+  });
+
+  it('goes quiet when it sinks back behind the card', () => {
+    const brain = make(MENU_CONFIG);
+    brain.setPeeks([tip]);
+    brain.peek('tip:coffee');
+    brain.unpeek('tip:coffee');
+    expect(brain.getState().message).toBeNull();
+    expect(brain.getState().source).toBe('idle');
+  });
+
+  it('forgets a card the page has taken back', () => {
+    const brain = make(MENU_CONFIG);
+    brain.setPeeks([tip]);
+    brain.setPeeks([]);
+    expect(brain.peek('tip:coffee')).toBe(false);
+  });
+
+  it('keeps the config’s own cards next to the runtime ones', () => {
+    const brain = make(LANDING_CONFIG);
+    const own = LANDING_CONFIG.peeks[0];
+    brain.setPeeks([tip]);
+    expect(brain.peek(own.peekId)).toBe(true);
+    brain.unpeek();
+    expect(brain.peek('tip:coffee')).toBe(true);
+  });
+});
+
 describe('mascot brain: login page', () => {
   const login = () => new MascotBrain(LOGIN_CONFIG);
 

@@ -36,6 +36,8 @@ import {
 import { CafeThemeScope, mascotDressFor } from '@/themes';
 import { useWhileYouWait } from '@/hooks/useWhileYouWait';
 import { WhileYouWait } from '@/organisms/customer-order/WhileYouWait';
+import { OrderReviewCard } from '@/organisms/customer-order/OrderReviewCard';
+import { useOrderReview } from '@/hooks/useOrderReview';
 import { DemoBanner } from '@/organisms/customer-menu/DemoBanner';
 import { DEMO_CAFE } from '@/constants/demo';
 
@@ -125,6 +127,8 @@ export const CustomerOrderTrackingPage: React.FC = () => {
   // Phones get the tabbed layout, larger screens the single page. Only one is ever mounted.
   // (A hook, so it has to sit above the early return below.)
   const isMobile = useMediaQuery('(max-width: 639px)');
+  // Stars and a quick review, once the order has been served.
+  const orderReview = useOrderReview(orderId ?? '', order?.orderStatus ?? '');
   // What the mascot should say right now: the order's status, or a calming word once it has waited.
   const mascotSignal = orderSignal(order, now);
   // The mascot's reply to the daily question speaks until the status line moves on.
@@ -329,6 +333,11 @@ export const CustomerOrderTrackingPage: React.FC = () => {
               </span>
             </div>
           </div>
+        </div>
+
+        {/* ── Rate the order once it has been served ───────────── */}
+        <div className="mt-6">
+          <OrderReviewCard review={orderReview} />
         </div>
       </>
     ),

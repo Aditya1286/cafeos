@@ -103,6 +103,9 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
     savingLogo,
     handleUploadLogo,
     handleRemoveLogo,
+    savingCover,
+    handleUploadCover,
+    handleRemoveCover,
     savingUpiVpa,
     handleSaveUpiVpa,
     savingGstin,
@@ -629,6 +632,9 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
             savingLogo={savingLogo}
             onUploadLogo={handleUploadLogo}
             onRemoveLogo={handleRemoveLogo}
+            savingCover={savingCover}
+            onUploadCover={handleUploadCover}
+            onRemoveCover={handleRemoveCover}
             savingUpiVpa={savingUpiVpa}
             onSaveUpiVpa={() => handleSaveUpiVpa(upiVpaInput.trim())}
             savingGstin={savingGstin}

@@ -18,6 +18,7 @@ import demoRoutes from '../src/demo/demo.routes';
 import { demoGuard, maskPhone, maskPhones } from '../src/demo/demoGuard';
 import { upsertVerifiedPhone } from '../src/dao/verifiedPhone.dao';
 import { sweepVisitorOrders } from '../src/demo/visitorSweep';
+import { OrderReview } from '../src/models/OrderReview';
 import { DEMO_CAFES } from '../src/demo/cafes';
 import { provisionCafe, ownerEmailOf, CafeContext } from '../src/demo/provision';
 import { Business } from '../src/models/Business';
@@ -166,6 +167,7 @@ test('a visitor\'s orders are deleted a few hours later, and the simulator\'s ar
   const other = await visitorOrder(await verifiedVisitor(), LOAMLINE.slug, 'Sim Customer');
   const simulated = { _id: new mongoose.Types.ObjectId(other.body.data._id) };
   await Order.collection.updateOne({ _id: simulated._id }, { $set: { customerPhone: '5100000042' } });
+  await OrderReview.create({ businessId: ctx.business._id, orderId: id, rating: 4, customerName: 'Rahul Verma' });
   const now = new Date();
 
   assert.equal(await sweepVisitorOrders(ctx.business._id, now), 0, 'a fresh order stays (the guest is still watching it)');
@@ -175,4 +177,5 @@ test('a visitor\'s orders are deleted a few hours later, and the simulator\'s ar
   assert.equal(await sweepVisitorOrders(ctx.business._id, now), 1);
   assert.equal(await Order.findById(id), null, "the visitor's order and the number on it are gone");
   assert.ok(await Order.findById(simulated._id), 'simulated orders are untouched');
+  assert.equal(await OrderReview.countDocuments({ orderId: id }), 0, "the visitor's review goes with their order");
 });
