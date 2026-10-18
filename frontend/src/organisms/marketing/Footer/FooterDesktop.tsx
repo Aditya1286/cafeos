@@ -1,10 +1,11 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { FooterAnchor } from './FooterAnchor';
 import { Heart } from 'lucide-react';
 import { CaosLogo } from '@/molecules/CaosLogo';
 import { APP_NAME } from '@/constants/app';
 import {
   FOOTER_COPYRIGHT,
+  FOOTER_CONTACT_GROUP,
   FOOTER_GROUPS,
   FOOTER_PRICING_NOTE,
   FOOTER_TAGLINE,
@@ -13,7 +14,7 @@ import {
 /** Tablet and up: brand blurb, one column per link group, and the pricing note. */
 export const FooterDesktop: React.FC = () => (
   <div className="py-12 px-4 lg:px-8">
-    <div className="max-w-7xl mx-auto grid grid-cols-4 gap-8 mb-8">
+    <div className="max-w-7xl mx-auto grid grid-cols-5 gap-8 mb-8">
       <div>
         <div className="flex items-center gap-2 mb-3">
           <CaosLogo className="w-8 h-8 rounded-lg shadow-md shadow-red-600/20" />
@@ -22,7 +23,7 @@ export const FooterDesktop: React.FC = () => (
         <p className="text-xs text-slate-500 leading-relaxed mb-4">{FOOTER_TAGLINE}</p>
       </div>
 
-      {FOOTER_GROUPS.map((group) => (
+      {[...FOOTER_GROUPS, FOOTER_CONTACT_GROUP].map((group) => (
         <div key={group.title}>
           <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900 mb-3">
             {group.title}
@@ -30,9 +31,7 @@ export const FooterDesktop: React.FC = () => (
           <ul className="space-y-2 text-xs">
             {group.links.map((link) => (
               <li key={link.label}>
-                <Link to={link.to} className="hover:text-red-600 transition-colors">
-                  {link.label}
-                </Link>
+                <FooterAnchor link={link} className="hover:text-red-600 transition-colors" />
               </li>
             ))}
           </ul>

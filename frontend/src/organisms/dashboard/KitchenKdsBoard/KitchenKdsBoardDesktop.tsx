@@ -3,7 +3,7 @@ import { KDS_COLUMN_STATUSES } from '@/constants/orderStatus';
 import { KdsColumn } from './KdsColumn';
 import { KdsBoardViewProps } from './types';
 
-/** Desktop/tablet (`sm`+): every status column visible at once, each independently scrollable
+/** Desktop/tablet (`md`+): every status column visible at once, each independently scrollable
  * so they can be compared side by side. */
 export const KitchenKdsBoardDesktop = (props: KdsBoardViewProps) => (
   <div className="grid grid-cols-1 md:grid-cols-3 gap-5">

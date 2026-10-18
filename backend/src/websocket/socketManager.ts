@@ -9,6 +9,9 @@ import {
   RoomJoinResult
 } from './socketAuth';
 
+import { isDemoEnabled } from '../demo/demo.config';
+import { maskForBusiness } from '../demo/demoGuard';
+
 let io: SocketIOServer | null = null;
 
 export const initSocketServer = (httpServer: HttpServer, frontendUrl: string): SocketIOServer => {
@@ -95,9 +98,15 @@ export const getIO = (): SocketIOServer => {
 };
 
 export const emitToBusiness = (businessId: string, event: string, data: any) => {
-  if (io) {
+  if (!io) return;
+  if (!isDemoEnabled()) {
     io.to(`business:${businessId}`).emit(event, data);
+    return;
   }
+  // The public demo cafés show guests' phone numbers partly hidden, in live updates too.
+  void maskForBusiness(businessId, data)
+    .catch(() => data)
+    .then((payload) => io?.to(`business:${businessId}`).emit(event, payload));
 };
 
 export const emitToOrder = (orderId: string, event: string, data: any) => {

@@ -5,7 +5,7 @@ import { STATUS_CONFIG } from '@/constants/orderStatus';
 import { formatCurrency } from '@/utils/money';
 import { RefundInsights } from '@/types';
 
-interface RefundsPanelProps {
+export interface RefundsPanelProps {
   orders: any[];
   loading: boolean;
   insights: RefundInsights | null;

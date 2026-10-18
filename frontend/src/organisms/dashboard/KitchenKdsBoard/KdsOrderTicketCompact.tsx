@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, FileText, Wallet, X } from 'lucide-react';
 import { NEXT_STATUS } from '@/constants/orderStatus';
 import { formatCurrency } from '@/utils/money';
@@ -52,7 +52,9 @@ export const KdsOrderTicketCompact = ({
 
   return (
     <motion.div
-      layout
+      // `position` animates the ticket moving as others come and go, but not its size: animating a
+      // size change scales the box, and the text with it, which looks stretched while Details opens.
+      layout="position"
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.97 }}
@@ -90,12 +92,10 @@ export const KdsOrderTicketCompact = ({
           </span>
         </span>
       </div>
-
       {/* What to cook — the one thing the kitchen must always see without tapping. */}
       <p className="text-[13px] font-bold text-slate-900 leading-snug line-clamp-2">
         {itemsSummary}
       </p>
-
       <div className="flex items-center gap-2">
         {unpaid && (
           <span
@@ -129,66 +129,77 @@ export const KdsOrderTicketCompact = ({
           </button>
         )}
       </div>
-
-      {expanded && (
-        <div className="pt-2 border-t border-slate-100 space-y-2.5">
-          <div className="text-xs">
-            <span className="font-black text-slate-900">{order.customerName}</span>
-            {order.customerPhone && (
-              <span className="ml-2 font-semibold text-slate-400">{order.customerPhone}</span>
-            )}
-          </div>
-
-          <div className="space-y-1 text-xs">
-            {order.items?.map((it: any, i: number) => (
-              <div key={i} className="flex justify-between gap-3 text-slate-700 font-medium">
-                <span>
-                  <strong className="text-slate-900 font-extrabold">{it.quantity}×</strong>{' '}
-                  {it.name}
-                  <AddedMarker mark={amendedMarks(order)[i]} />
-                </span>
-                <span className="font-extrabold text-slate-900 shrink-0">
-                  {formatCurrency(it.itemTotalPaise || it.pricePaise * it.quantity)}
-                </span>
+      <AnimatePresence initial={false}>
+        {expanded && (
+          <motion.div
+            key="details"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            // `!mt-0`: the ticket's `space-y-2` gap sits inside the panel (on the divider), so it grows from nothing.
+            className="overflow-hidden !mt-0"
+          >
+            <div className="mt-2 pt-2 border-t border-slate-100 space-y-2.5">
+              <div className="text-xs">
+                <span className="font-black text-slate-900">{order.customerName}</span>
+                {order.customerPhone && (
+                  <span className="ml-2 font-semibold text-slate-400">{order.customerPhone}</span>
+                )}
               </div>
-            ))}
-          </div>
 
-          {unpaid && (
-            <button
-              type="button"
-              onClick={onConfirmPayment}
-              className={`w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-[11px] font-extrabold uppercase ${
-                order.customerMarkedPaidAt
-                  ? 'bg-amber-50 border border-amber-200 text-amber-700'
-                  : 'bg-slate-50 border border-slate-200 text-slate-600'
-              }`}
-            >
-              <Wallet className="w-3.5 h-3.5" />
-              {order.customerMarkedPaidAt ? 'Customer says paid · Confirm' : 'Confirm Payment'}
-            </button>
-          )}
+              <div className="space-y-1 text-xs">
+                {order.items?.map((it: any, i: number) => (
+                  <div key={i} className="flex justify-between gap-3 text-slate-700 font-medium">
+                    <span>
+                      <strong className="text-slate-900 font-extrabold">{it.quantity}×</strong>{' '}
+                      {it.name}
+                      <AddedMarker mark={amendedMarks(order)[i]} />
+                    </span>
+                    <span className="font-extrabold text-slate-900 shrink-0">
+                      {formatCurrency(it.itemTotalPaise || it.pricePaise * it.quantity)}
+                    </span>
+                  </div>
+                ))}
+              </div>
 
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={onViewBill}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border border-slate-200 text-slate-600 text-[11px] font-bold"
-            >
-              <FileText className="w-3.5 h-3.5" /> Bill
-            </button>
-            {onCancel && (
-              <button
-                type="button"
-                onClick={onCancel}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border border-rose-200 text-rose-600 text-[11px] font-bold"
-              >
-                <X className="w-3.5 h-3.5" /> Cancel order
-              </button>
-            )}
-          </div>
-        </div>
-      )}
+              {unpaid && (
+                <button
+                  type="button"
+                  onClick={onConfirmPayment}
+                  className={`w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-[11px] font-extrabold uppercase ${
+                    order.customerMarkedPaidAt
+                      ? 'bg-amber-50 border border-amber-200 text-amber-700'
+                      : 'bg-slate-50 border border-slate-200 text-slate-600'
+                  }`}
+                >
+                  <Wallet className="w-3.5 h-3.5" />
+                  {order.customerMarkedPaidAt ? 'Customer says paid · Confirm' : 'Confirm Payment'}
+                </button>
+              )}
+
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={onViewBill}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border border-slate-200 text-slate-600 text-[11px] font-bold"
+                >
+                  <FileText className="w-3.5 h-3.5" /> Bill
+                </button>
+                {onCancel && (
+                  <button
+                    type="button"
+                    onClick={onCancel}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border border-rose-200 text-rose-600 text-[11px] font-bold"
+                  >
+                    <X className="w-3.5 h-3.5" /> Cancel order
+                  </button>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>{' '}
     </motion.div>
   );
 };

@@ -6,6 +6,8 @@ export interface AccountProfile {
   email: string;
   role: string;
   avatarUrl: string;
+  /** The person's own new-order sound; '' means the default. */
+  ringtoneUrl: string;
   business: {
     id: string;
     name: string;

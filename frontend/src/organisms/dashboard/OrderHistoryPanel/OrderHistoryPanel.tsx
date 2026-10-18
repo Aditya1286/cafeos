@@ -8,7 +8,7 @@ import { OrderHistoryFilters } from '@/hooks/useOrderHistory';
 import { StatusBadge, StatusBadgeTone } from '@/atoms/StatusBadge';
 import { Modal } from '@/molecules/Modal';
 
-interface OrderHistoryPanelProps {
+export interface OrderHistoryPanelProps {
   business: any;
   orderHistory: any[];
   /** null hides the Today's Sales tile (staff don't see sales figures). */

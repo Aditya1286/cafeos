@@ -12,3 +12,6 @@ export interface BusinessSettingsPayload {
 }
 
 export type UpdateSettingsResponse = ApiMessageResponse & { data?: Business };
+
+/** The business's logo after a change; empty when it has none. */
+export type LogoResponse = ApiMessageResponse & { data: { logoUrl: string } };

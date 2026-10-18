@@ -14,6 +14,14 @@ export const uploadMyAvatar = serviceHandler((req: AuthRequest) => accountServic
   message: 'Profile picture updated.'
 });
 
+export const uploadMyRingtone = serviceHandler((req: AuthRequest) => accountService.updateRingtone(req.user!._id, req.body?.audio), {
+  message: 'Alert sound updated.'
+});
+
+export const removeMyRingtone = serviceHandler((req: AuthRequest) => accountService.removeRingtone(req.user!._id), {
+  message: 'Alert sound reset to the default.'
+});
+
 export const removeMyAvatar = serviceHandler((req: AuthRequest) => accountService.removeAvatar(req.user!._id), {
   message: 'Profile picture removed.'
 });

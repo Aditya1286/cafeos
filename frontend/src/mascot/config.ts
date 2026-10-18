@@ -697,9 +697,13 @@ export const DEMO_CONFIG: MascotConfig = {
 // 92% wide), so it never covers the cart or the add buttons beneath it.
 export const MENU_DOCK_BOTTOM_INSET = 76;
 
+// On a phone the mascot is half its usual size: at full size it sat on top of the add buttons of
+// the menu items beside it, which is exactly what a guest is trying to tap.
+export const MENU_PHONE_SIZE_SCALE = 0.5;
+
 export const MENU_CONFIG: MascotConfig = {
   flow: { mode: 'dock', insets: { bottom: MENU_DOCK_BOTTOM_INSET } },
-  phoneFlow: { mode: 'dock' },
+  phoneFlow: { mode: 'dock', sizeScale: MENU_PHONE_SIZE_SCALE, corner: 'left' },
   // The welcome (the bubble with "Add") closes on a scroll or a tap elsewhere (§8.1).
   closeBubbleOnInteract: true,
   sections: [],

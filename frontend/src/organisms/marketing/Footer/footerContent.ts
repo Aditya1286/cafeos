@@ -1,6 +1,7 @@
 import { APP_NAME } from '@/constants/app';
 import { DEMO_MENU_PATH, DEMO_PATH } from '@/constants/demo';
 import { PLANS } from '@/constants/pricing';
+import { CONTACT, WHATSAPP_HELLO, whatsappLink } from '@/constants/contact';
 
 // Everything the footer says, in one place. FooterDesktop and FooterMobile only lay it out, so a new
 // link or a changed line is one edit here and shows up in both.
@@ -8,6 +9,8 @@ import { PLANS } from '@/constants/pricing';
 export interface FooterLink {
   label: string;
   to: string;
+  /** A link out of the app (WhatsApp, email, Instagram): rendered as a plain anchor. */
+  external?: boolean;
 }
 
 export interface FooterGroup {
@@ -40,6 +43,18 @@ export const FOOTER_GROUPS: FooterGroup[] = [
     ],
   },
 ];
+
+/** How to reach us. Shown by the desktop footer; the phone footer stays as compact as it was. */
+export const FOOTER_CONTACT_GROUP: FooterGroup = {
+  title: 'Talk to us',
+  links: [
+    { label: 'WhatsApp us', to: whatsappLink(WHATSAPP_HELLO), external: true },
+    { label: CONTACT.email, to: `mailto:${CONTACT.email}`, external: true },
+    { label: `Instagram @${CONTACT.instagramHandle}`, to: CONTACT.instagramUrl, external: true },
+    { label: 'Privacy policy', to: '/privacy' },
+    { label: 'Merchant terms', to: '/terms' },
+  ],
+};
 
 /** Built from the plans themselves, so it can't drift from the pricing section. */
 export const FOOTER_PRICING_NOTE = `Plans from ₹${PLANS[0].price}/month to ₹${

@@ -24,6 +24,8 @@ import { formatTime } from '@/utils/DateUtils';
 import { toast } from '@/utils/toast';
 import { SMEPAY_CHECKOUT_ENABLED, CUSTOMER_SUPPORT_ENABLED } from '@/constants/features';
 import { SupportWidget } from '@/organisms/SupportWidget';
+import { DemoBanner } from '@/organisms/customer-menu/DemoBanner';
+import { DEMO_CAFE } from '@/constants/demo';
 import VegMark from '@/atoms/VegMark';
 import MenuItemCard from '@/organisms/customer-menu/MenuItemCard';
 import MenuSection from '@/organisms/customer-menu/MenuSection';
@@ -88,6 +90,9 @@ export const CustomerMenuPage: React.FC = () => {
 
   //Adding custom otp handler
   const otp = useOtpVerification(customerPhone, 'otp-captcha-container');
+
+  // The public demo café (see constants/demo.ts) gets a banner; ordering there works like any café's.
+  const isDemoCafe = slug === DEMO_CAFE.slug;
 
   useEffect(() => {
     const fetchBusinessAndMenu = async () => {
@@ -342,7 +347,12 @@ export const CustomerMenuPage: React.FC = () => {
   // flash the default look; the loaded data then takes over (tagline stays empty until it does).
   const identity = business
     ? business.identity
-    : rememberedTheme && { enabled: true, mascotRendering: 'light', theme: rememberedTheme, tagline: '' };
+    : rememberedTheme && {
+        enabled: true,
+        mascotRendering: 'light',
+        theme: rememberedTheme,
+        tagline: '',
+      };
   const identityOn = !!identity?.enabled;
   const tagline = identityOn ? identity?.tagline?.trim() : '';
   const themeId = identityOn
@@ -373,6 +383,7 @@ export const CustomerMenuPage: React.FC = () => {
     // (then that theme, without the stock cover); the loaded `identity` takes over once it arrives.
     <CafeThemeScope identity={identity}>
       <div className="min-h-screen bg-cafe-page text-cafe-ink pb-28 selection:bg-cafe-button selection:text-cafe-on-accent max-w-md mx-auto relative shadow-xl border-x border-cafe-line font-cafe-body overflow-x-clip">
+        {isDemoCafe && <DemoBanner variant="menu" />}
         {/* ── Top Hero Header (Swiggy / Zomato Aesthetic) ────────────────── */}
         <div className="relative bg-cafe-surface border-b border-cafe-line">
           <div className="h-44 relative overflow-hidden bg-cafe-raised">

@@ -22,6 +22,7 @@ import {
   MASCOT_CONFIGS,
   MENU_CONFIG,
   MENU_DOCK_BOTTOM_INSET,
+  MENU_PHONE_SIZE_SCALE,
   ORDER_CONFIG,
   resolveFlow,
   validateConfig,
@@ -639,8 +640,15 @@ describe('menu page config', () => {
     expect(MENU_DOCK_BOTTOM_INSET).toBeGreaterThanOrEqual(72);
     expect(resolveFlow(MENU_CONFIG, true)?.insets?.bottom).toBe(MENU_DOCK_BOTTOM_INSET);
     expect(MENU_CONFIG.closeBubbleOnInteract).toBe(true);
-    expect(MENU_CONFIG.phoneFlow).toEqual({ mode: 'dock' });
+    // On a phone it is half size and rests on the left, clear of the add buttons (see menuMascotConfig.test).
+    expect(MENU_CONFIG.phoneFlow).toEqual({
+      mode: 'dock',
+      sizeScale: MENU_PHONE_SIZE_SCALE,
+      corner: 'left',
+    });
     expect(resolveFlow(MENU_CONFIG, true)?.mode).toBe('dock');
+    expect(resolveFlow(MENU_CONFIG, true)?.sizeScale).toBe(MENU_PHONE_SIZE_SCALE);
+    expect(resolveFlow(MENU_CONFIG, false)?.sizeScale).toBeUndefined();
     expect(resolveFlow(MENU_CONFIG, false)?.mode).toBe('dock');
     expect(MENU_CONFIG.sections).toEqual([]);
     expect(MENU_CONFIG.targets).toEqual([]);

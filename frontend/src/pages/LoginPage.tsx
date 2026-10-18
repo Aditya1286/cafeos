@@ -54,12 +54,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
   const handleDemoLogin = async (demoEmail: string) => {
     setEmail(demoEmail);
-    setPassword('password123');
+    setPassword(DEMO_CAFE.ownerPassword);
     setLoading(true);
     setError(null);
 
     try {
-      const res = await authService.login(demoEmail, 'password123');
+      const res = await authService.login(demoEmail, DEMO_CAFE.ownerPassword);
       setAuthToken(res.data.token);
       onLoginSuccess(res.data);
       if (res.data.user.role === 'SUPER_ADMIN') {
@@ -111,37 +111,39 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
             </p>
           </div>
 
-          {/* One-click login for the seeded demo café */}
-          <div
-            data-mascot-obstacle
-            className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-sm space-y-2.5 text-left"
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" /> Try the demo café
-              </span>
-              <span className="text-[10px] text-slate-400 font-medium">No password needed</span>
-            </div>
-
-            <button
-              onClick={() => handleDemoLogin(DEMO_CAFE.ownerEmail)}
-              data-mascot-field="demo"
-              type="button"
-              className="w-full py-2.5 px-3 rounded-xl bg-amber-50/80 hover:bg-amber-100 border border-amber-200 text-amber-900 font-bold text-xs flex items-center gap-2 transition-all"
+          {/* One-click login for the demo café (hidden until its password is set in constants/demo.ts) */}
+          {DEMO_CAFE.ownerPassword && (
+            <div
+              data-mascot-obstacle
+              className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-sm space-y-2.5 text-left"
             >
-              <div className="w-7 h-7 rounded-lg bg-amber-600 text-white flex-shrink-0 flex items-center justify-center">
-                <Coffee className="w-3.5 h-3.5" />
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                  <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" /> Try the demo café
+                </span>
+                <span className="text-[10px] text-slate-400 font-medium">No password needed</span>
               </div>
-              <div className="text-left truncate">
-                <div className="text-[11px] font-extrabold leading-tight text-slate-900 truncate">
-                  {DEMO_CAFE.name}
+
+              <button
+                onClick={() => handleDemoLogin(DEMO_CAFE.ownerEmail)}
+                data-mascot-field="demo"
+                type="button"
+                className="w-full py-2.5 px-3 rounded-xl bg-amber-50/80 hover:bg-amber-100 border border-amber-200 text-amber-900 font-bold text-xs flex items-center gap-2 transition-all"
+              >
+                <div className="w-7 h-7 rounded-lg bg-amber-600 text-white flex-shrink-0 flex items-center justify-center">
+                  <Coffee className="w-3.5 h-3.5" />
                 </div>
-                <div className="text-[9px] text-slate-500 font-medium truncate">
-                  Open the owner dashboard of the demo café
+                <div className="text-left truncate">
+                  <div className="text-[11px] font-extrabold leading-tight text-slate-900 truncate">
+                    {DEMO_CAFE.name}
+                  </div>
+                  <div className="text-[9px] text-slate-500 font-medium truncate">
+                    Open the owner dashboard of the demo café
+                  </div>
                 </div>
-              </div>
-            </button>
-          </div>
+              </button>
+            </div>
+          )}
 
           {/* Form Separator: text first, line after, so the right end of the card below stays free
               (the mascot pops up there). */}

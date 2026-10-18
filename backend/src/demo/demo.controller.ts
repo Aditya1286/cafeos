@@ -4,6 +4,7 @@ import { serviceHandler } from '../utils/serviceHandler';
 import { ServiceError } from '../utils/serviceError';
 import { demoConfig, isDemoEnabled } from './demo.config';
 import { runDemoTick, TickInProgressError } from './tick';
+import { runDemoPulse, clearDemoPulse } from './pulse';
 import { getDemoStatus } from './status';
 
 // The demo endpoints are for the operator's cron job, not for users: they need the X-Demo-Key
@@ -30,3 +31,16 @@ export const tick = serviceHandler(async () => {
 });
 
 export const status = serviceHandler(() => getDemoStatus());
+
+// One new order at the demo café and a nudge for the kitchen: for a loop that calls it every ~30 s
+// while someone is looking at the demo (see ./README.md).
+export const clearPulse = serviceHandler((req: Request) => clearDemoPulse(typeof req.query.slug === 'string' ? req.query.slug : undefined));
+
+export const pulse = serviceHandler(async (req: Request) => {
+  try {
+    return await runDemoPulse(typeof req.query.slug === 'string' ? req.query.slug : undefined);
+  } catch (error) {
+    if (error instanceof TickInProgressError) throw new ServiceError(409, 'TICK_IN_PROGRESS', error.message);
+    throw error;
+  }
+});

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Coffee, Plus, RefreshCw, LogOut, Wifi, ChevronDown, UserCircle } from 'lucide-react';
+import { LogoTile } from '@/molecules/LogoTile';
 import { APP_SLUG } from '@/constants/app';
 import { MenuUrlHoldToCopy } from './MenuUrlHoldToCopy';
 import { HeaderViewProps } from './types';
@@ -20,13 +21,13 @@ export const HeaderBrand = ({
   compact = false,
 }: Pick<HeaderViewProps, 'business' | 'copiedUrl' | 'onCopyMenuUrl'> & { compact?: boolean }) => (
   <div className={`flex items-center min-w-0 ${compact ? 'gap-2.5' : 'gap-3'}`}>
-    <div
-      className={`bg-brand-600 flex items-center justify-center shadow-md shadow-brand-600/25 text-white font-black shrink-0 ${
-        compact ? 'w-8 h-8 rounded-xl' : 'w-10 h-10 rounded-2xl'
-      }`}
+    <LogoTile
+      src={business?.logoUrl}
+      className={compact ? 'w-8 h-8 rounded-xl' : 'w-10 h-10 rounded-2xl'}
+      fallbackClassName="bg-brand-600 shadow-md shadow-brand-600/25 text-white font-black"
     >
       <Coffee className={compact ? 'w-4 h-4' : 'w-5.5 h-5.5'} />
-    </div>
+    </LogoTile>
     <div className="min-w-0">
       <div className="text-base font-black text-slate-900 leading-tight flex items-center gap-2 min-w-0">
         <span className="truncate">{business?.name || 'The Artisan Roastery'}</span>

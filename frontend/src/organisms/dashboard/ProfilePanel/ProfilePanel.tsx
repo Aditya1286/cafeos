@@ -2,6 +2,7 @@ import { AccountProfileState } from '@/hooks/useAccountProfile';
 import { AvatarCard } from './AvatarCard';
 import { ChangePasswordCard } from './ChangePasswordCard';
 import { ChangeEmailCard } from './ChangeEmailCard';
+import { RingtoneCard } from './RingtoneCard';
 
 /** "My Profile" tab — every role. The login-email card only renders for owners. */
 export const ProfilePanel = ({ account }: { account: AccountProfileState }) => {
@@ -15,7 +16,10 @@ export const ProfilePanel = ({ account }: { account: AccountProfileState }) => {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-      <AvatarCard account={account} />
+      <div className="space-y-6">
+        <AvatarCard account={account} />
+        <RingtoneCard account={account} />
+      </div>
       <div className="space-y-6">
         <ChangePasswordCard account={account} />
         {account.profile.role === 'OWNER' && <ChangeEmailCard account={account} />}

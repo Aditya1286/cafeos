@@ -10,6 +10,13 @@ export const updateProfile = (name: string): Promise<ProfileResponse> =>
 export const uploadAvatar = (image: string): Promise<ProfileResponse> =>
   apiRequest('/account/avatar', 'PUT', { image });
 
+/** `audio` is a base64 data URL (MP3/WAV/OGG/M4A/AAC, under 1MB): the sound that plays when an order arrives. */
+export const uploadRingtone = (audio: string): Promise<ProfileResponse> =>
+  apiRequest('/account/ringtone', 'PUT', { audio });
+
+export const removeRingtone = (): Promise<ProfileResponse> =>
+  apiRequest('/account/ringtone', 'DELETE');
+
 export const removeAvatar = (): Promise<ProfileResponse> => apiRequest('/account/avatar', 'DELETE');
 
 export const changePassword = (payload: ChangePasswordPayload): Promise<ChangePasswordResponse> =>

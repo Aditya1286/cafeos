@@ -3,10 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
 import { StatCard, StatCardProps } from '@/molecules/StatCard';
 
-/** Mobile (below `sm`): a 2×2 grid behind an "Overview" toggle, so the tiles can be collapsed
- * to reclaim vertical space above the fold. */
+/** Mobile (below `sm`): a 2×2 grid behind an "Overview" toggle. It starts closed, so every tab
+ * opens with its own content above the fold; tap to see the numbers. */
 export const KpiStatsGridMobile = ({ cards }: { cards: StatCardProps[] }) => {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
 
   return (
     <div>

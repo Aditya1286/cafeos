@@ -49,9 +49,9 @@ const createBusiness = async (cafe: DemoCafe) => {
     openingTime: cafe.profile.openingTime,
     closingTime: cafe.profile.closingTime,
     timezone: 'Asia/Kolkata',
-    // No UPI ID on purpose: customers are told to pay at the counter, so nobody can ever send real
-    // money to a café that doesn't exist.
-    upiVpa: '',
+    // No UPI ID unless the café's definition gives one: customers are then told to pay at the
+    // counter, so nobody can ever send real money to a café that doesn't exist.
+    upiVpa: cafe.profile.upiVpa ?? '',
     tablesEnabled: cafe.profile.tables > 0,
     masterQrEnabled: true,
     status: 'ACTIVE',
@@ -137,6 +137,12 @@ export const provisionCafe = async (cafe: DemoCafe): Promise<ProvisionResult> =>
   let business = await Business.findOne({ slug: cafe.slug });
   if (business && !business.isDemo) {
     return { ok: false, reason: `/c/${cafe.slug} belongs to a real business, so this demo café was skipped.` };
+  }
+
+  // The UPI ID follows the café's definition, also for a café created before it had one.
+  if (business && cafe.profile.upiVpa !== undefined && business.upiVpa !== cafe.profile.upiVpa) {
+    business.upiVpa = cafe.profile.upiVpa;
+    await business.save();
   }
 
   const ownerEmail = ownerEmailOf(cafe);

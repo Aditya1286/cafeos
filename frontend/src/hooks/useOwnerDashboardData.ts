@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { playOrderSound } from '../utils/orderSound';
 import authService from '../services/auth';
 import ordersService from '../services/dashboard/orders';
 import { mergeOrders } from '../utils/kitchenOrders';
@@ -6,6 +7,7 @@ import menuService from '../services/dashboard/menu';
 import tablesService from '../services/dashboard/tables';
 import inventoryService from '../services/dashboard/inventory';
 import businessService from '../services/dashboard/business';
+import { readFileAsDataUrl } from '../utils/readFileAsDataUrl';
 import analyticsService from '../services/dashboard/analytics';
 import { toast } from '../utils/toast';
 import { amendedOrderPatch } from '../utils/amendedItems';
@@ -27,13 +29,6 @@ interface UseOwnerDashboardDataOptions {
    */
   kitchenOnly?: boolean;
 }
-
-const NEW_ORDER_SOUND_URL = 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3';
-const playNewOrderSound = () => {
-  try {
-    new Audio(NEW_ORDER_SOUND_URL).play().catch(() => {});
-  } catch {}
-};
 
 /**
  * Loads every dataset the owner dashboard renders (business profile, live
@@ -136,7 +131,7 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
     socket.on('order:new', (newOrder: any) => {
       setOrders((prev) => [newOrder, ...prev]);
       toast(`🔔 New order ${newOrder.orderNumber || newOrder.orderId} arrived!`);
-      playNewOrderSound();
+      playOrderSound();
       const arrivedId = newOrder._id || newOrder.orderId;
       setNewlyArrivedOrderId(arrivedId);
       setTimeout(() => setNewlyArrivedOrderId((prev) => (prev === arrivedId ? null : prev)), 5000);
@@ -195,7 +190,7 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
           toast(
             `🔔 ${missed.length} new order${missed.length === 1 ? '' : 's'} arrived while you were offline`,
           );
-          playNewOrderSound();
+          playOrderSound();
           const arrivedId = missed[0]._id;
           setNewlyArrivedOrderId(arrivedId);
           setTimeout(
@@ -295,6 +290,35 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
 
     return { updatedIds, failed };
   };
+
+  // The business's own logo in the top bar: a picked image replaces it, removing goes back to the default tile.
+  const [savingLogo, setSavingLogo] = useState(false);
+  const changeLogo = async (
+    change: () => Promise<{ data: { logoUrl: string } }>,
+    success: string,
+  ) => {
+    setSavingLogo(true);
+    try {
+      const { data } = await change();
+      setBusiness((prev: any) => (prev ? { ...prev, logoUrl: data.logoUrl } : prev));
+      toast.success(success);
+    } catch (err: any) {
+      toast.error(err.message || 'Could not change the logo');
+    } finally {
+      setSavingLogo(false);
+    }
+  };
+  const handleUploadLogo = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please pick an image (JPEG, PNG or WEBP).');
+      return;
+    }
+    await changeLogo(
+      async () => businessService.uploadLogo(await readFileAsDataUrl(file)),
+      'Logo updated',
+    );
+  };
+  const handleRemoveLogo = () => changeLogo(() => businessService.removeLogo(), 'Logo removed');
 
   const [savingUpiVpa, setSavingUpiVpa] = useState(false);
   const handleSaveUpiVpa = async (upiVpa: string) => {
@@ -482,6 +506,9 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
     handleUpdateOrderStatus,
     handleBulkUpdateOrderStatus,
     handleConfirmPayment,
+    savingLogo,
+    handleUploadLogo,
+    handleRemoveLogo,
     savingUpiVpa,
     handleSaveUpiVpa,
     savingGstin,

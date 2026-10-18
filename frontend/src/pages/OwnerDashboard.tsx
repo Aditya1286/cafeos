@@ -13,6 +13,7 @@ import { useSubscription } from '../hooks/useSubscription';
 import { useRefundsAndCancellations } from '../hooks/useRefundsAndCancellations';
 import { useStaff } from '../hooks/useStaff';
 import { useAccountProfile } from '../hooks/useAccountProfile';
+import { setOrderRingtone } from '../utils/orderSound';
 
 import { DashboardHeader } from '@/organisms/dashboard/DashboardHeader';
 import { DashboardTab, tabsForRole, resolveVisibleTab } from '@/constants/dashboardTabs';
@@ -99,6 +100,9 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
     handleUpdateOrderStatus,
     handleBulkUpdateOrderStatus,
     handleConfirmPayment,
+    savingLogo,
+    handleUploadLogo,
+    handleRemoveLogo,
     savingUpiVpa,
     handleSaveUpiVpa,
     savingGstin,
@@ -134,6 +138,10 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
   const checkoutState = useCheckoutSettings(SMEPAY_CHECKOUT_ENABLED && visibleTab === 'settings');
   const staffState = useStaff(visibleTab === 'staff');
   const account = useAccountProfile(visibleTab === 'profile');
+  // New-order alerts use this person's own sound (their profile once loaded, else their login).
+  useEffect(() => {
+    setOrderRingtone(account.profile ? account.profile.ringtoneUrl : user?.ringtoneUrl);
+  }, [account.profile?.ringtoneUrl, user?.ringtoneUrl]);
   // The header reflects a picture/name change straight away, before the next login.
   const headerUser = account.profile
     ? { ...user, name: account.profile.name, avatarUrl: account.profile.avatarUrl }
@@ -618,6 +626,9 @@ export const OwnerDashboard = ({ user }: { user: any }) => {
             subscription={analytics?.subscription ?? null}
             upiVpaInput={upiVpaInput}
             setUpiVpaInput={setUpiVpaInput}
+            savingLogo={savingLogo}
+            onUploadLogo={handleUploadLogo}
+            onRemoveLogo={handleRemoveLogo}
             savingUpiVpa={savingUpiVpa}
             onSaveUpiVpa={() => handleSaveUpiVpa(upiVpaInput.trim())}
             savingGstin={savingGstin}

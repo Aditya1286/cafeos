@@ -3,6 +3,7 @@ import accountService from '../services/account';
 import { AccountProfile, ChangePasswordPayload } from '../services/account/types';
 import { setAuthToken } from '../services/api';
 import { readFileAsDataUrl } from '../utils/readFileAsDataUrl';
+import { MAX_RINGTONE_BYTES, MAX_RINGTONE_SECONDS, readAudioSeconds } from '../utils/orderSound';
 import { toast } from '../utils/toast';
 
 /**
@@ -12,7 +13,9 @@ import { toast } from '../utils/toast';
 export const useAccountProfile = (enabled: boolean) => {
   const [profile, setProfile] = useState<AccountProfile | null>(null);
   const [loading, setLoading] = useState(false);
-  const [busy, setBusy] = useState<'name' | 'avatar' | 'password' | 'email' | null>(null);
+  const [busy, setBusy] = useState<'name' | 'avatar' | 'ringtone' | 'password' | 'email' | null>(
+    null,
+  );
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -70,6 +73,41 @@ export const useAccountProfile = (enabled: boolean) => {
       'Profile picture removed.',
     );
 
+  const uploadRingtone = async (file: File) => {
+    if (!file.type.startsWith('audio/')) {
+      toast.error('Please pick an audio file (MP3, WAV, OGG or M4A).');
+      return false;
+    }
+    if (file.size > MAX_RINGTONE_BYTES) {
+      toast.error('That sound is over 1MB. A few seconds is plenty.');
+      return false;
+    }
+    const seconds = await readAudioSeconds(file);
+    if (seconds === null) {
+      toast.error('Your browser could not play that file. Try an MP3.');
+      return false;
+    }
+    if (seconds > MAX_RINGTONE_SECONDS) {
+      toast.error(
+        `That sound is ${Math.round(seconds)} seconds long. Keep it under ${MAX_RINGTONE_SECONDS}.`,
+      );
+      return false;
+    }
+    return run(
+      'ringtone',
+      async () =>
+        setProfile((await accountService.uploadRingtone(await readFileAsDataUrl(file))).data),
+      'New-order sound updated.',
+    );
+  };
+
+  const removeRingtone = () =>
+    run(
+      'ringtone',
+      async () => setProfile((await accountService.removeRingtone()).data),
+      'New-order sound reset to the default.',
+    );
+
   // Every other session is logged out by the change; keep this one going with the fresh token.
   const changePassword = (payload: ChangePasswordPayload) =>
     run(
@@ -93,6 +131,8 @@ export const useAccountProfile = (enabled: boolean) => {
     saveName,
     uploadAvatar,
     removeAvatar,
+    uploadRingtone,
+    removeRingtone,
     changePassword,
     changeEmail,
   };

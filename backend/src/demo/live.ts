@@ -58,7 +58,11 @@ const planFor = (outcome: ReturnType<typeof pickOutcome>, lines: BasketLine[], p
 };
 
 /** One customer walks in (or scans a table QR) and orders. Returns false if the order didn't go through. */
-export const placeLiveOrder = async (ctx: CafeContext, now: Date): Promise<boolean> => {
+// Orders placed by the pulse carry PULSE_KEY_PREFIX in their idempotency key, so they can be cleared again.
+export const PULSE_KEY_PREFIX = 'demo-pulse-';
+
+export const placeLiveOrder = async (ctx: CafeContext, now: Date, source: 'tick' | 'pulse' = 'tick'): Promise<boolean> => {
+  const keyPrefix = source === 'pulse' ? PULSE_KEY_PREFIX : 'demo-';
   const { cafe, business } = ctx;
   if (!ctx.menu.length) return false;
   const customer = pickCustomer(cafe);
@@ -84,13 +88,13 @@ export const placeLiveOrder = async (ctx: CafeContext, now: Date): Promise<boole
       customerPhone: customer.phone,
       paymentMethod,
       items: lines.map((l) => ({ productId: String(l.entry.productId), quantity: l.quantity, name: l.entry.name })),
-      idempotencyKey: `demo-${uuidv4()}`
+      idempotencyKey: `${keyPrefix}${uuidv4()}`
     };
     let res = await callApi('POST', '/public/orders', qrToken ? { ...order, qrToken } : { ...order, businessSlug: business.slug });
     // Someone sat down at that table in the meantime: take it at the counter instead.
     if (!res.ok && res.body?.error?.code === 'TABLE_OCCUPIED') {
       qrToken = undefined;
-      res = await callApi('POST', '/public/orders', { ...order, idempotencyKey: `demo-${uuidv4()}`, businessSlug: business.slug });
+      res = await callApi('POST', '/public/orders', { ...order, idempotencyKey: `${keyPrefix}${uuidv4()}`, businessSlug: business.slug });
     }
     if (!res.ok) {
       console.warn(`[demo] ${cafe.slug}: order not placed (${res.status} ${res.body?.error?.code || ''} ${res.body?.error?.message || ''})`);

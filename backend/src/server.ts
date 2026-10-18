@@ -19,6 +19,7 @@ import { startCheckoutSweep } from './services/checkout.service';
 
 // Route Imports
 import authRoutes from './routes/authRoutes';
+import { demoGuard } from './demo/demoGuard';
 import menuRoutes from './routes/menuRoutes';
 import tableRoutes from './routes/tableRoutes';
 import orderRoutes from './routes/orderRoutes';
@@ -75,6 +76,7 @@ app.use(morgan(runtime.nodeEnv === 'production' ? 'combined' : 'dev', {
 }));
 app.use('/api/v1', apiRateLimiter);
 app.use('/api/v1', rejectMongoOperators);
+// app.use('/api/v1', demoGuard);
 
 // API Routes
 app.use('/api/v1/auth', authRoutes);

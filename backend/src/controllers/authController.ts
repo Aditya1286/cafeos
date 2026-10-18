@@ -128,7 +128,8 @@ export const register = async (req: Request, res: Response) => {
           email: user.email,
           role: user.role,
           businessId: user.businessId,
-          avatarUrl: user.avatarUrl || ''
+          avatarUrl: user.avatarUrl || '',
+          ringtoneUrl: user.ringtoneUrl || ''
         },
         business: {
           id: business._id,
@@ -187,7 +188,8 @@ export const login = async (req: Request, res: Response) => {
           email: user.email,
           role: user.role,
           businessId: user.businessId,
-          avatarUrl: user.avatarUrl || ''
+          avatarUrl: user.avatarUrl || '',
+          ringtoneUrl: user.ringtoneUrl || ''
         },
         business: business ? {
           id: business._id,
@@ -221,7 +223,8 @@ export const getMe = async (req: AuthRequest, res: Response) => {
           email: user?.email,
           role: user?.role,
           businessId: user?.businessId,
-          avatarUrl: user?.avatarUrl || ''
+          avatarUrl: user?.avatarUrl || '',
+          ringtoneUrl: user?.ringtoneUrl || ''
         },
         // The stored identity (theme, variant, tagline) stays as it is for the "Café look" card, but
         // `enabled` is the effective switch (platform AND café), so the card shows only while guests

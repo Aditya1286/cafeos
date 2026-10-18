@@ -24,6 +24,7 @@ export interface IUser extends Document {
   status: 'ACTIVE' | 'INACTIVE';
   isAvailableForCalls: boolean; // SUPER_ADMIN only — self-toggled support-call availability
   avatarUrl?: string; // profile picture, stored via services/storage
+  ringtoneUrl?: string; // the user's own new-order alert sound ('' = the default), stored via services/storage
   // Set whenever the password changes (reset, change, or an owner resetting a staff member's):
   // every login token issued before this moment stops working — see utils/authToken.ts.
   passwordChangedAt?: Date;
@@ -48,6 +49,7 @@ const UserSchema = new Schema<IUser>(
     status: { type: String, enum: ['ACTIVE', 'INACTIVE'], default: 'ACTIVE' },
     isAvailableForCalls: { type: Boolean, default: true },
     avatarUrl: { type: String, default: '' },
+    ringtoneUrl: { type: String, default: '' },
     passwordChangedAt: { type: Date }
   },
   { timestamps: true }

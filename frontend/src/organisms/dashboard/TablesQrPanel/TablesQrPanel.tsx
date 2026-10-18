@@ -5,7 +5,7 @@ import { Modal } from '@/molecules/Modal';
 import { downloadQrPng } from './downloadQrPng';
 import { MasterQrCard } from './MasterQrCard';
 
-interface TablesQrPanelProps {
+export interface TablesQrPanelProps {
   tables: any[];
   business: any;
   tablesEnabled: boolean;

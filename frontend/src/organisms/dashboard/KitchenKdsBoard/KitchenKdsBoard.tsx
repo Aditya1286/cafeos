@@ -31,7 +31,7 @@ interface KitchenKdsBoardProps {
 }
 
 /** Live kitchen board. Owns the bulk-move selection and modal, and renders both the desktop
- * and mobile column views — CSS picks which one is visible at the `sm` breakpoint. */
+ * and mobile column views — CSS picks which one is visible at the `md` breakpoint, where the three columns start to fit side by side. */
 export const KitchenKdsBoard = ({
   orders,
   newlyArrivedOrderId,
@@ -185,10 +185,10 @@ export const KitchenKdsBoard = ({
         </div>
       ) : (
         <div className="space-y-6" onClickCapture={boardGuard.onClickCapture}>
-          <div className="sm:hidden">
+          <div className="md:hidden">
             <KitchenKdsBoardMobile {...viewProps} />
           </div>
-          <div className="hidden sm:block">
+          <div className="hidden md:block">
             <KitchenKdsBoardDesktop {...viewProps} />
           </div>
 

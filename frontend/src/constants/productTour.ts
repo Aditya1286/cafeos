@@ -35,13 +35,6 @@ export const TOUR_STEPS: TourStep[] = [
     points: ['Search by name, phone or table', 'Paid and unpaid at a glance'],
   },
   {
-    id: 'tables',
-    tab: 'Tables & QR',
-    title: 'A QR code for every table, ready to print',
-    body: 'Add a table, download its QR, and stick it on. You can see which tables are busy at a glance.',
-    points: ['One QR per table', 'A master QR for counter orders'],
-  },
-  {
     id: 'numbers',
     tab: 'Your numbers',
     title: 'Know exactly what you earned',
