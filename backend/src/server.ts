@@ -77,7 +77,7 @@ app.use(morgan(runtime.nodeEnv === 'production' ? 'combined' : 'dev', {
 }));
 app.use('/api/v1', apiRateLimiter);
 app.use('/api/v1', rejectMongoOperators);
-// app.use('/api/v1', demoGuard);
+app.use('/api/v1', demoGuard);
 
 // API Routes
 app.use('/api/v1/auth', authRoutes);
