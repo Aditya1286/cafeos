@@ -1,2 +1,2 @@
-export * from './SettingsPanel';
-export { default } from './SettingsPanel';
+export { SettingsPanel, default } from './SettingsPanelView';
+export type { SettingsPanelProps } from './SettingsPanel';

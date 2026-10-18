@@ -1,3 +1,4 @@
+import { getOrderReviewPublic, submitOrderReviewPublic } from '../controllers/orderReview.controller';
 import crypto from 'crypto';
 import { RequestHandler, Router } from 'express';
 import rateLimit from 'express-rate-limit';
@@ -205,5 +206,16 @@ router.get('/c/:businessId/welcome', guestExperienceLimiter, getWelcome);
 router.get('/orders/:id/while-you-wait', guestExperienceLimiter, getWhileYouWait);
 router.post('/orders/:id/answer', guestExperienceLimiter, postAnswer);
 // End café identity: guest experience
+
+// Stars and a quick review after the order is served (services/orderReview.service.ts).
+const orderReviewLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: runtime.nodeEnv === 'production' ? 60 : 1000,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many requests. Please try again in a few minutes.' } }
+});
+router.get('/orders/:id/review', orderReviewLimiter, getOrderReviewPublic);
+router.post('/orders/:id/review', orderReviewLimiter, submitOrderReviewPublic);
 
 export default router;

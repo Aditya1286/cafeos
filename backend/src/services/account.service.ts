@@ -11,7 +11,7 @@ import { assertValidNewPassword, hashPassword } from '../utils/password';
 import { normalizeEmail } from '../utils/email';
 import { maskPhone } from '../utils/phone';
 import { signAuthToken } from '../utils/authToken';
-import { uploadImage, deleteFile } from './storage';
+import { uploadImage, uploadAudio, deleteFile } from './storage';
 import { isPhoneAccountVerified, consumeAccountVerification } from './otp.service';
 
 const MAX_NAME_LENGTH = 80;
@@ -24,6 +24,7 @@ const toProfile = async (user: IUser) => {
     email: user.email,
     role: user.role,
     avatarUrl: user.avatarUrl || '',
+    ringtoneUrl: user.ringtoneUrl || '',
     business: business
       ? {
           id: business._id,
@@ -74,6 +75,29 @@ export const removeAvatar = async (userId: IUser['_id']) => {
   const user = await loadUser(userId);
   const previous = user.avatarUrl;
   const updated = await userDao.updateUser(user._id, { avatarUrl: '' });
+  await deleteFile(previous);
+  return toProfile(updated || user);
+};
+
+// The sound that plays on this user's screen when an order arrives. Per person, so each owner and
+// staff member can pick their own; the default plays while it is empty.
+export const updateRingtone = async (userId: IUser['_id'], dataUrl: unknown) => {
+  const user = await loadUser(userId);
+  const { url } = await uploadAudio({
+    dataUrl,
+    folder: 'ringtones',
+    ownerId: (user.businessId || user._id).toString()
+  });
+  const previous = user.ringtoneUrl;
+  const updated = await userDao.updateUser(user._id, { ringtoneUrl: url });
+  await deleteFile(previous);
+  return toProfile(updated || user);
+};
+
+export const removeRingtone = async (userId: IUser['_id']) => {
+  const user = await loadUser(userId);
+  const previous = user.ringtoneUrl;
+  const updated = await userDao.updateUser(user._id, { ringtoneUrl: '' });
   await deleteFile(previous);
   return toProfile(updated || user);
 };

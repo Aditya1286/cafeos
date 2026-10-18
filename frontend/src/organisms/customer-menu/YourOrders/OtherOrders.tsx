@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ChevronDown } from 'lucide-react';
-import { useMyOrders } from '@/hooks/useMyOrders';
+import type { CurrentOrder } from '@/utils/currentOrders';
+import type { StoredRecoverySession } from '@/utils/recoverySession';
 import { customerStatusLabel } from './orderStatusLabel';
 
 interface OtherOrdersProps {
   slug: string;
-  /** The order the tracker is already showing. */
-  currentOrderId: string;
+  /** The customer's other orders in progress (from useMyOrders, which the page reads once). */
+  orders: CurrentOrder[];
+  session: StoredRecoverySession | null;
+  /** Start with the list showing (when it sits in a tab of its own). */
+  defaultOpen?: boolean;
 }
 
 /**
@@ -15,9 +19,13 @@ interface OtherOrdersProps {
  * so a table with five orders doesn't have to go back and verify again to open the next one. Closed
  * by default (it is secondary to the order on screen) and absent when there is nothing else.
  */
-export const OtherOrders: React.FC<OtherOrdersProps> = ({ slug, currentOrderId }) => {
-  const { orders, session } = useMyOrders({ slug, excludeId: currentOrderId });
-  const [open, setOpen] = useState(false);
+export const OtherOrders: React.FC<OtherOrdersProps> = ({
+  slug,
+  orders,
+  session,
+  defaultOpen = false,
+}) => {
+  const [open, setOpen] = useState(defaultOpen);
 
   if (orders.length === 0) return null;
 

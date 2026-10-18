@@ -8,6 +8,7 @@ import { WhyChooseUs } from '@/organisms/marketing/WhyChooseUs';
 import { DEMO_PATH, DEMO_MENU_PATH } from '@/constants/demo';
 import { useScrollToHash } from '@/hooks/useScrollToHash';
 import { ProductTour } from '@/organisms/marketing/ProductTour';
+import { WhatsAppButton } from '@/organisms/marketing/WhatsAppButton';
 import { StatsStrip } from '@/organisms/marketing/StatsStrip';
 import { PricingSection } from '@/organisms/marketing/PricingSection';
 import { FaqSection } from '@/organisms/marketing/FaqSection';
@@ -75,7 +76,9 @@ export const LandingPage: React.FC = () => {
                 <span className="block text-[9px] sm:text-[10px] text-slate-500 font-bold uppercase truncate">
                   {s.label}
                 </span>
-                <div className={`text-base sm:text-2xl font-black mt-0.5 whitespace-nowrap ${s.tone}`}>
+                <div
+                  className={`text-base sm:text-2xl font-black mt-0.5 whitespace-nowrap ${s.tone}`}
+                >
                   {s.value}
                 </div>
               </div>
@@ -142,6 +145,7 @@ export const LandingPage: React.FC = () => {
 
       <Footer />
 
+      <WhatsAppButton />
       <PageMascot page="landing" />
     </div>
   );

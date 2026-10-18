@@ -6,6 +6,7 @@ import { writeHistory } from './history';
 import { placeLiveOrder, advanceLivePlans } from './live';
 import { settleDueFees } from './fees';
 import { pruneOldDemoData, PruneResult } from './prune';
+import { sweepVisitorOrders, sweepPulseOrders } from './visitorSweep';
 import { arrivalsBetween } from './demand';
 import { startOfLocalDay, nextLocalMidnight, DAY_MS, MINUTE_MS } from './clock';
 
@@ -54,7 +55,7 @@ export interface TickSummary {
 
 export class TickInProgressError extends Error {}
 
-const acquireLock = async (holdMs: number) => {
+export const acquireLock = async (holdMs: number) => {
   const now = new Date();
   try {
     const lock = await DemoSimState.findOneAndUpdate(
@@ -70,7 +71,7 @@ const acquireLock = async (holdMs: number) => {
   }
 };
 
-const releaseLock = () => DemoSimState.updateOne({ key: LOCK_KEY }, { $set: { lockedUntil: new Date(0) } });
+export const releaseLock = () => DemoSimState.updateOne({ key: LOCK_KEY }, { $set: { lockedUntil: new Date(0) } });
 
 export const runDemoTick = async (options: { now?: Date; budgetMs?: number; historyOnly?: boolean } = {}): Promise<TickSummary> => {
   const started = Date.now();
@@ -131,6 +132,9 @@ export const runDemoTick = async (options: { now?: Date; budgetMs?: number; hist
       // 5. Fees. 6. Pruning.
       summary.feesSettled = await settleDueFees(ctx, now);
       summary.pruned = await pruneOldDemoData(ctx, now);
+      await Promise.all([sweepVisitorOrders(ctx.business._id, now), sweepPulseOrders(ctx.business._id, now)]).catch((err) =>
+        console.warn(`[demo] ${ctx.cafe.slug}: sweep failed: ${err?.message}`)
+      );
       summary.simulatedUntil = ctx.state.simulatedUntil;
       summary.caughtUp = ctx.state.simulatedUntil! >= historyEnd;
     }

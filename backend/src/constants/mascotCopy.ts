@@ -6,6 +6,9 @@
  *  - welcomeFallbacks: {name}, {usual}
  *  - firstVisit:       {cafe}
  *  - categoryTip:      {category}, {dish}
+ *  - orderCountTip:    {category}, {dish}, {orders}: the dish's real order count
+ *  - leaderTip:        {category}, {dish}: only when it clearly outsells the next dish
+ *  - valueTip:         {category}, {dish}, {price}: the cheapest dish of a category
  *  - houseSpecialTip:  {dish}, {cafe}, {category}
  *  - pairing:          {dish}, the suggested dish (the card around it names what it goes with)
  *  - pairingShare:     {share}, {dish}. {share} is the real share ("7 in 10"), computed only from at
@@ -22,6 +25,9 @@ export const MASCOT_COPY: {
   welcomeFallbacks: CopyLine[];
   firstVisit: CopyLine[];
   categoryTip: CopyLine[];
+  orderCountTip: CopyLine[];
+  leaderTip: CopyLine[];
+  valueTip: CopyLine[];
   houseSpecialTip: CopyLine[];
   pairing: CopyLine[];
   pairingShare: CopyLine[];
@@ -49,6 +55,25 @@ export const MASCOT_COPY: {
     { id: 'category-tip-1', text: '{category}? Most ordered here: {dish}.' },
     { id: 'category-tip-2', text: 'Eyeing {category}? Guests here order {dish} the most.' },
     { id: 'category-tip-3', text: 'In {category}, the most ordered pick here is {dish}.' },
+  ],
+
+  // Other true things to say about the same best seller, so the tips do not all read alike.
+  orderCountTip: [
+    { id: 'order-count-1', text: '{dish} has been ordered {orders} times lately.' },
+    { id: 'order-count-2', text: '{orders} orders of {dish} lately. A {category} regular.' },
+    { id: 'order-count-3', text: 'Guests keep coming back for {dish}: {orders} orders lately.' },
+  ],
+  leaderTip: [
+    { id: 'leader-1', text: '{dish} is well ahead of the rest in {category}.' },
+    { id: 'leader-2', text: 'No contest in {category}: {dish} leads.' },
+    { id: 'leader-3', text: 'In {category}, {dish} clearly outsells the rest.' },
+  ],
+
+  // The cheapest dish of a category with no best seller or house special yet. Says only the price.
+  valueTip: [
+    { id: 'value-1', text: 'Easy on the pocket in {category}: {dish}, {price}.' },
+    { id: 'value-2', text: 'Starting at {price} in {category}: {dish}.' },
+    { id: 'value-3', text: 'A light bill in {category}? {dish}, {price}.' },
   ],
 
   // The café's own pick when a category has no real best seller. Labelled as a pick, never as popular.

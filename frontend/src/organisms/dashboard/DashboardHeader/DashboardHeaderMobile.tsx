@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, Plus, LogOut } from 'lucide-react';
 import { HeaderViewProps } from './types';
 import { ThemeToggle } from '@/molecules/ThemeToggle';
-import { HeaderBrand, RefreshButton, UserAvatar, logout } from './HeaderParts';
+import { HeaderBrand, RefreshButton, UserAvatar, logout, logoClickFor } from './HeaderParts';
 
 /** Mobile & tablet (below `lg`) header: one slim row — hamburger, brand, refresh. Sections,
  * Add Item, and log out all live in a slide-in drawer opened from the hamburger. */
@@ -66,6 +66,7 @@ export const DashboardHeaderMobile = ({
             copiedUrl={copiedUrl}
             onCopyMenuUrl={onCopyMenuUrl}
             compact
+            onLogoClick={logoClickFor(tabs, onChangeTab)}
           />
         </div>
 

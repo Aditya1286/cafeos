@@ -120,3 +120,39 @@ test('gate off: the menu payload has no identity extras', async () => {
     await Business.updateOne({ _id: artisanId }, { 'identity.enabled': true });
   }
 });
+
+test('a category with no best seller or special names its clearly cheapest dish', async () => {
+  const cat = await Category.create({ businessId: artisanId, name: 'Sides Tips' });
+  const [cheap] = await Product.insertMany([
+    { businessId: artisanId, categoryId: cat._id, name: 'Plain Toast', pricePaise: 4000 },
+    { businessId: artisanId, categoryId: cat._id, name: 'Butter Toast', pricePaise: 6000 },
+    { businessId: artisanId, categoryId: cat._id, name: 'Garlic Toast', pricePaise: 8000 }
+  ]);
+  const tip = (await menu()).categoryTips[cat._id.toString()];
+  assert.equal(tip.kind, 'value');
+  assert.equal(tip.productId, cheap._id.toString());
+  assert.ok(tip.line.includes('₹40'), tip.line);
+  assert.doesNotMatch(tip.line, /most|popular|best/i);
+  // Two dishes tied for cheapest: no single cheapest to name.
+  await Product.updateOne({ _id: cheap._id }, { pricePaise: 6000 });
+  assert.equal((await menu()).categoryTips[cat._id.toString()], undefined);
+});
+
+test('a best seller is described from more than one true angle, never with a made-up figure', async () => {
+  await orderTimes(a, 8);
+  const lines = new Set<string>();
+  const realNow = Date.now;
+  try {
+    for (let d = 0; d < 3; d++) {
+      Date.now = () => realNow() + d * 24 * 60 * 60 * 1000;
+      lines.add((await menu()).categoryTips[catId].line);
+    }
+  } finally {
+    Date.now = realNow;
+  }
+  assert.ok(lines.size > 1, [...lines].join(' | '));
+  for (const line of lines) {
+    assert.ok(line.includes('Peri Peri Fries'), line);
+    for (const n of line.match(/\d+/g) ?? []) assert.equal(n, '8', line);
+  }
+});

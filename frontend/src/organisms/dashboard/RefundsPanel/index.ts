@@ -1,2 +1,2 @@
-export * from './RefundsPanel';
-export { default } from './RefundsPanel';
+export { RefundsPanel, default } from './RefundsPanelView';
+export type { RefundsPanelProps } from './RefundsPanel';

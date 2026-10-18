@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Filter, RefreshCw } from 'lucide-react';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
-import Modal from '@/molecules/Modal';
+import { BottomSheet } from '@/molecules/MobileList';
 import {
   COMPARE_OPTIONS,
   DAYPART_OPTIONS,
@@ -348,17 +348,29 @@ export const FilterBar: React.FC<FilterBarProps> = ({
         {filtersButton}
         {refresh}
         {open && (
-          <Modal title="Filters" onClose={() => setOpen(false)} maxWidth="max-w-lg">
-            <div className="space-y-4">
-              <RangeControls filters={filters} onChange={onChange} stacked />
-              <SliceControls
-                filters={filters}
-                onChange={onChange}
-                support={support}
-                categories={categories}
-              />
-            </div>
-          </Modal>
+          // A sheet from the bottom whose content scrolls: a centred dialog this tall ran off both
+          // ends of an ordinary Android screen, with its top out of reach.
+          <BottomSheet
+            title="Filters"
+            onClose={() => setOpen(false)}
+            footer={
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="w-full rounded-xl bg-slate-900 py-3 text-xs font-black text-white hover:bg-slate-800"
+              >
+                Done
+              </button>
+            }
+          >
+            <RangeControls filters={filters} onChange={onChange} stacked />
+            <SliceControls
+              filters={filters}
+              onChange={onChange}
+              support={support}
+              categories={categories}
+            />
+          </BottomSheet>
         )}
       </div>
     );

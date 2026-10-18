@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { playOrderSound } from '../utils/orderSound';
 import authService from '../services/auth';
 import ordersService from '../services/dashboard/orders';
 import { mergeOrders } from '../utils/kitchenOrders';
@@ -6,6 +7,7 @@ import menuService from '../services/dashboard/menu';
 import tablesService from '../services/dashboard/tables';
 import inventoryService from '../services/dashboard/inventory';
 import businessService from '../services/dashboard/business';
+import { readFileAsDataUrl } from '../utils/readFileAsDataUrl';
 import analyticsService from '../services/dashboard/analytics';
 import { toast } from '../utils/toast';
 import { amendedOrderPatch } from '../utils/amendedItems';
@@ -27,13 +29,6 @@ interface UseOwnerDashboardDataOptions {
    */
   kitchenOnly?: boolean;
 }
-
-const NEW_ORDER_SOUND_URL = 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3';
-const playNewOrderSound = () => {
-  try {
-    new Audio(NEW_ORDER_SOUND_URL).play().catch(() => {});
-  } catch {}
-};
 
 /**
  * Loads every dataset the owner dashboard renders (business profile, live
@@ -136,7 +131,7 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
     socket.on('order:new', (newOrder: any) => {
       setOrders((prev) => [newOrder, ...prev]);
       toast(`🔔 New order ${newOrder.orderNumber || newOrder.orderId} arrived!`);
-      playNewOrderSound();
+      playOrderSound();
       const arrivedId = newOrder._id || newOrder.orderId;
       setNewlyArrivedOrderId(arrivedId);
       setTimeout(() => setNewlyArrivedOrderId((prev) => (prev === arrivedId ? null : prev)), 5000);
@@ -195,7 +190,7 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
           toast(
             `🔔 ${missed.length} new order${missed.length === 1 ? '' : 's'} arrived while you were offline`,
           );
-          playNewOrderSound();
+          playOrderSound();
           const arrivedId = missed[0]._id;
           setNewlyArrivedOrderId(arrivedId);
           setTimeout(
@@ -295,6 +290,59 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
 
     return { updatedIds, failed };
   };
+
+  // The business's own pictures: the logo in the top bar and the banner on the guests' menu. A picked
+  // image replaces the old one; removing goes back to the default.
+  const [savingLogo, setSavingLogo] = useState(false);
+  const [savingCover, setSavingCover] = useState(false);
+  const changeImage = async (
+    setSaving: (saving: boolean) => void,
+    change: () => Promise<{ data: Partial<Record<'logoUrl' | 'coverImageUrl', string>> }>,
+    success: string,
+    failure: string,
+  ) => {
+    setSaving(true);
+    try {
+      const { data } = await change();
+      setBusiness((prev: any) => (prev ? { ...prev, ...data } : prev));
+      toast.success(success);
+    } catch (err: any) {
+      toast.error(err.message || failure);
+    } finally {
+      setSaving(false);
+    }
+  };
+  const pickedImage = async (file: File): Promise<string | null> => {
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please pick an image (JPEG, PNG or WEBP).');
+      return null;
+    }
+    return readFileAsDataUrl(file);
+  };
+  const handleUploadLogo = async (file: File) => {
+    const image = await pickedImage(file);
+    if (!image) return;
+    await changeImage(
+      setSavingLogo,
+      async () => businessService.uploadLogo(image),
+      'Logo updated',
+      'Could not change the logo',
+    );
+  };
+  const handleRemoveLogo = () =>
+    changeImage(setSavingLogo, () => businessService.removeLogo(), 'Logo removed', 'Could not change the logo');
+  const handleUploadCover = async (file: File) => {
+    const image = await pickedImage(file);
+    if (!image) return;
+    await changeImage(
+      setSavingCover,
+      async () => businessService.uploadCover(image),
+      'Banner updated',
+      'Could not change the banner',
+    );
+  };
+  const handleRemoveCover = () =>
+    changeImage(setSavingCover, () => businessService.removeCover(), 'Banner removed', 'Could not change the banner');
 
   const [savingUpiVpa, setSavingUpiVpa] = useState(false);
   const handleSaveUpiVpa = async (upiVpa: string) => {
@@ -482,6 +530,12 @@ export const useOwnerDashboardData = (options: UseOwnerDashboardDataOptions = {}
     handleUpdateOrderStatus,
     handleBulkUpdateOrderStatus,
     handleConfirmPayment,
+    savingLogo,
+    handleUploadLogo,
+    handleRemoveLogo,
+    savingCover,
+    handleUploadCover,
+    handleRemoveCover,
     savingUpiVpa,
     handleSaveUpiVpa,
     savingGstin,

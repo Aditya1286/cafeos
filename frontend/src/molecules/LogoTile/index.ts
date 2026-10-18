@@ -1,0 +1,1 @@
+export { LogoTile } from './LogoTile';

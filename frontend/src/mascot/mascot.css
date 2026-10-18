@@ -42,9 +42,18 @@
   height: 100%;
   transform: translateY(0);
 }
-/* Rising from behind a card: starts hidden below the card's top edge, then springs up. */
+/* Rising from behind a card: starts hidden below the card's top edge, then springs up. Pages whose
+   pop-ups follow the scrolling (the menu) set the duration per rise (--m-rise-ms) and ask for a calm
+   ease with no overshoot (data-calm). */
 .caos-mascot[data-body='up'][data-phase='rise'] .caos-mascot__body {
-  transition: transform 650ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform var(--m-rise-ms, 650ms) var(--m-rise-ease, cubic-bezier(0.34, 1.56, 0.64, 1));
+}
+.caos-mascot[data-calm='true'] {
+  --m-rise-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+.caos-mascot[data-reduced='true'][data-calm='true'] .caos-mascot__body {
+  /* Reduced motion: the menu's pop-ups appear and go without the slide. */
+  transition-duration: 1ms !important;
 }
 .caos-mascot[data-body='hidden'] .caos-mascot__body {
   transform: translateY(82%);
@@ -52,7 +61,7 @@
 }
 .caos-mascot[data-body='down'] .caos-mascot__body {
   transform: translateY(82%);
-  transition: transform 450ms cubic-bezier(0.55, 0, 0.9, 0.4);
+  transition: transform var(--m-sink-ms, 450ms) cubic-bezier(0.55, 0, 0.9, 0.4);
 }
 .caos-mascot[data-phase='in'] .caos-mascot__body {
   animation: caos-mascot-in 320ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
@@ -254,8 +263,9 @@
 /* Phones: a smaller bubble, so a docked mascot's message covers less of the page under it. */
 @media (max-width: 767px) {
   .caos-mascot__bubble {
-    max-width: min(210px, calc(100vw - 32px));
-    padding: 6px 10px;
-    font-size: 12px;
+    max-width: min(176px, calc(100vw - 32px));
+    padding: 5px 9px;
+    font-size: 11.5px;
+    line-height: 1.25;
   }
 }

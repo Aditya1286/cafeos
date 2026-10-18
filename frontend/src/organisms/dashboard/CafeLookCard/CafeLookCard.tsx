@@ -1,9 +1,7 @@
-import { useEffect, useState } from 'react';
 import { Check, Palette } from 'lucide-react';
-import { DEFAULT_THEME_ID, THEMES, resolveTheme } from '@/themes';
-import { useCafeIdentity } from '@/hooks/useCafeIdentity';
 import { inputCls } from '@/molecules/FormField';
 import { ThemePreview } from './ThemePreview';
+import { LAUNCH_THEMES, useCafeLookPicker } from './useCafeLookPicker';
 import { SUGGESTED_TAGLINES, TAGLINE_MAX } from './taglines';
 
 interface CafeLookCardProps {
@@ -13,34 +11,23 @@ interface CafeLookCardProps {
   products: any[];
 }
 
-// The themes an owner can pick: every registered theme except the built-in caos look, which is what
-// a café has until it picks one.
-const LAUNCH_THEMES = Object.values(THEMES).filter((t) => t.id !== DEFAULT_THEME_ID);
-
 /**
  * Settings tab: the owner picks the café's theme and colour variant and writes a short tagline, with
  * a live phone preview. A pick saves straight away (the preview already shows it); the tagline has
  * its own Save. Shown only while a super admin has switched café identity on for this café.
  */
 export const CafeLookCard = ({ business, categories, products }: CafeLookCardProps) => {
-  const { look, saving, save } = useCafeIdentity(business?.identity);
-  // The pick being saved, shown at once so the preview doesn't wait on the network.
-  const [pick, setPick] = useState<{ themeId: string; variantId: string } | null>(null);
-  const [taglineDraft, setTaglineDraft] = useState(look.tagline);
-  useEffect(() => setTaglineDraft(look.tagline), [look.tagline]);
-
-  // An unknown or retired stored theme resolves to caos, as on the guest pages: nothing is selected.
-  const shown = resolveTheme(pick?.themeId ?? look.themeId, pick?.variantId ?? look.variantId);
-  const hasTheme = shown.theme.id !== DEFAULT_THEME_ID;
-
-  const choose = async (themeId: string, variantId: string) => {
-    if (saving || (hasTheme && shown.theme.id === themeId && shown.variantId === variantId)) return;
-    setPick({ themeId, variantId });
-    await save({ themeId, variantId });
-    setPick(null);
-  };
-
-  const trimmedTagline = taglineDraft.trim();
+  const {
+    look,
+    saving,
+    save,
+    shown,
+    hasTheme,
+    choose,
+    taglineDraft,
+    setTaglineDraft,
+    trimmedTagline,
+  } = useCafeLookPicker(business);
 
   return (
     <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 space-y-5">
@@ -64,7 +51,9 @@ export const CafeLookCard = ({ business, categories, products }: CafeLookCardPro
                   key={theme.id}
                   data-testid={`theme-${theme.id}`}
                   className={`p-3.5 rounded-2xl border transition-all ${
-                    active ? 'bg-brand-50 border-brand-400 shadow-sm' : 'bg-slate-50 border-slate-200'
+                    active
+                      ? 'bg-brand-50 border-brand-400 shadow-sm'
+                      : 'bg-slate-50 border-slate-200'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-3">

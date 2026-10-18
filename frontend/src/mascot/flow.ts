@@ -1,4 +1,4 @@
-import { FLOW, LAYOUT, PEEK } from './config';
+import { FLOW, LAYOUT, PEEK, PEEK_PACE } from './config';
 import type { ScrollSnapshot } from './sections';
 import type { PageFlow, PeekConfig } from './types';
 
@@ -119,6 +119,7 @@ export const pickPeek = (
   isBlocked: (id: string) => boolean = () => false,
   topInset: number = NAV_CLEAR,
   visible?: number,
+  minCardHeight: number = size * 0.8,
 ): string | null => {
   const headroom = topInset + size * peekVisible(size, visible);
   if (active) {
@@ -137,7 +138,7 @@ export const pickPeek = (
     if (
       s.top >= headroom &&
       s.top <= vh * PEEK.maxTop &&
-      s.bottom - s.top > size * 0.8 &&
+      s.bottom - s.top > minCardHeight &&
       !isBlocked(s.id)
     ) {
       return s.id;
@@ -177,6 +178,25 @@ export const slotPlacement = (
   y: rect.top + scroll.y + Math.max(0, (rect.bottom - rect.top - size) / 2),
 });
 
+const lerp = (from: number, to: number, t: number) => from + (to - from) * t;
+
+/** How a pop-up should behave at a given scroll speed (px/ms), for pages whose mascot follows the
+ * scrolling. A pop-up may only start once the page has slowed down; the slower it is, the slower
+ * and calmer the rise. The sink is quick when the visitor is flicking away. Pure. */
+export const peekPace = (speed: number): { canRise: boolean; riseMs: number; sinkMs: number } => {
+  const toLimit = clamp(speed / PEEK_PACE.startBelow, 0, 1);
+  const toFast = clamp(
+    (speed - PEEK_PACE.startBelow) / (PEEK_PACE.fastAbove - PEEK_PACE.startBelow),
+    0,
+    1,
+  );
+  return {
+    canRise: speed < PEEK_PACE.startBelow,
+    riseMs: Math.round(lerp(PEEK_PACE.riseMs.still, PEEK_PACE.riseMs.limit, toLimit)),
+    sinkMs: Math.round(lerp(PEEK_PACE.sinkMs.calm, PEEK_PACE.sinkMs.fast, toFast)),
+  };
+};
+
 /** Whether any part of a viewport-relative rect is on screen. Pure. */
 export const isOnScreen = (rect: Rect, viewportHeight: number): boolean =>
   rect.bottom > 0 && rect.top < viewportHeight;
@@ -185,7 +205,8 @@ type Phase = 'flow' | 'out' | 'rise' | 'peek' | 'sink' | 'in';
 
 interface FlowOptions {
   host: HTMLElement;
-  peeks: PeekConfig[];
+  /** The cards to pop up from; a function when the page adds some at runtime (the menu's categories). */
+  peeks: PeekConfig[] | (() => PeekConfig[]);
   scroll: ScrollSnapshot;
   getSize: () => number;
   /** A card pop-up started (id) or ended (null). Fires once the mascot is visibly rising. */
@@ -218,6 +239,18 @@ export const createFlowController = ({
   onVisible,
 }: FlowOptions): FlowController => {
   let lastVisible: boolean | null = null;
+  const getPeeks = () => (typeof peeks === 'function' ? peeks() : peeks);
+  // Pop-ups that follow the scrolling: no mascot on screen between them, and a pace set by how fast
+  // the page is moving (see `peekPace`).
+  const paced = flow?.mode === 'peek' && !staticMode;
+  if (paced) host.dataset.calm = 'true';
+  // Scroll positions over the last moments, for the speed: a short window is steadier than the gap
+  // between two frames, which swings with every uneven frame.
+  const scrollSamples: { at: number; y: number }[] = [];
+  let previousY = window.scrollY;
+  /** The speed as of the latest update (px/ms), for the pace of a rise or a sink. */
+  let scrollSpeed = 0;
+  let recheckPending = false;
   const insets = { top: flow?.insets?.top ?? NAV_CLEAR, bottom: flow?.insets?.bottom ?? 0 };
   const repeatMs = flow?.peekRepeatMs ?? PEEK.repeatMs;
   const visibleOverride = flow?.peekVisible;
@@ -284,7 +317,37 @@ export const createFlowController = ({
   /** Static and docked mascots rest in a corner instead of following the path. */
   const resting = staticMode || flow?.mode === 'dock';
 
+  /** Page scroll speed in px/ms over the last moments; 0 once the page has been still for a while.
+   * Called on every update, so each call adds a sample. */
+  const currentScrollSpeed = (): number => {
+    const now = performance.now();
+    scrollSamples.push({ at: now, y: window.scrollY });
+    while (scrollSamples.length > 1 && now - scrollSamples[0].at > PEEK_PACE.windowMs)
+      scrollSamples.shift();
+    const first = scrollSamples[0];
+    const span = now - first.at;
+    const y = window.scrollY;
+    const moved = y !== previousY;
+    previousY = y;
+    // Too little history to know the speed: a page that has only just started to move is treated as
+    // fast (the start of a flick), a page that has not moved as still.
+    if (span < PEEK_PACE.minSpanMs) return moved ? PEEK_PACE.fastAbove : 0;
+    return Math.abs(y - first.y) / span;
+  };
+
+  /** A pop-up was held back because the page is moving fast: look again once it has settled. */
+  const recheckWhenSettled = () => {
+    if (recheckPending) return;
+    recheckPending = true;
+    later(PEEK_PACE.settleMs + 30, () => {
+      recheckPending = false;
+      update();
+    });
+  };
+
   const flowTarget = (): Point | null => {
+    // Between pop-ups the mascot is not on screen at all: parked.
+    if (paced) return null;
     const area = flowArea();
     if (!area) return null;
     const size = getSize();
@@ -389,6 +452,8 @@ export const createFlowController = ({
     for (const other of scope.querySelectorAll(OBSTACLES)) {
       if (other === el || other.contains(el) || el.contains(other) || host.contains(other))
         continue;
+      // A page's backdrop (a cover photo) is something to rise in front of, not to avoid.
+      if (other.closest('[data-mascot-backdrop]')) continue;
       const r = contentRect(other);
       if (r) obstacles.push(r);
     }
@@ -413,7 +478,7 @@ export const createFlowController = ({
 
   const measureSpots = (): SpotRect[] => {
     const out: SpotRect[] = [];
-    for (const peek of peeks) {
+    for (const peek of getPeeks()) {
       if (!allowedHere(peek)) continue;
       const el = spotElement(peek);
       if (!el) continue;
@@ -433,7 +498,7 @@ export const createFlowController = ({
 
   /** Document-space placement of the box for the active peek, from the card's current rect. */
   const peekPoint = (id: string): Point | null => {
-    const peek = peeks.find((p) => p.peekId === id);
+    const peek = getPeeks().find((p) => p.peekId === id);
     const el = peek && spotElement(peek);
     if (!peek || !el) return null;
     const r = el.getBoundingClientRect();
@@ -450,7 +515,7 @@ export const createFlowController = ({
     );
   };
 
-  const startPeek = (id: string) => {
+  const startPeek = (id: string, riseMs: number = PEEK.riseMs) => {
     activeId = id;
     lastPeeked.set(id, performance.now());
     if (raf) cancelAnimationFrame(raf);
@@ -473,16 +538,18 @@ export const createFlowController = ({
       place(point.x, point.y);
       setBubbleSide(point.x + getSize() / 2, point.y, viewport().vw);
       void host.offsetWidth; // commit the hidden pose before the transition starts
+      host.style.setProperty('--m-rise-ms', `${riseMs}ms`);
       setPhase('rise');
       host.dataset.body = 'up';
-      later(PEEK.greetDelayMs, () => {
+      // A slow rise greets later too, so the wave and the message land on a mascot that is up.
+      later(paced ? Math.round(riseMs * 0.6) : PEEK.greetDelayMs, () => {
         if (activeId === id) onPeek(id);
       });
-      later(PEEK.riseMs, () => {
+      later(riseMs, () => {
         if (phase === 'rise') setPhase('peek');
       });
       if (flow?.peekHoldMs !== undefined) {
-        later(PEEK.riseMs + flow.peekHoldMs, () => {
+        later(riseMs + flow.peekHoldMs, () => {
           if (activeId === id && (phase === 'rise' || phase === 'peek')) finishPeek();
         });
       }
@@ -509,9 +576,12 @@ export const createFlowController = ({
       });
     };
     if (wasPeeking) {
+      // Unhurried when the visitor has stopped, quick when they are flicking past.
+      const sinkMs = paced ? peekPace(scrollSpeed).sinkMs : PEEK.sinkMs;
+      host.style.setProperty('--m-sink-ms', `${sinkMs}ms`);
       setPhase('sink');
       host.dataset.body = 'down';
-      later(PEEK.sinkMs, () => {
+      later(sinkMs, () => {
         // Fade the last sliver away, rejoin invisibly, then fade back in.
         host.dataset.phase = 'out';
         later(PEEK.fadeMs, rejoin);
@@ -524,6 +594,9 @@ export const createFlowController = ({
   // ── Per-frame evaluation ──────────────────────────────────────────────────────────────────
   const update = () => {
     if (disposed) return;
+    // Every update adds a sample, whether or not a card is in view: the speed needs the frames
+    // before the one that decides.
+    if (paced) scrollSpeed = currentScrollSpeed();
     const { vh } = viewport();
     const size = getSize();
 
@@ -577,17 +650,28 @@ export const createFlowController = ({
         return last !== undefined && performance.now() - last < repeatMs;
       },
       (id) => {
-        const peek = peeks.find((p) => p.peekId === id);
+        const peek = getPeeks().find((p) => p.peekId === id);
         const el = peek && spotElement(peek);
         return !peek || !el ? true : clearAnchor(peek, el, el.getBoundingClientRect()) === null;
       },
       NAV_CLEAR,
       visibleOverride,
+      // A category's top bar is a slim strip, not a card the mascot has to fit inside.
+      paced ? 0 : undefined,
     );
 
     if (phase === 'flow') {
       if (wanted) {
-        startPeek(wanted);
+        if (paced) {
+          const pace = peekPace(scrollSpeed);
+          if (!pace.canRise) {
+            recheckWhenSettled();
+            return;
+          }
+          startPeek(wanted, pace.riseMs);
+        } else {
+          startPeek(wanted);
+        }
         return;
       }
       retarget(false);

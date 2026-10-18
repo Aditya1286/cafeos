@@ -24,6 +24,8 @@ import { formatTime } from '@/utils/DateUtils';
 import { toast } from '@/utils/toast';
 import { SMEPAY_CHECKOUT_ENABLED, CUSTOMER_SUPPORT_ENABLED } from '@/constants/features';
 import { SupportWidget } from '@/organisms/SupportWidget';
+import { DemoBanner } from '@/organisms/customer-menu/DemoBanner';
+import { DEMO_CAFE } from '@/constants/demo';
 import VegMark from '@/atoms/VegMark';
 import MenuItemCard from '@/organisms/customer-menu/MenuItemCard';
 import MenuSection from '@/organisms/customer-menu/MenuSection';
@@ -34,12 +36,14 @@ import { readGuestPass, saveGuestPass } from '@/utils/guestPass';
 import { CafeThemeScope, mascotDressFor, resolveTheme } from '@/themes';
 import { rememberCafeTheme, rememberedCafeTheme } from '@/utils/cafeThemeMemory';
 import { PageMascot } from '@/mascot/PageMascot';
-import { useMenuMascot } from '@/hooks/useMenuMascot';
+import { useMenuMascot, tipPeekId, WELCOME_CARD } from '@/hooks/useMenuMascot';
 import type { CategoryTip } from '@/services/public/menu/types';
 
 type DietFilter = 'ALL' | 'VEG' | 'NON_VEG';
 
 // The default (caos) look's cover when the café has no photo, as before café themes.
+/** The longest note a guest can leave for the kitchen (the server allows a little more). */
+const ORDER_NOTE_MAX_LENGTH = 200;
 const CAOS_STOCK_COVER = 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=800&q=80';
 
 interface MenuSectionData {
@@ -79,6 +83,8 @@ export const CustomerMenuPage: React.FC = () => {
 
   // Customer guest details
   const [customerName, setCustomerName] = useState('');
+  // An optional note for the kitchen ("less sugar", "no onions"), sent with the order.
+  const [orderNote, setOrderNote] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   // CHECKOUT = the café's SMEPay online checkout (only offered when business.checkoutAvailable);
   // ONLINE = pay the café's own UPI ID directly; CASH = pay at the counter.
@@ -88,6 +94,9 @@ export const CustomerMenuPage: React.FC = () => {
 
   //Adding custom otp handler
   const otp = useOtpVerification(customerPhone, 'otp-captcha-container');
+
+  // The public demo café (see constants/demo.ts) gets a banner; ordering there works like any café's.
+  const isDemoCafe = slug === DEMO_CAFE.slug;
 
   useEffect(() => {
     const fetchBusinessAndMenu = async () => {
@@ -207,6 +216,8 @@ export const CustomerMenuPage: React.FC = () => {
           name: item.product.name,
         })),
       };
+      const note = orderNote.trim();
+      if (note) payload.notes = note;
       if (resolvedQrToken) {
         payload.qrToken = resolvedQrToken;
       } else {
@@ -222,6 +233,7 @@ export const CustomerMenuPage: React.FC = () => {
             customerName,
             customerPhone,
             items: payload.items,
+            ...(note ? { notes: note } : {}),
             qrToken: payload.qrToken,
             businessSlug: payload.businessSlug,
             ...(otp.deviceProof ? { deviceProof: otp.deviceProof } : {}),
@@ -342,7 +354,12 @@ export const CustomerMenuPage: React.FC = () => {
   // flash the default look; the loaded data then takes over (tagline stays empty until it does).
   const identity = business
     ? business.identity
-    : rememberedTheme && { enabled: true, mascotRendering: 'light', theme: rememberedTheme, tagline: '' };
+    : rememberedTheme && {
+        enabled: true,
+        mascotRendering: 'light',
+        theme: rememberedTheme,
+        tagline: '',
+      };
   const identityOn = !!identity?.enabled;
   const tagline = identityOn ? identity?.tagline?.trim() : '';
   const themeId = identityOn
@@ -362,9 +379,9 @@ export const CustomerMenuPage: React.FC = () => {
     products,
     cartCount,
     addToCart: handleAddToCart,
-    sectionsKey: sections.map((sec) => sec.id).join(','),
   });
   const mascotRendering = identityOn ? identity?.mascotRendering : undefined;
+  const mascotOn = identityOn && !!mascotRendering;
   const mascotDress = useMemo(() => mascotDressFor(identity), [identity]);
 
   return (
@@ -373,9 +390,10 @@ export const CustomerMenuPage: React.FC = () => {
     // (then that theme, without the stock cover); the loaded `identity` takes over once it arrives.
     <CafeThemeScope identity={identity}>
       <div className="min-h-screen bg-cafe-page text-cafe-ink pb-28 selection:bg-cafe-button selection:text-cafe-on-accent max-w-md mx-auto relative shadow-xl border-x border-cafe-line font-cafe-body overflow-x-clip">
+        {isDemoCafe && <DemoBanner variant="menu" />}
         {/* ── Top Hero Header (Swiggy / Zomato Aesthetic) ────────────────── */}
         <div className="relative bg-cafe-surface border-b border-cafe-line">
-          <div className="h-44 relative overflow-hidden bg-cafe-raised">
+          <div data-mascot-backdrop className="h-44 relative overflow-hidden bg-cafe-raised">
             {coverSrc ? (
               <img src={coverSrc} alt="Business Cover" className="w-full h-full object-cover" />
             ) : (
@@ -387,16 +405,20 @@ export const CustomerMenuPage: React.FC = () => {
             )}
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
-            {/* Table Badge */}
-            <div className="absolute top-4 right-4 z-10 px-3.5 py-1.5 rounded-cafe-chip bg-cafe-surface/95 backdrop-blur-md shadow-md text-xs font-black text-cafe-accent-600 border border-cafe-accent-200 flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-cafe-accent-500 animate-pulse" />
+            {/* Table Badge: top left and small, so the welcome mascot rising on the right stays clear of it. */}
+            <div className="absolute top-3 left-3 z-10 px-2.5 py-1 rounded-cafe-chip bg-cafe-surface/95 backdrop-blur-md shadow-md text-[10px] font-black text-cafe-accent-600 border border-cafe-accent-200 flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-cafe-accent-500 animate-pulse" />
               {orderContextLabel}
             </div>
           </div>
 
           {/* Business Card Overlay */}
           <div className="px-4 pb-4 -mt-10 relative z-10">
-            <div className="bg-cafe-surface rounded-cafe-card p-4 shadow-lg border border-cafe-neutral-100 space-y-2">
+            <div
+              // The mascot's welcome rises from behind this card (opaque, above the mascot layer).
+              data-mascot-peek={mascotOn ? WELCOME_CARD : undefined}
+              className="bg-cafe-surface rounded-cafe-card p-4 shadow-lg border border-cafe-neutral-100 space-y-2"
+            >
               <div className="flex items-start justify-between gap-3">
                 {/* min-w-0: lets this column shrink so a long address truncates instead of pushing
                   the rating badge (and the whole page) past the right edge of the phone. */}
@@ -507,6 +529,14 @@ export const CustomerMenuPage: React.FC = () => {
                   sectionRefs.current[section.id] = el;
                 }}
                 categoryId={section.categoryId}
+                mascot={
+                  mascotOn
+                    ? {
+                        room: true,
+                        tipPeekId: section.categoryId ? tipPeekId(section.categoryId) : undefined,
+                      }
+                    : undefined
+                }
                 title={section.title}
                 count={section.products.length}
                 subtitle={section.subtitle}
@@ -737,6 +767,30 @@ export const CustomerMenuPage: React.FC = () => {
                 </div>
 
                 <div>
+                  <label
+                    htmlFor="order-note"
+                    className="flex items-baseline justify-between text-xs font-bold text-cafe-neutral-700 mb-1"
+                  >
+                    <span>
+                      Note for the kitchen{' '}
+                      <span className="font-medium text-cafe-neutral-400">(optional)</span>
+                    </span>
+                    <span className="text-[10px] font-bold text-cafe-neutral-400 tabular-nums">
+                      {orderNote.length}/{ORDER_NOTE_MAX_LENGTH}
+                    </span>
+                  </label>
+                  <textarea
+                    id="order-note"
+                    rows={2}
+                    maxLength={ORDER_NOTE_MAX_LENGTH}
+                    placeholder="e.g. Less sugar, no onions"
+                    value={orderNote}
+                    onChange={(e) => setOrderNote(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-cafe-neutral-50 border border-cafe-line text-base sm:text-xs text-cafe-ink font-medium outline-none resize-none focus:border-cafe-accent-500 focus:bg-cafe-surface focus:ring-2 focus:ring-cafe-accent-100 transition-all"
+                  />
+                </div>
+
+                <div>
                   <label className="block text-xs font-bold text-cafe-neutral-700 mb-1.5">
                     Payment Method
                   </label>
@@ -811,13 +865,13 @@ export const CustomerMenuPage: React.FC = () => {
           />
         )}
       </div>
-      {identityOn && mascotRendering && (
+      {mascotOn && (
         <PageMascot
           page="menu"
           rendering={mascotRendering}
           dress={mascotDress}
-          reactions={mascot.reactions}
-          signal={mascot.signal}
+          peeks={mascot.peeks}
+          onPeek={mascot.onPeek}
           onAction={mascot.onAction}
         />
       )}

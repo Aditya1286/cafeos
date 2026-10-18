@@ -14,10 +14,10 @@ const MOBILE_STATUS_LABEL: Record<KdsStatus, string> = {
 
 const SWIPE_THRESHOLD_PX = 60;
 
-/** Mobile (below `sm`): one status at a time instead of 3 stacked full-height columns — pick a
+/** Mobile (below `md`): one status at a time instead of 3 stacked full-height columns — pick a
  * status from the switcher, or swipe left/right to step through the queue. Orders render as
- * compact tickets so a rush still fits on a few screens. The column uses natural page height;
- * nested scroll areas are awkward to hit on a phone. */
+ * compact tickets so a rush still fits on a few screens. The column grows with its orders up to
+ * 70% of the screen, then scrolls inside itself, so a long queue never stretches the page. */
 export const KitchenKdsBoardMobile = (props: KdsBoardViewProps) => {
   const { orders } = props;
   const [status, setStatus] = useState<KdsStatus>('PLACED');
@@ -86,7 +86,7 @@ export const KitchenKdsBoardMobile = (props: KdsBoardViewProps) => {
             dragElastic={0.12}
             onDragEnd={handleSwipeEnd}
           >
-            <KdsColumn {...props} status={status} scrollable={false} compact />
+            <KdsColumn {...props} status={status} scrollable={false} capped compact />
           </motion.div>
         </AnimatePresence>
       </div>

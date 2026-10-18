@@ -19,6 +19,7 @@ import { startCheckoutSweep } from './services/checkout.service';
 
 // Route Imports
 import authRoutes from './routes/authRoutes';
+import { demoGuard } from './demo/demoGuard';
 import menuRoutes from './routes/menuRoutes';
 import tableRoutes from './routes/tableRoutes';
 import orderRoutes from './routes/orderRoutes';
@@ -29,6 +30,7 @@ import adminRoutes from './routes/adminRoutes';
 import publicRoutes from './routes/publicRoutes';
 import businessRoutes from './routes/businessRoutes';
 import subscriptionRoutes from './routes/subscriptionRoutes';
+import reviewRoutes from './routes/reviewRoutes';
 import supportRoutes from './routes/supportRoutes';
 import accountRoutes from './routes/accountRoutes';
 import staffRoutes from './routes/staffRoutes';
@@ -75,6 +77,7 @@ app.use(morgan(runtime.nodeEnv === 'production' ? 'combined' : 'dev', {
 }));
 app.use('/api/v1', apiRateLimiter);
 app.use('/api/v1', rejectMongoOperators);
+app.use('/api/v1', demoGuard);
 
 // API Routes
 app.use('/api/v1/auth', authRoutes);
@@ -89,6 +92,7 @@ app.use('/api/v1/public', publicRoutes);
 app.use('/api/v1/business', businessRoutes);
 app.use('/api/v1/subscriptions', subscriptionRoutes);
 app.use('/api/v1/support', supportRoutes);
+app.use('/api/v1/reviews', reviewRoutes);
 app.use('/api/v1/account', accountRoutes);
 app.use('/api/v1/staff', staffRoutes);
 app.use('/api/v1/demo', demoRoutes);

@@ -54,6 +54,22 @@ in as history on the next tick, so the charts have no gaps.
 
 Owner logins: `owner.<slug>@example.com` with `demo.accountPassword`.
 
+## Live feel while demoing: the pulse
+
+The tick fills in history and a realistic day, but a quiet hour can look empty. `POST /api/v1/demo/pulse`
+(same `X-Demo-Key`) places one order at one café (Loamline by default, `?slug=` for another) through the
+real order API and moves the kitchen along. It shares the tick's lock, so it never runs on top of a
+tick (409 `TICK_IN_PROGRESS`; the next call is fine). Call it in a loop while someone is looking:
+
+```
+~/cafeos-demo/pulse.sh 60     # one order every 25-35 seconds for an hour; Ctrl-C to stop
+```
+
+Pulse orders are tagged, so they never pile up: each one deletes itself after 10 minutes (the pulse and
+the tick both sweep), and `~/cafeos-demo/pulse.sh clear` (`POST /api/v1/demo/pulse/clear`) deletes all of
+them at once when a demo is over. The tick's own orders are never touched. Still, run the loop only
+while you are demoing: at one order per 30 seconds it is about 120 orders an hour.
+
 ## How it's built
 
 Everything lives in this folder; the only line outside it mounts `demo.routes.ts` in `server.ts`.

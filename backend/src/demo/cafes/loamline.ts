@@ -92,7 +92,9 @@ export const loamline: DemoCafe = {
     openingTime: '08:00',
     closingTime: '23:00',
     taxRatePercentage: 5,
-    tables: 10
+    tables: 10,
+    // Real money goes to this ID when a visitor pays "Online" in the public demo.
+    upiVpa: '6006646578@slc'
   },
   planCode: 'PREMIUM',
   traffic: {

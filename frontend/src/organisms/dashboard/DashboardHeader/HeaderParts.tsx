@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Coffee, Plus, RefreshCw, LogOut, Wifi, ChevronDown, UserCircle } from 'lucide-react';
+import { LogoTile } from '@/molecules/LogoTile';
 import { APP_SLUG } from '@/constants/app';
 import { MenuUrlHoldToCopy } from './MenuUrlHoldToCopy';
 import { HeaderViewProps } from './types';
@@ -12,40 +13,69 @@ export const logout = () => {
   window.location.href = '/login';
 };
 
-/** `compact`: smaller logo and no plan badge, for the single-row mobile bar. */
+/** What clicking the logo does: open Settings, for a user who has that tab; nothing otherwise. */
+export const logoClickFor = (
+  tabs: HeaderViewProps['tabs'],
+  onChangeTab: HeaderViewProps['onChangeTab'],
+): (() => void) | undefined =>
+  tabs.some((t) => t.id === 'settings') ? () => onChangeTab('settings') : undefined;
+
+/** `compact`: smaller logo and no plan badge, for the single-row mobile bar. `onLogoClick`: the logo
+ * becomes a button (it opens Settings, where the logo is changed); leave out for a plain picture. */
 export const HeaderBrand = ({
   business,
   copiedUrl,
   onCopyMenuUrl,
   compact = false,
-}: Pick<HeaderViewProps, 'business' | 'copiedUrl' | 'onCopyMenuUrl'> & { compact?: boolean }) => (
-  <div className={`flex items-center min-w-0 ${compact ? 'gap-2.5' : 'gap-3'}`}>
-    <div
-      className={`bg-brand-600 flex items-center justify-center shadow-md shadow-brand-600/25 text-white font-black shrink-0 ${
-        compact ? 'w-8 h-8 rounded-xl' : 'w-10 h-10 rounded-2xl'
-      }`}
+  onLogoClick,
+}: Pick<HeaderViewProps, 'business' | 'copiedUrl' | 'onCopyMenuUrl'> & {
+  compact?: boolean;
+  onLogoClick?: () => void;
+}) => {
+  const logo = (
+    <LogoTile
+      src={business?.logoUrl}
+      className={compact ? 'w-8 h-8 rounded-xl' : 'w-10 h-10 rounded-2xl'}
+      fallbackClassName="bg-brand-600 shadow-md shadow-brand-600/25 text-white font-black"
     >
       <Coffee className={compact ? 'w-4 h-4' : 'w-5.5 h-5.5'} />
-    </div>
-    <div className="min-w-0">
-      <div className="text-base font-black text-slate-900 leading-tight flex items-center gap-2 min-w-0">
-        <span className="truncate">{business?.name || 'The Artisan Roastery'}</span>
-        {!compact && (
-          <span className="px-2 py-0.5 rounded-full bg-brand-50 text-brand-700 border border-brand-200 text-[10px] font-bold shrink-0">
-            PRO BUSINESS
-          </span>
-        )}
+    </LogoTile>
+  );
+  return (
+    <div className={`flex items-center min-w-0 ${compact ? 'gap-2.5' : 'gap-3'}`}>
+      {onLogoClick ? (
+        <button
+          type="button"
+          onClick={onLogoClick}
+          title="Change logo in Settings"
+          aria-label="Change logo in Settings"
+          className="shrink-0 rounded-2xl hover:opacity-80 transition-opacity"
+        >
+          {logo}
+        </button>
+      ) : (
+        logo
+      )}
+      <div className="min-w-0">
+        <div className="text-base font-black text-slate-900 leading-tight flex items-center gap-2 min-w-0">
+          <span className="truncate">{business?.name || 'The Artisan Roastery'}</span>
+          {!compact && (
+            <span className="px-2 py-0.5 rounded-full bg-brand-50 text-brand-700 border border-brand-200 text-[10px] font-bold shrink-0">
+              PRO BUSINESS
+            </span>
+          )}
+        </div>
+        <div className="mt-0.5 min-w-0">
+          <MenuUrlHoldToCopy
+            slug={business?.slug || 'artisan-cafe'}
+            copied={copiedUrl}
+            onCopy={onCopyMenuUrl}
+          />
+        </div>
       </div>
-      <div className="mt-0.5 min-w-0">
-        <MenuUrlHoldToCopy
-          slug={business?.slug || 'artisan-cafe'}
-          copied={copiedUrl}
-          onCopy={onCopyMenuUrl}
-        />
-      </div>
     </div>
-  </div>
-);
+  );
+};
 
 export const LiveOrdersPill = ({ activeOrdersCount }: { activeOrdersCount: number }) => (
   <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-700">

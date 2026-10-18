@@ -1,2 +1,2 @@
-export * from './TablesQrPanel';
-export { default } from './TablesQrPanel';
+export { TablesQrPanel, default } from './TablesQrPanelView';
+export type { TablesQrPanelProps } from './TablesQrPanel';

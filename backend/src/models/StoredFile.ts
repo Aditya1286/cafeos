@@ -4,7 +4,8 @@ import mongoose, { Schema, Document } from 'mongoose';
 // back through GET /api/v1/public/images/:id. It lives in the original `menuimages` collection
 // so every image uploaded before the storage helper existed keeps its URL.
 // 'menu-imports' = photos of a printed menu sent to the AI menu reader ("Upload Menu").
-export type StorageFolder = 'menu' | 'avatars' | 'menu-imports';
+// 'ringtones' = the sound a user picked for new-order alerts. 'logos' = a business's own logo. 'covers' = its menu banner.
+export type StorageFolder = 'menu' | 'avatars' | 'menu-imports' | 'ringtones' | 'logos' | 'covers';
 
 export interface IStoredFile extends Document {
   _id: mongoose.Types.ObjectId;
@@ -19,7 +20,7 @@ export interface IStoredFile extends Document {
 const StoredFileSchema = new Schema<IStoredFile>(
   {
     businessId: { type: Schema.Types.ObjectId, ref: 'Business', index: true },
-    folder: { type: String, enum: ['menu', 'avatars', 'menu-imports'], default: 'menu' },
+    folder: { type: String, enum: ['menu', 'avatars', 'menu-imports', 'ringtones', 'logos', 'covers'], default: 'menu' },
     contentType: { type: String, required: true },
     data: { type: Buffer, required: true }
   },

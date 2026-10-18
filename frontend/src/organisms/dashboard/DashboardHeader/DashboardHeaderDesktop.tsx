@@ -1,7 +1,14 @@
 import React from 'react';
 import { HeaderViewProps } from './types';
 import { ThemeToggle } from '@/molecules/ThemeToggle';
-import { HeaderBrand, LiveOrdersPill, AddItemButton, RefreshButton, UserMenu } from './HeaderParts';
+import {
+  HeaderBrand,
+  logoClickFor,
+  LiveOrdersPill,
+  AddItemButton,
+  RefreshButton,
+  UserMenu,
+} from './HeaderParts';
 
 /** Desktop (`lg`+) header: brand + live status + actions, then the full row of section tabs. */
 export const DashboardHeaderDesktop = ({
@@ -23,7 +30,12 @@ export const DashboardHeaderDesktop = ({
 }: HeaderViewProps) => (
   <div className="max-w-7xl mx-auto px-8">
     <div className="h-16 flex items-center justify-between gap-4 border-b border-slate-100">
-      <HeaderBrand business={business} copiedUrl={copiedUrl} onCopyMenuUrl={onCopyMenuUrl} />
+      <HeaderBrand
+        business={business}
+        copiedUrl={copiedUrl}
+        onCopyMenuUrl={onCopyMenuUrl}
+        onLogoClick={logoClickFor(tabs, onChangeTab)}
+      />
       <LiveOrdersPill activeOrdersCount={activeOrdersCount} />
       <div className="flex items-center gap-2 shrink-0">
         <AddItemButton onAddItem={onAddItem} />

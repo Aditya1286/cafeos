@@ -13,8 +13,11 @@ import { amendedMarks } from '@/utils/amendedItems';
 
 interface KdsColumnProps extends KdsBoardViewProps {
   status: KdsStatus;
-  /** Fixed height with its own scroll (desktop side-by-side) vs. natural page height (mobile). */
+  /** Fixed height with its own scroll (desktop side-by-side) vs. natural page height. */
   scrollable: boolean;
+  /** Natural height up to 70% of the screen, then its own scroll: a long queue on a phone scrolls
+   * inside the column instead of stretching the page. */
+  capped?: boolean;
   /** Phone layout: short tickets with details behind a tap, so many orders fit on one screen. */
   compact?: boolean;
   /** Kitchen mode: fills the height it is given and lays big tickets out in a grid. */
@@ -28,6 +31,7 @@ const QUICK_SELECT_COUNT = 10;
 export const KdsColumn = ({
   status,
   scrollable,
+  capped = false,
   compact = false,
   wall = false,
   orders,
@@ -52,16 +56,22 @@ export const KdsColumn = ({
   const selectedInColumn = columnOrders.filter((o) => selectedIds.has(o._id || o.orderId)).length;
   const allSelected = columnOrders.length > 0 && selectedInColumn === columnOrders.length;
   const bulkCopy = BULK_MOVE[status];
+  // Kitchen mode: two tickets across on a very wide screen, but a lone ticket keeps the whole width
+  // instead of sitting in half of it with the other half empty.
+  const wallGridColumns = columnOrders.length > 1 ? 'grid-cols-1 2xl:grid-cols-2' : 'grid-cols-1';
   // Compact mode: one ticket's details open at a time, so opening one never pushes the rest far down.
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   return (
     <div
-      className={`bg-white rounded-3xl border border-slate-200 shadow-sm flex flex-col overflow-hidden ${wall ? 'h-full min-h-0' : scrollable ? 'h-[600px]' : ''}`}
+      // `relative` makes the column the containing block of everything absolutely positioned inside
+      // it (the screen-reader labels on each ticket). Without it they escape the column's clipping
+      // and stretch the whole page by the height of the list.
+      className={`relative bg-white rounded-3xl border border-slate-200 shadow-sm flex flex-col overflow-hidden ${
+        wall ? 'h-full min-h-0' : scrollable ? 'h-[600px]' : capped ? 'max-h-[70dvh]' : ''
+      }`}
     >
-      <div
-        className="px-4 py-3.5 bg-slate-50 border-b border-slate-200 border-t-4 border-t-brand-500 flex items-center justify-between"
-      >
+      <div className="px-4 py-3.5 bg-slate-50 border-b border-slate-200 border-t-4 border-t-brand-500 flex items-center justify-between">
         <div className="flex items-center gap-2">
           {columnOrders.length > 0 && (
             <input
@@ -120,11 +130,15 @@ export const KdsColumn = ({
       <div
         className={`bg-white ${
           wall
-            ? 'p-3 grid grid-cols-1 2xl:grid-cols-2 gap-3 content-start'
+            ? `p-3 grid ${wallGridColumns} gap-3 content-start`
             : compact
               ? 'p-2.5 space-y-2'
               : 'p-3.5 space-y-3.5'
-        } ${wall || scrollable ? 'flex-1 min-h-0 overflow-y-auto' : ''}`}
+        } ${wall || scrollable || capped ? 'flex-1 min-h-0 overflow-y-auto' : ''} ${
+          // A scrolling list takes over the touch: without this a sideways swipe on the orders
+          // never reaches the board's swipe-to-change-status, only a swipe on the header does.
+          capped ? 'touch-pan-y' : ''
+        }`}
       >
         <AnimatePresence>
           {columnOrders.map((order) => {
@@ -291,9 +305,7 @@ export const KdsColumn = ({
 
         {columnOrders.length === 0 && (
           <div className="col-span-full flex flex-col items-center justify-center py-20 text-center space-y-2">
-            <div
-              className="w-12 h-12 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center shadow-xs"
-            >
+            <div className="w-12 h-12 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center shadow-xs">
               <CheckCircle2 className="w-6 h-6 text-slate-400" />
             </div>
             <div className="text-xs font-black text-slate-400">

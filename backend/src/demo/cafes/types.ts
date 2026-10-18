@@ -36,6 +36,9 @@ export interface DemoCafe {
     closingTime: string;
     taxRatePercentage: number;
     tables: number; // 0 = counter service only (tables switched off)
+    // The UPI ID guests pay to when they choose "Online". Leave it out and customers are told to pay
+    // at the counter, so nobody can send money to a café that does not exist.
+    upiVpa?: string;
   };
   planCode: string;
   traffic: {

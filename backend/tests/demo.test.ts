@@ -85,7 +85,8 @@ test('ticks set up the three cafés as demo businesses and fill in their history
     const business = await Business.findOne({ slug: cafe.slug });
     assert.ok(business, `${cafe.slug} created`);
     assert.equal(business!.isDemo, true);
-    assert.equal(business!.upiVpa, '', 'no UPI ID, so no real money can be paid');
+    // A café whose definition gives no UPI ID has none, so no real money can be paid to it.
+    assert.equal(business!.upiVpa, cafe.profile.upiVpa ?? '');
     assert.equal(business!.taxRatePercentage, cafe.profile.taxRatePercentage);
     assert.equal(business!.tablesEnabled, cafe.profile.tables > 0);
 

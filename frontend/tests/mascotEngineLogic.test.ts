@@ -21,7 +21,9 @@ import {
   LOGIN_CONFIG,
   MASCOT_CONFIGS,
   MENU_CONFIG,
-  MENU_DOCK_BOTTOM_INSET,
+  MENU_SIZE_SCALE,
+  MENU_PEEK_HOLD_MS,
+  MENU_PHONE_SIZE_SCALE,
   ORDER_CONFIG,
   resolveFlow,
   validateConfig,
@@ -632,19 +634,32 @@ describe('request-demo page config', () => {
 });
 
 describe('menu page config', () => {
-  it('docks on every viewport and reacts only to what the page passes at runtime', () => {
+  it('has the mascot rise from cards, and reacts only to what the page passes at runtime', () => {
     expect(validateConfig(MENU_CONFIG)).toEqual([]);
-    // Lifted clear of the menu's sticky cart bar (fixed, bottom 12px, about 56px tall).
-    expect(MENU_CONFIG.flow).toEqual({ mode: 'dock', insets: { bottom: MENU_DOCK_BOTTOM_INSET } });
-    expect(MENU_DOCK_BOTTOM_INSET).toBeGreaterThanOrEqual(72);
-    expect(resolveFlow(MENU_CONFIG, true)?.insets?.bottom).toBe(MENU_DOCK_BOTTOM_INSET);
+    // Not on screen between pop-ups, on every viewport.
+    expect(resolveFlow(MENU_CONFIG, true)?.mode).toBe('peek');
+    expect(resolveFlow(MENU_CONFIG, false)?.mode).toBe('peek');
     expect(MENU_CONFIG.closeBubbleOnInteract).toBe(true);
-    expect(MENU_CONFIG.phoneFlow).toEqual({ mode: 'dock' });
-    expect(resolveFlow(MENU_CONFIG, true)?.mode).toBe('dock');
-    expect(resolveFlow(MENU_CONFIG, false)?.mode).toBe('dock');
+    // Small: smaller still on a phone (see menuMascotConfig.test).
+    expect(MENU_CONFIG.phoneFlow).toEqual({ sizeScale: MENU_PHONE_SIZE_SCALE });
+    expect(resolveFlow(MENU_CONFIG, true)?.sizeScale).toBe(MENU_PHONE_SIZE_SCALE);
+    expect(resolveFlow(MENU_CONFIG, false)?.sizeScale).toBe(MENU_SIZE_SCALE);
+    // A pop-up that nobody scrolls away from sinks by itself.
+    expect(resolveFlow(MENU_CONFIG, true)?.peekHoldMs).toBe(MENU_PEEK_HOLD_MS);
+    // The welcome card and the category tips are the page's own, added at runtime.
     expect(MENU_CONFIG.sections).toEqual([]);
     expect(MENU_CONFIG.targets).toEqual([]);
     expect(MENU_CONFIG.peeks).toEqual([]);
     expect(MENU_CONFIG.signals).toBeUndefined();
+  });
+});
+
+describe('pickPeek with a slim bar', () => {
+  const bar = [{ id: 'bar', top: 400, bottom: 460, left: 0, right: 300, ready: true }];
+  it('skips a bar shorter than 80% of the mascot by default', () => {
+    expect(pickPeek(bar, 800, 95, null)).toBeNull();
+  });
+  it('accepts it when the page passes no minimum height', () => {
+    expect(pickPeek(bar, 800, 95, null, undefined, undefined, undefined, undefined, 0)).toBe('bar');
   });
 });
