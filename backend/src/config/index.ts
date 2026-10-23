@@ -11,6 +11,7 @@ import type {
   IDatabase,
   IDemo,
   IEncryption,
+  INotifications,
   IOtp,
   IPlatform,
   IServer,
@@ -91,6 +92,7 @@ export const storage = nconf.get('storage') as IStorage;
 export const aiService = nconf.get('aiService') as IAiService;
 export const demo = nconf.get('demo') as IDemo;
 export const cafeIdentity = nconf.get('cafeIdentity') as ICafeIdentity;
+export const notifications = nconf.get('notifications') as INotifications;
 
 aiService.url = aiService.url.replace(/\/+$/, '');
 

@@ -29,6 +29,7 @@ import {
   validateConfig,
 } from '../src/mascot/config';
 import { FLOW, LAYOUT, PEEK } from '../src/mascot/config';
+import { DEMO_FUNNEL_QUESTIONS } from '../src/constants/demoFunnel';
 import {
   GESTURE_DURATION_MS,
   ZERO_OFFSETS,
@@ -590,7 +591,17 @@ describe('phone overrides (phoneFlow)', () => {
 
 describe('request-demo page config', () => {
   const srcRoot = join(__dirname, '..', 'src');
-  const markup = readFileSync(join(srcRoot, 'pages/RequestDemoPage.tsx'), 'utf8');
+  const page = readFileSync(join(srcRoot, 'pages/RequestDemoPage.tsx'), 'utf8');
+  // The quiz's screens live in their own components; the page and they together are the markup.
+  const funnelDir = join(srcRoot, 'organisms/marketing/DemoFunnel');
+  const markup = [
+    page,
+    ...readdirSync(funnelDir)
+      .filter((f) => f.endsWith('.tsx'))
+      .map((f) => readFileSync(join(funnelDir, f), 'utf8')),
+  ].join('\n');
+  const quizStep = (selector: string) =>
+    /^\[data-mascot-field="demo-q-([A-Za-z]+)"\]$/.exec(selector)?.[1];
 
   it('moves down its stage in form order, ending on the submit button', () => {
     const steps = DEMO_CONFIG.flow?.steps ?? [];
@@ -601,9 +612,23 @@ describe('request-demo page config', () => {
       selector: '[data-mascot-field="demo-submit"]',
       progress: 1,
     });
-    // Every step is also a field the mascot reacts to.
+    // Every step is something the mascot reacts to: a contact field (a target), or a quiz screen,
+    // which has its own line (the page sends `step-<question key>` while it is showing).
     const targets = new Set(DEMO_CONFIG.targets.map((t) => t.selector));
-    for (const step of steps) expect(targets.has(step.selector), step.selector).toBe(true);
+    for (const step of steps) {
+      const key = quizStep(step.selector);
+      if (key) expect(DEMO_CONFIG.signals?.[`step-${key}`], step.selector).toBeDefined();
+      else expect(targets.has(step.selector), step.selector).toBe(true);
+    }
+  });
+
+  it('has a stage step and a line for every quiz question, and a line for the contact step', () => {
+    const stepKeys = (DEMO_CONFIG.flow?.steps ?? [])
+      .map((s) => quizStep(s.selector))
+      .filter(Boolean);
+    expect(stepKeys).toEqual(DEMO_FUNNEL_QUESTIONS.map((q) => q.key));
+    expect(DEMO_CONFIG.signals?.['step-contact']).toBeDefined();
+    expect(markup).toContain('data-mascot-field={`demo-q-${question.key}`}');
   });
 
   it('every page-markup hook it names exists', () => {
@@ -627,8 +652,8 @@ describe('request-demo page config', () => {
       expect(reaction, key).toBeDefined();
       expect(reaction!.priority!).toBeGreaterThan(DEFAULT_PRIORITY.focus);
     }
-    expect(markup).toMatch(
-      /mascotSignal = sent \? 'sent' : submitting \? 'submitting' : error \? 'error' : null/,
+    expect(page.replace(/\s+/g, ' ')).toContain(
+      "funnel.sent ? 'sent' : funnel.submitting ? 'submitting' : funnel.error ? 'error' : `step-${funnel.stepKey}`",
     );
   });
 });

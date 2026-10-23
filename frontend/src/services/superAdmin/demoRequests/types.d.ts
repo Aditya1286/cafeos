@@ -1,6 +1,9 @@
 import { ApiResponse, Pagination } from '../../apiTypes';
+import { DemoRequestAnswer, DemoRequestSource } from '../../public/demoRequests/types';
 
 export type DemoRequestStatus = 'NEW' | 'CONTACTED' | 'TRIAL_STARTED' | 'WON' | 'LOST';
+
+export type DemoRequestStatusCounts = Record<DemoRequestStatus, number>;
 
 export interface DemoRequest {
   id: string;
@@ -12,6 +15,8 @@ export interface DemoRequest {
   businessType?: string;
   message?: string;
   interestedPlan?: string;
+  answers: DemoRequestAnswer[];
+  source?: DemoRequestSource;
   status: DemoRequestStatus;
   adminNote?: string;
   contactedAt?: string;
@@ -29,7 +34,7 @@ export interface ListDemoRequestsResponse {
   success: boolean;
   data: DemoRequest[];
   pagination?: Pagination;
-  meta?: { newCount?: number };
+  meta?: { newCount?: number; statusCounts?: DemoRequestStatusCounts };
 }
 
 export interface UpdateDemoRequestPayload {

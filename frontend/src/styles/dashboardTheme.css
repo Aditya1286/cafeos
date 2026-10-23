@@ -276,3 +276,22 @@ html.dashboard-dark .recharts-default-tooltip {
 }
 html.dashboard-dark .recharts-legend-item-text { color: #c0c3c8 !important; }
 
+
+/* Website tab, "What café owners told you": one colour per answer. Checked with the dataviz palette
+   validator (colour-blind separation, lightness, contrast) on the light and the dark surface. */
+:root {
+  --answer-1: #dc2626;
+  --answer-2: #2a78d6;
+  --answer-3: #eda100;
+  --answer-4: #1baf7a;
+  --answer-5: #6250d6;
+  --answer-other: #94a3b8;
+}
+html.dashboard-dark {
+  --answer-1: #ef4444;
+  --answer-2: #3987e5;
+  --answer-3: #c98500;
+  --answer-4: #199e70;
+  --answer-5: #9085e9;
+  --answer-other: #64748b;
+}

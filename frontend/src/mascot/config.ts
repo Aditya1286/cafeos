@@ -539,9 +539,9 @@ export const ORDER_CONFIG: MascotConfig = {
 };
 
 // ─── Request-a-demo page ───────────────────────────────────────────────────────────────────────
-// A form page. On desktop the mascot has its own stage under the benefits list and moves across it
-// as the visitor works down the form, reacting to each field; it pops up from the form card once to
-// say hi. On phones it lives in a reserved spot at the top of the form card (so it never covers a
+// A one-question-per-screen quiz, then a short contact form. On desktop the mascot has its own stage
+// under the benefits list and moves across it as the visitor goes through the questions, with a line
+// for each screen (the `step-*` signals); it pops up from the card once to say hi. On phones it lives in a reserved spot at the top of the form card (so it never covers a
 // field you're typing into), with its message beside it. The page drives three signals from the
 // submit: `submitting`, `error` and `sent`. They outrank field focus, because focus is usually still
 // on the submit button when the answer comes back.
@@ -556,14 +556,17 @@ export const DEMO_CONFIG: MascotConfig = {
     peekVisible: 0.46,
     progress: 'steps',
     steps: [
-      { selector: field('name'), progress: 0.12 },
-      { selector: field('brand'), progress: 0.26 },
-      { selector: field('phone'), progress: 0.4 },
-      { selector: field('city'), progress: 0.52 },
-      { selector: field('email'), progress: 0.62 },
-      { selector: field('type'), progress: 0.72 },
-      { selector: field('message'), progress: 0.82 },
-      { selector: field('consent'), progress: 0.92 },
+      { selector: field('q-businessType'), progress: 0.06 },
+      { selector: field('q-tables'), progress: 0.18 },
+      { selector: field('q-rushPain'), progress: 0.3 },
+      { selector: field('q-extras'), progress: 0.42 },
+      { selector: field('q-salesKnown'), progress: 0.54 },
+      { selector: field('q-city'), progress: 0.66 },
+      { selector: field('q-timeline'), progress: 0.76 },
+      { selector: field('name'), progress: 0.84 },
+      { selector: field('brand'), progress: 0.88 },
+      { selector: field('phone'), progress: 0.92 },
+      { selector: field('consent'), progress: 0.96 },
       { selector: field('submit'), progress: 1 },
     ],
     peekHoldMs: 5_000,
@@ -624,42 +627,6 @@ export const DEMO_CONFIG: MascotConfig = {
       },
     },
     {
-      targetId: 'demo-city',
-      selector: field('city'),
-      focus: {
-        expression: 'curious',
-        gesture: 'tilt',
-        message: { id: 'demo-city.focus', text: 'Where’s your café?' },
-      },
-    },
-    {
-      targetId: 'demo-email',
-      selector: field('email'),
-      focus: {
-        expression: 'curious',
-        gesture: 'nod',
-        message: { id: 'demo-email.focus', text: 'Optional. Skip it if you like.' },
-      },
-    },
-    {
-      targetId: 'demo-type',
-      selector: field('type'),
-      focus: {
-        expression: 'curious',
-        gesture: 'lean',
-        message: { id: 'demo-type.focus', text: 'Optional. Pick whatever fits best.' },
-      },
-    },
-    {
-      targetId: 'demo-message',
-      selector: field('message'),
-      focus: {
-        expression: 'curious',
-        gesture: 'tilt',
-        message: { id: 'demo-message.focus', text: 'Menus, timings, questions. Anything helps.' },
-      },
-    },
-    {
       targetId: 'demo-consent',
       selector: field('consent'),
       focus: {
@@ -684,6 +651,47 @@ export const DEMO_CONFIG: MascotConfig = {
     },
   ],
   signals: {
+    // One per screen of the quiz (the page sends `step-<question key>`, see constants/demoFunnel.ts).
+    'step-businessType': {
+      expression: 'excited',
+      gesture: 'wave',
+      message: { id: 'demo.step.businessType', text: 'Seven taps. No typing till the end.' },
+    },
+    'step-tables': {
+      expression: 'curious',
+      gesture: 'lean',
+      message: { id: 'demo.step.tables', text: 'Every table gets its own QR menu.' },
+    },
+    'step-rushPain': {
+      expression: 'curious',
+      gesture: 'tilt',
+      message: { id: 'demo.step.rushPain', text: 'Be honest. I won’t tell anyone.' },
+    },
+    'step-extras': {
+      expression: 'confident',
+      gesture: 'nod',
+      message: { id: 'demo.step.extras', text: 'Second coffees add up, you know.' },
+    },
+    'step-salesKnown': {
+      expression: 'curious',
+      gesture: 'lean',
+      message: { id: 'demo.step.salesKnown', text: 'Counting at midnight is no fun.' },
+    },
+    'step-city': {
+      expression: 'excited',
+      gesture: 'nod',
+      message: { id: 'demo.step.city', text: 'Nearly there!' },
+    },
+    'step-timeline': {
+      expression: 'confident',
+      gesture: 'tilt',
+      message: { id: 'demo.step.timeline', text: 'No pressure. It just helps us plan.' },
+    },
+    'step-contact': {
+      expression: 'excited',
+      gesture: 'wiggle',
+      message: { id: 'demo.step.contact', text: 'Last step. We call, we never spam.' },
+    },
     submitting: {
       expression: 'curious',
       gesture: 'nod',

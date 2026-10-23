@@ -12,6 +12,7 @@ import { getOtpStatus, confirmWidgetToken, requestOtp, confirmOtp, resendOtpRequ
 import { recoverOrdersPublic } from '../controllers/orderRecoveryController';
 import { readRecoveryToken } from '../utils/recoveryToken';
 import { submitDemoRequestPublic } from '../controllers/demoRequestController';
+import { recordSiteEventPublic } from '../controllers/siteAnalyticsController';
 import { createTicketPublic, getTicketStatusPublic, getCallAgentPublic } from '../controllers/supportController';
 import {
   startCheckoutPublic,
@@ -173,6 +174,18 @@ const demoRequestLimiter = rateLimit({
 });
 
 router.post('/demo-requests', demoRequestLimiter, submitDemoRequestPublic);
+
+// Public: the marketing site's own analytics beacon (page views, demo-quiz steps). A visit sends a
+// dozen or so; the cap only stops one device from flooding the collection.
+const siteEventLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: runtime.nodeEnv === 'production' ? 200 : 5000,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many events.' } }
+});
+
+router.post('/site-events', siteEventLimiter, recordSiteEventPublic);
 
 // Café identity: order extras and events
 const orderExtrasLimiter = rateLimit({

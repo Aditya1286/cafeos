@@ -13,6 +13,7 @@ import {
   listCallAgentsAdmin, toggleMyCallAvailability
 } from '../controllers/supportController';
 import { listDemoRequestsAdmin, updateDemoRequestAdmin } from '../controllers/demoRequestController';
+import { getSiteReportAdmin } from '../controllers/siteAnalyticsController';
 import { setBusinessCheckoutAllowed, getBusinessCheckoutSettings } from '../controllers/checkoutController';
 import { setBusinessIdentityAdmin, getIdentitySummaryAdmin } from '../controllers/cafeIdentity.controller';
 import { protect } from '../middleware/auth';
@@ -52,6 +53,7 @@ router.put('/subscription-requests/:id/reject', rejectSubscriptionRequest);
 
 router.get('/demo-requests', listDemoRequestsAdmin);
 router.put('/demo-requests/:id', updateDemoRequestAdmin);
+router.get('/site-analytics', getSiteReportAdmin);
 
 router.get('/system/health', getSystemHealth);
 

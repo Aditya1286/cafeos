@@ -5,7 +5,8 @@ import assert from 'node:assert/strict';
 import request from 'supertest';
 import { startHarness, tokenFor, superAdminToken, Harness } from './helpers';
 import { DemoRequest } from '../src/models/DemoRequest';
-import { submitDemoRequest } from '../src/services/demoRequest.service';
+import { submitDemoRequest, notifyNewDemoRequest } from '../src/services/demoRequest.service';
+import { notifications } from '../src/config';
 import { ServiceError } from '../src/utils/serviceError';
 
 let h: Harness;
@@ -83,6 +84,9 @@ test('only the Super Admin can list leads', async () => {
   assert.equal(res.status, 200);
   assert.ok(res.body.data.length >= 2);
   assert.ok(res.body.meta.newCount >= 2);
+  // Every pipeline status is counted, zeros included, for the tabs.
+  assert.deepEqual(Object.keys(res.body.meta.statusCounts).sort(), ['CONTACTED', 'LOST', 'NEW', 'TRIAL_STARTED', 'WON']);
+  assert.equal(res.body.meta.statusCounts.NEW, res.body.meta.newCount);
 });
 
 test('the Super Admin can move a lead through the pipeline and add a note', async () => {
@@ -108,4 +112,68 @@ test('the Super Admin can move a lead through the pipeline and add a note', asyn
     .get('/api/v1/admin/demo-requests?status=CONTACTED')
     .set('Authorization', `Bearer ${superAdmin}`);
   assert.equal(filtered.body.data.length, 1);
+});
+
+// The demo quiz's answers and the visit's source go straight to the service: the public route's
+// 5-per-10-minutes limit is already used up by the HTTP cases above.
+test('quiz answers and the traffic source are stored; malformed answers are dropped', async () => {
+  await submitDemoRequest({
+    ...validBody('9000000003'),
+    answers: [
+      { key: 'rushPain', question: 'What slips first in a rush', value: 'orders-mixed', answer: 'Orders get missed or mixed up' },
+      { key: 'rushPain', question: 'Duplicate key', value: 'wait', answer: 'Ignored' },
+      { key: 'tables', question: 'Tables', value: 'NOT VALID', answer: 'Ignored' },
+      { key: '$where', question: 'x', value: 'x', answer: 'x' },
+      'not an object'
+    ],
+    source: { visitorId: 'v-12345678', utmSource: 'instagram', referrer: 'instagram.com', landingPath: '/' }
+  });
+  const saved = await DemoRequest.findOne({ phone: '9000000003' }).lean();
+  assert.ok(saved);
+  assert.deepEqual(saved.answers, [
+    { key: 'rushPain', question: 'What slips first in a rush', value: 'orders-mixed', answer: 'Orders get missed or mixed up' }
+  ]);
+  assert.equal(saved.source?.utmSource, 'instagram');
+  assert.equal(saved.source?.visitorId, 'v-12345678');
+});
+
+test('a new lead is emailed through Resend, with visitor text escaped', async () => {
+  const lead = await DemoRequest.findOne({ phone: '9000000003' });
+  assert.ok(lead);
+  lead.brandName = '<b>Brew</b> & Co';
+
+  const realFetch = globalThis.fetch;
+  const saved = { ...notifications };
+  const calls: Array<{ url: string; init: RequestInit }> = [];
+  globalThis.fetch = (async (url: string, init: RequestInit) => {
+    calls.push({ url, init });
+    return new Response('{"id":"x"}', { status: 200 });
+  }) as typeof fetch;
+  try {
+    // No key configured: nothing is sent.
+    notifications.resendApiKey = '';
+    assert.equal(await notifyNewDemoRequest(lead), false);
+    assert.equal(calls.length, 0);
+
+    notifications.resendApiKey = 're_test';
+    notifications.demoRequestTo = ['owner@example.com'];
+    assert.equal(await notifyNewDemoRequest(lead), true);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].url, 'https://api.resend.com/emails');
+    assert.equal((calls[0].init.headers as Record<string, string>).Authorization, 'Bearer re_test');
+    const body = JSON.parse(String(calls[0].init.body));
+    assert.deepEqual(body.to, ['owner@example.com']);
+    assert.match(body.subject, /Brew/);
+    assert.match(body.html, /&lt;b&gt;Brew&lt;\/b&gt; &amp; Co/);
+    assert.doesNotMatch(body.html, /<b>Brew/);
+    assert.match(body.html, /Orders get missed or mixed up/);
+    assert.match(body.html, /wa\.me\/919000000003/);
+
+    // Resend refusing the email is logged, never thrown.
+    globalThis.fetch = (async () => new Response('bad', { status: 422 })) as typeof fetch;
+    assert.equal(await notifyNewDemoRequest(lead), false);
+  } finally {
+    globalThis.fetch = realFetch;
+    Object.assign(notifications, saved);
+  }
 });

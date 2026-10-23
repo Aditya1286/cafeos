@@ -30,7 +30,6 @@ import { BusinessesManagementTable } from '@/organisms/super-admin/BusinessesMan
 import { BusinessesGridPanel, BusinessFilter } from '@/organisms/super-admin/BusinessesGridPanel';
 import { matchesBusinessFilter } from '@/organisms/super-admin/BusinessesGridPanel/businessNetwork';
 import { RemittanceQueueTable } from '@/organisms/super-admin/RemittanceQueueTable';
-import { PlatformAnalyticsPanel } from '@/organisms/super-admin/PlatformAnalyticsPanel';
 import { GlobalKitchenMonitor } from '@/organisms/super-admin/GlobalKitchenMonitor';
 import { SubscriptionPlansPanel } from '@/organisms/super-admin/SubscriptionPlansPanel';
 import { SubscriptionRequestsQueue } from '@/organisms/super-admin/SubscriptionRequestsQueue';
@@ -40,8 +39,11 @@ import { SupportTicketsPanel } from '@/organisms/super-admin/SupportTicketsPanel
 import { RefundHistoryModal } from '@/molecules/RefundHistoryModal';
 import { useSupportDesk } from '../hooks/useSupportDesk';
 import { useDemoRequests } from '../hooks/useDemoRequests';
+import { useSiteAnalytics } from '../hooks/useSiteAnalytics';
 import { FEES_AND_PAYMENTS_ENABLED } from '@/constants/features';
 import { DemoRequestsPanel } from '@/organisms/super-admin/DemoRequestsPanel';
+import { ReportsPanel } from '@/organisms/super-admin/ReportsPanel';
+import { DATE_PRESETS } from '@/organisms/super-admin/NavbarAdmin/types';
 import { CafeIdentityPanel } from '@/organisms/super-admin/CafeIdentityPanel';
 import { useAdminRefunds } from '../hooks/useAdminRefunds';
 import '@/styles/dashboardTheme.css';
@@ -83,6 +85,7 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
   const adminRefunds = useAdminRefunds(activeTab === 'refunds');
   const supportDesk = useSupportDesk(activeTab === 'support');
   const demoRequests = useDemoRequests(activeTab === 'leads');
+  const siteAnalytics = useSiteAnalytics(activeTab === 'analytics', dateRange);
   const [refundHistoryOrder, setRefundHistoryOrder] = useState<any | null>(null);
 
   const handleExport = (format: 'csv' | 'pdf') => {
@@ -351,28 +354,34 @@ export const SuperAdminDashboard: React.FC<{ user: any }> = ({ user }) => {
             loading={demoRequests.loading}
             pagination={demoRequests.pagination}
             onPageChange={(page) => demoRequests.setPagination((prev) => ({ ...prev, page }))}
-            onPageSizeChange={(limit) =>
-              demoRequests.setPagination((prev) => ({ ...prev, limit, page: 1 }))
-            }
             searchQuery={demoRequests.searchQuery}
             onSearchChange={demoRequests.setSearchQuery}
             statusFilter={demoRequests.statusFilter}
             onStatusFilterChange={demoRequests.setStatusFilter}
+            statusCounts={demoRequests.statusCounts}
             onRefresh={demoRequests.refresh}
             onUpdate={demoRequests.updateRequest}
           />
         )}
 
         {activeTab === 'analytics' && (
-          <PlatformAnalyticsPanel
-            metrics={overview?.metrics ?? null}
-            activeBusinessesCount={
-              overview?.metrics?.activeBusinesses ??
-              analyticsBusinesses.filter((b) => b.status === 'ACTIVE').length
-            }
-            totalBusinessesCount={analyticsBusinesses.length}
-            paymentMethodBreakdown={analyticsData?.paymentMethodBreakdown ?? []}
-            onExportCsv={() => handleExport('csv')}
+          <ReportsPanel
+            rangeLabel={DATE_PRESETS.find((p) => p.id === dateRange)?.label ?? dateRange}
+            siteReport={siteAnalytics.report}
+            loading={siteAnalytics.loading}
+            onRefresh={() => {
+              siteAnalytics.refresh();
+              refreshAnalytics();
+            }}
+            platform={{
+              metrics: overview?.metrics ?? null,
+              activeBusinessesCount:
+                overview?.metrics?.activeBusinesses ??
+                analyticsBusinesses.filter((b) => b.status === 'ACTIVE').length,
+              totalBusinessesCount: analyticsBusinesses.length,
+              paymentMethodBreakdown: analyticsData?.paymentMethodBreakdown ?? [],
+              onExportCsv: () => handleExport('csv'),
+            }}
           />
         )}
 

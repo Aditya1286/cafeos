@@ -1,67 +1,95 @@
-import React, { useState } from 'react';
-import { RefreshCw, Inbox, MessageCircle, Phone, StickyNote } from 'lucide-react';
-import ResponsiveDataView, { ResponsiveColumn } from '@/molecules/ResponsiveDataView';
+import React, { useMemo, useState } from 'react';
+import { ChevronLeft, ChevronRight, Inbox, PartyPopper, RefreshCw, Search } from 'lucide-react';
 import { Modal } from '@/molecules/Modal';
 import type {
   DemoRequest,
   DemoRequestStatus,
+  DemoRequestStatusCounts,
   UpdateDemoRequestPayload,
 } from '@/services/superAdmin/demoRequests/types';
+import type { DemoLeadUrgency } from '@/constants/demoFunnel';
+import { hoursSince, timeAgo, urgencyOf } from '@/utils/demoLeads';
+import { LeadCard, STATUS_LABEL } from './LeadCard';
 
 interface DemoRequestsPanelProps {
   requests: DemoRequest[];
   loading: boolean;
   pagination: { page: number; limit: number; total: number; totalPages: number };
   onPageChange: (page: number) => void;
-  onPageSizeChange: (pageSize: number) => void;
   searchQuery: string;
   onSearchChange: (v: string) => void;
   statusFilter: string;
   onStatusFilterChange: (v: string) => void;
+  statusCounts: DemoRequestStatusCounts;
   onRefresh: () => void;
   onUpdate: (id: string, payload: UpdateDemoRequestPayload) => Promise<boolean>;
 }
 
-const STATUS_OPTIONS: { value: DemoRequestStatus; label: string }[] = [
-  { value: 'NEW', label: 'New' },
-  { value: 'CONTACTED', label: 'Contacted' },
-  { value: 'TRIAL_STARTED', label: 'Trial started' },
-  { value: 'WON', label: 'Won' },
-  { value: 'LOST', label: 'Lost' },
-];
+const PIPELINE: DemoRequestStatus[] = ['NEW', 'CONTACTED', 'TRIAL_STARTED', 'WON', 'LOST'];
 
-const STATUS_STYLE: Record<DemoRequestStatus, string> = {
-  NEW: 'bg-sky-50 text-sky-700 border-sky-200',
-  CONTACTED: 'bg-amber-50 text-amber-700 border-amber-200',
-  TRIAL_STARTED: 'bg-violet-50 text-violet-700 border-violet-200',
-  WON: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  LOST: 'bg-slate-100 text-slate-500 border-slate-200',
+const EMPTY_TEXT: Record<string, string> = {
+  CONTACTED: 'Nobody here yet. Leads you have called move here.',
+  TRIAL_STARTED: 'No trials running yet.',
+  WON: 'No paying cafés from the website yet.',
+  LOST: 'Nobody marked as not interested.',
+  ALL: 'No demo requests yet. They arrive here the moment someone finishes the quiz on the website.',
 };
 
-const formatDate = (iso: string) =>
-  new Date(iso).toLocaleString('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+const URGENCY_RANK: Record<DemoLeadUrgency, number> = { hot: 0, warm: 1, later: 2, cold: 3 };
 
+/**
+ * The website's leads as a call list. The NEW tab is the to-do: hottest first (wants it this
+ * week), then whoever has waited longest. Each card is a call brief with the next step on it.
+ */
 export const DemoRequestsPanel = ({
   requests,
   loading,
   pagination,
   onPageChange,
-  onPageSizeChange,
   searchQuery,
   onSearchChange,
   statusFilter,
   onStatusFilterChange,
+  statusCounts,
   onRefresh,
   onUpdate,
 }: DemoRequestsPanelProps) => {
   const [noteTarget, setNoteTarget] = useState<DemoRequest | null>(null);
   const [noteText, setNoteText] = useState('');
   const [savingNote, setSavingNote] = useState(false);
+
+  const total = PIPELINE.reduce((n, s) => n + statusCounts[s], 0);
+  const onNewTab = statusFilter === 'NEW';
+
+  const ordered = useMemo(() => {
+    if (!onNewTab) return requests;
+    const rank = (r: DemoRequest) => {
+      const u = urgencyOf(r.answers);
+      return u ? URGENCY_RANK[u] : 2;
+    };
+    return [...requests].sort(
+      (a, b) =>
+        rank(a) - rank(b) || new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+    );
+  }, [requests, onNewTab]);
+
+  // The line under the title: what needs doing right now.
+  const summary = (() => {
+    const waiting = statusCounts.NEW;
+    if (waiting === 0) return 'Nobody is waiting for a call. Nice.';
+    const hot = onNewTab ? requests.filter((r) => urgencyOf(r.answers) === 'hot').length : 0;
+    const oldest = onNewTab
+      ? requests.reduce<DemoRequest | null>(
+          (o, r) => (!o || r.createdAt < o.createdAt ? r : o),
+          null,
+        )
+      : null;
+    const parts = [`${waiting} café${waiting === 1 ? ' is' : 's are'} waiting for a call`];
+    if (hot > 0) parts.push(`${hot} want${hot === 1 ? 's' : ''} it this week`);
+    if (oldest && hoursSince(oldest.createdAt) >= 1)
+      parts.push(`the oldest has waited ${timeAgo(oldest.createdAt)}`);
+    return `${parts.join(', ')}.`;
+  })();
 
   const openNote = (r: DemoRequest) => {
     setNoteTarget(r);
@@ -76,219 +104,144 @@ export const DemoRequestsPanel = ({
     if (ok) setNoteTarget(null);
   };
 
-  const renderStatusSelect = (r: DemoRequest) => (
-    <select
-      value={r.status}
-      onChange={(e) => onUpdate(r.id, { status: e.target.value as DemoRequestStatus })}
-      aria-label={`Status for ${r.brandName}`}
-      className={`px-2.5 py-1.5 rounded-full text-[11px] font-black border outline-none cursor-pointer ${STATUS_STYLE[r.status]}`}
-    >
-      {STATUS_OPTIONS.map((o) => (
-        <option key={o.value} value={o.value}>
-          {o.label}
-        </option>
-      ))}
-    </select>
-  );
-
-  const renderContactLinks = (r: DemoRequest) => (
-    <div className="flex flex-wrap gap-1.5">
-      <a
-        href={`tel:+91${r.phone}`}
-        className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-black flex items-center gap-1"
-      >
-        <Phone className="w-3.5 h-3.5" /> {r.phone}
-      </a>
-      <a
-        href={`https://wa.me/91${r.phone}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="px-2.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 text-[11px] font-black flex items-center gap-1"
-      >
-        <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
-      </a>
-    </div>
-  );
-
-  const columns: ResponsiveColumn<DemoRequest>[] = [
-    {
-      header: 'Lead',
-      render: (r) => (
-        <>
-          <div className="font-black text-slate-900">{r.brandName}</div>
-          <div className="text-[11px] text-slate-500 font-semibold">
-            {r.name} · {r.city}
-            {r.businessType ? ` · ${r.businessType}` : ''}
-          </div>
-          <div className="text-[11px] text-slate-400 font-medium">{formatDate(r.createdAt)}</div>
-        </>
-      ),
-    },
-    {
-      header: 'Contact',
-      render: (r) => (
-        <div className="space-y-1.5">
-          {renderContactLinks(r)}
-          {r.email && <div className="text-[11px] text-slate-400 font-medium">{r.email}</div>}
-        </div>
-      ),
-    },
-    {
-      header: 'Interest',
-      render: (r) => (
-        <>
-          {r.interestedPlan && (
-            <div className="text-[11px] font-black text-slate-700">Plan: {r.interestedPlan}</div>
-          )}
-          {r.message ? (
-            <div
-              className="text-[11px] text-slate-500 italic truncate max-w-[220px]"
-              title={r.message}
-            >
-              "{r.message}"
-            </div>
-          ) : (
-            !r.interestedPlan && <span className="text-[11px] text-slate-300">—</span>
-          )}
-        </>
-      ),
-    },
-    {
-      header: 'Status',
-      render: (r) => renderStatusSelect(r),
-      headerClassName: 'whitespace-nowrap',
-      cellClassName: 'whitespace-nowrap',
-    },
-    {
-      header: 'Note',
-      align: 'right',
-      render: (r) => (
-        <button
-          onClick={() => openNote(r)}
-          className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-black inline-flex items-center gap-1"
-        >
-          <StickyNote className="w-3.5 h-3.5" /> {r.adminNote ? 'Edit note' : 'Add note'}
-        </button>
-      ),
-      headerClassName: 'whitespace-nowrap',
-      cellClassName: 'whitespace-nowrap',
-    },
+  const tabs: Array<{ id: string; label: string; count: number }> = [
+    ...PIPELINE.map((s) => ({ id: s, label: STATUS_LABEL[s], count: statusCounts[s] })),
+    { id: 'ALL', label: 'All', count: total },
   ];
 
+  const firstShown = pagination.total === 0 ? 0 : (pagination.page - 1) * pagination.limit + 1;
+  const lastShown = Math.min(pagination.total, pagination.page * pagination.limit);
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex items-start justify-between gap-4 bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-sm">
         <div>
           <h2 className="text-lg sm:text-xl font-black text-slate-900 flex items-center gap-2">
-            <Inbox className="w-5 h-5 text-brand-500" /> Demo Requests
+            <Inbox className="w-5 h-5 text-brand-500" /> Demo requests
           </h2>
+          <p
+            className={`text-sm font-bold mt-1 ${statusCounts.NEW > 0 ? 'text-slate-800' : 'text-emerald-600'}`}
+          >
+            {summary}
+          </p>
           <p className="text-xs text-slate-500 font-medium mt-0.5">
-            Everyone who asked for a demo or a free trial on the website. Call them while they're
-            warm.
+            Call, then tap the next step on the card. Hottest leads are at the top of New.
           </p>
         </div>
         <button
           onClick={onRefresh}
-          className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-black transition-all flex items-center gap-1.5 shadow-sm self-start"
+          aria-label="Refresh"
+          className="shrink-0 p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white transition-all"
         >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-brand-400' : ''}`} />
-          <span>Refresh</span>
+          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-brand-400' : ''}`} />
         </button>
       </div>
 
-      <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
-        <label
-          htmlFor="demo-status-filter"
-          className="text-[10px] font-extrabold uppercase text-slate-400 mb-1 block"
-        >
-          Status
+      <div className="flex flex-col lg:flex-row lg:items-center gap-3">
+        <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 lg:flex-1">
+          {tabs.map((t) => {
+            const active = statusFilter === t.id;
+            return (
+              <button
+                key={t.id}
+                onClick={() => onStatusFilterChange(t.id)}
+                className={`shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-black border transition-all ${
+                  active
+                    ? 'bg-slate-900 text-white border-slate-900'
+                    : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                }`}
+              >
+                {t.label}
+                <span
+                  className={`min-w-[20px] px-1.5 py-0.5 rounded-full text-[10px] tabular-nums ${
+                    active
+                      ? 'bg-white/20 text-white'
+                      : t.id === 'NEW' && t.count > 0
+                        ? 'bg-brand-600 text-white'
+                        : 'bg-slate-100 text-slate-500'
+                  }`}
+                >
+                  {t.count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        <label className="relative lg:w-72">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <input
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+            placeholder="Search café, name, phone or city"
+            className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-white border border-slate-200 text-sm font-medium text-slate-800 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+          />
         </label>
-        <select
-          id="demo-status-filter"
-          value={statusFilter}
-          onChange={(e) => onStatusFilterChange(e.target.value)}
-          className="w-full sm:w-64 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 outline-none focus:border-brand-500"
-        >
-          <option value="ALL">All requests</option>
-          {STATUS_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
       </div>
 
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-        {loading ? (
-          <div className="p-12 text-center space-y-3">
-            <RefreshCw className="w-8 h-8 text-brand-500 animate-spin mx-auto" />
-            <p className="text-xs font-bold text-slate-500">Loading requests...</p>
-          </div>
-        ) : (
-          <ResponsiveDataView
-            data={requests}
-            keyExtractor={(r) => r.id}
-            columns={columns}
-            renderCard={(r) => (
-              <div className="p-4 space-y-2.5">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <div className="font-black text-slate-900 truncate">{r.brandName}</div>
-                    <div className="text-[11px] text-slate-500 font-semibold">
-                      {r.name} · {r.city}
-                      {r.businessType ? ` · ${r.businessType}` : ''}
-                    </div>
-                    <div className="text-[11px] text-slate-400 font-medium">
-                      {formatDate(r.createdAt)}
-                    </div>
-                  </div>
-                  {renderStatusSelect(r)}
-                </div>
-                {renderContactLinks(r)}
-                {r.interestedPlan && (
-                  <div className="text-[11px] font-black text-slate-700">
-                    Plan: {r.interestedPlan}
-                  </div>
-                )}
-                {r.message && (
-                  <div className="text-xs text-slate-600 italic bg-slate-50 border border-slate-200 rounded-xl p-2">
-                    "{r.message}"
-                  </div>
-                )}
+      {loading && requests.length === 0 ? (
+        <div className="p-12 text-center">
+          <RefreshCw className="w-7 h-7 text-brand-500 animate-spin mx-auto" />
+        </div>
+      ) : ordered.length === 0 ? (
+        <div className="bg-white rounded-3xl border border-slate-200 p-10 text-center space-y-3">
+          {onNewTab && !searchQuery ? (
+            <>
+              <PartyPopper className="w-10 h-10 text-emerald-500 mx-auto" />
+              <h3 className="text-base font-black text-slate-800">All caught up</h3>
+              <p className="text-xs font-medium text-slate-500">
+                Every lead has been called. New ones land here and in your email.
+              </p>
+              {total > 0 && (
                 <button
-                  onClick={() => openNote(r)}
-                  className="w-full px-2.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-black flex items-center justify-center gap-1"
+                  onClick={() => onStatusFilterChange('ALL')}
+                  className="text-xs font-black text-brand-600 hover:underline"
                 >
-                  <StickyNote className="w-3.5 h-3.5" /> {r.adminNote ? 'Edit note' : 'Add note'}
+                  See all {total} leads
                 </button>
-              </div>
-            )}
-            search={{
-              value: searchQuery,
-              onChange: onSearchChange,
-              placeholder: 'Search by name, café, phone or city...',
-            }}
-            pagination={{
-              page: pagination.page,
-              pageSize: pagination.limit,
-              total: pagination.total,
-              onPageChange,
-              onPageSizeChange,
-              pageSizeOptions: [10, 15, 25, 50],
-            }}
-            emptyState={
-              <div className="p-12 text-center space-y-3">
-                <Inbox className="w-12 h-12 text-slate-300 mx-auto" />
-                <h3 className="text-base font-black text-slate-800">No demo requests yet</h3>
-                <p className="text-xs font-medium text-slate-500">
-                  New requests from the website appear here. Try a different search or status if you
-                  expected some.
-                </p>
-              </div>
-            }
-          />
-        )}
-      </div>
+              )}
+            </>
+          ) : (
+            <>
+              <Inbox className="w-10 h-10 text-slate-300 mx-auto" />
+              <p className="text-xs font-medium text-slate-500">
+                {searchQuery ? `Nothing matches “${searchQuery}”.` : EMPTY_TEXT[statusFilter]}
+              </p>
+            </>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+          {ordered.map((lead) => (
+            <LeadCard key={lead.id} lead={lead} onUpdate={onUpdate} onEditNote={openNote} />
+          ))}
+        </div>
+      )}
+
+      {pagination.totalPages > 1 && (
+        <div className="flex items-center justify-between text-xs font-bold text-slate-500">
+          <span>
+            {firstShown}–{lastShown} of {pagination.total}
+          </span>
+          <div className="flex gap-2">
+            <button
+              disabled={pagination.page <= 1}
+              onClick={() => onPageChange(pagination.page - 1)}
+              className="p-2 rounded-xl bg-white border border-slate-200 disabled:opacity-40"
+              aria-label="Previous page"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              disabled={pagination.page >= pagination.totalPages}
+              onClick={() => onPageChange(pagination.page + 1)}
+              className="p-2 rounded-xl bg-white border border-slate-200 disabled:opacity-40"
+              aria-label="Next page"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {noteTarget && (
         <Modal
@@ -302,6 +255,7 @@ export const DemoRequestsPanel = ({
               onChange={(e) => setNoteText(e.target.value)}
               rows={5}
               maxLength={2000}
+              autoFocus
               placeholder="e.g. Called, wants a demo on Friday at 4pm."
               className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-800 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 transition-all"
             />

@@ -29,6 +29,8 @@ const toRow = (r: any) => ({
   businessType: r.businessType,
   message: r.message,
   interestedPlan: r.interestedPlan,
+  answers: r.answers ?? [],
+  source: r.source,
   status: r.status,
   adminNote: r.adminNote,
   contactedAt: r.contactedAt,
@@ -47,7 +49,7 @@ export const listDemoRequestsAdmin = async (req: AuthRequest, res: Response) => 
       success: true,
       data: result.requests.map(toRow),
       pagination: result.pagination,
-      meta: { newCount: result.newCount }
+      meta: { newCount: result.newCount, statusCounts: result.statusCounts }
     });
   } catch (error: any) {
     return handleServiceError(res, error);

@@ -1,6 +1,6 @@
 import { APP_SLUG } from '../constants/app';
 
-const API_BASE_URL = '/api/v1';
+export const API_BASE_URL = '/api/v1';
 const AUTH_TOKEN_KEY = `${APP_SLUG}_token`;
 
 export const getAuthToken = (): string | null => {

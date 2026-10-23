@@ -6,6 +6,7 @@ import authService from './services/auth';
 import { routes } from './routes';
 import { RequireAuth } from '@/hoc/RequireAuth';
 import { ScrollToTop } from '@/hoc/ScrollToTop';
+import { SiteTracker } from '@/hoc/SiteTracker';
 
 export const App: React.FC = () => {
   const [user, setUser] = useState<any>(null);
@@ -40,6 +41,7 @@ export const App: React.FC = () => {
     <>
       <Toaster position="top-right" richColors closeButton />
       <ScrollToTop />
+      <SiteTracker />
       <Routes>
         {routes.map(({ path, access, element }) => {
           const page = element({ user, onAuthSuccess: handleAuthSuccess });

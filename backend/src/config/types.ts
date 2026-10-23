@@ -137,3 +137,14 @@ export interface ICafeIdentity {
   /** 'light' = the static (CSS/SVG) mascot only; 'heavy' also allows the 3D engine on capable devices. */
   mascotRendering: 'heavy' | 'light';
 }
+
+/** Outgoing email (Resend) — see services/email.service.ts. */
+export interface INotifications {
+  /** Resend API key (re_...). Empty = no emails are sent; everything else keeps working. */
+  resendApiKey: string;
+  /** Sender, e.g. `CAOS Leads <leads@yourdomain.com>`. `onboarding@resend.dev` works without a verified
+   * domain, but Resend then only delivers to the email the Resend account was opened with. */
+  fromEmail: string;
+  /** Who is emailed the moment someone requests a demo. Empty = nobody. */
+  demoRequestTo: string[];
+}

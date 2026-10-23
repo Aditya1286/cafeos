@@ -68,5 +68,10 @@
   "cafeIdentity": {
     "enabled": true,
     "mascotRendering": "light"
+  },
+  "notifications": {
+    "resendApiKey": "",
+    "fromEmail": "CAOS Leads <onboarding@resend.dev>",
+    "demoRequestTo": []
   }
 }
