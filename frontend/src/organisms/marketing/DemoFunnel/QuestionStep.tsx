@@ -24,16 +24,16 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
     <h2
       ref={headingRef}
       tabIndex={-1}
-      className="text-xl sm:text-2xl font-black tracking-tight leading-snug text-slate-900 outline-none"
+      className="text-lg sm:text-2xl font-black tracking-tight leading-snug text-slate-900 outline-none"
     >
       {question.question}
     </h2>
-    {question.sub && <p className="mt-1.5 text-sm text-slate-500 font-medium">{question.sub}</p>}
+    {question.sub && <p className="mt-1 sm:mt-1.5 text-[13px] sm:text-sm text-slate-500 font-medium">{question.sub}</p>}
 
     <div
       role="group"
       aria-label={question.question}
-      className={`mt-5 grid gap-2.5 ${question.compact ? 'grid-cols-2' : 'grid-cols-1'}`}
+      className={`mt-3.5 sm:mt-5 grid gap-2 sm:gap-2.5 ${question.compact ? 'grid-cols-2' : 'grid-cols-1'}`}
     >
       {question.options.map((option) => {
         const active = pending ? pending === option.value : selected === option.value;
@@ -44,7 +44,7 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
             aria-pressed={active}
             disabled={!!pending}
             onClick={() => onChoose(option)}
-            className={`group relative flex items-center gap-3 w-full min-h-[52px] px-4 py-3 rounded-2xl border-2 text-left transition-all duration-150 active:scale-[0.98] disabled:cursor-default ${
+            className={`group relative flex items-center gap-3 w-full min-h-[46px] sm:min-h-[52px] px-3.5 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl border-2 text-left transition-all duration-150 active:scale-[0.98] disabled:cursor-default ${
               active
                 ? 'border-red-600 bg-red-50 shadow-sm shadow-red-600/10'
                 : 'border-slate-200 bg-white hover:border-red-300 hover:bg-red-50/40'

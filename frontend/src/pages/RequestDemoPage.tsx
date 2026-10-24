@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Gift, MonitorPlay, Coffee, ArrowLeft } from 'lucide-react';
 import { Navbar } from '@/organisms/marketing/Navbar';
@@ -43,13 +43,25 @@ export const RequestDemoPage: React.FC = () => {
         ? 'error'
         : `step-${funnel.stepKey}`;
 
+  // Phones: once the first answer is in, the page header steps aside so every question sits right
+  // under the top bar, no scrolling. The header is there for the first question only.
+  const inFlow = funnel.stepIndex > 0 || funnel.sent;
+
+  // "You're in" replaces the form wherever the page was scrolled to; start it from the top.
+  useEffect(() => {
+    if (funnel.sent) window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [funnel.sent]);
+
   return (
     <div className="min-h-screen bg-page text-slate-900 flex flex-col font-sans">
       <Navbar />
 
-      <main data-mascot-section="demo" className="flex-1 px-4 lg:px-8 py-5 md:py-16 lg:py-20">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-5 gap-5 md:gap-8 lg:gap-14 items-start">
-          <div className="md:col-span-2 space-y-3 md:space-y-8">
+      <main
+        data-mascot-section="demo"
+        className="flex-1 px-3 sm:px-4 lg:px-8 py-3 sm:py-5 md:py-16 lg:py-20"
+      >
+        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-5 gap-3 md:gap-8 lg:gap-14 items-start">
+          <div className={`md:col-span-2 space-y-2 md:space-y-8 ${inFlow ? 'hidden md:block' : ''}`}>
             <Link
               to="/"
               className="hidden md:inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-red-600 transition-colors"
@@ -58,7 +70,7 @@ export const RequestDemoPage: React.FC = () => {
             </Link>
 
             <div>
-              <h1 className="text-2xl md:text-4xl lg:text-5xl font-black tracking-tight leading-[1.1] md:mb-4">
+              <h1 className="text-xl sm:text-2xl md:text-4xl lg:text-5xl font-black tracking-tight leading-[1.15] md:mb-4">
                 See {APP_NAME} running in <span className="text-red-600">your café.</span>
               </h1>
               <p className="hidden md:block text-base text-slate-600 font-medium leading-relaxed">
@@ -67,12 +79,13 @@ export const RequestDemoPage: React.FC = () => {
               </p>
             </div>
 
-            {/* Phones: the three promises as one row of chips, so the first question sits high on the screen. */}
-            <ul className="md:hidden flex flex-wrap gap-1.5">
+            {/* Phones: the three promises as one row of chips (scrolls sideways rather than wrapping),
+                so the first question sits high on the screen. */}
+            <ul className="md:hidden flex gap-1.5 overflow-x-auto -mx-3 px-3 pb-0.5">
               {BENEFITS.map(({ icon: Icon, short }) => (
                 <li
                   key={short}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-50 border border-red-100 text-[11px] font-bold text-red-700"
+                  className="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-50 border border-red-100 text-[11px] font-bold text-red-700"
                 >
                   <Icon className="w-3 h-3" /> {short}
                 </li>
@@ -114,13 +127,13 @@ export const RequestDemoPage: React.FC = () => {
               layer (relative z-10, opaque). On phones it must not: the mascot's slot is inside it. */}
           <div
             data-mascot-peek="demo-form"
-            className="md:col-span-3 md:relative md:z-10 bg-white rounded-3xl border border-slate-200 shadow-xl p-4 sm:p-8 md:min-h-[540px]"
+            className="md:col-span-3 md:relative md:z-10 bg-white rounded-2xl sm:rounded-3xl border border-slate-200 shadow-xl p-3.5 sm:p-8 md:min-h-[540px]"
           >
             {/* Phones: the mascot's reserved spot, with its message beside it. Until it speaks, the
                 line below shows through. */}
             <div
               data-mascot-slot="demo"
-              className="md:hidden h-[84px] -mt-1 mb-2 flex items-center pl-[96px] text-xs font-semibold text-slate-500"
+              className="md:hidden h-[64px] -mt-1 mb-1 flex items-center pl-[76px] text-xs font-semibold text-slate-500"
             >
               {funnel.sent ? null : 'I’m Caos. Seven taps, no typing till the end.'}
             </div>

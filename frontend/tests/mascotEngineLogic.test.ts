@@ -573,7 +573,7 @@ describe('phone overrides (phoneFlow)', () => {
   it('merges phoneFlow over flow on phones only', () => {
     expect(resolveFlow(DEMO_CONFIG, false)).toBe(DEMO_CONFIG.flow);
     const phone = resolveFlow(DEMO_CONFIG, true);
-    expect(phone).toMatchObject({ mode: 'slot', slot: '[data-mascot-slot="demo"]', size: 84 });
+    expect(phone).toMatchObject({ mode: 'slot', slot: '[data-mascot-slot="demo"]', size: 64 });
     // Keys the override doesn't name are kept.
     expect(phone?.steps).toEqual(DEMO_CONFIG.flow?.steps);
   });

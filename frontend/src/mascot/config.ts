@@ -130,7 +130,7 @@ export const LANDING_CONFIG: MascotConfig = {
       peekId: 'tour',
       selector: '[data-mascot-peek="tour"]',
       anchor: 0.85,
-      // Below the lg breakpoint the tour's tabs become a row of chips right above the panel.
+      // The features video's card. Below the lg breakpoint it fills the width and the peek would cover it.
       minViewportWidth: 1024,
       greet: {
         expression: 'excited',
@@ -209,7 +209,7 @@ export const LANDING_CONFIG: MascotConfig = {
       enter: {
         expression: 'curious',
         gesture: 'lean',
-        message: { id: 'features.enter', text: 'Scan. Order. Done. Tap a step to peek.' },
+        message: { id: 'features.enter', text: '45 seconds. Tap a chapter to jump in.' },
       },
     },
     {
@@ -290,7 +290,7 @@ export const LANDING_CONFIG: MascotConfig = {
     },
     {
       targetId: 'tour-step',
-      selector: '#features [role="tab"]',
+      selector: '#features [data-chapter]',
       hover: { expression: 'curious', gesture: 'nod' },
       focus: { expression: 'curious', gesture: 'nod' },
     },
@@ -572,7 +572,7 @@ export const DEMO_CONFIG: MascotConfig = {
     peekHoldMs: 5_000,
     peekRepeatMs: Infinity,
   },
-  phoneFlow: { mode: 'slot', slot: '[data-mascot-slot="demo"]', size: 84 },
+  phoneFlow: { mode: 'slot', slot: '[data-mascot-slot="demo"]', size: 64 },
   peeks: [
     {
       peekId: 'demo-form',

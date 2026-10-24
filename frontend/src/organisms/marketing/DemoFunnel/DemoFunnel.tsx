@@ -22,19 +22,21 @@ export const DemoFunnel: React.FC<DemoFunnelProps> = ({ funnel }) => {
   const headingRef = useRef<HTMLHeadingElement>(null);
   const firstStep = useRef(true);
 
-  // A new step: bring the card back into view if they had scrolled past its top (phones), and move
-  // keyboard / screen-reader focus to the new question. Not on first load: that would steal focus.
+  // A new step starts in view, and keyboard / screen-reader focus moves to the new question. On
+  // phones the page header is gone after the first answer (RequestDemoPage), so the top of the page
+  // is the top of the card; on wider screens only a card scrolled past its top is brought back.
+  // Not on first load: that would steal focus.
   useEffect(() => {
     if (firstStep.current) {
       firstStep.current = false;
       return;
     }
-    const top = rootRef.current?.getBoundingClientRect().top ?? 0;
-    if (top < 0)
-      rootRef.current?.scrollIntoView({
-        behavior: reduceMotion ? 'auto' : 'smooth',
-        block: 'start',
-      });
+    const behavior = reduceMotion ? 'auto' : 'smooth';
+    if (window.matchMedia('(max-width: 767px)').matches) {
+      if (window.scrollY > 0) window.scrollTo({ top: 0, behavior });
+    } else if ((rootRef.current?.getBoundingClientRect().top ?? 0) < 0) {
+      rootRef.current?.scrollIntoView({ behavior, block: 'start' });
+    }
     headingRef.current?.focus({ preventScroll: true });
   }, [funnel.stepIndex, reduceMotion]);
 
@@ -75,7 +77,7 @@ export const DemoFunnel: React.FC<DemoFunnelProps> = ({ funnel }) => {
               initial={reduceMotion ? false : { opacity: 0, y: -6 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1, duration: 0.25 }}
-              className="mb-4 flex items-start gap-2 px-3 py-2.5 rounded-xl bg-red-50 border border-red-100 text-xs sm:text-[13px] font-semibold text-red-800"
+              className="mb-3 sm:mb-4 flex items-start gap-2 px-3 py-2 sm:py-2.5 rounded-xl bg-red-50 border border-red-100 text-xs sm:text-[13px] font-semibold text-red-800"
             >
               <Sparkles className="w-3.5 h-3.5 mt-0.5 shrink-0 text-red-600" />
               {funnel.reply}

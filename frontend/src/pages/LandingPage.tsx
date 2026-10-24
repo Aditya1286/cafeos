@@ -7,7 +7,7 @@ import { APP_NAME } from '../constants/app';
 import { WhyChooseUs } from '@/organisms/marketing/WhyChooseUs';
 import { DEMO_PATH, DEMO_MENU_PATH } from '@/constants/demo';
 import { useScrollToHash } from '@/hooks/useScrollToHash';
-import { ProductTour } from '@/organisms/marketing/ProductTour';
+import { FeatureVideo } from '@/organisms/marketing/FeatureVideo';
 import { WhatsAppButton } from '@/organisms/marketing/WhatsAppButton';
 import { StatsStrip } from '@/organisms/marketing/StatsStrip';
 import { PricingSection } from '@/organisms/marketing/PricingSection';
@@ -103,7 +103,7 @@ export const LandingPage: React.FC = () => {
         </ul>
       </section>
 
-      <ProductTour />
+      <FeatureVideo />
 
       <StatsStrip />
 

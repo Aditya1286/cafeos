@@ -15,8 +15,8 @@ export const FunnelProgress: React.FC<FunnelProgressProps> = ({
 }) => {
   const percent = Math.round(((stepIndex + 1) / totalSteps) * 100);
   return (
-    <div className="mb-5 sm:mb-6">
-      <div className="flex items-center justify-between h-8 mb-2">
+    <div className="mb-3 sm:mb-6">
+      <div className="flex items-center justify-between h-7 sm:h-8 mb-1.5 sm:mb-2">
         {stepIndex > 0 ? (
           <button
             type="button"
